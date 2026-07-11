@@ -12,6 +12,14 @@ para las fases y [`docs/WORLD.md`](docs/WORLD.md) para el diseño del mundo.
 - **Fase 0 — Pipeline y andamiaje:** ✅ assets y mapas extraídos, Vite + React + Pixi montados.
 - **Fase 1 — Renderer isométrico:** ✅ Black Oak City recorrible con culling, cámara con
   lerp, depth-sort por `x+y` y pathfinding A* sobre la grilla de colisión.
+- **Fase 2 — Paperdoll:** ✅ héroe compuesto desde las capas de Flare, 8 direcciones,
+  animación `stance`/`run`, orden de capas por dirección (`hero_layers`). Spawn en el
+  centro de la ciudad + selección de raza (modificadores de WORLD.md).
+- **Fase 4 (parcial) — Ítems e inventario:** ✅ los 552 ítems reales parseados a
+  `shared/items.json` (nombres en español, slot, ícono, tier, stats, rareza, capa de
+  paperdoll). Inventario 30 slots + 9 de equipo + oro, con rareza por color, comparación
+  de stats y **equipar cambia el aspecto del héroe al instante**. Falta: loot en el suelo
+  y validación en servidor (llega con las fases de combate/servidor).
 
 ## Setup
 
@@ -48,7 +56,8 @@ jugador **nunca** queda dentro de una pared.
 
 ```bash
 npm run dev &                 # dev server en :5173
-node tools/smoke_test.mjs      # imprime métricas y "SMOKE OK"
+node tools/smoke_test.mjs      # Fase 1: camina la ciudad, "SMOKE OK"
+node tools/char_test.mjs       # Fase 2/4: raza, paperdoll, equipar, "CHAR OK"
 ```
 
 Deja un screenshot en `$SHOT_DIR` (temp del SO por defecto). Variables: `CHROME_PATH`,
@@ -57,9 +66,11 @@ Deja un screenshot en `$SHOT_DIR` (temp del SO por defecto). Variables: `CHROME_
 ## Estructura
 
 ```
-client/engine/   Pixi: iso, cámara, renderer con culling, A*, player, loop
-client/ui/       React: HUD, pantalla de inicio (atribución a Flare)
+client/engine/   Pixi: iso, cámara, renderer con culling, A*, paperdoll, player, loop
+client/ui/       React: inicio, selección de raza, HUD, inventario/equipo
+client/data/     ítems y razas (kits iniciales con ítems reales)
+shared/          items.json (552 ítems de Flare, generado por convert_items.py)
 public/assets/   spritesheets + assets.json   (commiteado)
 public/maps/     mapas JSON                    (commiteado)
-tools/           extract_flare.py, convert_maps.py, smoke_test.mjs
+tools/           extract_flare.py, convert_maps.py, convert_items.py, *_test.mjs
 ```

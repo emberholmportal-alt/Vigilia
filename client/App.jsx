@@ -1,24 +1,31 @@
 import { useEffect, useRef, useState } from 'react'
 import { Game } from './engine/Game.js'
-import { storeApi } from './store.js'
+import { storeApi, useGameStore } from './store.js'
+import { startingCharacter } from './data/characters.js'
 import HUD from './ui/HUD.jsx'
 import StartScreen from './ui/StartScreen.jsx'
+import RaceScreen from './ui/RaceScreen.jsx'
+import Inventory from './ui/Inventory.jsx'
 
+// Flujo: Inicio -> Elegir raza -> Juego (con inventario).
 export default function App() {
-  const [started, setStarted] = useState(false)
+  const [phase, setPhase] = useState('start') // 'start' | 'race' | 'game'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const canvasRef = useRef(null)
   const gameRef = useRef(null)
+  const panel = useGameStore((s) => s.panel)
+  const initCharacter = useGameStore((s) => s.initCharacter)
 
-  async function enter() {
-    setStarted(true)
+  function chooseRace(raceId) {
+    // Personaje con kit real ANTES de montar el juego (el paperdoll lo lee al arrancar).
+    initCharacter(startingCharacter(raceId))
     setLoading(true)
+    setPhase('game')
   }
 
-  // Montamos Pixi cuando el contenedor ya está en el DOM.
   useEffect(() => {
-    if (!started || gameRef.current) return
+    if (phase !== 'game' || gameRef.current) return
     const game = new Game(storeApi)
     gameRef.current = game
     game
@@ -33,15 +40,18 @@ export default function App() {
       game.destroy()
       gameRef.current = null
     }
-  }, [started])
+  }, [phase])
 
   return (
     <div id="wrap">
-      {started && <div ref={canvasRef} className="canvas-host" />}
-      {started && !loading && !error && <HUD />}
+      {phase === 'game' && <div ref={canvasRef} className="canvas-host" />}
+      {phase === 'game' && !loading && !error && <HUD />}
+      {phase === 'game' && panel === 'inventory' && <Inventory />}
       {error && <div className="error">Error: {error}</div>}
-      {!started && <StartScreen onEnter={enter} loading={loading} />}
-      {started && loading && <div className="loading">Cargando Black Oak City…</div>}
+
+      {phase === 'start' && <StartScreen onEnter={() => setPhase('race')} loading={false} />}
+      {phase === 'race' && <RaceScreen onChoose={chooseRace} />}
+      {phase === 'game' && loading && <div className="loading">Cargando Black Oak City…</div>}
     </div>
   )
 }

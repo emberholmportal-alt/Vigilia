@@ -1,0 +1,8020 @@
+{
+  "items": [
+    {
+      "id": 2,
+      "name": "de vida Pocion",
+      "name_en": "Health Potion",
+      "slot": "potion",
+      "icon": 64,
+      "tier": 0,
+      "price": 20,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 3,
+      "name": "de mana Pocion",
+      "name_en": "Mana Potion",
+      "slot": "potion",
+      "icon": 65,
+      "tier": 0,
+      "price": 20,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 4,
+      "name": "Camisa de tela",
+      "name_en": "Cloth Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 1,
+      "price": 75,
+      "rarity": "comun",
+      "gfx": "cloth_shirt",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 5,
+      "name": "Pantalones de tela",
+      "name_en": "Cloth Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 1,
+      "price": 50,
+      "rarity": "comun",
+      "gfx": "cloth_pants",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 6,
+      "name": "Sandalias de tela",
+      "name_en": "Cloth Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 1,
+      "price": 30,
+      "rarity": "comun",
+      "gfx": "cloth_sandals",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 7,
+      "name": "Guantes de tela",
+      "name_en": "Cloth Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 1,
+      "price": 25,
+      "rarity": "comun",
+      "gfx": "cloth_gloves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 8,
+      "name": "Daga",
+      "name_en": "Dagger",
+      "slot": "main",
+      "icon": 96,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "dagger",
+      "stats": {},
+      "equip_flags": "melee"
+    },
+    {
+      "id": 9,
+      "name": "Honda",
+      "name_en": "Slingshot",
+      "slot": null,
+      "icon": null,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 10,
+      "name": "Varita",
+      "name_en": "Wand",
+      "slot": "main",
+      "icon": 104,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "wand",
+      "stats": {},
+      "equip_flags": "mental"
+    },
+    {
+      "id": 11,
+      "name": "Broquel de madera",
+      "name_en": "Wood Buckler",
+      "slot": "off",
+      "icon": 120,
+      "tier": 1,
+      "price": 75,
+      "rarity": "comun",
+      "gfx": "buckler",
+      "stats": {},
+      "equip_flags": "shield"
+    },
+    {
+      "id": 12,
+      "name": "Fighting Camisa de tela",
+      "name_en": "Fighting Cloth Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 2,
+      "price": 150,
+      "rarity": "fino",
+      "gfx": "cloth_shirt",
+      "stats": {
+        "hp": 25
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 13,
+      "name": "Recon Camisa de tela",
+      "name_en": "Recon Cloth Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 2,
+      "price": 150,
+      "rarity": "fino",
+      "gfx": "cloth_shirt",
+      "stats": {
+        "accuracy": 1
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 14,
+      "name": "Sorcerer Camisa de tela",
+      "name_en": "Sorcerer Cloth Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 2,
+      "price": 150,
+      "rarity": "fino",
+      "gfx": "cloth_shirt",
+      "stats": {
+        "mp": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 15,
+      "name": "Fighting Pantalones de tela",
+      "name_en": "Fighting Cloth Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 2,
+      "price": 100,
+      "rarity": "fino",
+      "gfx": "cloth_pants",
+      "stats": {
+        "poise": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 16,
+      "name": "Recon Pantalones de tela",
+      "name_en": "Recon Cloth Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 2,
+      "price": 100,
+      "rarity": "fino",
+      "gfx": "cloth_pants",
+      "stats": {
+        "avoidance": 1
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 17,
+      "name": "Sorcerer Pantalones de tela",
+      "name_en": "Sorcerer Cloth Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 2,
+      "price": 100,
+      "rarity": "fino",
+      "gfx": "cloth_pants",
+      "stats": {
+        "mp": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 18,
+      "name": "Fighting Sandalias de tela",
+      "name_en": "Fighting Cloth Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 2,
+      "price": 60,
+      "rarity": "fino",
+      "gfx": "cloth_sandals",
+      "stats": {
+        "poise": 1
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 19,
+      "name": "Recon Sandalias de tela",
+      "name_en": "Recon Cloth Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 2,
+      "price": 60,
+      "rarity": "fino",
+      "gfx": "cloth_sandals",
+      "stats": {
+        "avoidance": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 20,
+      "name": "Sorcerer Sandalias de tela",
+      "name_en": "Sorcerer Cloth Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 2,
+      "price": 60,
+      "rarity": "fino",
+      "gfx": "cloth_sandals",
+      "stats": {
+        "mp_regen": 1
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 21,
+      "name": "Fighting Guantes de tela",
+      "name_en": "Fighting Cloth Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 2,
+      "price": 50,
+      "rarity": "fino",
+      "gfx": "cloth_gloves",
+      "stats": {
+        "crit": 1
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 22,
+      "name": "Recon Guantes de tela",
+      "name_en": "Recon Cloth Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 2,
+      "price": 50,
+      "rarity": "fino",
+      "gfx": "cloth_gloves",
+      "stats": {
+        "accuracy": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 23,
+      "name": "Sorcerer Guantes de tela",
+      "name_en": "Sorcerer Cloth Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 2,
+      "price": 50,
+      "rarity": "fino",
+      "gfx": "cloth_gloves",
+      "stats": {
+        "mp_regen": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 24,
+      "name": "Wandering Cinturon de cuero",
+      "name_en": "Wandering Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 2,
+      "price": 100,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 25
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 25,
+      "name": "Wandering Pendant",
+      "name_en": "Wandering Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 2,
+      "price": 100,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "avoidance": 1
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 26,
+      "name": "Wandering Spellbook",
+      "name_en": "Wandering Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 2,
+      "price": 100,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 27,
+      "name": "Fighting Daga",
+      "name_en": "Fighting Dagger",
+      "slot": "main",
+      "icon": 96,
+      "tier": 2,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": "dagger",
+      "stats": {
+        "dmg_melee_min": 3,
+        "dmg_melee_max": 3
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 28,
+      "name": "Recon Honda",
+      "name_en": "Recon Slingshot",
+      "slot": null,
+      "icon": null,
+      "tier": 2,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 3,
+        "dmg_ranged_max": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 29,
+      "name": "Sorcerer Varita",
+      "name_en": "Sorcerer Wand",
+      "slot": "main",
+      "icon": 104,
+      "tier": 2,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": "wand",
+      "stats": {
+        "dmg_ment_min": 3,
+        "dmg_ment_max": 3
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 30,
+      "name": "Keeper Broquel de madera",
+      "name_en": "Keeper Wood Buckler",
+      "slot": "off",
+      "icon": 120,
+      "tier": 2,
+      "price": 150,
+      "rarity": "fino",
+      "gfx": "buckler",
+      "stats": {
+        "absorb_max": 1
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 31,
+      "name": "Wandering Fire Anillo",
+      "name_en": "Wandering Fire Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 2,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 32,
+      "name": "Wandering Ice Anillo",
+      "name_en": "Wandering Ice Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 2,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 33,
+      "name": "Wandering Lightning Anillo",
+      "name_en": "Wandering Lightning Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 2,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 34,
+      "name": "Wandering Dark Anillo",
+      "name_en": "Wandering Dark Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 2,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 35,
+      "name": "Wandering Experience Anillo",
+      "name_en": "Wandering Experience Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 2,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 1
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 36,
+      "name": "Wandering Wealth Anillo",
+      "name_en": "Wandering Wealth Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 2,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "currency_find": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 37,
+      "name": "Wandering Treasure Anillo",
+      "name_en": "Wandering Treasure Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 2,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "item_find": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 38,
+      "name": "Warrior Camisa de tela",
+      "name_en": "Warrior Cloth Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 3,
+      "price": 225,
+      "rarity": "legendario",
+      "gfx": "cloth_shirt",
+      "stats": {
+        "hp": 50
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 39,
+      "name": "Ranger Camisa de tela",
+      "name_en": "Ranger Cloth Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 3,
+      "price": 225,
+      "rarity": "legendario",
+      "gfx": "cloth_shirt",
+      "stats": {
+        "accuracy": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 40,
+      "name": "Wizard Camisa de tela",
+      "name_en": "Wizard Cloth Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 3,
+      "price": 225,
+      "rarity": "legendario",
+      "gfx": "cloth_shirt",
+      "stats": {
+        "mp": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 41,
+      "name": "Warrior Pantalones de tela",
+      "name_en": "Warrior Cloth Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 3,
+      "price": 150,
+      "rarity": "legendario",
+      "gfx": "cloth_pants",
+      "stats": {
+        "poise": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 42,
+      "name": "Ranger Pantalones de tela",
+      "name_en": "Ranger Cloth Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 3,
+      "price": 150,
+      "rarity": "legendario",
+      "gfx": "cloth_pants",
+      "stats": {
+        "avoidance": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 43,
+      "name": "Wizard Pantalones de tela",
+      "name_en": "Wizard Cloth Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 3,
+      "price": 150,
+      "rarity": "legendario",
+      "gfx": "cloth_pants",
+      "stats": {
+        "mp": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 44,
+      "name": "Warrior Sandalias de tela",
+      "name_en": "Warrior Cloth Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 3,
+      "price": 90,
+      "rarity": "legendario",
+      "gfx": "cloth_sandals",
+      "stats": {
+        "poise": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 45,
+      "name": "Ranger Sandalias de tela",
+      "name_en": "Ranger Cloth Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 3,
+      "price": 90,
+      "rarity": "legendario",
+      "gfx": "cloth_sandals",
+      "stats": {
+        "avoidance": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 46,
+      "name": "Wizard Sandalias de tela",
+      "name_en": "Wizard Cloth Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 3,
+      "price": 90,
+      "rarity": "legendario",
+      "gfx": "cloth_sandals",
+      "stats": {
+        "mp_regen": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 47,
+      "name": "Warrior Guantes de tela",
+      "name_en": "Warrior Cloth Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 3,
+      "price": 75,
+      "rarity": "legendario",
+      "gfx": "cloth_gloves",
+      "stats": {
+        "crit": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 48,
+      "name": "Ranger Guantes de tela",
+      "name_en": "Ranger Cloth Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 3,
+      "price": 75,
+      "rarity": "legendario",
+      "gfx": "cloth_gloves",
+      "stats": {
+        "accuracy": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 49,
+      "name": "Wizard Guantes de tela",
+      "name_en": "Wizard Cloth Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 3,
+      "price": 75,
+      "rarity": "legendario",
+      "gfx": "cloth_gloves",
+      "stats": {
+        "mp_regen": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 50,
+      "name": "Adventurer Cinturon de cuero",
+      "name_en": "Adventurer Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 3,
+      "price": 150,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 50
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 51,
+      "name": "Adventurer Pendant",
+      "name_en": "Adventurer Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 3,
+      "price": 150,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "avoidance": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 52,
+      "name": "Adventurer Spellbook",
+      "name_en": "Adventurer Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 3,
+      "price": 150,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 53,
+      "name": "Warrior Daga",
+      "name_en": "Warrior Dagger",
+      "slot": "main",
+      "icon": 96,
+      "tier": 3,
+      "price": 300,
+      "rarity": "legendario",
+      "gfx": "dagger",
+      "stats": {
+        "dmg_melee_min": 6,
+        "dmg_melee_max": 6
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 54,
+      "name": "Ranger Honda",
+      "name_en": "Ranger Slingshot",
+      "slot": null,
+      "icon": null,
+      "tier": 3,
+      "price": 300,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 6,
+        "dmg_ranged_max": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 55,
+      "name": "Wizard Varita",
+      "name_en": "Wizard Wand",
+      "slot": "main",
+      "icon": 104,
+      "tier": 3,
+      "price": 300,
+      "rarity": "legendario",
+      "gfx": "wand",
+      "stats": {
+        "dmg_ment_min": 6,
+        "dmg_ment_max": 6
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 56,
+      "name": "Paladin Broquel de madera",
+      "name_en": "Paladin Wood Buckler",
+      "slot": "off",
+      "icon": 120,
+      "tier": 3,
+      "price": 225,
+      "rarity": "legendario",
+      "gfx": "buckler",
+      "stats": {
+        "absorb_max": 2
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 57,
+      "name": "Adventurer Fire Anillo",
+      "name_en": "Adventurer Fire Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 3,
+      "price": 300,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 58,
+      "name": "Adventurer Ice Anillo",
+      "name_en": "Adventurer Ice Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 3,
+      "price": 300,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 59,
+      "name": "Adventurer Lightning Anillo",
+      "name_en": "Adventurer Lightning Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 3,
+      "price": 300,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 60,
+      "name": "Adventurer Dark Anillo",
+      "name_en": "Adventurer Dark Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 3,
+      "price": 300,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 61,
+      "name": "Adventurer Experience Anillo",
+      "name_en": "Adventurer Experience Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 3,
+      "price": 300,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 62,
+      "name": "Adventurer Wealth Anillo",
+      "name_en": "Adventurer Wealth Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 3,
+      "price": 300,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "currency_find": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 63,
+      "name": "Adventurer Treasure Anillo",
+      "name_en": "Adventurer Treasure Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 3,
+      "price": 300,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "item_find": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 64,
+      "name": "del Caudillo Camisa de tela",
+      "name_en": "Warlord Cloth Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 4,
+      "price": 300,
+      "rarity": "comun",
+      "gfx": "cloth_shirt",
+      "stats": {
+        "hp": 75
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 65,
+      "name": "del Francotirador Camisa de tela",
+      "name_en": "Sniper Cloth Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 4,
+      "price": 300,
+      "rarity": "comun",
+      "gfx": "cloth_shirt",
+      "stats": {
+        "accuracy": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 66,
+      "name": "del Archimago Camisa de tela",
+      "name_en": "Archwizard Cloth Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 4,
+      "price": 300,
+      "rarity": "comun",
+      "gfx": "cloth_shirt",
+      "stats": {
+        "mp": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 67,
+      "name": "del Caudillo Pantalones de tela",
+      "name_en": "Warlord Cloth Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 4,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "cloth_pants",
+      "stats": {
+        "poise": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 68,
+      "name": "del Francotirador Pantalones de tela",
+      "name_en": "Sniper Cloth Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 4,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "cloth_pants",
+      "stats": {
+        "avoidance": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 69,
+      "name": "del Archimago Pantalones de tela",
+      "name_en": "Archwizard Cloth Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 4,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "cloth_pants",
+      "stats": {
+        "mp": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 70,
+      "name": "del Caudillo Sandalias de tela",
+      "name_en": "Warlord Cloth Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 4,
+      "price": 120,
+      "rarity": "comun",
+      "gfx": "cloth_sandals",
+      "stats": {
+        "poise": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 71,
+      "name": "del Francotirador Sandalias de tela",
+      "name_en": "Sniper Cloth Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 4,
+      "price": 120,
+      "rarity": "comun",
+      "gfx": "cloth_sandals",
+      "stats": {
+        "avoidance": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 72,
+      "name": "del Archimago Sandalias de tela",
+      "name_en": "Archwizard Cloth Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 4,
+      "price": 120,
+      "rarity": "comun",
+      "gfx": "cloth_sandals",
+      "stats": {
+        "mp_regen": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 73,
+      "name": "del Caudillo Guantes de tela",
+      "name_en": "Warlord Cloth Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 4,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "cloth_gloves",
+      "stats": {
+        "crit": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 74,
+      "name": "del Francotirador Guantes de tela",
+      "name_en": "Sniper Cloth Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 4,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "cloth_gloves",
+      "stats": {
+        "accuracy": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 75,
+      "name": "del Archimago Guantes de tela",
+      "name_en": "Archwizard Cloth Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 4,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "cloth_gloves",
+      "stats": {
+        "mp_regen": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 76,
+      "name": "Master Cinturon de cuero",
+      "name_en": "Master Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 4,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 75
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 77,
+      "name": "Master Pendant",
+      "name_en": "Master Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 4,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "avoidance": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 78,
+      "name": "Master Spellbook",
+      "name_en": "Master Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 4,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 79,
+      "name": "del Caudillo Daga",
+      "name_en": "Warlord Dagger",
+      "slot": "main",
+      "icon": 96,
+      "tier": 4,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": "dagger",
+      "stats": {
+        "dmg_melee_min": 9,
+        "dmg_melee_max": 9
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 80,
+      "name": "del Francotirador Honda",
+      "name_en": "Sniper Slingshot",
+      "slot": null,
+      "icon": null,
+      "tier": 4,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 9,
+        "dmg_ranged_max": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 81,
+      "name": "del Archimago Varita",
+      "name_en": "Archwizard Wand",
+      "slot": "main",
+      "icon": 104,
+      "tier": 4,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": "wand",
+      "stats": {
+        "dmg_ment_min": 9,
+        "dmg_ment_max": 9
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 82,
+      "name": "Templar Broquel de madera",
+      "name_en": "Templar Wood Buckler",
+      "slot": "off",
+      "icon": 120,
+      "tier": 4,
+      "price": 300,
+      "rarity": "comun",
+      "gfx": "buckler",
+      "stats": {
+        "absorb_max": 3
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 83,
+      "name": "Master Fire Anillo",
+      "name_en": "Master Fire Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 4,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 84,
+      "name": "Master Ice Anillo",
+      "name_en": "Master Ice Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 4,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 85,
+      "name": "Master Lightning Anillo",
+      "name_en": "Master Lightning Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 4,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 86,
+      "name": "Master Dark Anillo",
+      "name_en": "Master Dark Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 4,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 87,
+      "name": "Master Experience Anillo",
+      "name_en": "Master Experience Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 4,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 88,
+      "name": "Master Wealth Anillo",
+      "name_en": "Master Wealth Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 4,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "currency_find": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 89,
+      "name": "Master Treasure Anillo",
+      "name_en": "Master Treasure Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 4,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "item_find": 15
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 90,
+      "name": "Krolan's Martillo",
+      "name_en": "Krolan's Hammer",
+      "slot": "main",
+      "icon": 101,
+      "tier": 4,
+      "price": 500,
+      "rarity": "unico",
+      "gfx": "smith_hammer",
+      "stats": {
+        "dmg_melee_min": 12,
+        "dmg_melee_max": 12,
+        "crit": 1,
+        "currency_find": 10
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 91,
+      "name": "Goblin Branch",
+      "name_en": "Goblin Branch",
+      "slot": "main",
+      "icon": 109,
+      "tier": 4,
+      "price": 500,
+      "rarity": "unico",
+      "gfx": "club",
+      "stats": {
+        "dmg_ment_min": 12,
+        "dmg_ment_max": 12,
+        "mp_regen": 10,
+        "lightning_resist": 10
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 92,
+      "name": "Ardwen's Guantes",
+      "name_en": "Ardwen's Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 4,
+      "price": 125,
+      "rarity": "unico",
+      "gfx": "cloth_gloves",
+      "stats": {
+        "accuracy": 5,
+        "poise": 10,
+        "xp_gain": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 93,
+      "name": "Blood Tunic",
+      "name_en": "Blood Tunic",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 4,
+      "price": 375,
+      "rarity": "unico",
+      "gfx": "cloth_shirt",
+      "stats": {
+        "hp": 100,
+        "hp_regen": 100
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 94,
+      "name": "Dark Steppers",
+      "name_en": "Dark Steppers",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 4,
+      "price": 150,
+      "rarity": "unico",
+      "gfx": "cloth_sandals",
+      "stats": {
+        "avoidance": 15,
+        "dark_resist": 25
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 95,
+      "name": "Seagate's Tri-pants",
+      "name_en": "Seagate's Tri-pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 4,
+      "price": 250,
+      "rarity": "unico",
+      "gfx": "cloth_pants",
+      "stats": {
+        "fire_resist": 25,
+        "ice_resist": 25,
+        "lightning_resist": 25
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 96,
+      "name": "Capucha de cuero",
+      "name_en": "Leather Hood",
+      "slot": "head",
+      "icon": 144,
+      "tier": 5,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "leather_hood",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 97,
+      "name": "Tunic de cuero",
+      "name_en": "Leather Tunic",
+      "slot": "chest",
+      "icon": 145,
+      "tier": 5,
+      "price": 375,
+      "rarity": "comun",
+      "gfx": "leather_chest",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 98,
+      "name": "Pantalones de cuero",
+      "name_en": "Leather Pants",
+      "slot": "legs",
+      "icon": 147,
+      "tier": 5,
+      "price": 250,
+      "rarity": "comun",
+      "gfx": "leather_pants",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 99,
+      "name": "Botas de cuero",
+      "name_en": "Leather Boots",
+      "slot": "feet",
+      "icon": 148,
+      "tier": 5,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "leather_boots",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 100,
+      "name": "Guantes de cuero",
+      "name_en": "Leather Gloves",
+      "slot": "hands",
+      "icon": 146,
+      "tier": 5,
+      "price": 125,
+      "rarity": "comun",
+      "gfx": "leather_gloves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 101,
+      "name": "Wool Capucha",
+      "name_en": "Wool Hood",
+      "slot": "head",
+      "icon": 136,
+      "tier": 5,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "mage_hood",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 102,
+      "name": "Wool Chaleco",
+      "name_en": "Wool Vest",
+      "slot": "chest",
+      "icon": 137,
+      "tier": 5,
+      "price": 375,
+      "rarity": "comun",
+      "gfx": "mage_vest",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 103,
+      "name": "Wool Faldon",
+      "name_en": "Wool Skirt",
+      "slot": "legs",
+      "icon": 139,
+      "tier": 5,
+      "price": 250,
+      "rarity": "comun",
+      "gfx": "mage_skirt",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 104,
+      "name": "Wool Botas",
+      "name_en": "Wool Boots",
+      "slot": "feet",
+      "icon": 140,
+      "tier": 5,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "mage_boots",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 105,
+      "name": "Wool Mangas",
+      "name_en": "Wool Sleeves",
+      "slot": "hands",
+      "icon": 138,
+      "tier": 5,
+      "price": 125,
+      "rarity": "comun",
+      "gfx": "mage_sleeves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 106,
+      "name": "Espada corta",
+      "name_en": "Shortsword",
+      "slot": "main",
+      "icon": 97,
+      "tier": 5,
+      "price": 500,
+      "rarity": "comun",
+      "gfx": "shortsword",
+      "stats": {},
+      "equip_flags": "melee"
+    },
+    {
+      "id": 107,
+      "name": "Arco corto",
+      "name_en": "Shortbow",
+      "slot": null,
+      "icon": null,
+      "tier": 5,
+      "price": 500,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 108,
+      "name": "Vara",
+      "name_en": "Rod",
+      "slot": "main",
+      "icon": 105,
+      "tier": 5,
+      "price": 500,
+      "rarity": "comun",
+      "gfx": "rod",
+      "stats": {},
+      "equip_flags": "mental"
+    },
+    {
+      "id": 109,
+      "name": "Broquel de hierro",
+      "name_en": "Iron Buckler",
+      "slot": "off",
+      "icon": 121,
+      "tier": 5,
+      "price": 375,
+      "rarity": "comun",
+      "gfx": "iron_buckler",
+      "stats": {},
+      "equip_flags": "shield"
+    },
+    {
+      "id": 110,
+      "name": "Fighting Capucha de cuero",
+      "name_en": "Fighting Leather Hood",
+      "slot": "head",
+      "icon": 144,
+      "tier": 6,
+      "price": 180,
+      "rarity": "fino",
+      "gfx": "leather_hood",
+      "stats": {
+        "poise": 1
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 111,
+      "name": "Recon Capucha de cuero",
+      "name_en": "Recon Leather Hood",
+      "slot": "head",
+      "icon": 144,
+      "tier": 6,
+      "price": 180,
+      "rarity": "fino",
+      "gfx": "leather_hood",
+      "stats": {
+        "accuracy": 1
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 112,
+      "name": "Sorcerer Wool Capucha",
+      "name_en": "Sorcerer Wool Hood",
+      "slot": "head",
+      "icon": 136,
+      "tier": 6,
+      "price": 180,
+      "rarity": "fino",
+      "gfx": "mage_hood",
+      "stats": {
+        "mp": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 113,
+      "name": "Fighting Tunic de cuero",
+      "name_en": "Fighting Leather Tunic",
+      "slot": "chest",
+      "icon": 145,
+      "tier": 6,
+      "price": 450,
+      "rarity": "fino",
+      "gfx": "leather_chest",
+      "stats": {
+        "hp": 100
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 114,
+      "name": "Recon Tunic de cuero",
+      "name_en": "Recon Leather Tunic",
+      "slot": "chest",
+      "icon": 145,
+      "tier": 6,
+      "price": 450,
+      "rarity": "fino",
+      "gfx": "leather_chest",
+      "stats": {
+        "accuracy": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 115,
+      "name": "Sorcerer Wool Chaleco",
+      "name_en": "Sorcerer Wool Vest",
+      "slot": "chest",
+      "icon": 137,
+      "tier": 6,
+      "price": 450,
+      "rarity": "fino",
+      "gfx": "mage_vest",
+      "stats": {
+        "mp": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 116,
+      "name": "Fighting Pantalones de cuero",
+      "name_en": "Fighting Leather Pants",
+      "slot": "legs",
+      "icon": 147,
+      "tier": 6,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": "leather_pants",
+      "stats": {
+        "poise": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 117,
+      "name": "Recon Pantalones de cuero",
+      "name_en": "Recon Leather Pants",
+      "slot": "legs",
+      "icon": 147,
+      "tier": 6,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": "leather_pants",
+      "stats": {
+        "avoidance": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 118,
+      "name": "Sorcerer Wool Faldon",
+      "name_en": "Sorcerer Wool Skirt",
+      "slot": "legs",
+      "icon": 139,
+      "tier": 6,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": "mage_skirt",
+      "stats": {
+        "mp": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 119,
+      "name": "Fighting Botas de cuero",
+      "name_en": "Fighting Leather Boots",
+      "slot": "feet",
+      "icon": 148,
+      "tier": 6,
+      "price": 180,
+      "rarity": "fino",
+      "gfx": "leather_boots",
+      "stats": {
+        "poise": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 120,
+      "name": "Recon Botas de cuero",
+      "name_en": "Recon Leather Boots",
+      "slot": "feet",
+      "icon": 148,
+      "tier": 6,
+      "price": 180,
+      "rarity": "fino",
+      "gfx": "leather_boots",
+      "stats": {
+        "avoidance": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 121,
+      "name": "Sorcerer Wool Botas",
+      "name_en": "Sorcerer Wool Boots",
+      "slot": "feet",
+      "icon": 140,
+      "tier": 6,
+      "price": 180,
+      "rarity": "fino",
+      "gfx": "mage_boots",
+      "stats": {
+        "mp_regen": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 122,
+      "name": "Fighting Guantes de cuero",
+      "name_en": "Fighting Leather Gloves",
+      "slot": "hands",
+      "icon": 146,
+      "tier": 6,
+      "price": 150,
+      "rarity": "fino",
+      "gfx": "leather_gloves",
+      "stats": {
+        "crit": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 123,
+      "name": "Recon Guantes de cuero",
+      "name_en": "Recon Leather Gloves",
+      "slot": "hands",
+      "icon": 146,
+      "tier": 6,
+      "price": 150,
+      "rarity": "fino",
+      "gfx": "leather_gloves",
+      "stats": {
+        "accuracy": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 124,
+      "name": "Sorcerer Wool Mangas",
+      "name_en": "Sorcerer Wool Sleeves",
+      "slot": "hands",
+      "icon": 138,
+      "tier": 6,
+      "price": 150,
+      "rarity": "fino",
+      "gfx": "mage_sleeves",
+      "stats": {
+        "mp_regen": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 125,
+      "name": "Wandering Fighting Cinturon de cuero",
+      "name_en": "Wandering Fighting Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 6,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 100
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 126,
+      "name": "Wandering Recon Pendant",
+      "name_en": "Wandering Recon Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 6,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "avoidance": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 127,
+      "name": "Wandering Sorcerer Spellbook",
+      "name_en": "Wandering Sorcerer Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 6,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 128,
+      "name": "Fighting Espada corta",
+      "name_en": "Fighting Shortsword",
+      "slot": "main",
+      "icon": 97,
+      "tier": 6,
+      "price": 600,
+      "rarity": "fino",
+      "gfx": "shortsword",
+      "stats": {
+        "dmg_melee_min": 3,
+        "dmg_melee_max": 3
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 129,
+      "name": "Recon Arco corto",
+      "name_en": "Recon Shortbow",
+      "slot": null,
+      "icon": null,
+      "tier": 6,
+      "price": 600,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 3,
+        "dmg_ranged_max": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 130,
+      "name": "Sorcerer Vara",
+      "name_en": "Sorcerer Rod",
+      "slot": "main",
+      "icon": 105,
+      "tier": 6,
+      "price": 600,
+      "rarity": "fino",
+      "gfx": "rod",
+      "stats": {
+        "dmg_ment_min": 3,
+        "dmg_ment_max": 3
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 131,
+      "name": "Keeper Broquel de hierro",
+      "name_en": "Keeper Iron Buckler",
+      "slot": "off",
+      "icon": 121,
+      "tier": 6,
+      "price": 450,
+      "rarity": "fino",
+      "gfx": "iron_buckler",
+      "stats": {
+        "absorb_max": 1
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 132,
+      "name": "Wandering Burn Anillo",
+      "name_en": "Wandering Burn Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 6,
+      "price": 600,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 133,
+      "name": "Wandering Frost Anillo",
+      "name_en": "Wandering Frost Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 6,
+      "price": 600,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 134,
+      "name": "Wandering Electric Anillo",
+      "name_en": "Wandering Electric Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 6,
+      "price": 600,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 135,
+      "name": "Wandering Shadow Anillo",
+      "name_en": "Wandering Shadow Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 6,
+      "price": 600,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 136,
+      "name": "Wandering Knowledge Anillo",
+      "name_en": "Wandering Knowledge Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 6,
+      "price": 600,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 137,
+      "name": "Wandering Prosperity Anillo",
+      "name_en": "Wandering Prosperity Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 6,
+      "price": 600,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "currency_find": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 138,
+      "name": "Wandering Loot Anillo",
+      "name_en": "Wandering Loot Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 6,
+      "price": 600,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "item_find": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 139,
+      "name": "Warrior Capucha de cuero",
+      "name_en": "Warrior Leather Hood",
+      "slot": "head",
+      "icon": 144,
+      "tier": 7,
+      "price": 210,
+      "rarity": "legendario",
+      "gfx": "leather_hood",
+      "stats": {
+        "poise": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 140,
+      "name": "Ranger Capucha de cuero",
+      "name_en": "Ranger Leather Hood",
+      "slot": "head",
+      "icon": 144,
+      "tier": 7,
+      "price": 210,
+      "rarity": "legendario",
+      "gfx": "leather_hood",
+      "stats": {
+        "accuracy": 2
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 141,
+      "name": "Wizard Wool Capucha",
+      "name_en": "Wizard Wool Hood",
+      "slot": "head",
+      "icon": 136,
+      "tier": 7,
+      "price": 210,
+      "rarity": "legendario",
+      "gfx": "mage_hood",
+      "stats": {
+        "mp": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 142,
+      "name": "Warrior Tunic de cuero",
+      "name_en": "Warrior Leather Tunic",
+      "slot": "chest",
+      "icon": 145,
+      "tier": 7,
+      "price": 525,
+      "rarity": "legendario",
+      "gfx": "leather_chest",
+      "stats": {
+        "hp": 125
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 143,
+      "name": "Ranger Tunic de cuero",
+      "name_en": "Ranger Leather Tunic",
+      "slot": "chest",
+      "icon": 145,
+      "tier": 7,
+      "price": 525,
+      "rarity": "legendario",
+      "gfx": "leather_chest",
+      "stats": {
+        "accuracy": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 144,
+      "name": "Wizard Wool Chaleco",
+      "name_en": "Wizard Wool Vest",
+      "slot": "chest",
+      "icon": 137,
+      "tier": 7,
+      "price": 525,
+      "rarity": "legendario",
+      "gfx": "mage_vest",
+      "stats": {
+        "mp": 15
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 145,
+      "name": "Warrior Pantalones de cuero",
+      "name_en": "Warrior Leather Pants",
+      "slot": "legs",
+      "icon": 147,
+      "tier": 7,
+      "price": 350,
+      "rarity": "legendario",
+      "gfx": "leather_pants",
+      "stats": {
+        "poise": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 146,
+      "name": "Ranger Pantalones de cuero",
+      "name_en": "Ranger Leather Pants",
+      "slot": "legs",
+      "icon": 147,
+      "tier": 7,
+      "price": 350,
+      "rarity": "legendario",
+      "gfx": "leather_pants",
+      "stats": {
+        "avoidance": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 147,
+      "name": "Wizard Wool Faldon",
+      "name_en": "Wizard Wool Skirt",
+      "slot": "legs",
+      "icon": 139,
+      "tier": 7,
+      "price": 350,
+      "rarity": "legendario",
+      "gfx": "mage_skirt",
+      "stats": {
+        "mp": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 148,
+      "name": "Warrior Botas de cuero",
+      "name_en": "Warrior Leather Boots",
+      "slot": "feet",
+      "icon": 148,
+      "tier": 7,
+      "price": 210,
+      "rarity": "legendario",
+      "gfx": "leather_boots",
+      "stats": {
+        "poise": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 149,
+      "name": "Ranger Botas de cuero",
+      "name_en": "Ranger Leather Boots",
+      "slot": "feet",
+      "icon": 148,
+      "tier": 7,
+      "price": 210,
+      "rarity": "legendario",
+      "gfx": "leather_boots",
+      "stats": {
+        "avoidance": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 150,
+      "name": "Wizard Wool Botas",
+      "name_en": "Wizard Wool Boots",
+      "slot": "feet",
+      "icon": 140,
+      "tier": 7,
+      "price": 210,
+      "rarity": "legendario",
+      "gfx": "mage_boots",
+      "stats": {
+        "mp_regen": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 151,
+      "name": "Warrior Guantes de cuero",
+      "name_en": "Warrior Leather Gloves",
+      "slot": "hands",
+      "icon": 146,
+      "tier": 7,
+      "price": 175,
+      "rarity": "legendario",
+      "gfx": "leather_gloves",
+      "stats": {
+        "crit": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 152,
+      "name": "Ranger Guantes de cuero",
+      "name_en": "Ranger Leather Gloves",
+      "slot": "hands",
+      "icon": 146,
+      "tier": 7,
+      "price": 175,
+      "rarity": "legendario",
+      "gfx": "leather_gloves",
+      "stats": {
+        "accuracy": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 153,
+      "name": "Wizard Wool Mangas",
+      "name_en": "Wizard Wool Sleeves",
+      "slot": "hands",
+      "icon": 138,
+      "tier": 7,
+      "price": 175,
+      "rarity": "legendario",
+      "gfx": "mage_sleeves",
+      "stats": {
+        "mp_regen": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 154,
+      "name": "Adventurer Fighting Cinturon de cuero",
+      "name_en": "Adventurer Fighting Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 7,
+      "price": 350,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 125
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 155,
+      "name": "Adventurer Recon Pendant",
+      "name_en": "Adventurer Recon Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 7,
+      "price": 350,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "avoidance": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 156,
+      "name": "Adventurer Sorcerer Spellbook",
+      "name_en": "Adventurer Sorcerer Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 7,
+      "price": 350,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 157,
+      "name": "Warrior Espada corta",
+      "name_en": "Warrior Shortsword",
+      "slot": "main",
+      "icon": 97,
+      "tier": 7,
+      "price": 700,
+      "rarity": "legendario",
+      "gfx": "shortsword",
+      "stats": {
+        "dmg_melee_min": 6,
+        "dmg_melee_max": 6
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 158,
+      "name": "Ranger Arco corto",
+      "name_en": "Ranger Shortbow",
+      "slot": null,
+      "icon": null,
+      "tier": 7,
+      "price": 700,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 6,
+        "dmg_ranged_max": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 159,
+      "name": "Wizard Vara",
+      "name_en": "Wizard Rod",
+      "slot": "main",
+      "icon": 105,
+      "tier": 7,
+      "price": 700,
+      "rarity": "legendario",
+      "gfx": "rod",
+      "stats": {
+        "dmg_ment_min": 6,
+        "dmg_ment_max": 6
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 160,
+      "name": "Paladin Broquel de hierro",
+      "name_en": "Paladin Iron Buckler",
+      "slot": "off",
+      "icon": 121,
+      "tier": 7,
+      "price": 525,
+      "rarity": "legendario",
+      "gfx": "iron_buckler",
+      "stats": {
+        "absorb_max": 2
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 161,
+      "name": "Adventurer Burn Anillo",
+      "name_en": "Adventurer Burn Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 7,
+      "price": 700,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 162,
+      "name": "Adventurer Frost Anillo",
+      "name_en": "Adventurer Frost Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 7,
+      "price": 700,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 163,
+      "name": "Adventurer Electric Anillo",
+      "name_en": "Adventurer Electric Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 7,
+      "price": 700,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 164,
+      "name": "Adventurer Shadow Anillo",
+      "name_en": "Adventurer Shadow Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 7,
+      "price": 700,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 165,
+      "name": "Adventurer Knowledge Anillo",
+      "name_en": "Adventurer Knowledge Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 7,
+      "price": 700,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 166,
+      "name": "Adventurer Prosperity Anillo",
+      "name_en": "Adventurer Prosperity Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 7,
+      "price": 700,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "currency_find": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 167,
+      "name": "Adventurer Loot Anillo",
+      "name_en": "Adventurer Loot Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 7,
+      "price": 700,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "item_find": 25
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 168,
+      "name": "del Caudillo Capucha de cuero",
+      "name_en": "Warlord Leather Hood",
+      "slot": "head",
+      "icon": 144,
+      "tier": 8,
+      "price": 240,
+      "rarity": "comun",
+      "gfx": "leather_hood",
+      "stats": {
+        "poise": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 169,
+      "name": "del Francotirador Capucha de cuero",
+      "name_en": "Sniper Leather Hood",
+      "slot": "head",
+      "icon": 144,
+      "tier": 8,
+      "price": 240,
+      "rarity": "comun",
+      "gfx": "leather_hood",
+      "stats": {
+        "accuracy": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 170,
+      "name": "del Archimago Wool Capucha",
+      "name_en": "Archwizard Wool Hood",
+      "slot": "head",
+      "icon": 136,
+      "tier": 8,
+      "price": 240,
+      "rarity": "comun",
+      "gfx": "mage_hood",
+      "stats": {
+        "mp": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 171,
+      "name": "del Caudillo Tunic de cuero",
+      "name_en": "Warlord Leather Tunic",
+      "slot": "chest",
+      "icon": 145,
+      "tier": 8,
+      "price": 600,
+      "rarity": "comun",
+      "gfx": "leather_chest",
+      "stats": {
+        "hp": 150
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 172,
+      "name": "del Francotirador Tunic de cuero",
+      "name_en": "Sniper Leather Tunic",
+      "slot": "chest",
+      "icon": 145,
+      "tier": 8,
+      "price": 600,
+      "rarity": "comun",
+      "gfx": "leather_chest",
+      "stats": {
+        "accuracy": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 173,
+      "name": "del Archimago Wool Chaleco",
+      "name_en": "Archwizard Wool Vest",
+      "slot": "chest",
+      "icon": 137,
+      "tier": 8,
+      "price": 600,
+      "rarity": "comun",
+      "gfx": "mage_vest",
+      "stats": {
+        "mp": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 174,
+      "name": "del Caudillo Pantalones de cuero",
+      "name_en": "Warlord Leather Pants",
+      "slot": "legs",
+      "icon": 147,
+      "tier": 8,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": "leather_pants",
+      "stats": {
+        "poise": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 175,
+      "name": "del Francotirador Pantalones de cuero",
+      "name_en": "Sniper Leather Pants",
+      "slot": "legs",
+      "icon": 147,
+      "tier": 8,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": "leather_pants",
+      "stats": {
+        "avoidance": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 176,
+      "name": "del Archimago Wool Faldon",
+      "name_en": "Archwizard Wool Skirt",
+      "slot": "legs",
+      "icon": 139,
+      "tier": 8,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": "mage_skirt",
+      "stats": {
+        "mp": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 177,
+      "name": "del Caudillo Botas de cuero",
+      "name_en": "Warlord Leather Boots",
+      "slot": "feet",
+      "icon": 148,
+      "tier": 8,
+      "price": 240,
+      "rarity": "comun",
+      "gfx": "leather_boots",
+      "stats": {
+        "poise": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 178,
+      "name": "del Francotirador Botas de cuero",
+      "name_en": "Sniper Leather Boots",
+      "slot": "feet",
+      "icon": 148,
+      "tier": 8,
+      "price": 240,
+      "rarity": "comun",
+      "gfx": "leather_boots",
+      "stats": {
+        "avoidance": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 179,
+      "name": "del Archimago Wool Botas",
+      "name_en": "Archwizard Wool Boots",
+      "slot": "feet",
+      "icon": 140,
+      "tier": 8,
+      "price": 240,
+      "rarity": "comun",
+      "gfx": "mage_boots",
+      "stats": {
+        "mp_regen": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 180,
+      "name": "del Caudillo Guantes de cuero",
+      "name_en": "Warlord Leather Gloves",
+      "slot": "hands",
+      "icon": 146,
+      "tier": 8,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "leather_gloves",
+      "stats": {
+        "crit": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 181,
+      "name": "del Francotirador Guantes de cuero",
+      "name_en": "Sniper Leather Gloves",
+      "slot": "hands",
+      "icon": 146,
+      "tier": 8,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "leather_gloves",
+      "stats": {
+        "accuracy": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 182,
+      "name": "del Archimago Wool Mangas",
+      "name_en": "Archwizard Wool Sleeves",
+      "slot": "hands",
+      "icon": 138,
+      "tier": 8,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "mage_sleeves",
+      "stats": {
+        "mp_regen": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 183,
+      "name": "Master Fighting Cinturon de cuero",
+      "name_en": "Master Fighting Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 8,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 150
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 184,
+      "name": "Master Recon Pendant",
+      "name_en": "Master Recon Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 8,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "avoidance": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 185,
+      "name": "Master Sorcerer Spellbook",
+      "name_en": "Master Sorcerer Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 8,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 186,
+      "name": "del Caudillo Espada corta",
+      "name_en": "Warlord Shortsword",
+      "slot": "main",
+      "icon": 97,
+      "tier": 8,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": "shortsword",
+      "stats": {
+        "dmg_melee_min": 9,
+        "dmg_melee_max": 9
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 187,
+      "name": "del Francotirador Arco corto",
+      "name_en": "Sniper Shortbow",
+      "slot": null,
+      "icon": null,
+      "tier": 8,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 9,
+        "dmg_ranged_max": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 188,
+      "name": "del Archimago Vara",
+      "name_en": "Archwizard Rod",
+      "slot": "main",
+      "icon": 105,
+      "tier": 8,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": "rod",
+      "stats": {
+        "dmg_ment_min": 9,
+        "dmg_ment_max": 9
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 189,
+      "name": "Templar Broquel de hierro",
+      "name_en": "Templar Iron Buckler",
+      "slot": "off",
+      "icon": 121,
+      "tier": 8,
+      "price": 600,
+      "rarity": "comun",
+      "gfx": "iron_buckler",
+      "stats": {
+        "absorb_max": 3
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 190,
+      "name": "Master Burn Anillo",
+      "name_en": "Master Burn Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 8,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 191,
+      "name": "Master Frost Anillo",
+      "name_en": "Master Frost Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 8,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 192,
+      "name": "Master Electric Anillo",
+      "name_en": "Master Electric Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 8,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 193,
+      "name": "Master Shadow Anillo",
+      "name_en": "Master Shadow Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 8,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 194,
+      "name": "Master Knowledge Anillo",
+      "name_en": "Master Knowledge Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 8,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 195,
+      "name": "Master Prosperity Anillo",
+      "name_en": "Master Prosperity Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 8,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "currency_find": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 196,
+      "name": "Master Loot Anillo",
+      "name_en": "Master Loot Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 8,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "item_find": 30
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 197,
+      "name": "Amir Blade",
+      "name_en": "Amir Blade",
+      "slot": "main",
+      "icon": 100,
+      "tier": 8,
+      "price": 900,
+      "rarity": "unico",
+      "gfx": "zweihander",
+      "stats": {
+        "dmg_melee_min": 12,
+        "dmg_melee_max": 12,
+        "accuracy": 15,
+        "lightning_resist": 20
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 198,
+      "name": "Huntsman Arco",
+      "name_en": "Huntsman Bow",
+      "slot": null,
+      "icon": null,
+      "tier": 8,
+      "price": 900,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 12,
+        "dmg_ranged_max": 12,
+        "crit": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 199,
+      "name": "Greed Cowl",
+      "name_en": "Greed Cowl",
+      "slot": "head",
+      "icon": 184,
+      "tier": 8,
+      "price": 270,
+      "rarity": "unico",
+      "gfx": "mage_hood_alt1",
+      "stats": {
+        "xp_gain": 1,
+        "currency_find": 10,
+        "item_find": 25
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 200,
+      "name": "Battle Leathers",
+      "name_en": "Battle Leathers",
+      "slot": "legs",
+      "icon": 147,
+      "tier": 8,
+      "price": 450,
+      "rarity": "unico",
+      "gfx": "leather_pants",
+      "stats": {
+        "hp_regen": 150,
+        "poise": 25,
+        "fire_resist": 35
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 201,
+      "name": "Escape Botas",
+      "name_en": "Escape Boots",
+      "slot": "feet",
+      "icon": 176,
+      "tier": 8,
+      "price": 270,
+      "rarity": "unico",
+      "gfx": "mage_boots",
+      "stats": {
+        "mp_regen": 15,
+        "speed": 125,
+        "avoidance": 25
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 202,
+      "name": "Mez's Wraps",
+      "name_en": "Mez's Wraps",
+      "slot": "chest",
+      "icon": 145,
+      "tier": 8,
+      "price": 675,
+      "rarity": "unico",
+      "gfx": "leather_chest",
+      "stats": {
+        "hp": 150,
+        "poise": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 203,
+      "name": "Summon Zombie Pergamino",
+      "name_en": "Summon Zombie Scroll",
+      "slot": "scroll",
+      "icon": 73,
+      "tier": 0,
+      "price": 25,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 204,
+      "name": "Cofia de malla",
+      "name_en": "Chain Coif",
+      "slot": "head",
+      "icon": 152,
+      "tier": 9,
+      "price": 270,
+      "rarity": "comun",
+      "gfx": "chain_coif",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 205,
+      "name": "Coraza de malla",
+      "name_en": "Chain Cuirass",
+      "slot": "chest",
+      "icon": 153,
+      "tier": 9,
+      "price": 675,
+      "rarity": "comun",
+      "gfx": "chain_cuirass",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 206,
+      "name": "Grebas de malla",
+      "name_en": "Chain Greaves",
+      "slot": "legs",
+      "icon": 155,
+      "tier": 9,
+      "price": 450,
+      "rarity": "comun",
+      "gfx": "chain_greaves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 207,
+      "name": "Botas de malla",
+      "name_en": "Chain Boots",
+      "slot": "feet",
+      "icon": 156,
+      "tier": 9,
+      "price": 270,
+      "rarity": "comun",
+      "gfx": "chain_boots",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 208,
+      "name": "Guantes de malla",
+      "name_en": "Chain Gloves",
+      "slot": "hands",
+      "icon": 154,
+      "tier": 9,
+      "price": 225,
+      "rarity": "comun",
+      "gfx": "chain_gloves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 209,
+      "name": "Silk Capucha",
+      "name_en": "Silk Hood",
+      "slot": "head",
+      "icon": 184,
+      "tier": 9,
+      "price": 270,
+      "rarity": "comun",
+      "gfx": "mage_hood_alt1",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 210,
+      "name": "Silk Chaleco",
+      "name_en": "Silk Vest",
+      "slot": "chest",
+      "icon": 185,
+      "tier": 9,
+      "price": 675,
+      "rarity": "comun",
+      "gfx": "mage_vest_alt1",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 211,
+      "name": "Silk Faldon",
+      "name_en": "Silk Skirt",
+      "slot": "legs",
+      "icon": 187,
+      "tier": 9,
+      "price": 450,
+      "rarity": "comun",
+      "gfx": "mage_skirt_alt1",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 212,
+      "name": "Silk Botas",
+      "name_en": "Silk Boots",
+      "slot": "feet",
+      "icon": 188,
+      "tier": 9,
+      "price": 270,
+      "rarity": "comun",
+      "gfx": "mage_boots_alt1",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 213,
+      "name": "Silk Mangas",
+      "name_en": "Silk Sleeves",
+      "slot": "hands",
+      "icon": 186,
+      "tier": 9,
+      "price": 225,
+      "rarity": "comun",
+      "gfx": "mage_sleeves_alt1",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 214,
+      "name": "Espada larga",
+      "name_en": "Longsword",
+      "slot": "main",
+      "icon": 98,
+      "tier": 9,
+      "price": 900,
+      "rarity": "comun",
+      "gfx": "longsword",
+      "stats": {},
+      "equip_flags": "melee"
+    },
+    {
+      "id": 215,
+      "name": "Arco largo",
+      "name_en": "Longbow",
+      "slot": null,
+      "icon": null,
+      "tier": 9,
+      "price": 900,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 216,
+      "name": "Baston",
+      "name_en": "Staff",
+      "slot": "main",
+      "icon": 106,
+      "tier": 9,
+      "price": 900,
+      "rarity": "comun",
+      "gfx": "staff",
+      "stats": {},
+      "equip_flags": "mental"
+    },
+    {
+      "id": 217,
+      "name": "Crest Escudo",
+      "name_en": "Crest Shield",
+      "slot": "off",
+      "icon": 122,
+      "tier": 9,
+      "price": 675,
+      "rarity": "comun",
+      "gfx": "kite_shield",
+      "stats": {},
+      "equip_flags": "shield"
+    },
+    {
+      "id": 218,
+      "name": "Fighting Cofia de malla",
+      "name_en": "Fighting Chain Coif",
+      "slot": "head",
+      "icon": 152,
+      "tier": 10,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": "chain_coif",
+      "stats": {
+        "poise": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 219,
+      "name": "Recon Cofia de malla",
+      "name_en": "Recon Chain Coif",
+      "slot": "head",
+      "icon": 152,
+      "tier": 10,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": "chain_coif",
+      "stats": {
+        "accuracy": 4
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 220,
+      "name": "Sorcerer Silk Capucha",
+      "name_en": "Sorcerer Silk Hood",
+      "slot": "head",
+      "icon": 184,
+      "tier": 10,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": "mage_hood_alt1",
+      "stats": {
+        "mp": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 221,
+      "name": "Fighting Coraza de malla",
+      "name_en": "Fighting Chain Cuirass",
+      "slot": "chest",
+      "icon": 153,
+      "tier": 10,
+      "price": 750,
+      "rarity": "fino",
+      "gfx": "chain_cuirass",
+      "stats": {
+        "hp": 175
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 222,
+      "name": "Recon Coraza de malla",
+      "name_en": "Recon Chain Cuirass",
+      "slot": "chest",
+      "icon": 153,
+      "tier": 10,
+      "price": 750,
+      "rarity": "fino",
+      "gfx": "chain_cuirass",
+      "stats": {
+        "accuracy": 7
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 223,
+      "name": "Sorcerer Silk Chaleco",
+      "name_en": "Sorcerer Silk Vest",
+      "slot": "chest",
+      "icon": 185,
+      "tier": 10,
+      "price": 750,
+      "rarity": "fino",
+      "gfx": "mage_vest_alt1",
+      "stats": {
+        "mp": 21
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 224,
+      "name": "Fighting Grebas de malla",
+      "name_en": "Fighting Chain Greaves",
+      "slot": "legs",
+      "icon": 155,
+      "tier": 10,
+      "price": 500,
+      "rarity": "fino",
+      "gfx": "chain_greaves",
+      "stats": {
+        "poise": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 225,
+      "name": "Recon Grebas de malla",
+      "name_en": "Recon Chain Greaves",
+      "slot": "legs",
+      "icon": 155,
+      "tier": 10,
+      "price": 500,
+      "rarity": "fino",
+      "gfx": "chain_greaves",
+      "stats": {
+        "avoidance": 7
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 226,
+      "name": "Sorcerer Silk Faldon",
+      "name_en": "Sorcerer Silk Skirt",
+      "slot": "legs",
+      "icon": 187,
+      "tier": 10,
+      "price": 500,
+      "rarity": "fino",
+      "gfx": "mage_skirt_alt1",
+      "stats": {
+        "mp": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 227,
+      "name": "Fighting Botas de malla",
+      "name_en": "Fighting Chain Boots",
+      "slot": "feet",
+      "icon": 156,
+      "tier": 10,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": "chain_boots",
+      "stats": {
+        "poise": 7
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 228,
+      "name": "Recon Botas de malla",
+      "name_en": "Recon Chain Boots",
+      "slot": "feet",
+      "icon": 156,
+      "tier": 10,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": "chain_boots",
+      "stats": {
+        "avoidance": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 229,
+      "name": "Sorcerer Silk Botas",
+      "name_en": "Sorcerer Silk Boots",
+      "slot": "feet",
+      "icon": 188,
+      "tier": 10,
+      "price": 300,
+      "rarity": "fino",
+      "gfx": "mage_boots_alt1",
+      "stats": {
+        "mp_regen": 7
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 230,
+      "name": "Fighting Guantes de malla",
+      "name_en": "Fighting Chain Gloves",
+      "slot": "hands",
+      "icon": 154,
+      "tier": 10,
+      "price": 250,
+      "rarity": "fino",
+      "gfx": "chain_gloves",
+      "stats": {
+        "crit": 7
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 231,
+      "name": "Recon Guantes de malla",
+      "name_en": "Recon Chain Gloves",
+      "slot": "hands",
+      "icon": 154,
+      "tier": 10,
+      "price": 250,
+      "rarity": "fino",
+      "gfx": "chain_gloves",
+      "stats": {
+        "accuracy": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 232,
+      "name": "Sorcerer Silk Mangas",
+      "name_en": "Sorcerer Silk Sleeves",
+      "slot": "hands",
+      "icon": 186,
+      "tier": 10,
+      "price": 250,
+      "rarity": "fino",
+      "gfx": "mage_sleeves_alt1",
+      "stats": {
+        "mp_regen": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 233,
+      "name": "Wandering Warrior Cinturon de cuero",
+      "name_en": "Wandering Warrior Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 10,
+      "price": 500,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 175
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 234,
+      "name": "Wandering Ranger Pendant",
+      "name_en": "Wandering Ranger Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 10,
+      "price": 500,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "avoidance": 7
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 235,
+      "name": "Wandering Wizard Spellbook",
+      "name_en": "Wandering Wizard Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 10,
+      "price": 500,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 236,
+      "name": "Fighting Espada larga",
+      "name_en": "Fighting Longsword",
+      "slot": "main",
+      "icon": 98,
+      "tier": 10,
+      "price": 1000,
+      "rarity": "fino",
+      "gfx": "longsword",
+      "stats": {
+        "dmg_melee_min": 3,
+        "dmg_melee_max": 3
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 237,
+      "name": "Recon Arco largo",
+      "name_en": "Recon Longbow",
+      "slot": null,
+      "icon": null,
+      "tier": 10,
+      "price": 1000,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 3,
+        "dmg_ranged_max": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 238,
+      "name": "Sorcerer Baston",
+      "name_en": "Sorcerer Staff",
+      "slot": "main",
+      "icon": 106,
+      "tier": 10,
+      "price": 1000,
+      "rarity": "fino",
+      "gfx": "staff",
+      "stats": {
+        "dmg_ment_min": 3,
+        "dmg_ment_max": 3
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 239,
+      "name": "Keeper Crest Escudo",
+      "name_en": "Keeper Crest Shield",
+      "slot": "off",
+      "icon": 122,
+      "tier": 10,
+      "price": 750,
+      "rarity": "fino",
+      "gfx": "kite_shield",
+      "stats": {
+        "absorb_max": 1
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 240,
+      "name": "Wandering Blaze Anillo",
+      "name_en": "Wandering Blaze Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 10,
+      "price": 1000,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 241,
+      "name": "Wandering Freeze Anillo",
+      "name_en": "Wandering Freeze Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 10,
+      "price": 1000,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 242,
+      "name": "Wandering Shock Anillo",
+      "name_en": "Wandering Shock Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 10,
+      "price": 1000,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 243,
+      "name": "Wandering Gloom Anillo",
+      "name_en": "Wandering Gloom Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 10,
+      "price": 1000,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 244,
+      "name": "Wandering Intellectual Anillo",
+      "name_en": "Wandering Intellectual Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 10,
+      "price": 1000,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 7
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 245,
+      "name": "Wandering Lucrative Anillo",
+      "name_en": "Wandering Lucrative Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 10,
+      "price": 1000,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "currency_find": 14
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 246,
+      "name": "Wandering Artifact Anillo",
+      "name_en": "Wandering Artifact Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 10,
+      "price": 1000,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "item_find": 35
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 247,
+      "name": "Warrior Cofia de malla",
+      "name_en": "Warrior Chain Coif",
+      "slot": "head",
+      "icon": 152,
+      "tier": 11,
+      "price": 330,
+      "rarity": "legendario",
+      "gfx": "chain_coif",
+      "stats": {
+        "poise": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 248,
+      "name": "Ranger Cofia de malla",
+      "name_en": "Ranger Chain Coif",
+      "slot": "head",
+      "icon": 152,
+      "tier": 11,
+      "price": 330,
+      "rarity": "legendario",
+      "gfx": "chain_coif",
+      "stats": {
+        "accuracy": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 249,
+      "name": "Wizard Silk Capucha",
+      "name_en": "Wizard Silk Hood",
+      "slot": "head",
+      "icon": 184,
+      "tier": 11,
+      "price": 330,
+      "rarity": "legendario",
+      "gfx": "mage_hood_alt1",
+      "stats": {
+        "mp": 15
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 250,
+      "name": "Warrior Coraza de malla",
+      "name_en": "Warrior Chain Cuirass",
+      "slot": "chest",
+      "icon": 153,
+      "tier": 11,
+      "price": 825,
+      "rarity": "legendario",
+      "gfx": "chain_cuirass",
+      "stats": {
+        "hp": 200
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 251,
+      "name": "Ranger Coraza de malla",
+      "name_en": "Ranger Chain Cuirass",
+      "slot": "chest",
+      "icon": 153,
+      "tier": 11,
+      "price": 825,
+      "rarity": "legendario",
+      "gfx": "chain_cuirass",
+      "stats": {
+        "accuracy": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 252,
+      "name": "Wizard Silk Chaleco",
+      "name_en": "Wizard Silk Vest",
+      "slot": "chest",
+      "icon": 185,
+      "tier": 11,
+      "price": 825,
+      "rarity": "legendario",
+      "gfx": "mage_vest_alt1",
+      "stats": {
+        "mp": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 253,
+      "name": "Warrior Grebas de malla",
+      "name_en": "Warrior Chain Greaves",
+      "slot": "legs",
+      "icon": 155,
+      "tier": 11,
+      "price": 550,
+      "rarity": "legendario",
+      "gfx": "chain_greaves",
+      "stats": {
+        "poise": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 254,
+      "name": "Ranger Grebas de malla",
+      "name_en": "Ranger Chain Greaves",
+      "slot": "legs",
+      "icon": 155,
+      "tier": 11,
+      "price": 550,
+      "rarity": "legendario",
+      "gfx": "chain_greaves",
+      "stats": {
+        "avoidance": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 255,
+      "name": "Wizard Silk Faldon",
+      "name_en": "Wizard Silk Skirt",
+      "slot": "legs",
+      "icon": 187,
+      "tier": 11,
+      "price": 550,
+      "rarity": "legendario",
+      "gfx": "mage_skirt_alt1",
+      "stats": {
+        "mp": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 256,
+      "name": "Warrior Botas de malla",
+      "name_en": "Warrior Chain Boots",
+      "slot": "feet",
+      "icon": 156,
+      "tier": 11,
+      "price": 330,
+      "rarity": "legendario",
+      "gfx": "chain_boots",
+      "stats": {
+        "poise": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 257,
+      "name": "Ranger Botas de malla",
+      "name_en": "Ranger Chain Boots",
+      "slot": "feet",
+      "icon": 156,
+      "tier": 11,
+      "price": 330,
+      "rarity": "legendario",
+      "gfx": "chain_boots",
+      "stats": {
+        "avoidance": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 258,
+      "name": "Wizard Silk Botas",
+      "name_en": "Wizard Silk Boots",
+      "slot": "feet",
+      "icon": 188,
+      "tier": 11,
+      "price": 330,
+      "rarity": "legendario",
+      "gfx": "mage_boots_alt1",
+      "stats": {
+        "mp_regen": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 259,
+      "name": "Warrior Guantes de malla",
+      "name_en": "Warrior Chain Gloves",
+      "slot": "hands",
+      "icon": 154,
+      "tier": 11,
+      "price": 275,
+      "rarity": "legendario",
+      "gfx": "chain_gloves",
+      "stats": {
+        "crit": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 260,
+      "name": "Ranger Guantes de malla",
+      "name_en": "Ranger Chain Gloves",
+      "slot": "hands",
+      "icon": 154,
+      "tier": 11,
+      "price": 275,
+      "rarity": "legendario",
+      "gfx": "chain_gloves",
+      "stats": {
+        "accuracy": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 261,
+      "name": "Wizard Silk Mangas",
+      "name_en": "Wizard Silk Sleeves",
+      "slot": "hands",
+      "icon": 186,
+      "tier": 11,
+      "price": 275,
+      "rarity": "legendario",
+      "gfx": "mage_sleeves_alt1",
+      "stats": {
+        "mp_regen": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 262,
+      "name": "Adventurer Warrior Cinturon de cuero",
+      "name_en": "Adventurer Warrior Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 11,
+      "price": 550,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 200
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 263,
+      "name": "Adventurer Ranger Pendant",
+      "name_en": "Adventurer Ranger Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 11,
+      "price": 550,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "avoidance": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 264,
+      "name": "Adventurer Wizard Spellbook",
+      "name_en": "Adventurer Wizard Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 11,
+      "price": 550,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 265,
+      "name": "Warrior Espada larga",
+      "name_en": "Warrior Longsword",
+      "slot": "main",
+      "icon": 98,
+      "tier": 11,
+      "price": 1100,
+      "rarity": "legendario",
+      "gfx": "longsword",
+      "stats": {
+        "dmg_melee_min": 6,
+        "dmg_melee_max": 6
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 266,
+      "name": "Ranger Arco largo",
+      "name_en": "Ranger Longbow",
+      "slot": null,
+      "icon": null,
+      "tier": 11,
+      "price": 1100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 6,
+        "dmg_ranged_max": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 267,
+      "name": "Wizard Baston",
+      "name_en": "Wizard Staff",
+      "slot": "main",
+      "icon": 106,
+      "tier": 11,
+      "price": 1100,
+      "rarity": "legendario",
+      "gfx": "staff",
+      "stats": {
+        "dmg_ment_min": 6,
+        "dmg_ment_max": 6
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 268,
+      "name": "Paladin Crest Escudo",
+      "name_en": "Paladin Crest Shield",
+      "slot": "off",
+      "icon": 122,
+      "tier": 11,
+      "price": 825,
+      "rarity": "legendario",
+      "gfx": "kite_shield",
+      "stats": {
+        "absorb_max": 2
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 269,
+      "name": "Adventurer Blaze Anillo",
+      "name_en": "Adventurer Blaze Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 11,
+      "price": 1100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 270,
+      "name": "Adventurer Freeze Anillo",
+      "name_en": "Adventurer Freeze Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 11,
+      "price": 1100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 271,
+      "name": "Adventurer Shock Anillo",
+      "name_en": "Adventurer Shock Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 11,
+      "price": 1100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 272,
+      "name": "Adventurer Gloom Anillo",
+      "name_en": "Adventurer Gloom Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 11,
+      "price": 1100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 273,
+      "name": "Adventurer Intellectual Anillo",
+      "name_en": "Adventurer Intellectual Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 11,
+      "price": 1100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 274,
+      "name": "Adventurer Lucrative Anillo",
+      "name_en": "Adventurer Lucrative Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 11,
+      "price": 1100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "currency_find": 16
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 275,
+      "name": "Adventurer Artifact Anillo",
+      "name_en": "Adventurer Artifact Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 11,
+      "price": 1100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "item_find": 40
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 276,
+      "name": "del Caudillo Cofia de malla",
+      "name_en": "Warlord Chain Coif",
+      "slot": "head",
+      "icon": 152,
+      "tier": 12,
+      "price": 360,
+      "rarity": "comun",
+      "gfx": "chain_coif",
+      "stats": {
+        "poise": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 277,
+      "name": "del Francotirador Cofia de malla",
+      "name_en": "Sniper Chain Coif",
+      "slot": "head",
+      "icon": 152,
+      "tier": 12,
+      "price": 360,
+      "rarity": "comun",
+      "gfx": "chain_coif",
+      "stats": {
+        "accuracy": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 278,
+      "name": "del Archimago Silk Capucha",
+      "name_en": "Archwizard Silk Hood",
+      "slot": "head",
+      "icon": 184,
+      "tier": 12,
+      "price": 360,
+      "rarity": "comun",
+      "gfx": "mage_hood_alt1",
+      "stats": {
+        "mp": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 279,
+      "name": "del Caudillo Coraza de malla",
+      "name_en": "Warlord Chain Cuirass",
+      "slot": "chest",
+      "icon": 153,
+      "tier": 12,
+      "price": 900,
+      "rarity": "comun",
+      "gfx": "chain_cuirass",
+      "stats": {
+        "hp": 225
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 280,
+      "name": "del Francotirador Coraza de malla",
+      "name_en": "Sniper Chain Cuirass",
+      "slot": "chest",
+      "icon": 153,
+      "tier": 12,
+      "price": 900,
+      "rarity": "comun",
+      "gfx": "chain_cuirass",
+      "stats": {
+        "accuracy": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 281,
+      "name": "del Archimago Silk Chaleco",
+      "name_en": "Archwizard Silk Vest",
+      "slot": "chest",
+      "icon": 185,
+      "tier": 12,
+      "price": 900,
+      "rarity": "comun",
+      "gfx": "mage_vest_alt1",
+      "stats": {
+        "mp": 27
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 282,
+      "name": "del Caudillo Grebas de malla",
+      "name_en": "Warlord Chain Greaves",
+      "slot": "legs",
+      "icon": 155,
+      "tier": 12,
+      "price": 600,
+      "rarity": "comun",
+      "gfx": "chain_greaves",
+      "stats": {
+        "poise": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 283,
+      "name": "del Francotirador Grebas de malla",
+      "name_en": "Sniper Chain Greaves",
+      "slot": "legs",
+      "icon": 155,
+      "tier": 12,
+      "price": 600,
+      "rarity": "comun",
+      "gfx": "chain_greaves",
+      "stats": {
+        "avoidance": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 284,
+      "name": "del Archimago Silk Faldon",
+      "name_en": "Archwizard Silk Skirt",
+      "slot": "legs",
+      "icon": 187,
+      "tier": 12,
+      "price": 600,
+      "rarity": "comun",
+      "gfx": "mage_skirt_alt1",
+      "stats": {
+        "mp": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 285,
+      "name": "del Caudillo Botas de malla",
+      "name_en": "Warlord Chain Boots",
+      "slot": "feet",
+      "icon": 156,
+      "tier": 12,
+      "price": 360,
+      "rarity": "comun",
+      "gfx": "chain_boots",
+      "stats": {
+        "poise": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 286,
+      "name": "del Francotirador Botas de malla",
+      "name_en": "Sniper Chain Boots",
+      "slot": "feet",
+      "icon": 156,
+      "tier": 12,
+      "price": 360,
+      "rarity": "comun",
+      "gfx": "chain_boots",
+      "stats": {
+        "avoidance": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 287,
+      "name": "del Archimago Silk Botas",
+      "name_en": "Archwizard Silk Boots",
+      "slot": "feet",
+      "icon": 188,
+      "tier": 12,
+      "price": 360,
+      "rarity": "comun",
+      "gfx": "mage_boots_alt1",
+      "stats": {
+        "mp_regen": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 288,
+      "name": "del Caudillo Guantes de malla",
+      "name_en": "Warlord Chain Gloves",
+      "slot": "hands",
+      "icon": 154,
+      "tier": 12,
+      "price": 300,
+      "rarity": "comun",
+      "gfx": "chain_gloves",
+      "stats": {
+        "crit": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 289,
+      "name": "del Francotirador Guantes de malla",
+      "name_en": "Sniper Chain Gloves",
+      "slot": "hands",
+      "icon": 154,
+      "tier": 12,
+      "price": 300,
+      "rarity": "comun",
+      "gfx": "chain_gloves",
+      "stats": {
+        "accuracy": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 290,
+      "name": "del Archimago Silk Mangas",
+      "name_en": "Archwizard Silk Sleeves",
+      "slot": "hands",
+      "icon": 186,
+      "tier": 12,
+      "price": 300,
+      "rarity": "comun",
+      "gfx": "mage_sleeves_alt1",
+      "stats": {
+        "mp_regen": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 291,
+      "name": "Master Warrior Cinturon de cuero",
+      "name_en": "Master Warrior Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 12,
+      "price": 600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 225
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 292,
+      "name": "Master Ranger Pendant",
+      "name_en": "Master Ranger Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 12,
+      "price": 600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "avoidance": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 293,
+      "name": "Master Wizard Spellbook",
+      "name_en": "Master Wizard Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 12,
+      "price": 600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 294,
+      "name": "del Caudillo Espada larga",
+      "name_en": "Warlord Longsword",
+      "slot": "main",
+      "icon": 98,
+      "tier": 12,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": "longsword",
+      "stats": {
+        "dmg_melee_min": 9,
+        "dmg_melee_max": 9
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 295,
+      "name": "del Francotirador Arco largo",
+      "name_en": "Sniper Longbow",
+      "slot": null,
+      "icon": null,
+      "tier": 12,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 9,
+        "dmg_ranged_max": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 296,
+      "name": "del Archimago Baston",
+      "name_en": "Archwizard Staff",
+      "slot": "main",
+      "icon": 106,
+      "tier": 12,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": "staff",
+      "stats": {
+        "dmg_ment_min": 9,
+        "dmg_ment_max": 9
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 297,
+      "name": "Templar Crest Escudo",
+      "name_en": "Templar Crest Shield",
+      "slot": "off",
+      "icon": 122,
+      "tier": 12,
+      "price": 900,
+      "rarity": "comun",
+      "gfx": "kite_shield",
+      "stats": {
+        "absorb_max": 3
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 298,
+      "name": "Master Blaze Anillo",
+      "name_en": "Master Blaze Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 12,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 26
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 299,
+      "name": "Master Freeze Anillo",
+      "name_en": "Master Freeze Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 12,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 26
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 300,
+      "name": "Master Shock Anillo",
+      "name_en": "Master Shock Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 12,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 26
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 301,
+      "name": "Master Gloom Anillo",
+      "name_en": "Master Gloom Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 12,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 26
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 302,
+      "name": "Master Intellectual Anillo",
+      "name_en": "Master Intellectual Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 12,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 303,
+      "name": "Master Lucrative Anillo",
+      "name_en": "Master Lucrative Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 12,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "currency_find": 18
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 304,
+      "name": "Master Artifact Anillo",
+      "name_en": "Master Artifact Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 12,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "item_find": 45
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 305,
+      "name": "Lost Totem",
+      "name_en": "Lost Totem",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 12,
+      "price": 700,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "mp": 30,
+        "mp_regen": 30,
+        "xp_gain": 5,
+        "item_find": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 306,
+      "name": "Mog's Hacha",
+      "name_en": "Mog's Axe",
+      "slot": "main",
+      "icon": 118,
+      "tier": 12,
+      "price": 1300,
+      "rarity": "unico",
+      "gfx": "infantry_axe",
+      "stats": {
+        "dmg_ranged_min": 12,
+        "dmg_ranged_max": 12,
+        "crit": 5
+      },
+      "equip_flags": "ranged,throw_axe"
+    },
+    {
+      "id": 307,
+      "name": "Guardsman Coraza",
+      "name_en": "Guardsman Cuirass",
+      "slot": "chest",
+      "icon": 153,
+      "tier": 12,
+      "price": 1000,
+      "rarity": "unico",
+      "gfx": "chain_cuirass",
+      "stats": {
+        "hp": 300,
+        "hp_regen": 150,
+        "absorb_min": 5,
+        "absorb_max": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 308,
+      "name": "Inferno Pendant",
+      "name_en": "Inferno Pendant",
+      "slot": "artifact",
+      "icon": 213,
+      "tier": 12,
+      "price": 700,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 60,
+        "currency_find": 30
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 309,
+      "name": "Alchemist's Faldon",
+      "name_en": "Alchemist's Skirt",
+      "slot": "legs",
+      "icon": 195,
+      "tier": 12,
+      "price": 700,
+      "rarity": "unico",
+      "gfx": "mage_skirt_alt2",
+      "stats": {
+        "mp": 20,
+        "avoidance": 15,
+        "lightning_resist": 25
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 310,
+      "name": "Metzger's Battlemace",
+      "name_en": "Metzger's Battlemace",
+      "slot": "main",
+      "icon": 110,
+      "tier": 12,
+      "price": 1300,
+      "rarity": "unico",
+      "gfx": "reinforced_club",
+      "stats": {
+        "accuracy": 30,
+        "dark_resist": 25
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 311,
+      "name": "Yelmo de placas",
+      "name_en": "Plate Helmet",
+      "slot": "head",
+      "icon": 160,
+      "tier": 13,
+      "price": 390,
+      "rarity": "comun",
+      "gfx": "plate_helm",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 312,
+      "name": "Coraza de placas",
+      "name_en": "Plate Cuirass",
+      "slot": "chest",
+      "icon": 161,
+      "tier": 13,
+      "price": 975,
+      "rarity": "comun",
+      "gfx": "plate_cuirass",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 313,
+      "name": "Grebas de placas",
+      "name_en": "Plate Greaves",
+      "slot": "legs",
+      "icon": 163,
+      "tier": 13,
+      "price": 650,
+      "rarity": "comun",
+      "gfx": "plate_greaves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 314,
+      "name": "Botas de placas",
+      "name_en": "Plate Boots",
+      "slot": "feet",
+      "icon": 164,
+      "tier": 13,
+      "price": 390,
+      "rarity": "comun",
+      "gfx": "plate_boots",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 315,
+      "name": "Guanteletes de placas",
+      "name_en": "Plate Gauntlets",
+      "slot": "hands",
+      "icon": 162,
+      "tier": 13,
+      "price": 325,
+      "rarity": "comun",
+      "gfx": "plate_gauntlets",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 316,
+      "name": "Velvet Capucha",
+      "name_en": "Velvet Hood",
+      "slot": "head",
+      "icon": 192,
+      "tier": 13,
+      "price": 390,
+      "rarity": "comun",
+      "gfx": "mage_hood_alt2",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 317,
+      "name": "Velvet Chaleco",
+      "name_en": "Velvet Vest",
+      "slot": "chest",
+      "icon": 193,
+      "tier": 13,
+      "price": 975,
+      "rarity": "comun",
+      "gfx": "mage_vest_alt2",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 318,
+      "name": "Velvet Faldon",
+      "name_en": "Velvet Skirt",
+      "slot": "legs",
+      "icon": 195,
+      "tier": 13,
+      "price": 650,
+      "rarity": "comun",
+      "gfx": "mage_skirt_alt2",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 319,
+      "name": "Velvet Botas",
+      "name_en": "Velvet Boots",
+      "slot": "feet",
+      "icon": 196,
+      "tier": 13,
+      "price": 390,
+      "rarity": "comun",
+      "gfx": "mage_boots_alt2",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 320,
+      "name": "Velvet Mangas",
+      "name_en": "Velvet Sleeves",
+      "slot": "hands",
+      "icon": 194,
+      "tier": 13,
+      "price": 325,
+      "rarity": "comun",
+      "gfx": "mage_sleeves_alt2",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 321,
+      "name": "Espadon",
+      "name_en": "Greatsword",
+      "slot": "main",
+      "icon": 99,
+      "tier": 13,
+      "price": 1300,
+      "rarity": "comun",
+      "gfx": "greatsword",
+      "stats": {},
+      "equip_flags": "melee"
+    },
+    {
+      "id": 322,
+      "name": "Arco de guerra",
+      "name_en": "Greatbow",
+      "slot": null,
+      "icon": null,
+      "tier": 13,
+      "price": 1300,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 323,
+      "name": "Gran baston",
+      "name_en": "Greatstaff",
+      "slot": "main",
+      "icon": 107,
+      "tier": 13,
+      "price": 1300,
+      "rarity": "comun",
+      "gfx": "greatstaff",
+      "stats": {},
+      "equip_flags": "mental"
+    },
+    {
+      "id": 324,
+      "name": "Tower Escudo",
+      "name_en": "Tower Shield",
+      "slot": "off",
+      "icon": 123,
+      "tier": 13,
+      "price": 975,
+      "rarity": "comun",
+      "gfx": "shield",
+      "stats": {},
+      "equip_flags": "shield"
+    },
+    {
+      "id": 325,
+      "name": "Fighting Yelmo de placas",
+      "name_en": "Fighting Plate Helmet",
+      "slot": "head",
+      "icon": 160,
+      "tier": 14,
+      "price": 420,
+      "rarity": "fino",
+      "gfx": "plate_helm",
+      "stats": {
+        "poise": 7
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 326,
+      "name": "Recon Yelmo de placas",
+      "name_en": "Recon Plate Helmet",
+      "slot": "head",
+      "icon": 160,
+      "tier": 14,
+      "price": 420,
+      "rarity": "fino",
+      "gfx": "plate_helm",
+      "stats": {
+        "accuracy": 7
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 327,
+      "name": "Sorcerer Velvet Capucha",
+      "name_en": "Sorcerer Velvet Hood",
+      "slot": "head",
+      "icon": 192,
+      "tier": 14,
+      "price": 420,
+      "rarity": "fino",
+      "gfx": "mage_hood_alt2",
+      "stats": {
+        "mp": 21
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 328,
+      "name": "Fighting Coraza de placas",
+      "name_en": "Fighting Plate Cuirass",
+      "slot": "chest",
+      "icon": 161,
+      "tier": 14,
+      "price": 1050,
+      "rarity": "fino",
+      "gfx": "plate_cuirass",
+      "stats": {
+        "hp": 250
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 329,
+      "name": "Recon Coraza de placas",
+      "name_en": "Recon Plate Cuirass",
+      "slot": "chest",
+      "icon": 161,
+      "tier": 14,
+      "price": 1050,
+      "rarity": "fino",
+      "gfx": "plate_cuirass",
+      "stats": {
+        "accuracy": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 330,
+      "name": "Sorcerer Velvet Chaleco",
+      "name_en": "Sorcerer Velvet Vest",
+      "slot": "chest",
+      "icon": 193,
+      "tier": 14,
+      "price": 1050,
+      "rarity": "fino",
+      "gfx": "mage_vest_alt2",
+      "stats": {
+        "mp": 30
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 331,
+      "name": "Fighting Grebas de placas",
+      "name_en": "Fighting Plate Greaves",
+      "slot": "legs",
+      "icon": 163,
+      "tier": 14,
+      "price": 700,
+      "rarity": "fino",
+      "gfx": "plate_greaves",
+      "stats": {
+        "poise": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 332,
+      "name": "Recon Grebas de placas",
+      "name_en": "Recon Plate Greaves",
+      "slot": "legs",
+      "icon": 163,
+      "tier": 14,
+      "price": 700,
+      "rarity": "fino",
+      "gfx": "plate_greaves",
+      "stats": {
+        "avoidance": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 333,
+      "name": "Sorcerer Velvet Faldon",
+      "name_en": "Sorcerer Velvet Skirt",
+      "slot": "legs",
+      "icon": 195,
+      "tier": 14,
+      "price": 700,
+      "rarity": "fino",
+      "gfx": "mage_skirt_alt2",
+      "stats": {
+        "mp": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 334,
+      "name": "Fighting Botas de placas",
+      "name_en": "Fighting Plate Boots",
+      "slot": "feet",
+      "icon": 164,
+      "tier": 14,
+      "price": 420,
+      "rarity": "fino",
+      "gfx": "plate_boots",
+      "stats": {
+        "poise": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 335,
+      "name": "Recon Botas de placas",
+      "name_en": "Recon Plate Boots",
+      "slot": "feet",
+      "icon": 164,
+      "tier": 14,
+      "price": 420,
+      "rarity": "fino",
+      "gfx": "plate_boots",
+      "stats": {
+        "avoidance": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 336,
+      "name": "Sorcerer Velvet Botas",
+      "name_en": "Sorcerer Velvet Boots",
+      "slot": "feet",
+      "icon": 196,
+      "tier": 14,
+      "price": 420,
+      "rarity": "fino",
+      "gfx": "mage_boots_alt2",
+      "stats": {
+        "mp_regen": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 337,
+      "name": "Fighting Guanteletes de placas",
+      "name_en": "Fighting Plate Gauntlets",
+      "slot": "hands",
+      "icon": 162,
+      "tier": 14,
+      "price": 350,
+      "rarity": "fino",
+      "gfx": "plate_gauntlets",
+      "stats": {
+        "crit": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 338,
+      "name": "Recon Guanteletes de placas",
+      "name_en": "Recon Plate Gauntlets",
+      "slot": "hands",
+      "icon": 162,
+      "tier": 14,
+      "price": 350,
+      "rarity": "fino",
+      "gfx": "plate_gauntlets",
+      "stats": {
+        "accuracy": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 339,
+      "name": "Sorcerer Velvet Mangas",
+      "name_en": "Sorcerer Velvet Sleeves",
+      "slot": "hands",
+      "icon": 194,
+      "tier": 14,
+      "price": 350,
+      "rarity": "fino",
+      "gfx": "mage_sleeves_alt2",
+      "stats": {
+        "mp_regen": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 340,
+      "name": "Wandering del Caudillo Cinturon de cuero",
+      "name_en": "Wandering Warlord Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 14,
+      "price": 700,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 250
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 341,
+      "name": "Wandering del Francotirador Pendant",
+      "name_en": "Wandering Sniper Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 14,
+      "price": 700,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "avoidance": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 342,
+      "name": "Wandering del Archimago Spellbook",
+      "name_en": "Wandering Archwizard Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 14,
+      "price": 700,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 343,
+      "name": "Fighting Espadon",
+      "name_en": "Fighting Greatsword",
+      "slot": "main",
+      "icon": 99,
+      "tier": 14,
+      "price": 1400,
+      "rarity": "fino",
+      "gfx": "greatsword",
+      "stats": {
+        "dmg_melee_min": 3,
+        "dmg_melee_max": 3
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 344,
+      "name": "Recon Arco de guerra",
+      "name_en": "Recon Greatbow",
+      "slot": null,
+      "icon": null,
+      "tier": 14,
+      "price": 1400,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 3,
+        "dmg_ranged_max": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 345,
+      "name": "Sorcerer Gran baston",
+      "name_en": "Sorcerer Greatstaff",
+      "slot": "main",
+      "icon": 107,
+      "tier": 14,
+      "price": 1400,
+      "rarity": "fino",
+      "gfx": "greatstaff",
+      "stats": {
+        "dmg_ment_min": 3,
+        "dmg_ment_max": 3
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 346,
+      "name": "Keeper Tower Escudo",
+      "name_en": "Keeper Tower Shield",
+      "slot": "off",
+      "icon": 123,
+      "tier": 14,
+      "price": 1050,
+      "rarity": "fino",
+      "gfx": "shield",
+      "stats": {
+        "absorb_max": 1
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 347,
+      "name": "Wandering Inferno Anillo",
+      "name_en": "Wandering Inferno Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 14,
+      "price": 1400,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 28
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 348,
+      "name": "Wandering Glacial Anillo",
+      "name_en": "Wandering Glacial Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 14,
+      "price": 1400,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 28
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 349,
+      "name": "Wandering Volt Anillo",
+      "name_en": "Wandering Volt Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 14,
+      "price": 1400,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 28
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 350,
+      "name": "Wandering Void Anillo",
+      "name_en": "Wandering Void Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 14,
+      "price": 1400,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 28
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 351,
+      "name": "Wandering Scholar Anillo",
+      "name_en": "Wandering Scholar Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 14,
+      "price": 1400,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 10
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 352,
+      "name": "Wandering Affluence Anillo",
+      "name_en": "Wandering Affluence Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 14,
+      "price": 1400,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "currency_find": 20
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 353,
+      "name": "Wandering Relic Anillo",
+      "name_en": "Wandering Relic Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 14,
+      "price": 1400,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {
+        "item_find": 50
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 354,
+      "name": "Warrior Yelmo de placas",
+      "name_en": "Warrior Plate Helmet",
+      "slot": "head",
+      "icon": 160,
+      "tier": 15,
+      "price": 450,
+      "rarity": "legendario",
+      "gfx": "plate_helm",
+      "stats": {
+        "poise": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 355,
+      "name": "Ranger Yelmo de placas",
+      "name_en": "Ranger Plate Helmet",
+      "slot": "head",
+      "icon": 160,
+      "tier": 15,
+      "price": 450,
+      "rarity": "legendario",
+      "gfx": "plate_helm",
+      "stats": {
+        "accuracy": 8
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 356,
+      "name": "Wizard Velvet Capucha",
+      "name_en": "Wizard Velvet Hood",
+      "slot": "head",
+      "icon": 192,
+      "tier": 15,
+      "price": 450,
+      "rarity": "legendario",
+      "gfx": "mage_hood_alt2",
+      "stats": {
+        "mp": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 357,
+      "name": "Warrior Coraza de placas",
+      "name_en": "Warrior Plate Cuirass",
+      "slot": "chest",
+      "icon": 161,
+      "tier": 15,
+      "price": 1125,
+      "rarity": "legendario",
+      "gfx": "plate_cuirass",
+      "stats": {
+        "hp": 275
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 358,
+      "name": "Ranger Coraza de placas",
+      "name_en": "Ranger Plate Cuirass",
+      "slot": "chest",
+      "icon": 161,
+      "tier": 15,
+      "price": 1125,
+      "rarity": "legendario",
+      "gfx": "plate_cuirass",
+      "stats": {
+        "accuracy": 11
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 359,
+      "name": "Wizard Velvet Chaleco",
+      "name_en": "Wizard Velvet Vest",
+      "slot": "chest",
+      "icon": 193,
+      "tier": 15,
+      "price": 1125,
+      "rarity": "legendario",
+      "gfx": "mage_vest_alt2",
+      "stats": {
+        "mp": 33
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 360,
+      "name": "Warrior Grebas de placas",
+      "name_en": "Warrior Plate Greaves",
+      "slot": "legs",
+      "icon": 163,
+      "tier": 15,
+      "price": 750,
+      "rarity": "legendario",
+      "gfx": "plate_greaves",
+      "stats": {
+        "poise": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 361,
+      "name": "Ranger Grebas de placas",
+      "name_en": "Ranger Plate Greaves",
+      "slot": "legs",
+      "icon": 163,
+      "tier": 15,
+      "price": 750,
+      "rarity": "legendario",
+      "gfx": "plate_greaves",
+      "stats": {
+        "avoidance": 11
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 362,
+      "name": "Wizard Velvet Faldon",
+      "name_en": "Wizard Velvet Skirt",
+      "slot": "legs",
+      "icon": 195,
+      "tier": 15,
+      "price": 750,
+      "rarity": "legendario",
+      "gfx": "mage_skirt_alt2",
+      "stats": {
+        "mp": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 363,
+      "name": "Warrior Botas de placas",
+      "name_en": "Warrior Plate Boots",
+      "slot": "feet",
+      "icon": 164,
+      "tier": 15,
+      "price": 450,
+      "rarity": "legendario",
+      "gfx": "plate_boots",
+      "stats": {
+        "poise": 11
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 364,
+      "name": "Ranger Botas de placas",
+      "name_en": "Ranger Plate Boots",
+      "slot": "feet",
+      "icon": 164,
+      "tier": 15,
+      "price": 450,
+      "rarity": "legendario",
+      "gfx": "plate_boots",
+      "stats": {
+        "avoidance": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 365,
+      "name": "Wizard Velvet Botas",
+      "name_en": "Wizard Velvet Boots",
+      "slot": "feet",
+      "icon": 196,
+      "tier": 15,
+      "price": 450,
+      "rarity": "legendario",
+      "gfx": "mage_boots_alt2",
+      "stats": {
+        "mp_regen": 11
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 366,
+      "name": "Warrior Guanteletes de placas",
+      "name_en": "Warrior Plate Gauntlets",
+      "slot": "hands",
+      "icon": 162,
+      "tier": 15,
+      "price": 375,
+      "rarity": "legendario",
+      "gfx": "plate_gauntlets",
+      "stats": {
+        "crit": 11
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 367,
+      "name": "Ranger Guanteletes de placas",
+      "name_en": "Ranger Plate Gauntlets",
+      "slot": "hands",
+      "icon": 162,
+      "tier": 15,
+      "price": 375,
+      "rarity": "legendario",
+      "gfx": "plate_gauntlets",
+      "stats": {
+        "accuracy": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 368,
+      "name": "Wizard Velvet Mangas",
+      "name_en": "Wizard Velvet Sleeves",
+      "slot": "hands",
+      "icon": 194,
+      "tier": 15,
+      "price": 375,
+      "rarity": "legendario",
+      "gfx": "mage_sleeves_alt2",
+      "stats": {
+        "mp_regen": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 369,
+      "name": "Adventurer del Caudillo Cinturon de cuero",
+      "name_en": "Adventurer Warlord Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 15,
+      "price": 750,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 275
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 370,
+      "name": "Adventurer del Francotirador Pendant",
+      "name_en": "Adventurer Sniper Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 15,
+      "price": 750,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "avoidance": 11
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 371,
+      "name": "Adventurer del Archimago Spellbook",
+      "name_en": "Adventurer Archwizard Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 15,
+      "price": 750,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 372,
+      "name": "Warrior Espadon",
+      "name_en": "Warrior Greatsword",
+      "slot": "main",
+      "icon": 99,
+      "tier": 15,
+      "price": 1500,
+      "rarity": "legendario",
+      "gfx": "greatsword",
+      "stats": {
+        "dmg_melee_min": 6,
+        "dmg_melee_max": 6
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 373,
+      "name": "Ranger Arco de guerra",
+      "name_en": "Ranger Greatbow",
+      "slot": null,
+      "icon": null,
+      "tier": 15,
+      "price": 1500,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 6,
+        "dmg_ranged_max": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 374,
+      "name": "Wizard Gran baston",
+      "name_en": "Wizard Greatstaff",
+      "slot": "main",
+      "icon": 107,
+      "tier": 15,
+      "price": 1500,
+      "rarity": "legendario",
+      "gfx": "greatstaff",
+      "stats": {
+        "dmg_ment_min": 6,
+        "dmg_ment_max": 6
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 375,
+      "name": "Paladin Tower Escudo",
+      "name_en": "Paladin Tower Shield",
+      "slot": "off",
+      "icon": 123,
+      "tier": 15,
+      "price": 1125,
+      "rarity": "legendario",
+      "gfx": "shield",
+      "stats": {
+        "absorb_max": 2
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 376,
+      "name": "Adventurer Inferno Anillo",
+      "name_en": "Adventurer Inferno Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 15,
+      "price": 1500,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 30
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 377,
+      "name": "Adventurer Glacial Anillo",
+      "name_en": "Adventurer Glacial Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 15,
+      "price": 1500,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 30
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 378,
+      "name": "Adventurer Volt Anillo",
+      "name_en": "Adventurer Volt Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 15,
+      "price": 1500,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 30
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 379,
+      "name": "Adventurer Void Anillo",
+      "name_en": "Adventurer Void Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 15,
+      "price": 1500,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 30
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 380,
+      "name": "Adventurer Scholar Anillo",
+      "name_en": "Adventurer Scholar Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 15,
+      "price": 1500,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 11
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 381,
+      "name": "Adventurer Affluence Anillo",
+      "name_en": "Adventurer Affluence Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 15,
+      "price": 1500,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "currency_find": 22
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 382,
+      "name": "Adventurer Relic Anillo",
+      "name_en": "Adventurer Relic Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 15,
+      "price": 1500,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {
+        "item_find": 55
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 383,
+      "name": "del Caudillo Yelmo de placas",
+      "name_en": "Warlord Plate Helmet",
+      "slot": "head",
+      "icon": 160,
+      "tier": 16,
+      "price": 480,
+      "rarity": "comun",
+      "gfx": "plate_helm",
+      "stats": {
+        "poise": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 384,
+      "name": "del Francotirador Yelmo de placas",
+      "name_en": "Sniper Plate Helmet",
+      "slot": "head",
+      "icon": 160,
+      "tier": 16,
+      "price": 480,
+      "rarity": "comun",
+      "gfx": "plate_helm",
+      "stats": {
+        "accuracy": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 385,
+      "name": "del Archimago Velvet Capucha",
+      "name_en": "Archwizard Velvet Hood",
+      "slot": "head",
+      "icon": 192,
+      "tier": 16,
+      "price": 480,
+      "rarity": "comun",
+      "gfx": "mage_hood_alt2",
+      "stats": {
+        "mp": 27
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 386,
+      "name": "del Caudillo Coraza de placas",
+      "name_en": "Warlord Plate Cuirass",
+      "slot": "chest",
+      "icon": 161,
+      "tier": 16,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": "plate_cuirass",
+      "stats": {
+        "hp": 300
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 387,
+      "name": "del Francotirador Coraza de placas",
+      "name_en": "Sniper Plate Cuirass",
+      "slot": "chest",
+      "icon": 161,
+      "tier": 16,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": "plate_cuirass",
+      "stats": {
+        "accuracy": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 388,
+      "name": "del Archimago Velvet Chaleco",
+      "name_en": "Archwizard Velvet Vest",
+      "slot": "chest",
+      "icon": 193,
+      "tier": 16,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": "mage_vest_alt2",
+      "stats": {
+        "mp": 36
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 389,
+      "name": "del Caudillo Grebas de placas",
+      "name_en": "Warlord Plate Greaves",
+      "slot": "legs",
+      "icon": 163,
+      "tier": 16,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": "plate_greaves",
+      "stats": {
+        "poise": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 390,
+      "name": "del Francotirador Grebas de placas",
+      "name_en": "Sniper Plate Greaves",
+      "slot": "legs",
+      "icon": 163,
+      "tier": 16,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": "plate_greaves",
+      "stats": {
+        "avoidance": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 391,
+      "name": "del Archimago Velvet Faldon",
+      "name_en": "Archwizard Velvet Skirt",
+      "slot": "legs",
+      "icon": 195,
+      "tier": 16,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": "mage_skirt_alt2",
+      "stats": {
+        "mp": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 392,
+      "name": "del Caudillo Botas de placas",
+      "name_en": "Warlord Plate Boots",
+      "slot": "feet",
+      "icon": 164,
+      "tier": 16,
+      "price": 480,
+      "rarity": "comun",
+      "gfx": "plate_boots",
+      "stats": {
+        "poise": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 393,
+      "name": "del Francotirador Botas de placas",
+      "name_en": "Sniper Plate Boots",
+      "slot": "feet",
+      "icon": 164,
+      "tier": 16,
+      "price": 480,
+      "rarity": "comun",
+      "gfx": "plate_boots",
+      "stats": {
+        "avoidance": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 394,
+      "name": "del Archimago Velvet Botas",
+      "name_en": "Archwizard Velvet Boots",
+      "slot": "feet",
+      "icon": 196,
+      "tier": 16,
+      "price": 480,
+      "rarity": "comun",
+      "gfx": "mage_boots_alt2",
+      "stats": {
+        "mp_regen": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 395,
+      "name": "del Caudillo Guanteletes de placas",
+      "name_en": "Warlord Plate Gauntlets",
+      "slot": "hands",
+      "icon": 162,
+      "tier": 16,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": "plate_gauntlets",
+      "stats": {
+        "crit": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 396,
+      "name": "del Francotirador Guanteletes de placas",
+      "name_en": "Sniper Plate Gauntlets",
+      "slot": "hands",
+      "icon": 162,
+      "tier": 16,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": "plate_gauntlets",
+      "stats": {
+        "accuracy": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 397,
+      "name": "del Archimago Velvet Mangas",
+      "name_en": "Archwizard Velvet Sleeves",
+      "slot": "hands",
+      "icon": 194,
+      "tier": 16,
+      "price": 400,
+      "rarity": "comun",
+      "gfx": "mage_sleeves_alt2",
+      "stats": {
+        "mp_regen": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 398,
+      "name": "Master del Caudillo Cinturon de cuero",
+      "name_en": "Master Warlord Leather Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 16,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "hp_regen": 300
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 399,
+      "name": "Master del Francotirador Pendant",
+      "name_en": "Master Sniper Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 16,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "avoidance": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 400,
+      "name": "Master del Archimago Spellbook",
+      "name_en": "Master Archwizard Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 16,
+      "price": 800,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 401,
+      "name": "del Caudillo Espadon",
+      "name_en": "Warlord Greatsword",
+      "slot": "main",
+      "icon": 99,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "comun",
+      "gfx": "greatsword",
+      "stats": {
+        "dmg_melee_min": 9,
+        "dmg_melee_max": 9
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 402,
+      "name": "del Francotirador Arco de guerra",
+      "name_en": "Sniper Greatbow",
+      "slot": null,
+      "icon": null,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 9,
+        "dmg_ranged_max": 9
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 403,
+      "name": "del Archimago Gran baston",
+      "name_en": "Archwizard Greatstaff",
+      "slot": "main",
+      "icon": 107,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "comun",
+      "gfx": "greatstaff",
+      "stats": {
+        "dmg_ment_min": 9,
+        "dmg_ment_max": 9
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 404,
+      "name": "Templar Tower Escudo",
+      "name_en": "Templar Tower Shield",
+      "slot": "off",
+      "icon": 123,
+      "tier": 16,
+      "price": 1200,
+      "rarity": "comun",
+      "gfx": "shield",
+      "stats": {
+        "absorb_max": 3
+      },
+      "equip_flags": "shield"
+    },
+    {
+      "id": 405,
+      "name": "Master Inferno Anillo",
+      "name_en": "Master Inferno Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "fire_resist": 32
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 406,
+      "name": "Master Glacial Anillo",
+      "name_en": "Master Glacial Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "ice_resist": 32
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 407,
+      "name": "Master Volt Anillo",
+      "name_en": "Master Volt Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "lightning_resist": 32
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 408,
+      "name": "Master Void Anillo",
+      "name_en": "Master Void Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "dark_resist": 32
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 409,
+      "name": "Master Scholar Anillo",
+      "name_en": "Master Scholar Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "xp_gain": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 410,
+      "name": "Master Affluence Anillo",
+      "name_en": "Master Affluence Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "currency_find": 24
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 411,
+      "name": "Master Relic Anillo",
+      "name_en": "Master Relic Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {
+        "item_find": 60
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 412,
+      "name": "Perdition Pergamino",
+      "name_en": "Perdition Scroll",
+      "slot": "scroll",
+      "icon": 79,
+      "tier": 0,
+      "price": 25,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 413,
+      "name": "Escudo Pergamino",
+      "name_en": "Shield Scroll",
+      "slot": "scroll",
+      "icon": 75,
+      "tier": 0,
+      "price": 25,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 414,
+      "name": "Fireball Pergamino",
+      "name_en": "Fireball Scroll",
+      "slot": "scroll",
+      "icon": 74,
+      "tier": 0,
+      "price": 25,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 415,
+      "name": "Ice Bolt Pergamino",
+      "name_en": "Ice Bolt Scroll",
+      "slot": "scroll",
+      "icon": 78,
+      "tier": 0,
+      "price": 25,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 416,
+      "name": "Haste Pergamino",
+      "name_en": "Haste Scroll",
+      "slot": "scroll",
+      "icon": 72,
+      "tier": 0,
+      "price": 25,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 417,
+      "name": "Immunity Pergamino",
+      "name_en": "Immunity Scroll",
+      "slot": "scroll",
+      "icon": 76,
+      "tier": 0,
+      "price": 25,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 418,
+      "name": "Reflection Pergamino",
+      "name_en": "Reflection Scroll",
+      "slot": "scroll",
+      "icon": 77,
+      "tier": 0,
+      "price": 25,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 419,
+      "name": "Fleshband",
+      "name_en": "Fleshband",
+      "slot": "ring",
+      "icon": 199,
+      "tier": 16,
+      "price": 1700,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "hp": 250,
+        "fire_resist": 5,
+        "ice_resist": 5,
+        "lightning_resist": 5,
+        "dark_resist": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 420,
+      "name": "Soulband",
+      "name_en": "Soulband",
+      "slot": "ring",
+      "icon": 198,
+      "tier": 16,
+      "price": 1700,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "mp": 25,
+        "fire_resist": 5,
+        "ice_resist": 5,
+        "lightning_resist": 5,
+        "dark_resist": 5
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 421,
+      "name": "Underworld Capa",
+      "name_en": "Underworld Cloak",
+      "slot": "head",
+      "icon": 192,
+      "tier": 16,
+      "price": 960,
+      "rarity": "unico",
+      "gfx": "mage_hood_alt2",
+      "stats": {
+        "mp": 54
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 422,
+      "name": "Underworld Platemail",
+      "name_en": "Underworld Platemail",
+      "slot": "chest",
+      "icon": 161,
+      "tier": 16,
+      "price": 2400,
+      "rarity": "unico",
+      "gfx": "plate_cuirass",
+      "stats": {
+        "hp": 600
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 423,
+      "name": "Underworld Botas",
+      "name_en": "Underworld Boots",
+      "slot": "feet",
+      "icon": 164,
+      "tier": 16,
+      "price": 960,
+      "rarity": "unico",
+      "gfx": "plate_boots",
+      "stats": {
+        "avoidance": 48
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 424,
+      "name": "Underworld Armguards",
+      "name_en": "Underworld Armguards",
+      "slot": "hands",
+      "icon": 162,
+      "tier": 16,
+      "price": 800,
+      "rarity": "unico",
+      "gfx": "plate_gauntlets",
+      "stats": {
+        "accuracy": 48
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 425,
+      "name": "Underworld Grebas",
+      "name_en": "Underworld Greaves",
+      "slot": "legs",
+      "icon": 163,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "unico",
+      "gfx": "plate_greaves",
+      "stats": {
+        "poise": 48
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 426,
+      "name": "Underworld Tomo",
+      "name_en": "Underworld Tome",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 16,
+      "price": 1600,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "mp_regen": 48
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 427,
+      "name": "Underworld Blade",
+      "name_en": "Underworld Blade",
+      "slot": "main",
+      "icon": 99,
+      "tier": 16,
+      "price": 3200,
+      "rarity": "unico",
+      "gfx": "greatsword",
+      "stats": {
+        "dmg_melee_min": 12,
+        "dmg_melee_max": 12
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 428,
+      "name": "Underworld Arco",
+      "name_en": "Underworld Bow",
+      "slot": null,
+      "icon": null,
+      "tier": 16,
+      "price": 3200,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "dmg_ranged_min": 12,
+        "dmg_ranged_max": 12
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 429,
+      "name": "Underworld Sceptre",
+      "name_en": "Underworld Sceptre",
+      "slot": "main",
+      "icon": 107,
+      "tier": 16,
+      "price": 3200,
+      "rarity": "unico",
+      "gfx": "greatstaff",
+      "stats": {
+        "dmg_ment_min": 12,
+        "dmg_ment_max": 12
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 430,
+      "name": "Ardwen's Anillo",
+      "name_en": "Ardwen's Ring",
+      "slot": "ring",
+      "icon": 202,
+      "tier": 0,
+      "price": 500,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "hp": 50,
+        "mp": 6
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 431,
+      "name": "Tomo de Second Chances",
+      "name_en": "Tome of Second Chances",
+      "slot": "consumable",
+      "icon": 225,
+      "tier": 0,
+      "price": 500,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 432,
+      "name": "Mastite Camisa",
+      "name_en": "Mastite Shirt",
+      "slot": "chest",
+      "icon": 129,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "cloth_shirt",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 433,
+      "name": "Mastite Pantalones",
+      "name_en": "Mastite Pants",
+      "slot": "legs",
+      "icon": 131,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "cloth_pants",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 434,
+      "name": "Mastite Sandalias",
+      "name_en": "Mastite Sandals",
+      "slot": "feet",
+      "icon": 132,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "cloth_sandals",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 435,
+      "name": "Mastite Guantes",
+      "name_en": "Mastite Gloves",
+      "slot": "hands",
+      "icon": 130,
+      "tier": 1,
+      "price": 50,
+      "rarity": "comun",
+      "gfx": "cloth_gloves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 436,
+      "name": "Mastite Daga",
+      "name_en": "Mastite Dagger",
+      "slot": "main",
+      "icon": 96,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "dagger",
+      "stats": {},
+      "equip_flags": "melee"
+    },
+    {
+      "id": 437,
+      "name": "Mastite Honda",
+      "name_en": "Mastite Slingshot",
+      "slot": null,
+      "icon": null,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 438,
+      "name": "Mastite Varita",
+      "name_en": "Mastite Wand",
+      "slot": "main",
+      "icon": 104,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "wand",
+      "stats": {},
+      "equip_flags": "mental"
+    },
+    {
+      "id": 439,
+      "name": "Mastite Broquel",
+      "name_en": "Mastite Buckler",
+      "slot": "off",
+      "icon": 120,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "buckler",
+      "stats": {},
+      "equip_flags": "shield"
+    },
+    {
+      "id": 440,
+      "name": "Mastite Cinturon",
+      "name_en": "Mastite Belt",
+      "slot": "artifact",
+      "icon": 208,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 441,
+      "name": "Mastite Pendant",
+      "name_en": "Mastite Pendant",
+      "slot": "artifact",
+      "icon": 212,
+      "tier": 1,
+      "price": 100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 442,
+      "name": "Mastite Pendant",
+      "name_en": "Mastite Pendant",
+      "slot": "artifact",
+      "icon": 213,
+      "tier": 1,
+      "price": 100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 443,
+      "name": "Mastite Pendant",
+      "name_en": "Mastite Pendant",
+      "slot": "artifact",
+      "icon": 214,
+      "tier": 1,
+      "price": 100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 444,
+      "name": "Mastite Pendant",
+      "name_en": "Mastite Pendant",
+      "slot": "artifact",
+      "icon": 215,
+      "tier": 1,
+      "price": 100,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 445,
+      "name": "Mastite Spellbook",
+      "name_en": "Mastite Spellbook",
+      "slot": "artifact",
+      "icon": 225,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 446,
+      "name": "Mastite Anillo",
+      "name_en": "Mastite Ring",
+      "slot": "ring",
+      "icon": 207,
+      "tier": 1,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 447,
+      "name": "Mastite Anillo",
+      "name_en": "Mastite Ring",
+      "slot": "ring",
+      "icon": 204,
+      "tier": 1,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 448,
+      "name": "Mastite Anillo",
+      "name_en": "Mastite Ring",
+      "slot": "ring",
+      "icon": 206,
+      "tier": 1,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 449,
+      "name": "Mastite Anillo",
+      "name_en": "Mastite Ring",
+      "slot": "ring",
+      "icon": 203,
+      "tier": 1,
+      "price": 200,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 450,
+      "name": "Mastite Anillo",
+      "name_en": "Mastite Ring",
+      "slot": "ring",
+      "icon": 200,
+      "tier": 1,
+      "price": 200,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 451,
+      "name": "Mastite Anillo",
+      "name_en": "Mastite Ring",
+      "slot": "ring",
+      "icon": 201,
+      "tier": 1,
+      "price": 200,
+      "rarity": "legendario",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 452,
+      "name": "Mastite Anillo",
+      "name_en": "Mastite Ring",
+      "slot": "ring",
+      "icon": 205,
+      "tier": 1,
+      "price": 200,
+      "rarity": "fino",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 453,
+      "name": "Mastite Capucha de cuero",
+      "name_en": "Mastite Leather Hood",
+      "slot": "head",
+      "icon": 144,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "leather_hood",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 454,
+      "name": "Mastite Tunic de cuero",
+      "name_en": "Mastite Leather Tunic",
+      "slot": "chest",
+      "icon": 145,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "leather_chest",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 455,
+      "name": "Mastite Pantalones de cuero",
+      "name_en": "Mastite Leather Pants",
+      "slot": "legs",
+      "icon": 147,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "leather_pants",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 456,
+      "name": "Mastite Botas de cuero",
+      "name_en": "Mastite Leather Boots",
+      "slot": "feet",
+      "icon": 148,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "leather_boots",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 457,
+      "name": "Mastite Guantes de cuero",
+      "name_en": "Mastite Leather Gloves",
+      "slot": "hands",
+      "icon": 146,
+      "tier": 1,
+      "price": 50,
+      "rarity": "comun",
+      "gfx": "leather_gloves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 458,
+      "name": "Mastite Mage Capucha",
+      "name_en": "Mastite Mage Hood",
+      "slot": "head",
+      "icon": 136,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "mage_hood",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 459,
+      "name": "Mastite Mage Chaleco",
+      "name_en": "Mastite Mage Vest",
+      "slot": "chest",
+      "icon": 137,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "mage_vest",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 460,
+      "name": "Mastite Mage Faldon",
+      "name_en": "Mastite Mage Skirt",
+      "slot": "legs",
+      "icon": 139,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "mage_skirt",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 461,
+      "name": "Mastite Mage Botas",
+      "name_en": "Mastite Mage Boots",
+      "slot": "feet",
+      "icon": 140,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "mage_boots",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 462,
+      "name": "Mastite Mage Mangas",
+      "name_en": "Mastite Mage Sleeves",
+      "slot": "hands",
+      "icon": 138,
+      "tier": 1,
+      "price": 50,
+      "rarity": "comun",
+      "gfx": "mage_sleeves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 463,
+      "name": "Mastite Espada corta",
+      "name_en": "Mastite Shortsword",
+      "slot": "main",
+      "icon": 97,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "shortsword",
+      "stats": {},
+      "equip_flags": "melee"
+    },
+    {
+      "id": 464,
+      "name": "Mastite Arco corto",
+      "name_en": "Mastite Shortbow",
+      "slot": null,
+      "icon": null,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 465,
+      "name": "Mastite Vara",
+      "name_en": "Mastite Rod",
+      "slot": "main",
+      "icon": 105,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "rod",
+      "stats": {},
+      "equip_flags": "mental"
+    },
+    {
+      "id": 466,
+      "name": "Mastite Broquel de hierro",
+      "name_en": "Mastite Iron Buckler",
+      "slot": "off",
+      "icon": 121,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "iron_buckler",
+      "stats": {},
+      "equip_flags": "shield"
+    },
+    {
+      "id": 467,
+      "name": "Mastite Cofia de malla",
+      "name_en": "Mastite Chain Coif",
+      "slot": "head",
+      "icon": 152,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "chain_coif",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 468,
+      "name": "Mastite Coraza de malla",
+      "name_en": "Mastite Chain Cuirass",
+      "slot": "chest",
+      "icon": 153,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "chain_cuirass",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 469,
+      "name": "Mastite Grebas de malla",
+      "name_en": "Mastite Chain Greaves",
+      "slot": "legs",
+      "icon": 155,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "chain_greaves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 470,
+      "name": "Mastite Botas de malla",
+      "name_en": "Mastite Chain Boots",
+      "slot": "feet",
+      "icon": 156,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "chain_boots",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 471,
+      "name": "Mastite Guantes de malla",
+      "name_en": "Mastite Chain Gloves",
+      "slot": "hands",
+      "icon": 154,
+      "tier": 1,
+      "price": 50,
+      "rarity": "comun",
+      "gfx": "chain_gloves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 472,
+      "name": "Mastite Wizard Capucha",
+      "name_en": "Mastite Wizard Hood",
+      "slot": "head",
+      "icon": 184,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "mage_hood_alt1",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 473,
+      "name": "Mastite Wizard Chaleco",
+      "name_en": "Mastite Wizard Vest",
+      "slot": "chest",
+      "icon": 185,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "mage_vest_alt1",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 474,
+      "name": "Mastite Wizard Faldon",
+      "name_en": "Mastite Wizard Skirt",
+      "slot": "legs",
+      "icon": 187,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "mage_skirt_alt1",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 475,
+      "name": "Mastite Wizard Botas",
+      "name_en": "Mastite Wizard Boots",
+      "slot": "feet",
+      "icon": 188,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "mage_boots_alt1",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 476,
+      "name": "Mastite Wizard Mangas",
+      "name_en": "Mastite Wizard Sleeves",
+      "slot": "hands",
+      "icon": 186,
+      "tier": 1,
+      "price": 50,
+      "rarity": "comun",
+      "gfx": "mage_sleeves_alt1",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 477,
+      "name": "Mastite Espada larga",
+      "name_en": "Mastite Longsword",
+      "slot": "main",
+      "icon": 98,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "longsword",
+      "stats": {},
+      "equip_flags": "melee"
+    },
+    {
+      "id": 478,
+      "name": "Mastite Arco largo",
+      "name_en": "Mastite Longbow",
+      "slot": null,
+      "icon": null,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 479,
+      "name": "Mastite Baston",
+      "name_en": "Mastite Staff",
+      "slot": "main",
+      "icon": 106,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "staff",
+      "stats": {},
+      "equip_flags": "mental"
+    },
+    {
+      "id": 480,
+      "name": "Mastite Tower Escudo",
+      "name_en": "Mastite Tower Shield",
+      "slot": "off",
+      "icon": 123,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "shield",
+      "stats": {},
+      "equip_flags": "shield"
+    },
+    {
+      "id": 481,
+      "name": "Mastite Yelmo de placas",
+      "name_en": "Mastite Plate Helmet",
+      "slot": "head",
+      "icon": 160,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "plate_helm",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 482,
+      "name": "Mastite Coraza de placas",
+      "name_en": "Mastite Plate Cuirass",
+      "slot": "chest",
+      "icon": 161,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "plate_cuirass",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 483,
+      "name": "Mastite Grebas de placas",
+      "name_en": "Mastite Plate Greaves",
+      "slot": "legs",
+      "icon": 163,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "plate_greaves",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 484,
+      "name": "Mastite Botas de placas",
+      "name_en": "Mastite Plate Boots",
+      "slot": "feet",
+      "icon": 164,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "plate_boots",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 485,
+      "name": "Mastite Guanteletes de placas",
+      "name_en": "Mastite Plate Gauntlets",
+      "slot": "hands",
+      "icon": 162,
+      "tier": 1,
+      "price": 50,
+      "rarity": "comun",
+      "gfx": "plate_gauntlets",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 486,
+      "name": "Mastite del Archimago Capucha",
+      "name_en": "Mastite Archwizard Hood",
+      "slot": "head",
+      "icon": 192,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "mage_hood_alt2",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 487,
+      "name": "Mastite del Archimago Chaleco",
+      "name_en": "Mastite Archwizard Vest",
+      "slot": "chest",
+      "icon": 193,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "mage_vest_alt2",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 488,
+      "name": "Mastite del Archimago Faldon",
+      "name_en": "Mastite Archwizard Skirt",
+      "slot": "legs",
+      "icon": 195,
+      "tier": 1,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": "mage_skirt_alt2",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 489,
+      "name": "Mastite del Archimago Botas",
+      "name_en": "Mastite Archwizard Boots",
+      "slot": "feet",
+      "icon": 196,
+      "tier": 1,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": "mage_boots_alt2",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 490,
+      "name": "Mastite del Archimago Mangas",
+      "name_en": "Mastite Archwizard Sleeves",
+      "slot": "hands",
+      "icon": 194,
+      "tier": 1,
+      "price": 50,
+      "rarity": "comun",
+      "gfx": "mage_sleeves_alt2",
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 491,
+      "name": "Mastite Espadon",
+      "name_en": "Mastite Greatsword",
+      "slot": "main",
+      "icon": 99,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "greatsword",
+      "stats": {},
+      "equip_flags": "melee"
+    },
+    {
+      "id": 492,
+      "name": "Mastite Arco de guerra",
+      "name_en": "Mastite Greatbow",
+      "slot": null,
+      "icon": null,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 493,
+      "name": "Mastite Gran baston",
+      "name_en": "Mastite Greatstaff",
+      "slot": "main",
+      "icon": 107,
+      "tier": 1,
+      "price": 200,
+      "rarity": "comun",
+      "gfx": "greatstaff",
+      "stats": {},
+      "equip_flags": "mental"
+    },
+    {
+      "id": 494,
+      "name": "Mastite Crest Escudo",
+      "name_en": "Mastite Crest Shield",
+      "slot": "off",
+      "icon": 122,
+      "tier": 1,
+      "price": 150,
+      "rarity": "comun",
+      "gfx": "kite_shield",
+      "stats": {},
+      "equip_flags": "shield"
+    },
+    {
+      "id": 750,
+      "name": "Empty Bottle",
+      "name_en": "Empty Bottle",
+      "slot": "crafting",
+      "icon": 512,
+      "tier": 0,
+      "price": 10,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 751,
+      "name": "Aloe Vera",
+      "name_en": "Aloe Vera",
+      "slot": "crafting",
+      "icon": 513,
+      "tier": 0,
+      "price": 10,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 752,
+      "name": "de mana Crystal",
+      "name_en": "Mana Crystal",
+      "slot": "crafting",
+      "icon": 514,
+      "tier": 0,
+      "price": 10,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 753,
+      "name": "Mortar and Pestle",
+      "name_en": "Mortar and Pestle",
+      "slot": "crafting_tool",
+      "icon": 515,
+      "tier": 0,
+      "price": 100,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 754,
+      "name": "Mushrooms",
+      "name_en": "Mushrooms",
+      "slot": "crafting",
+      "icon": 516,
+      "tier": 0,
+      "price": 10,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 775,
+      "name": "Stamina Pocion",
+      "name_en": "Stamina Potion",
+      "slot": "potion",
+      "icon": 80,
+      "tier": 0,
+      "price": 20,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 776,
+      "name": "Restoration Pocion",
+      "name_en": "Restoration Potion",
+      "slot": "potion",
+      "icon": 81,
+      "tier": 0,
+      "price": 40,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 777,
+      "name": "Treasure Pocion",
+      "name_en": "Treasure Potion",
+      "slot": "potion",
+      "icon": 82,
+      "tier": 0,
+      "price": 40,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 778,
+      "name": "Elemental Pocion",
+      "name_en": "Elemental Potion",
+      "slot": "potion",
+      "icon": 83,
+      "tier": 0,
+      "price": 40,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 779,
+      "name": "Super de vida Pocion",
+      "name_en": "Super Health Potion",
+      "slot": "potion",
+      "icon": 84,
+      "tier": 0,
+      "price": 40,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 780,
+      "name": "Ultra de vida Pocion",
+      "name_en": "Ultra Health Potion",
+      "slot": "potion",
+      "icon": 85,
+      "tier": 0,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 781,
+      "name": "Super de mana Pocion",
+      "name_en": "Super Mana Potion",
+      "slot": "potion",
+      "icon": 86,
+      "tier": 0,
+      "price": 40,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 782,
+      "name": "Ultra de mana Pocion",
+      "name_en": "Ultra Mana Potion",
+      "slot": "potion",
+      "icon": 87,
+      "tier": 0,
+      "price": 60,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1000,
+      "name": "Krolan's Llave",
+      "name_en": "Krolan's Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1001,
+      "name": "Krolan's Emerald",
+      "name_en": "Krolan's Emerald",
+      "slot": "gem",
+      "icon": 69,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1002,
+      "name": "Abasi's Journal",
+      "name_en": "Abasi's Journal",
+      "slot": "book",
+      "icon": 225,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1003,
+      "name": "Gold Family Anillo",
+      "name_en": "Gold Family Ring",
+      "slot": "ring",
+      "icon": 199,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "hp": 25
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 1004,
+      "name": "St. Maria Mausoleum Llave",
+      "name_en": "St. Maria Mausoleum Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1005,
+      "name": "St. Maria Catacombs Llave",
+      "name_en": "St. Maria Catacombs Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1006,
+      "name": "Strange Sapphire A",
+      "name_en": "Strange Sapphire A",
+      "slot": "gem",
+      "icon": 68,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1007,
+      "name": "Strange Sapphire B",
+      "name_en": "Strange Sapphire B",
+      "slot": "gem",
+      "icon": 68,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1008,
+      "name": "Goblin's Ruby",
+      "name_en": "Goblin's Ruby",
+      "slot": "gem",
+      "icon": 70,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1009,
+      "name": "Bear Figurine",
+      "name_en": "Bear Figurine",
+      "slot": "artifact",
+      "icon": 216,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "physical": 15
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 1010,
+      "name": "Owl Figurine",
+      "name_en": "Owl Figurine",
+      "slot": "artifact",
+      "icon": 217,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "mental": 15
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 1011,
+      "name": "Cat Figurine",
+      "name_en": "Cat Figurine",
+      "slot": "artifact",
+      "icon": 218,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "offense": 15
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 1012,
+      "name": "Turtle Figurine",
+      "name_en": "Turtle Figurine",
+      "slot": "artifact",
+      "icon": 219,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "defense": 15
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 1013,
+      "name": "Stormrock Llave",
+      "name_en": "Stormrock Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1014,
+      "name": "Temple de Mez Basement Llave",
+      "name_en": "Temple of Mez Basement Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1015,
+      "name": "Temple de Mez Main Hall Llave",
+      "name_en": "Temple of Mez Main Hall Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1016,
+      "name": "Dynamite",
+      "name_en": "Dynamite",
+      "slot": "relic",
+      "icon": 261,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1017,
+      "name": "Worn Note #1",
+      "name_en": "Worn Note #1",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1018,
+      "name": "Worn Note #2",
+      "name_en": "Worn Note #2",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1019,
+      "name": "Worn Note #3",
+      "name_en": "Worn Note #3",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1020,
+      "name": "Worn Note #4",
+      "name_en": "Worn Note #4",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1021,
+      "name": "Worn Note #5",
+      "name_en": "Worn Note #5",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1022,
+      "name": "Wizard's Tower Entrance Llave",
+      "name_en": "Wizard's Tower Entrance Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1023,
+      "name": "Wizard's Tower Research Hall Llave",
+      "name_en": "Wizard's Tower Research Hall Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1024,
+      "name": "Warden's Notes",
+      "name_en": "Warden's Notes",
+      "slot": "book",
+      "icon": 225,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1025,
+      "name": "Lorund's Espada",
+      "name_en": "Lorund's Sword",
+      "slot": "main",
+      "icon": 98,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": "longsword",
+      "stats": {
+        "hp": 250
+      },
+      "equip_flags": "melee"
+    },
+    {
+      "id": 1026,
+      "name": "Nerin's Arco",
+      "name_en": "Nerin's Bow",
+      "slot": null,
+      "icon": null,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "accuracy": 15
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 1027,
+      "name": "Kayl's Baston",
+      "name_en": "Kayl's Staff",
+      "slot": "main",
+      "icon": 106,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": "staff",
+      "stats": {
+        "mp": 30
+      },
+      "equip_flags": "mental"
+    },
+    {
+      "id": 1028,
+      "name": "Underworld Stronghold Foyer Llave",
+      "name_en": "Underworld Stronghold Foyer Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1029,
+      "name": "Underworld Stronghold Barracks Llave",
+      "name_en": "Underworld Stronghold Barracks Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1030,
+      "name": "Treasure Chest Llave",
+      "name_en": "Treasure Chest Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1031,
+      "name": "Silver Family Anillo",
+      "name_en": "Silver Family Ring",
+      "slot": "ring",
+      "icon": 198,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {
+        "mp": 3
+      },
+      "equip_flags": null
+    },
+    {
+      "id": 1032,
+      "name": "Blast Powder",
+      "name_en": "Blast Powder",
+      "slot": "crafting",
+      "icon": 262,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1100,
+      "name": "Gravebloom",
+      "name_en": "Gravebloom",
+      "slot": "relic",
+      "icon": 256,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1101,
+      "name": "Black Quill",
+      "name_en": "Black Quill",
+      "slot": "relic",
+      "icon": 257,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1102,
+      "name": "Knife de Sacrifices",
+      "name_en": "Knife of Sacrifices",
+      "slot": "relic",
+      "icon": 258,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": "dagger",
+      "stats": {},
+      "equip_flags": "melee"
+    },
+    {
+      "id": 1103,
+      "name": "Vial de Your Blood",
+      "name_en": "Vial of Your Blood",
+      "slot": "relic",
+      "icon": 259,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1104,
+      "name": "Blood Inkwell",
+      "name_en": "Blood Inkwell",
+      "slot": "relic",
+      "icon": 260,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1105,
+      "name": "Labyrinth Llave de hierro",
+      "name_en": "Iron Labyrinth Key",
+      "slot": "key",
+      "icon": 226,
+      "tier": 0,
+      "price": 50,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1106,
+      "name": "Excavation Journal Pages",
+      "name_en": "Excavation Journal Pages",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1107,
+      "name": "Excavation Journal Pages",
+      "name_en": "Excavation Journal Pages",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1108,
+      "name": "Excavation Journal Pages",
+      "name_en": "Excavation Journal Pages",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1109,
+      "name": "Excavation Journal Pages",
+      "name_en": "Excavation Journal Pages",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1110,
+      "name": "Excavation Journal Pages",
+      "name_en": "Excavation Journal Pages",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1111,
+      "name": "Excavation Journal Pages",
+      "name_en": "Excavation Journal Pages",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
+      "id": 1112,
+      "name": "Excavation Journal Pages",
+      "name_en": "Excavation Journal Pages",
+      "slot": "book",
+      "icon": 224,
+      "tier": 0,
+      "price": 0,
+      "rarity": "unico",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    }
+  ]
+}

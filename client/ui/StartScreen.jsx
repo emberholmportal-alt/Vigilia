@@ -7,7 +7,7 @@ export default function StartScreen({ onEnter, loading }) {
         <h1>Vigilia</h1>
         <p className="tagline">Black Oak City es lo último que queda en pie.</p>
         <button className="enter" onClick={onEnter} disabled={loading}>
-          {loading ? 'Cargando…' : 'Entrar a la ciudad'}
+          {loading ? 'Cargando…' : 'Comenzar'}
         </button>
         <p className="attribution">
           Arte, sprites, tilesets y mapas: <b>Flare — Empyrean Campaign</b>,

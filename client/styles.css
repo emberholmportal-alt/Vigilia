@@ -70,6 +70,76 @@ html, body, #root {
 }
 .attribution a { color: var(--gold); }
 
+/* ---------- botón de bolsa ---------- */
+.bag {
+  position: absolute; right: 12px; bottom: calc(16px + env(safe-area-inset-bottom));
+  width: 60px; height: 60px; border: 1px solid var(--edge); background: var(--crypt);
+  color: var(--parch); display: grid; place-items: center; cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+.bag:active { border-color: var(--ember); }
+.bag i { font-style: normal; font-size: 24px; line-height: 1; }
+.bag u { text-decoration: none; font-size: 10px; color: var(--gold); margin-top: 2px; }
+
+/* ---------- race screen ---------- */
+.race {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: radial-gradient(120% 80% at 50% 15%, rgba(194, 85, 31, 0.12), transparent 60%), var(--obsidian);
+  padding: 24px;
+}
+.race-inner { width: 100%; max-width: 440px; text-align: center; }
+.race h2 { font-family: Georgia, serif; color: var(--gold); letter-spacing: 0.08em; margin-bottom: 18px; }
+.race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.race-card {
+  background: var(--stone); border: 1px solid var(--edge); color: var(--parch);
+  padding: 14px 8px; cursor: pointer; display: flex; flex-direction: column; gap: 3px;
+}
+.race-card b { font-family: Georgia, serif; font-size: 16px; color: #e6dcc6; }
+.race-card span { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.race-card.on { border-color: var(--ember); box-shadow: inset 0 0 0 1px var(--ember); }
+.race-detail { margin: 16px 0 20px; min-height: 56px; }
+.race-mods { color: var(--gold); font-size: 13px; }
+.race-fantasy { color: var(--dim); font-style: italic; margin-top: 6px; }
+
+/* ---------- inventory panel ---------- */
+.panel {
+  position: absolute; inset: 0; z-index: 10; background: rgba(10, 9, 12, 0.97);
+  padding: calc(10px + env(safe-area-inset-top)) 12px 12px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.panel-head { display: flex; align-items: center; gap: 10px; }
+.panel-head b { font-family: Georgia, serif; letter-spacing: 0.04em; color: #e6dcc6; flex: 1; }
+.panel-head .gold { color: var(--gold); font-size: 13px; }
+.panel-head .x {
+  width: 32px; height: 32px; background: var(--stone); border: 1px solid var(--edge);
+  color: var(--parch); cursor: pointer; font-size: 14px;
+}
+.equip-row { display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; }
+.inv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+.slot {
+  aspect-ratio: 1; background: var(--crypt); border: 1px solid var(--edge);
+  display: grid; place-items: center; cursor: pointer; padding: 0; overflow: hidden;
+}
+.slot.on { box-shadow: inset 0 0 0 2px var(--gold); }
+.slot em { font-size: 8px; color: var(--dim); font-style: normal; text-align: center; line-height: 1.1; }
+.item-icon { display: block; image-rendering: auto; }
+
+.detail { background: var(--crypt); border: 1px solid var(--edge); padding: 12px; margin-top: auto; }
+.detail-head { display: flex; gap: 10px; align-items: center; }
+.detail-head b { font-family: Georgia, serif; font-size: 15px; display: block; }
+.detail-sub { font-size: 11px; color: var(--dim); }
+.stats { margin: 10px 0; display: flex; flex-direction: column; gap: 3px; }
+.stat { display: flex; justify-content: space-between; font-size: 12px; color: var(--parch); }
+.stat .up { color: #8fc46b; }
+.stat .down { color: #e8836a; }
+.flags { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.do {
+  width: 100%; padding: 11px; background: var(--stone); border: 1px solid var(--edge);
+  color: var(--gold); font-family: Georgia, serif; letter-spacing: 0.06em; cursor: pointer;
+}
+.do:active { border-color: var(--ember); }
+.do:disabled { opacity: 0.4; cursor: default; color: var(--dim); }
+
 /* ---------- loading / error ---------- */
 .loading {
   position: absolute; inset: 0; display: grid; place-items: center;

@@ -38,7 +38,9 @@ page.on('console', (m) => {
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message))
 
 await page.goto(URL, { waitUntil: 'networkidle' })
-await page.click('.enter')
+await page.click('.enter')                    // Inicio -> Comenzar
+await page.waitForSelector('.race', { timeout: 10000 })
+await page.click('.race-inner .enter')        // Encarnar (raza por defecto)
 
 // Esperar a que el juego exponga su estado.
 await page.waitForFunction(() => window.__vigilia && window.__vigilia.player, { timeout: 20000 })
