@@ -1,0 +1,394 @@
+[
+ {
+  "name": "abandoned_mines",
+  "title": "Abandoned Mines",
+  "w": 80,
+  "h": 100,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "antlion_nest",
+  "title": "Antlion Nest",
+  "w": 80,
+  "h": 80,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "arrival",
+  "title": "Arrival",
+  "w": 40,
+  "h": 40,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "black_oak_city",
+  "title": "Black Oak City",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "black_oak_farm",
+  "title": "Black Oak Farm",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "blackmire_mines",
+  "title": "Blackmire Mines",
+  "w": 80,
+  "h": 80,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "book_of_the_dead",
+  "title": "Book of the Dead",
+  "w": 32,
+  "h": 50,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "dilapidated_sewers",
+  "title": "Dilapidated Sewers",
+  "w": 80,
+  "h": 80,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "family_crypt",
+  "title": "Family Crypt",
+  "w": 38,
+  "h": 65,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "fort_amir",
+  "title": "Fort Amir",
+  "w": 80,
+  "h": 80,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "fort_nasu",
+  "title": "Fort Nasu",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "goblin_camp",
+  "title": "Goblin Camp",
+  "w": 60,
+  "h": 60,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "goblin_cave",
+  "title": "Goblin Cave",
+  "w": 48,
+  "h": 48,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "grot_lagoon",
+  "title": "Grot Lagoon",
+  "w": 112,
+  "h": 112,
+  "tileset": "tileset_snowplains"
+ },
+ {
+  "name": "halls_of_infinity",
+  "title": "Halls of Infinity",
+  "w": 24,
+  "h": 60,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "hyperspace",
+  "title": "Hyperspace",
+  "w": 40,
+  "h": 40,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "iron_labyrinth_chasm",
+  "title": "Iron Labyrinth: Chasm",
+  "w": 84,
+  "h": 84,
+  "tileset": "tileset_ruins"
+ },
+ {
+  "name": "iron_labyrinth_f1",
+  "title": "Iron Labyrinth: Level 1",
+  "w": 164,
+  "h": 164,
+  "tileset": "tileset_ruins"
+ },
+ {
+  "name": "iron_labyrinth_f2",
+  "title": "Iron Labyrinth: Level 2",
+  "w": 164,
+  "h": 164,
+  "tileset": "tileset_ruins"
+ },
+ {
+  "name": "iron_labyrinth_f3",
+  "title": "Iron Labyrinth: Level 3",
+  "w": 164,
+  "h": 164,
+  "tileset": "tileset_ruins"
+ },
+ {
+  "name": "lake_kuuma",
+  "title": "Lake Kuuma",
+  "w": 132,
+  "h": 132,
+  "tileset": "tileset_snowplains"
+ },
+ {
+  "name": "lochport",
+  "title": "Lochport",
+  "w": 50,
+  "h": 60,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "lochport_cemetery",
+  "title": "Lochport Cemetery",
+  "w": 60,
+  "h": 80,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "merrimead_swamp",
+  "title": "Merrimead Swamp",
+  "w": 80,
+  "h": 80,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "mog_caverns",
+  "title": "Mog Caverns",
+  "w": 60,
+  "h": 80,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "nazia_highlands",
+  "title": "Nazia Highlands",
+  "w": 80,
+  "h": 80,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "nazia_mines",
+  "title": "Nazia Mines",
+  "w": 80,
+  "h": 60,
+  "tileset": "tileset_cave_and_dungeon"
+ },
+ {
+  "name": "nazia_underground",
+  "title": "Nazia Underground",
+  "w": 100,
+  "h": 60,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "oasis",
+  "title": "Oasis",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "perdition_harbor",
+  "title": "Perdition Harbor",
+  "w": 40,
+  "h": 40,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "perdition_harbor_cave",
+  "title": "Perdition Harbor Cave",
+  "w": 20,
+  "h": 20,
+  "tileset": "tileset_cave_and_dungeon"
+ },
+ {
+  "name": "perdition_mines",
+  "title": "Perdition Mines",
+  "w": 56,
+  "h": 38,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "river_trail",
+  "title": "River Trail",
+  "w": 80,
+  "h": 40,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "salted_field",
+  "title": "Salted Field",
+  "w": 60,
+  "h": 60,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "southern_ridge",
+  "title": "Southern Ridge",
+  "w": 80,
+  "h": 80,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "spawn",
+  "title": "",
+  "w": 1,
+  "h": 1,
+  "tileset": ""
+ },
+ {
+  "name": "st_maria_1",
+  "title": "St. Maria: Mausoleum",
+  "w": 70,
+  "h": 70,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "st_maria_2",
+  "title": "St. Maria: Catacombs",
+  "w": 70,
+  "h": 70,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "st_maria_3",
+  "title": "St. Maria: Crypt",
+  "w": 40,
+  "h": 60,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "stonewood",
+  "title": "Stonewood",
+  "w": 100,
+  "h": 80,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "stormrock_pass",
+  "title": "Stormrock Pass",
+  "w": 132,
+  "h": 132,
+  "tileset": "tileset_snowplains"
+ },
+ {
+  "name": "stormrock_ruins",
+  "title": "Stormrock Ruins",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "temple_of_mez_1",
+  "title": "Temple of Mez: Basement",
+  "w": 80,
+  "h": 80,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "temple_of_mez_2",
+  "title": "Temple of Mez: Main Hall",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "temple_of_mez_3",
+  "title": "Temple of Mez: Entrance",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_snowplains"
+ },
+ {
+  "name": "the_breach",
+  "title": "The Breach",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "the_pit",
+  "title": "The Pit",
+  "w": 80,
+  "h": 80,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "torture_chambers",
+  "title": "Torture Chambers",
+  "w": 102,
+  "h": 100,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "underworld",
+  "title": "Underworld",
+  "w": 120,
+  "h": 120,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "underworld_catacombs",
+  "title": "Underworld Catacombs",
+  "w": 120,
+  "h": 105,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "underworld_mines",
+  "title": "Underworld Mines",
+  "w": 136,
+  "h": 110,
+  "tileset": "tileset_cave"
+ },
+ {
+  "name": "underworld_stronghold_1",
+  "title": "Underworld Stronghold: Foyer",
+  "w": 75,
+  "h": 92,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "underworld_stronghold_2",
+  "title": "Underworld Stronghold: Barracks",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "wizards_tower_1",
+  "title": "Wizard's Tower: Entrance Hall",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "wizards_tower_2",
+  "title": "Wizard's Tower: Research Chambers",
+  "w": 100,
+  "h": 108,
+  "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "wizards_tower_3",
+  "title": "Wizard's Tower: Laboratory",
+  "w": 84,
+  "h": 92,
+  "tileset": "tileset_dungeon"
+ }
+]

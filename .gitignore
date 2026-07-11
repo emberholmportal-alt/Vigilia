@@ -1,0 +1,31 @@
+# Flare art source — 2.2 GB, nunca se commitea (ver CLAUDE.md)
+vendor/
+
+# deps y build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
