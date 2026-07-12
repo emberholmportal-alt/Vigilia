@@ -1,0 +1,136 @@
+// Inventario con el panel REAL de Flare (menus/inventory.png) y las coordenadas
+// exactas de menus/inventory.txt. Ítems superpuestos sobre los marcos ya dibujados,
+// tooltip al tocar (nombre/nivel/slot/stats/precio) y oro. Look idéntico a Flare.
+import { useState } from 'react'
+import { useGameStore, equipSlotFor } from '../store.js'
+import { RARITY_COLOR, RARITY_LABEL } from '../data/items.js'
+import ItemIcon from './ItemIcon.jsx'
+
+const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
+
+// Panel de Flare (640×832) y posiciones de menus/inventory.txt.
+const PW = 640, PH = 832, SLOT = 64
+const EQUIP_POS = {
+  head: [464, 72], chest: [464, 160], legs: [464, 248], feet: [464, 336],
+  hands: [376, 136], artifact: [552, 136], ring: [376, 224], main: [376, 312], off: [552, 312],
+}
+const CARRIED = { x: 32, y: 64, cols: 5 }
+const EQUIP_ORDER = ['head', 'chest', 'legs', 'feet', 'hands', 'artifact', 'ring', 'main', 'off']
+
+const SLOT_LABEL = {
+  head: 'Cabeza', chest: 'Torso', legs: 'Piernas', hands: 'Manos', feet: 'Pies',
+  main: 'Arma', off: 'Escudo', ring: 'Anillo', artifact: 'Reliquia',
+}
+const STAT_LABEL = {
+  absorb_min: 'Defensa mín', absorb_max: 'Defensa máx',
+  dmg_melee_min: 'Daño c.c. mín', dmg_melee_max: 'Daño c.c. máx',
+  dmg_ranged_min: 'Daño dist. mín', dmg_ranged_max: 'Daño dist. máx',
+  dmg_ment_min: 'Daño mental mín', dmg_ment_max: 'Daño mental máx',
+  hp: 'Vida', mp: 'Maná', hp_regen: 'Regen. vida', mp_regen: 'Regen. maná',
+  fire_resist: 'Res. fuego', ice_resist: 'Res. hielo',
+}
+const statLabel = (k) => STAT_LABEL[k] || k
+
+// Estilo para centrar algo en un slot (coords de Flare, en % del panel).
+function slotStyle(x, y) {
+  return {
+    left: ((x + SLOT / 2) / PW * 100) + '%',
+    top: ((y + SLOT / 2) / PH * 100) + '%',
+    width: (SLOT / PW * 100) + '%',
+    height: (SLOT / PH * 100) + '%',
+  }
+}
+
+export default function Inventory() {
+  const inventory = useGameStore((s) => s.inventory)
+  const equipment = useGameStore((s) => s.equipment)
+  const gold = useGameStore((s) => s.gold)
+  const equipFromInventory = useGameStore((s) => s.equipFromInventory)
+  const unequip = useGameStore((s) => s.unequip)
+  const setPanel = useGameStore((s) => s.setPanel)
+
+  const [sel, setSel] = useState(null) // {src, i|slot, pos:[x,y]}
+  const selItem = sel?.src === 'inv' ? inventory[sel.i] : sel?.src === 'equip' ? equipment[sel.slot] : null
+
+  function act() {
+    if (!sel) return
+    if (sel.src === 'inv') equipFromInventory(sel.i)
+    else unequip(sel.slot)
+    setSel(null)
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={() => setPanel(null)}>
+      <div className="flare-panel" style={{ backgroundImage: `url(${UI}inventory.png)` }}
+           onClick={(e) => e.stopPropagation()}>
+        <button className="panel-close"
+                style={{ left: (571 / PW * 100) + '%', top: (5 / PH * 100) + '%', width: '6.4%', backgroundImage: `url(${UI}button_x.png)` }}
+                onClick={() => setPanel(null)} />
+
+        {/* equipo (muñeco) */}
+        {EQUIP_ORDER.map((slot) => {
+          const [x, y] = EQUIP_POS[slot]
+          const it = equipment[slot]
+          return (
+            <button key={slot} className={'inv-cell' + (sel?.src === 'equip' && sel.slot === slot ? ' on' : '')}
+                    style={slotStyle(x, y)}
+                    onClick={() => setSel({ src: 'equip', slot, pos: [x, y] })}>
+              {it && <ItemIcon icon={it.icon} size={34} />}
+            </button>
+          )
+        })}
+
+        {/* grilla */}
+        {inventory.map((it, i) => {
+          const col = i % CARRIED.cols, row = (i / CARRIED.cols) | 0
+          const x = CARRIED.x + col * SLOT, y = CARRIED.y + row * SLOT
+          return (
+            <button key={i} className={'inv-cell' + (sel?.src === 'inv' && sel.i === i ? ' on' : '')}
+                    style={slotStyle(x, y)}
+                    onClick={() => it && setSel({ src: 'inv', i, pos: [x, y] })}>
+              {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
+            </button>
+          )
+        })}
+
+        {/* oro */}
+        <div className="inv-gold" style={{ top: (823 / PH * 100) + '%' }}>{gold} oro</div>
+
+        {selItem && (
+          <Tooltip item={selItem} pos={sel.pos}
+                   compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selItem)] : null}
+                   actionLabel={sel.src === 'inv' ? 'Equipar' : 'Sacar'} onAction={act} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function Tooltip({ item, pos, compareTo, actionLabel, onAction }) {
+  const keys = [...new Set([...Object.keys(item.stats || {}), ...Object.keys(compareTo?.stats || {})])]
+  // ancla arriba o abajo del ítem según dónde esté en el panel
+  const [x, y] = pos
+  const below = y < PH * 0.5
+  const style = {
+    left: ((x + SLOT / 2) / PW * 100) + '%',
+    [below ? 'top' : 'bottom']: below ? ((y + SLOT + 6) / PH * 100) + '%' : ((PH - y + 6) / PH * 100) + '%',
+  }
+  return (
+    <div className="inv-tooltip" style={style} onClick={(e) => e.stopPropagation()}>
+      <b style={{ color: RARITY_COLOR[item.rarity] }}>{item.name}</b>
+      <span className="tt-sub">{RARITY_LABEL[item.rarity]}{item.tier ? ` · Nivel ${item.tier}` : ''}</span>
+      <span className="tt-sub">{SLOT_LABEL[item.slot] || item.slot}</span>
+      {keys.map((k) => {
+        const cur = item.stats?.[k] || 0, prev = compareTo?.stats?.[k] || 0, d = cur - prev
+        return (
+          <div className="tt-stat" key={k}>
+            <span>{statLabel(k)}</span>
+            <span>{cur}{compareTo && d !== 0 && <b className={d > 0 ? 'up' : 'down'}> {d > 0 ? '+' : ''}{d}</b>}</span>
+          </div>
+        )
+      })}
+      {item.price ? <div className="tt-price">{item.price} oro</div> : null}
+      <button className="tt-do" onClick={onAction} disabled={!equipSlotFor(item)}>{actionLabel}</button>
+    </div>
+  )
+}
