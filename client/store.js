@@ -38,6 +38,10 @@ export const INVENTORY_SIZE = 55 // 5×11, como la grilla del panel de Flare
 // Slots cuyos ítems se apilan (consumibles / materiales) en vez de ocupar un hueco cada uno.
 const STACK_SLOTS = new Set(['potion', 'consumable', 'crafting', 'crafting_tool', 'scroll', 'gem', 'book'])
 
+// Ítems que pueden ir al cinturón (consumibles usables en combate).
+const BELT_SLOTS = new Set(['potion', 'consumable', 'scroll'])
+export const beltEligible = (item) => !!item && BELT_SLOTS.has(item.slot)
+
 function emptyEquipment() {
   const e = {}
   for (const s of EQUIP_SLOTS) e[s] = null
@@ -120,6 +124,25 @@ export const useGameStore = create((set, get) => ({
     belt[i] = cnt > 0 ? { ...it, count: cnt } : null
     set({ belt })
     get().showToast(eff.hp ? `+${eff.hp} de vida` : `+${eff.mp} de maná`)
+    saveGame(get())
+  },
+
+  // Manda un consumible del inventario al cinturón (se apila si ya hay del mismo; si no,
+  // al primer hueco libre). Si el cinturón está lleno avisa con un toast.
+  assignBelt: (invIndex) => {
+    const s = get()
+    const it = s.inventory[invIndex]
+    if (!beltEligible(it)) { get().showToast('Sólo consumibles van al cinturón'); return }
+    const qty = it.count || 1
+    const belt = s.belt.slice()
+    let bi = belt.findIndex((b) => b && b.id === it.id)
+    if (bi < 0) bi = belt.findIndex((b) => b == null)
+    if (bi < 0) { get().showToast('El cinturón está lleno'); return }
+    belt[bi] = belt[bi] ? { ...belt[bi], count: (belt[bi].count || 1) + qty } : { ...it, count: qty }
+    const inv = s.inventory.slice()
+    inv[invIndex] = null
+    set({ belt, inventory: inv })
+    get().showToast('Al cinturón')
     saveGame(get())
   },
 

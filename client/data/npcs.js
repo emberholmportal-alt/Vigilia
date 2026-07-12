@@ -149,8 +149,9 @@ const GREENWOOD = [
 // casas de entramado, graneros, fragua). Es el hub principal + punto de respawn.
 // Plaza de la fuente (61,55): por ahora sólo el mercader + 2 NPCs (sin totems).
 const TRISTON = [
-  // El mercader arma su puesto junto al carro y los barriles (parece un mercado).
-  { sprite: 'wandering_trader', name: 'Mercader Oswin', portrait: 'male10.png', x: 59, y: 49, dir: 7, shop: true,
+  // El mercader arma su puesto en el claro frente al carro y los barriles (parece un
+  // mercado). Tile caminable, adelante del carro para que no lo tape.
+  { sprite: 'wandering_trader', name: 'Mercader Oswin', portrait: 'male10.png', x: 61, y: 51, dir: 3, shop: true,
     lines: ['Traje acero del sur y algo de cuero.',
             'El precio sube con la luna, no conmigo.',
             'Vendé lo que no uses. El hierro oxidado no abriga.'] },

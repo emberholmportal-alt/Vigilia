@@ -67,6 +67,12 @@ export class Game {
     const renderer = new MapRenderer(iso, world.map, world.tileset)
     this.renderer = renderer
 
+    // Atlas del tileset en un canvas para leer alpha por-pixel (oclusión precisa: sólo
+    // atenuamos un edificio cuando su pixel opaco realmente tapa al personaje).
+    this._masks = new Map()
+    this._atlasCtx = null
+    this._loadOcclusionAtlas(world.tileset.atlasSrc)
+
     const zoom = MAP_ZOOM[mapName] || 1
     const camera = new Camera(iso, world.map.w, world.map.h, zoom)
     camera.resize(app.screen.width, app.screen.height)
@@ -191,10 +197,16 @@ export class Game {
     if (!list.length) return
     const BASE = import.meta.env.BASE_URL || '/'
     const skip = DECOR_SKIP[map.name] || null
+    const limit = DECOR_LIMIT[map.name] || null
+    const seen = limit ? {} : null
     let manifest
     try { manifest = await (await fetch(BASE + 'assets/decor.json')).json() } catch { return }
     for (const d of list) {
       if (skip && skip.has(d.name)) continue      // decoraciones que sacamos a mano por mapa
+      if (limit && d.name in limit) {             // límite de copias por nombre
+        seen[d.name] = (seen[d.name] || 0) + 1
+        if (seen[d.name] > limit[d.name]) continue
+      }
       const meta = manifest[d.name]
       if (!meta) continue
       // Saltar sprites chicos: son crops mal parseados (salen como "pies" o basura).
@@ -302,37 +314,75 @@ export class Game {
     return true
   }
 
-  // Atenúa los sprites de objeto altos (edificios/árboles) que quedan dibujados por
-  // encima del jugador y lo cubren, para que el personaje nunca desaparezca detrás.
+  // Carga el atlas del tileset en un canvas 2D para poder leer su alpha por-pixel.
+  async _loadOcclusionAtlas(src) {
+    try {
+      const img = new Image()
+      img.decoding = 'async'
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = src })
+      if (this.destroyed) return
+      const cv = document.createElement('canvas')
+      cv.width = img.naturalWidth; cv.height = img.naturalHeight
+      const ctx = cv.getContext('2d', { willReadFrequently: true })
+      ctx.drawImage(img, 0, 0)
+      this._atlasCtx = ctx
+    } catch { this._atlasCtx = null }
+  }
+
+  // Máscara de alpha (Uint8) de un tile de edificio, extraída del atlas una sola vez.
+  _maskFor(s) {
+    const key = s.texture.uid
+    let m = this._masks.get(key)
+    if (m !== undefined) return m
+    m = null
+    try {
+      const f = s.texture.frame
+      const raw = this._atlasCtx.getImageData(f.x, f.y, f.width, f.height).data
+      const a = new Uint8Array(f.width * f.height)
+      for (let i = 0; i < a.length; i++) a[i] = raw[i * 4 + 3]
+      m = { w: f.width | 0, h: f.height | 0, a }
+    } catch { m = null }
+    this._masks.set(key, m)
+    return m
+  }
+
+  // ¿El sprite `s` (edificio) tapa de verdad al personaje? Muestrea la silueta del
+  // jugador (pies, torso, cabeza) contra el alpha del edificio: sólo si un pixel opaco
+  // del edificio cae sobre el cuerpo, está tapado. Así nunca se atenúa de lejos/frente.
+  _coversPlayer(s) {
+    const m = this._maskFor(s)
+    if (!m) return false
+    const px = this.player.view.x, feetY = this.player.view.y
+    const lx = Math.round(px - s.x)
+    if (lx < 0 || lx >= m.w) return false
+    // puntos a lo largo del alto del personaje (mundo px; hacia arriba es negativo)
+    for (const dy of [-6, -32, -58, -80]) {
+      const ly = Math.round(feetY + dy - s.y)
+      if (ly < 0 || ly >= m.h) continue
+      if (m.a[ly * m.w + lx] > 60) return true
+    }
+    return false
+  }
+
+  // Atenúa un EDIFICIO sólo cuando su pixel opaco realmente tapa al personaje (lo cubre
+  // por detrás). Excluye cercas, árboles, barriles y props del suelo por tamaño.
   _updateOcclusion() {
     const p = this.player
-    if (!p) return
-    const iso = this.iso, W = this.renderer.w
-    const px = p.view.x, py = p.view.y
-    const pd = p.tx + p.ty                        // profundidad del jugador (x+y)
-    // Sólo EDIFICIOS: sprites anchos Y altos (excluye cercas, árboles, barriles, props del
-    // suelo). Los árboles quedan para más adelante (sólo si tapan y estás muy cerca).
-    const bldMinW = iso.tileW * 2.5
+    if (!p || !this._atlasCtx) return
+    const iso = this.iso
+    const pd = p.tx + p.ty                         // profundidad del jugador (x+y)
+    const bldMinW = iso.tileW * 2.5                // sólo sprites grandes (edificios)
     const bldMinH = iso.tileH * 2.5
     const occ = this._occAlpha || (this._occAlpha = new Map()) // alpha por tile (persiste entre rebuilds)
     this.renderer.eachVisibleObject((s) => {
       let hide = false
       const tw = s.texture ? s.texture.width : s.width
       const th = s.texture ? s.texture.height : s.height
-      if (tw >= bldMinW && th >= bldMinH && s.zIndex > pd) {
-        // Piso del edificio: su tile base -> X/Y de mundo (la textura NO está centrada
-        // sobre su base, así que anclamos la banda horizontal al tile, no al sprite).
-        const tx = s._ti % W, ty = (s._ti / W) | 0
-        const baseX = iso.toWorldX(tx, ty)
-        const baseY = iso.toWorldY(tx, ty)
-        // Tapado SÓLO si el pie del jugador está por detrás de la línea de piso (py<baseY),
-        // dentro del alto del sprite (no por encima del techo) y en una banda horizontal
-        // angosta centrada en el edificio (descarta estar de frente, al costado o lejos).
-        hide = py < baseY && py > s.y && Math.abs(px - baseX) < s.width * 0.4
-      }
+      // Debe estar dibujado por ENCIMA del jugador (más profundo) y ser un edificio.
+      if (s.zIndex > pd && tw >= bldMinW && th >= bldMinH) hide = this._coversPlayer(s)
       const target = hide ? 0.3 : 1
       let a = occ.get(s._ti); if (a === undefined) a = 1
-      a += (target - a) * 0.28                    // desvanecido suave, por tile
+      a += (target - a) * 0.28                      // desvanecido suave, por tile
       if (a > 0.999) a = 1
       occ.set(s._ti, a)
       s.alpha = a
@@ -561,6 +611,10 @@ const MAP_ZOOM = { triston: 1.3 }
 // Decoraciones ambientales de HERESY que sacamos a mano (por mapa). En Triston quitamos
 // al posadero rojo del carro: ese puesto es donde ponemos al mercader (parece un mercado).
 const DECOR_SKIP = { triston: new Set(['Act1_innkeeper_owens']) }
+
+// Límite de copias por nombre (por mapa): en Triston el cementerio del noroeste tenía
+// muchos monjes; dejamos uno solo.
+const DECOR_LIMIT = { triston: { Lux_priest: 1 } }
 
 function hubOrCentralSpawn(mapName, grid, map) {
   const h = HUB_SPAWN[mapName]

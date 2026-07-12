@@ -34,5 +34,5 @@ export async function loadWorld(mapName) {
     }
   }
 
-  return { manifest, map, tileset: { name: tsName, tiles, scale: manifest.scale } }
+  return { manifest, map, tileset: { name: tsName, tiles, scale: manifest.scale, atlasSrc: BASE + 'assets/' + tsDef.src } }
 }

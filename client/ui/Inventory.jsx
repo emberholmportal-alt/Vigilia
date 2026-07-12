@@ -2,7 +2,7 @@
 // exactas de menus/inventory.txt. Ítems superpuestos sobre los marcos ya dibujados,
 // tooltip al tocar (nombre/nivel/slot/stats/precio) y oro. Look idéntico a Flare.
 import { useState } from 'react'
-import { useGameStore, equipSlotFor } from '../store.js'
+import { useGameStore, equipSlotFor, beltEligible } from '../store.js'
 import { RARITY_COLOR, RARITY_LABEL } from '../data/items.js'
 import ItemIcon from './ItemIcon.jsx'
 
@@ -47,6 +47,7 @@ export default function Inventory() {
   const gold = useGameStore((s) => s.gold)
   const equipFromInventory = useGameStore((s) => s.equipFromInventory)
   const unequip = useGameStore((s) => s.unequip)
+  const assignBelt = useGameStore((s) => s.assignBelt)
   const setPanel = useGameStore((s) => s.setPanel)
 
   const [sel, setSel] = useState(null) // {src, i|slot, pos:[x,y]}
@@ -57,6 +58,10 @@ export default function Inventory() {
     if (sel.src === 'inv') equipFromInventory(sel.i)
     else unequip(sel.slot)
     setSel(null)
+  }
+
+  function toBelt() {
+    if (sel?.src === 'inv') { assignBelt(sel.i); setSel(null) }
   }
 
   return (
@@ -99,14 +104,15 @@ export default function Inventory() {
         {selItem && (
           <Tooltip item={selItem} pos={sel.pos}
                    compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selItem)] : null}
-                   actionLabel={sel.src === 'inv' ? 'Equipar' : 'Sacar'} onAction={act} />
+                   actionLabel={sel.src === 'inv' ? 'Equipar' : 'Sacar'} onAction={act}
+                   onBelt={sel.src === 'inv' && beltEligible(selItem) ? toBelt : null} />
         )}
       </div>
     </div>
   )
 }
 
-function Tooltip({ item, pos, compareTo, actionLabel, onAction }) {
+function Tooltip({ item, pos, compareTo, actionLabel, onAction, onBelt }) {
   const keys = [...new Set([...Object.keys(item.stats || {}), ...Object.keys(compareTo?.stats || {})])]
   // ancla arriba o abajo del ítem según dónde esté en el panel
   const [x, y] = pos
@@ -135,7 +141,9 @@ function Tooltip({ item, pos, compareTo, actionLabel, onAction }) {
         )
       })}
       {item.price ? <div className="tt-price">{item.price} oro</div> : null}
-      <button className="tt-do" onClick={onAction} disabled={!equipSlotFor(item)}>{actionLabel}</button>
+      {onBelt
+        ? <button className="tt-do" onClick={onBelt}>Al cinturón</button>
+        : <button className="tt-do" onClick={onAction} disabled={!equipSlotFor(item)}>{actionLabel}</button>}
     </div>
   )
 }

@@ -483,7 +483,7 @@ html, body, #root {
 
 /* panel de Acciones (poderes) */
 .pw-list {
-  position: absolute; left: 6%; right: 6%; top: 9%; bottom: 6%;
+  position: absolute; left: 12%; right: 12%; top: 15%; bottom: 10%;
   display: flex; flex-direction: column; gap: 9px; overflow-y: auto;
 }
 .pw-row { display: flex; flex-direction: column; gap: 3px;
