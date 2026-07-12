@@ -97,7 +97,7 @@ UI_IMAGES = [
     "bar_mp.png", "bar_mp_background.png",
     "bar_xp.png", "bar_xp_background.png",
     "actionbar_trim.png", "portrait_border.png", "frame_background.png",
-    "minimap.png", "inventory.png", "character.png", "powers.png",
+    "minimap.png", "inventory.png", "character.png", "powers.png", "storage_generic.png",
     "buttons/button_x.png", "buttons/left.png", "buttons/right.png",
     "buttons/button_plus.png",
 ]

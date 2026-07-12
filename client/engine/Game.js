@@ -167,7 +167,8 @@ export class Game {
     const pv = this.iso.toWorld(this.player.tx, this.player.ty)
     const nv = this.iso.toWorld(npc.tx, npc.ty)
     npc.dir = screenVecToDir(pv.x - nv.x, pv.y - nv.y)
-    this.store.openDialogue({ name: npc.def.name, portrait: npc.def.portrait, lines: npc.lines })
+    if (npc.def.shop) this.store.openShop(npc.def.name)
+    else this.store.openDialogue({ name: npc.def.name, portrait: npc.def.portrait, lines: npc.lines })
   }
 
   // --- Cofres y loot ---------------------------------------------------------

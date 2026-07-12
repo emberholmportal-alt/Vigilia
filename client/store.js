@@ -7,6 +7,11 @@
 import { create } from 'zustand'
 import { computeStats } from './data/stats.js'
 import { setMuted } from './engine/audio.js'
+import { dailyStock } from './data/shop.js'
+
+// El mercader compra a fracción del precio (Flare: vendor_ratio_sell = 0.25).
+const SELL_RATIO = 0.25
+export const sellValue = (item) => Math.max(1, Math.floor((item.price || 0) * SELL_RATIO))
 
 // Slots de equipo. Los primeros 7 se ven en el paperdoll; ring/artifact no.
 export const EQUIP_SLOTS = ['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact']
@@ -61,7 +66,9 @@ export const useGameStore = create((set, get) => ({
   inventory: [],            // array de ítems (huecos = null), largo INVENTORY_SIZE
   equipment: emptyEquipment(),
   belt: [null, null, null, null], // cinturón de 4 (consumibles)
-  panel: null,              // 'inventory' | null
+  panel: null,              // 'inventory' | 'character' | 'shop' | null
+  shopStock: [],            // stock del mercader (rota por día)
+  shopVendor: '',           // nombre del mercader abierto
 
   // --- audio ---
   muted: false,
@@ -132,6 +139,34 @@ export const useGameStore = create((set, get) => ({
     return true
   },
 
+  // --- mercader ---
+  openShop: (vendor) => set({ shopStock: dailyStock(), shopVendor: vendor || 'Mercader', panel: 'shop' }),
+
+  // Compra un ítem del stock (precio completo). El stock no se agota (el mercader repone).
+  buyItem: (stockIndex) => {
+    const s = get()
+    const item = s.shopStock[stockIndex]
+    if (!item) return { ok: false, reason: 'no-item' }
+    const price = item.price || 0
+    if (s.gold < price) return { ok: false, reason: 'no-gold' }
+    if (!get().addItem(item, 1)) return { ok: false, reason: 'full' }
+    set({ gold: get().gold - price })
+    return { ok: true }
+  },
+
+  // Vende una unidad de un ítem del inventario al mercader (25% del precio).
+  sellItem: (invIndex) => {
+    const s = get()
+    const item = s.inventory[invIndex]
+    if (!item) return { ok: false }
+    const gain = sellValue(item)
+    const inv = s.inventory.slice()
+    if (item.count && item.count > 1) inv[invIndex] = { ...item, count: item.count - 1 }
+    else inv[invIndex] = null
+    set({ inventory: inv, gold: s.gold + gain })
+    return { ok: true, gain }
+  },
+
   // Saca lo equipado en un slot y lo manda al primer hueco libre.
   unequip: (slot) => {
     const s = get()
@@ -178,6 +213,7 @@ export const storeApi = {
   getPlayerName: () => useGameStore.getState().playerName,
   getSpeech: () => useGameStore.getState().speech,
   openDialogue: (d) => useGameStore.getState().openDialogue(d),
+  openShop: (vendor) => useGameStore.getState().openShop(vendor),
   getRunState: () => {
     const s = useGameStore.getState()
     return { running: s.running, stamina: s.stamina, staminaMax: s.staminaMax }

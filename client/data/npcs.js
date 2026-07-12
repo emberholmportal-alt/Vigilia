@@ -50,6 +50,7 @@ const LOCHPORT = [
   },
   {
     sprite: 'wandering_trader', name: 'Mercader Oswin', portrait: 'male10.png', x: 34, y: 30, dir: 0,
+    shop: true,
     lines: ['Traje acero del sur y algo de cuero.',
             'El precio sube con la luna, no conmigo.',
             'Vendé lo que no uses. El hierro oxidado no abriga.'],
