@@ -21,6 +21,20 @@ const LOCHPORT = [
     lines: ['El viento lleva los nombres de los que no volvieron.'],
   },
 
+  // --- portales (destino por definir): flanquean la plaza al oeste y al este ---
+  {
+    sprite: 'return_obelisk2', name: 'Portal del Oeste', landmark: true, portal: true,
+    glow: 0xb060ff, x: 20, y: 22, dir: 7,
+    lines: ['El arco del oeste zumba, pero su destino todavía duerme.',
+            'Cuando el sello ceda, llevará a tierras que aún no tienen nombre.'],
+  },
+  {
+    sprite: 'return_obelisk2', name: 'Portal del Este', landmark: true, portal: true,
+    glow: 0x50d0ff, x: 45, y: 30, dir: 7,
+    lines: ['El arco del este está frío al tacto.',
+            'Algo espera del otro lado. Todavía no es la hora.'],
+  },
+
   // --- pobladores (con retrato y algunos patrullando) ---
   {
     sprite: 'knight', name: 'Guardia Bram', portrait: 'male07.png', x: 40, y: 28, dir: 1,

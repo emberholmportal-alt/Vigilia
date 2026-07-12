@@ -119,10 +119,11 @@ export class Game {
     for (const npc of this.npcs) {
       if (!npc.def.landmark) continue
       const w = iso.toWorld(npc.tx, npc.ty)
-      this.particles.addEmitter({
-        x: w.x, y: w.y - 30, rx: 9, ry: 6, rate: 9,
-        tint: GLOW_TINT[npc.def.sprite] || 0xffcf5a, vy: -20, spread: 5, life: 1.8, size: 0.9,
-      })
+      const tint = npc.def.glow || GLOW_TINT[npc.def.sprite] || 0xffcf5a
+      // Los portales brillan más fuerte y más alto (columna arcana).
+      this.particles.addEmitter(npc.def.portal
+        ? { x: w.x, y: w.y - 34, rx: 7, ry: 5, rate: 16, tint, vy: -30, spread: 6, life: 2.2, size: 1.1 }
+        : { x: w.x, y: w.y - 30, rx: 9, ry: 6, rate: 9, tint, vy: -20, spread: 5, life: 1.8, size: 0.9 })
     }
 
     camera.follow(player.tx, player.ty)
