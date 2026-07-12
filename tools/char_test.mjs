@@ -47,7 +47,7 @@ await page.screenshot({ path: OUT + '/char_center.png' })
 
 // Abrir inventario
 await page.click('.bag')
-await page.waitForSelector('.modal', { timeout: 5000 })
+await page.waitForSelector('.flare-panel', { timeout: 5000 })
 await sleep(300)
 await page.screenshot({ path: OUT + '/char_inventory.png' })
 

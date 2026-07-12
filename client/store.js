@@ -10,7 +10,7 @@ import { setMuted } from './engine/audio.js'
 
 // Slots de equipo. Los primeros 7 se ven en el paperdoll; ring/artifact no.
 export const EQUIP_SLOTS = ['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact']
-export const INVENTORY_SIZE = 30
+export const INVENTORY_SIZE = 55 // 5×11, como la grilla del panel de Flare
 
 function emptyEquipment() {
   const e = {}

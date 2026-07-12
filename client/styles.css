@@ -219,58 +219,57 @@ html, body, #root {
 .race-mods { color: var(--gold); font-size: 13px; }
 .race-fantasy { color: var(--dim); font-style: italic; margin-top: 6px; }
 
-/* ---------- inventario (modal compacto) ---------- */
+/* ---------- inventario: panel real de Flare ---------- */
 .item-icon { display: block; image-rendering: auto; }
 .modal-backdrop {
-  position: absolute; inset: 0; z-index: 10; background: rgba(6, 5, 8, 0.62);
-  display: grid; place-items: center; padding: 14px;
+  position: absolute; inset: 0; z-index: 10; background: rgba(6, 5, 8, 0.55);
+  display: grid; place-items: center; padding: 8px;
 }
-.modal {
-  width: min(94vw, 360px); max-height: 88vh; overflow-y: auto;
-  background: linear-gradient(180deg, #1a1620, #100d16);
-  border: 1px solid var(--edge); box-shadow: 0 0 0 3px #000, 0 12px 40px rgba(0,0,0,.7);
-  padding: 12px; display: flex; flex-direction: column; gap: 12px;
+/* el panel de Flare mantiene su relación 640×832 */
+.flare-panel {
+  position: relative; width: min(96vw, 430px); aspect-ratio: 640 / 832; max-height: 94vh;
+  background-size: 100% 100%; background-repeat: no-repeat;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.7));
 }
-.modal-head { display: flex; align-items: center; gap: 10px; }
-.modal-head b {
-  font-family: Georgia, serif; letter-spacing: 0.06em; color: var(--gold);
-  text-transform: uppercase; font-size: 14px; flex: 1;
+/* cada celda se posiciona sobre el marco ya dibujado en el panel */
+.inv-cell {
+  position: absolute; transform: translate(-50%, -50%);
+  background: none; border: 0; padding: 0; cursor: pointer;
+  display: grid; place-items: center;
 }
-.modal-head .gold { color: var(--gold); font-size: 12px; }
-.close-btn {
-  width: 30px; height: 30px; border: 0; background-size: 100% 100%; background-color: transparent;
-  cursor: pointer;
+.inv-cell.on { box-shadow: inset 0 0 0 2px var(--gold); border-radius: 3px; }
+.inv-cell:active { filter: brightness(1.25); }
+.panel-close {
+  position: absolute; aspect-ratio: 64 / 38; border: 0; cursor: pointer;
+  /* button_x.png son 4 estados apilados; mostramos el primero (rojo normal) */
+  background-size: 100% 400%; background-position: center top; background-repeat: no-repeat;
+  background-color: transparent;
 }
-.close-btn:active { filter: brightness(1.3); }
+.panel-close:active { background-position: center 66.6%; }
+.inv-gold {
+  position: absolute; left: 0; right: 0; transform: translateY(-50%);
+  text-align: center; color: var(--gold); font-family: Georgia, serif; font-size: 13px;
+  text-shadow: 0 1px 2px #000;
+}
 
-/* muñeco de equipo (arreglo de Flare) */
-.doll {
-  display: grid; gap: 8px; justify-content: center;
-  grid-template-columns: repeat(3, 48px);
-  grid-template-areas:
-    "hands head  arti"
-    "main  chest off"
-    "ring  legs  feet";
+/* tooltip estilo Flare */
+.inv-tooltip {
+  position: absolute; transform: translateX(-50%); z-index: 3; width: max-content; max-width: 210px;
+  background: rgba(10, 9, 12, 0.96); border: 1px solid var(--edge);
+  box-shadow: 0 0 0 1px #000, 0 6px 18px rgba(0, 0, 0, 0.6);
+  padding: 8px 10px; display: flex; flex-direction: column; gap: 1px; pointer-events: auto;
 }
-.doll-cell { display: grid; place-items: center; }
-
-.inv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; justify-items: center; }
-
-.detail { background: var(--crypt); border: 1px solid var(--edge); padding: 12px; margin-top: auto; }
-.detail-head { display: flex; gap: 10px; align-items: center; }
-.detail-head b { font-family: Georgia, serif; font-size: 15px; display: block; }
-.detail-sub { font-size: 11px; color: var(--dim); }
-.stats { margin: 10px 0; display: flex; flex-direction: column; gap: 3px; }
-.stat { display: flex; justify-content: space-between; font-size: 12px; color: var(--parch); }
-.stat .up { color: #8fc46b; }
-.stat .down { color: #e8836a; }
-.flags { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
-.do {
-  width: 100%; padding: 11px; background: var(--stone); border: 1px solid var(--edge);
-  color: var(--gold); font-family: Georgia, serif; letter-spacing: 0.06em; cursor: pointer;
+.inv-tooltip b { font-family: Georgia, serif; font-size: 14px; }
+.inv-tooltip .tt-sub { font-size: 11px; color: var(--dim); }
+.tt-stat { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--parch); }
+.tt-stat .up { color: #8fc46b; } .tt-stat .down { color: #e8836a; }
+.tt-price { font-size: 11px; color: var(--gold); margin-top: 3px; }
+.tt-do {
+  margin-top: 7px; padding: 7px; background: var(--stone); border: 1px solid var(--edge);
+  color: var(--gold); font-family: Georgia, serif; cursor: pointer; font-size: 13px;
 }
-.do:active { border-color: var(--ember); }
-.do:disabled { opacity: 0.4; cursor: default; color: var(--dim); }
+.tt-do:active { border-color: var(--ember); }
+.tt-do:disabled { opacity: 0.4; color: var(--dim); cursor: default; }
 
 /* ---------- loading / error ---------- */
 .loading {
