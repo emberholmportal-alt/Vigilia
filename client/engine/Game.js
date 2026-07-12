@@ -84,9 +84,14 @@ export class Game {
     this.ping.zIndex = 1e6
     renderer.groundLayer.addChild(this.ping)
 
+    // Escala de nuestras entidades para este mapa (achica al héroe/NPCs en Triston).
+    const eScale = ENTITY_SCALE[mapName] || 1
+    this._eScale = eScale
+
     // Jugador en el centro del pueblo (plaza con cabañas), no en la puerta de roble.
     const spawn = hubOrCentralSpawn(mapName, grid, world.map)
     const player = new Player(iso, grid, world.manifest, spawn.x, spawn.y)
+    player.view.scale.set(eScale)
     renderer.objectLayer.addChild(player.view)
     this.player = player
     player.setName(this.store.getPlayerName(), this.store.getPlayerLevel())
@@ -106,6 +111,7 @@ export class Game {
       const ok = await npc.load()
       if (this.destroyed) { app.destroy(true); return }
       if (!ok) continue
+      npc.view.scale.set(eScale)
       renderer.objectLayer.addChild(npc.view)
       grid.blocked[y * grid.w + x] = 1
       npc.onTap((n) => this._talkTo(n))
@@ -184,13 +190,11 @@ export class Game {
     const BASE = import.meta.env.BASE_URL || '/'
     let manifest
     try { manifest = await (await fetch(BASE + 'assets/decor.json')).json() } catch { return }
-    // Sólo renderizamos decoraciones que se ven bien (la fuente + animales). Los aldeanos
-    // de HERESY tienen otro formato/escala y chocan con nuestros NPCs, así que se omiten.
-    const OK = new Set(['stone_fountain', 'PigSE', 'PigSW'])
     for (const d of list) {
-      if (!OK.has(d.name)) continue
       const meta = manifest[d.name]
       if (!meta) continue
+      // Saltar sprites chicos: son crops mal parseados (salen como "pies" o basura).
+      if (meta.cell[1] < 100) continue
       let tex
       try { tex = await Assets.load(BASE + 'assets/' + meta.src) } catch { continue }
       if (this.destroyed) return
@@ -495,6 +499,11 @@ const HUB_SPAWN = {
   black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27],
   greenwood_point: [51, 51], triston: [59, 58],
 }
+
+// Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
+// dibuja personajes CHICOS respecto de sus edificios; nuestro héroe (fantasycore) es más
+// grande, así que lo achicamos para que encaje con los aldeanos y la escala del pueblo.
+const ENTITY_SCALE = { triston: 0.72 }
 
 function hubOrCentralSpawn(mapName, grid, map) {
   const h = HUB_SPAWN[mapName]
