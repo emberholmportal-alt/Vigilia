@@ -1,37 +1,43 @@
-// Barra de acción estilo Flare/Diablo: usa el frame real (actionbar_trim.png, 1280×70)
-// que ya trae los 4 botones de menú grabados (personaje/inventario/poderes/registro).
-// Encima ponemos el cinturón (consumibles) en los primeros slots y hotspots sobre los
-// íconos de menú. Un solo elemento prolijo, como la imagen de referencia.
+// Barra de acción compacta y prolija: correr/stamina + chat + cinturón (consumibles) +
+// los 4 botones de menú (con los íconos grabados de Flare). Sin slots vacíos de relleno
+// (los hotkeys de poderes llegan con el combate). Un solo bloque centrado.
+import Bar from './Bar.jsx'
 import ItemIcon from './ItemIcon.jsx'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
-const AW = 1280
-
-// Centros (en px del frame de 1280) de los primeros 4 slots (cinturón).
-const BELT_CX = [96, 160, 224, 288]
-// Centros de los 4 botones de menú grabados + a qué panel abren.
+const SLOT = `url(${UI}slot_empty.png)`
 const MENU = [
-  { cx: 992, panel: 'character', title: 'Personaje' },
-  { cx: 1056, panel: 'inventory', title: 'Inventario', gold: true },
-  { cx: 1120, panel: 'powers', title: 'Acciones' },
-  { cx: 1184, panel: 'settings', title: 'Configuración' },
+  { icon: 'menu_char.png', panel: 'character', title: 'Personaje' },
+  { icon: 'menu_powers.png', panel: 'powers', title: 'Acciones' },
+  { icon: 'menu_inv.png', panel: 'inventory', title: 'Inventario', gold: true },
 ]
-const pc = (x) => (x / AW * 100) + '%'
 
-export default function ActionBar({ belt, gold, onPanel }) {
+export default function ActionBar({ belt, gold, running, stamina, staminaMax, onToggleRun, onChat, onPanel }) {
   return (
-    <div className="actionbar" style={{ backgroundImage: `url(${UI}actionbar_trim.png)` }}>
-      {belt.map((it, i) => (
-        <div key={i} className="ab-slot" style={{ left: pc(BELT_CX[i]) }}>
-          {it && <ItemIcon icon={it.icon} fill count={it.count} />}
-        </div>
-      ))}
-      {MENU.map((m) => (
-        <button key={m.panel} className="ab-menu" style={{ left: pc(m.cx) }}
-                title={m.title} onClick={() => onPanel(m.panel)}>
-          {m.gold && <u>{gold}</u>}
-        </button>
-      ))}
+    <div className="actionbar">
+      <button className={'ab-run' + (running ? ' on' : '')} onClick={onToggleRun} title="Caminar/correr">
+        {running ? '🏃' : '🚶'}
+        <Bar type="xp" value={stamina} max={staminaMax} width={50} />
+      </button>
+      <button className="ab-icon" onClick={onChat} title="Chat">💬</button>
+
+      <div className="ab-belt">
+        {belt.map((it, i) => (
+          <div key={i} className="ab-cell" style={{ backgroundImage: SLOT }}>
+            {it && <ItemIcon icon={it.icon} fill count={it.count} />}
+          </div>
+        ))}
+      </div>
+
+      <div className="ab-menu">
+        {MENU.map((m) => (
+          <button key={m.panel} className="ab-mbtn" title={m.title}
+                  style={{ backgroundImage: `url(${UI}${m.icon})` }} onClick={() => onPanel(m.panel)}>
+            {m.gold && <u>{gold}</u>}
+          </button>
+        ))}
+        <button className="ab-icon" onClick={() => onPanel('settings')} title="Configuración">⚙️</button>
+      </div>
     </div>
   )
 }

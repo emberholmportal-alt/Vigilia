@@ -301,7 +301,7 @@ def repack(anim_txt, roots, out_png, scale, anims=ANIMS):
     }
 
 
-def extract_tileset(name, roots, out_dir, scale, atlas_w=2048):
+def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
     """Extrae un tileset isométrico y lo REPAQUETA a un atlas propio.
 
     Un tilesetdef de Flare puede referenciar VARIAS imágenes fuente (una línea
@@ -340,10 +340,13 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048):
         im = src_img(img_rel)
         if im is None:
             continue
+        # scale_fn permite escalar distinto según el tamaño nativo del tile (para
+        # tilesets con mezcla de piso chico + edificios enormes, como HERESY/Triston).
+        s = scale_fn(w, h) if scale_fn else scale
         crop = im.crop((x, y, x + w, y + h))
-        if scale != 1.0:
-            crop = crop.resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.LANCZOS)
-        crops[tid] = (crop, int(ox * scale), int(oy * scale))
+        if s != 1.0:
+            crop = crop.resize((max(1, int(w * s)), max(1, int(h * s))), Image.LANCZOS)
+        crops[tid] = (crop, int(ox * s), int(oy * s))
     if not crops:
         return None
 

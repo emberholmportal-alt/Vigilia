@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useGameStore } from '../store.js'
 import { playerProgress } from '../data/progression.js'
-import Bar from './Bar.jsx'
 import Globe from './Globe.jsx'
 import ActionBar from './ActionBar.jsx'
 
@@ -59,15 +58,8 @@ export default function HUD() {
         <div className="globe-row">
           <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
 
-          <div className="hud-aux">
-            <button className={'run-btn' + (running ? ' on' : '')} onClick={toggleRun} title="Caminar/correr">
-              {running ? '🏃' : '🚶'}
-              <Bar type="xp" value={stamina} max={staminaMax} width={48} />
-            </button>
-            <button className="icon-btn" onClick={() => setChatOpen((v) => !v)} title="Chat">💬</button>
-          </div>
-
-          <ActionBar belt={belt} gold={gold} onPanel={togglePanel} />
+          <ActionBar belt={belt} gold={gold} running={running} stamina={stamina} staminaMax={staminaMax}
+                     onToggleRun={toggleRun} onChat={() => setChatOpen((v) => !v)} onPanel={togglePanel} />
 
           <Globe type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} />
         </div>

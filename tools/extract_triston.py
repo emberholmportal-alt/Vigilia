@@ -30,7 +30,14 @@ def main():
     if not os.path.isdir(heresy):
         sys.exit(f"falta {heresy} (bajá HERESY del release y copialo, ver docstring)")
 
-    res = ef.extract_tileset("tileset_triston", [heresy], a.out, scale=a.scale, atlas_w=4096)
+    # HERESY mezcla piso chico (nativo 64px) con edificios enormes (250-1250px). Para que
+    # quede proporcionado con nuestros personajes (calibrados a un piso de 96px), escalamos
+    # el PISO a 96px (×1.5) y los EDIFICIOS a un tamaño tipo fantasycore (×0.8).
+    def scale_fn(w, h):
+        return 1.5 if max(w, h) <= 150 else 0.8
+
+    res = ef.extract_tileset("tileset_triston", [heresy], a.out, scale=a.scale,
+                             atlas_w=4096, scale_fn=scale_fn)
     if not res:
         sys.exit("no se pudo extraer tileset_triston")
 
