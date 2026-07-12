@@ -57,7 +57,7 @@ export default function App() {
     const game = new Game(storeApi)
     gameRef.current = game
     // Hub: el pueblo de Lochport (con fragua). ?map=<nombre> para probar otras zonas.
-    const mapName = new URLSearchParams(location.search).get('map') || 'lochport'
+    const mapName = new URLSearchParams(location.search).get('map') || 'greenwood_point'
     game
       .mount(canvasRef.current, mapName)
       .then(() => setLoading(false))

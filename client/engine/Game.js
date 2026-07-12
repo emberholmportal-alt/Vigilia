@@ -440,7 +440,7 @@ function equipToGfx(equip) {
 }
 
 // Spawn de hub elegido a mano (plaza/centro) por mapa; si no, centroide abierto.
-const HUB_SPAWN = { black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27] }
+const HUB_SPAWN = { black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27], greenwood_point: [51, 51] }
 
 function hubOrCentralSpawn(mapName, grid, map) {
   const h = HUB_SPAWN[mapName]
