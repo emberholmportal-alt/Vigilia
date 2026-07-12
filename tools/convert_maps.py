@@ -42,7 +42,7 @@ TILE_OVERRIDE = {"triston": (128, 64)}
 
 
 def parse_map(path):
-    m = {"layers": {}, "portals": [], "chests": [], "npcs": [], "spawners": []}
+    m = {"layers": {}, "portals": [], "chests": [], "npcs": [], "spawners": [], "decorations": []}
     section, buf, layer_type, reading_data = None, {}, None, False
     rows = []
 
@@ -69,6 +69,13 @@ def parse_map(path):
             elif "npc" in ev:
                 m["npcs"].append({"x": loc[0], "y": loc[1],
                                   "id": os.path.splitext(os.path.basename(ev["npc"]))[0]})
+        elif section == "npc":
+            # Decoraciones/aldeanos/animales que el mapa coloca (fuente, cerdos, etc.).
+            loc = [int(x) for x in buf.get("location", "0,0,1,1").split(",")]
+            fn = buf.get("filename", "")
+            if fn:
+                m["decorations"].append({"x": loc[0], "y": loc[1], "w": loc[2], "h": loc[3],
+                                         "name": os.path.splitext(os.path.basename(fn))[0]})
         elif section == "enemy":
             loc = [int(x) for x in buf.get("location", "0,0,1,1").split(",")]
             # level y number pueden ser un valor ("10") o un rango ("2,3")

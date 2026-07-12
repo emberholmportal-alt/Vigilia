@@ -1,7 +1,7 @@
 // Orquestador del juego (Fase 1): Pixi Application + loop.
 // React NO entra acá: solo lee el store que este loop actualiza.
 
-import { Application, Container, Graphics } from 'pixi.js'
+import { Application, Assets, Container, Graphics, Sprite } from 'pixi.js'
 import { Iso } from './iso.js'
 import { loadWorld } from './assets.js'
 import { Grid } from './Pathfinding.js'
@@ -112,6 +112,9 @@ export class Game {
       this.npcs.push(npc)
     }
 
+    // Decoraciones del mapa (fuente, cerdos, aldeanos ambientales de HERESY).
+    await this._buildDecorations(renderer, iso, world.map, grid)
+
     // Cofres del mapa (loot). El tile del cofre ya está en la capa `object`; le sumamos
     // un brillo dorado que pulsa (para que se note) y un hotspot para abrirlo.
     await loadIcons()
@@ -170,6 +173,36 @@ export class Game {
     npc.dir = screenVecToDir(pv.x - nv.x, pv.y - nv.y)
     if (npc.def.shop) this.store.openShop(npc.def.name)
     else this.store.openDialogue({ name: npc.def.name, portrait: npc.def.portrait, lines: npc.lines })
+  }
+
+  // Decoraciones estáticas del mapa (secciones [npc] de Flare: fuente, cerdos, aldeanos
+  // ambientales). Sprites reales de HERESY (public/assets/decor/), depth-sort por x+y.
+  async _buildDecorations(renderer, iso, map, grid) {
+    const list = map.decorations || []
+    if (!list.length) return
+    const BASE = import.meta.env.BASE_URL || '/'
+    let manifest
+    try { manifest = await (await fetch(BASE + 'assets/decor.json')).json() } catch { return }
+    for (const d of list) {
+      const meta = manifest[d.name]
+      if (!meta) continue
+      let tex
+      try { tex = await Assets.load(BASE + 'assets/' + meta.src) } catch { continue }
+      if (this.destroyed) return
+      const sp = new Sprite(tex)
+      sp.anchor.set(meta.anchor[0] / meta.cell[0], meta.anchor[1] / meta.cell[1])
+      sp.x = iso.toWorldX(d.x, d.y)
+      sp.y = iso.toWorldY(d.x, d.y)
+      sp.zIndex = d.x + d.y
+      renderer.objectLayer.addChild(sp)
+      // Bloquear el footprint (la fuente ocupa 3×3; cerdos/gente 1×1).
+      for (let dy = 0; dy < (d.h || 1); dy++) {
+        for (let dx = 0; dx < (d.w || 1); dx++) {
+          const bx = d.x + dx, by = d.y + dy
+          if (bx >= 0 && bx < grid.w && by >= 0 && by < grid.h) grid.blocked[by * grid.w + bx] = 1
+        }
+      }
+    }
   }
 
   // --- Cofres y loot ---------------------------------------------------------
@@ -442,7 +475,7 @@ function equipToGfx(equip) {
 // Spawn de hub elegido a mano (plaza/centro) por mapa; si no, centroide abierto.
 const HUB_SPAWN = {
   black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27],
-  greenwood_point: [51, 51], triston: [46, 50],
+  greenwood_point: [51, 51], triston: [59, 58],
 }
 
 function hubOrCentralSpawn(mapName, grid, map) {
