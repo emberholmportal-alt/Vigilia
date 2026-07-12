@@ -107,18 +107,43 @@ html, body, #root {
 .fslot-label { font-size: 8px; color: var(--dim); font-style: normal; text-align: center; line-height: 1.05; }
 
 /* ---------- HUD inferior (cinturón+correr arriba, barras HP/MP abajo) ---------- */
+/* HUD estilo Diablo: globos de vida/maná en las esquinas, acción al centro, XP abajo */
 .hud-bottom {
   position: absolute; left: 0; right: 0; bottom: 0;
-  padding: 0 10px calc(8px + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 0;
   pointer-events: none;
 }
-.hud-belt-row {
-  display: flex; align-items: center; justify-content: center; gap: 8px; pointer-events: auto;
+.globe-row {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 6px;
+  padding: 0 6px 2px; pointer-events: auto;
 }
-.hud-bars-row {
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
-  pointer-events: auto;
+.globe {
+  position: relative; width: 84px; height: 84px; flex: 0 0 auto;
+  background-size: 100% 100%; background-repeat: no-repeat;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
+}
+.globe-liquid {
+  position: absolute; left: 0; bottom: 0; width: 100%; overflow: hidden;
+  background-repeat: no-repeat; background-position: center bottom; background-size: 84px 84px;
+}
+.globe-label {
+  position: absolute; left: 0; right: 0; bottom: 40%; text-align: center;
+  font-family: Georgia, serif; font-size: 11px; color: #f7efdd;
+  text-shadow: 0 1px 2px #000, 0 0 4px #000; pointer-events: none;
+}
+.action-cluster {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  flex: 1 1 auto; min-width: 0;
+}
+.action-btns { display: flex; align-items: center; gap: 5px; }
+.xp-strip {
+  height: 9px; background: url('/assets/ui/bar_xp_wide_bg.png') center/100% 100% no-repeat;
+  border-top: 1px solid rgba(0, 0, 0, 0.6); pointer-events: auto;
+  margin-bottom: env(safe-area-inset-bottom);
+}
+.xp-strip-fill {
+  height: 100%; background: url('/assets/ui/bar_xp_wide.png') left center/100% 100% no-repeat;
+  transition: width 0.3s ease;
 }
 .belt { display: flex; align-items: center; gap: 4px; }
 .run-btn {
