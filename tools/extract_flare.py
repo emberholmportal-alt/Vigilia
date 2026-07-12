@@ -76,6 +76,8 @@ NPCS = [
     "peddler_goblin", "guild_man", "guild_man1", "guild_man2", "knight",
     "peasant_man1", "peasant_man2", "peasant_woman1", "peasant_woman2",
     "return_obelisk1", "return_obelisk2",
+    # landmarks: los Tres Guardianes (WORLD.md) — viven en alpha_demo
+    "statue_guardian_fire", "statue_guardian_ice", "statue_guardian_wind",
 ]
 
 TILESETS = [
@@ -348,7 +350,10 @@ def main():
 
     # Los assets están repartidos entre mods: empyrean_campaign depende de fantasycore.
     # Buscamos en ese orden (empyrean pisa a core).
-    roots = [os.path.join(a.flare, "mods", m) for m in ("empyrean_campaign", "fantasycore")]
+    # empyrean/fantasycore tienen el grueso; alpha_demo es fallback para algunos
+    # landmarks (estatuas guardianas) que no están en los mods principales.
+    roots = [os.path.join(a.flare, "mods", m)
+             for m in ("empyrean_campaign", "fantasycore", "alpha_demo", "minicore_alpha")]
     roots = [r for r in roots if os.path.isdir(r)]
     if not roots:
         sys.exit(f"No encuentro los mods de Flare en {a.flare}. Cloná flare-game primero.")

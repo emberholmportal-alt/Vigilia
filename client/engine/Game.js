@@ -10,7 +10,8 @@ import { Camera } from './Camera.js'
 import { Player, WALK_PX, RUN_PX } from './Player.js'
 import { Npc } from './Npc.js'
 import { screenVecToDir } from './Paperdoll.js'
-import { NPCS } from '../data/npcs.js'
+import { NPCS_BY_MAP } from '../data/npcs.js'
+import { stampStructures } from '../data/structures.js'
 
 const STAM_DRAIN = 22 // por segundo corriendo
 const STAM_REGEN = 16 // por segundo si no
@@ -42,6 +43,10 @@ export class Game {
     const world = await loadWorld(mapName)
     if (this.destroyed) { app.destroy(true); return }
     this.world = world
+
+    // Estampar edificios en el mapa abierto ANTES de crear grid y renderer.
+    stampStructures(world.map, mapName)
+
     const iso = new Iso(world.map.tileW, world.map.tileH, world.tileset.scale)
     this.iso = iso
 
@@ -79,9 +84,9 @@ export class Game {
     // NPCs de la plaza (vida de la ciudad). Se ubican en su tile, se bloquea ese tile
     // para que el jugador los rodee, y al tocarlos hablan.
     this.npcs = []
-    for (const def of NPCS) {
+    for (const def of NPCS_BY_MAP[mapName] || []) {
       let x = def.x, y = def.y
-      if (!def.landmark && !grid.isWalkable(x, y)) {
+      if (!def.landmark && !def.patrol && !grid.isWalkable(x, y)) {
         const near = grid.nearestWalkable(x, y, 4)
         if (near) { x = near.x; y = near.y }
       }
@@ -90,7 +95,8 @@ export class Game {
       if (this.destroyed) { app.destroy(true); return }
       if (!ok) continue
       renderer.objectLayer.addChild(npc.view)
-      grid.blocked[y * grid.w + x] = 1 // el jugador no atraviesa NPCs
+      // Los estáticos bloquean su tile; los que patrullan se mueven, no bloquean.
+      if (!def.patrol) grid.blocked[y * grid.w + x] = 1
       npc.onTap((n) => this._talkTo(n))
       this.npcs.push(npc)
     }
@@ -288,7 +294,7 @@ function equipToGfx(equip) {
 }
 
 // Spawn de hub elegido a mano (plaza/centro) por mapa; si no, centroide abierto.
-const HUB_SPAWN = { black_oak_city: [41, 13] }
+const HUB_SPAWN = { black_oak_city: [41, 13], black_oak_farm: [58, 54] }
 
 function hubOrCentralSpawn(mapName, grid, map) {
   const h = HUB_SPAWN[mapName]

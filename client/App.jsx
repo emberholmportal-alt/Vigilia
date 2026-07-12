@@ -30,8 +30,8 @@ export default function App() {
     if (phase !== 'game' || gameRef.current) return
     const game = new Game(storeApi)
     gameRef.current = game
-    // Hub: el centro de Black Oak City. Probar otras zonas con ?map=<nombre>.
-    const mapName = new URLSearchParams(location.search).get('map') || 'black_oak_city'
+    // Hub: la explanada abierta de Black Oak Farm (menos laberinto). ?map=<nombre>.
+    const mapName = new URLSearchParams(location.search).get('map') || 'black_oak_farm'
     game
       .mount(canvasRef.current, mapName)
       .then(() => setLoading(false))

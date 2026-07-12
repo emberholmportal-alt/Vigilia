@@ -3,8 +3,10 @@
 // Diablo— se quedan en su puesto y le dan vida a la plaza con presencia y charla.
 
 import { Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js'
+import { screenVecToDir } from './Paperdoll.js'
 
 const BASE = import.meta.env.BASE_URL || '/'
+const PATROL_PX = 46 // velocidad de paseo del NPC (px de pantalla/seg)
 
 export class Npc {
   constructor(manifest, def, iso) {
@@ -19,6 +21,10 @@ export class Npc {
     this._frame = 0
     this._elapsed = 0
     this._speechT = 0
+    // patrulla: lista de tiles [x,y]; se pasea entre ellos y pausa al llegar.
+    this.patrol = def.patrol || null
+    this._pIdx = 0
+    this._pauseT = 0
 
     this.view = new Container()
     this.sprite = new Sprite()
@@ -102,6 +108,35 @@ export class Npc {
   }
 
   update(dt) {
+    // Patrulla (solo si no está hablando). Se mueve en pixel de mundo para velocidad
+    // de pantalla constante, mira hacia donde va, y pausa en cada punto.
+    if (this.patrol && this.patrol.length > 1 && this._speechT <= 0) {
+      if (this._pauseT > 0) {
+        this._pauseT -= dt
+      } else {
+        const [gx, gy] = this.patrol[this._pIdx]
+        const wx = this.iso.toWorldX(this.tx, this.ty)
+        const wy = this.iso.toWorldY(this.tx, this.ty)
+        const twx = this.iso.toWorldX(gx, gy)
+        const twy = this.iso.toWorldY(gx, gy)
+        const dxp = twx - wx, dyp = twy - wy
+        const distp = Math.hypot(dxp, dyp)
+        const step = PATROL_PX * dt
+        if (distp <= step || distp === 0) {
+          this.tx = gx; this.ty = gy
+          this._pIdx = (this._pIdx + 1) % this.patrol.length
+          this._pauseT = 1.6 + (this._pIdx % 3) * 0.8 // pausa a mirar
+        } else {
+          const t = this.iso.toTile(wx + (dxp / distp) * step, wy + (dyp / distp) * step)
+          this.tx = t.x; this.ty = t.y
+          this.dir = screenVecToDir(dxp, dyp)
+        }
+        this.view.x = this.iso.toWorldX(this.tx, this.ty)
+        this.view.y = this.iso.toWorldY(this.tx, this.ty)
+        this.view.zIndex = this.tx + this.ty
+      }
+    }
+
     // anim stance (loop/pingpong)
     const st = this.d && this.d.anims.stance
     if (st) {
