@@ -110,10 +110,12 @@ export class Npc {
   update(dt) {
     // Patrulla (solo si no está hablando). Se mueve en pixel de mundo para velocidad
     // de pantalla constante, mira hacia donde va, y pausa en cada punto.
+    let walking = false
     if (this.patrol && this.patrol.length > 1 && this._speechT <= 0) {
       if (this._pauseT > 0) {
         this._pauseT -= dt
       } else {
+        walking = true
         const [gx, gy] = this.patrol[this._pIdx]
         const wx = this.iso.toWorldX(this.tx, this.ty)
         const wy = this.iso.toWorldY(this.tx, this.ty)
@@ -136,6 +138,13 @@ export class Npc {
         this.view.zIndex = this.tx + this.ty
       }
     }
+
+    // Rebote de caminata: los sprites de NPC son de 1 frame (Flare no les dio anim de
+    // caminar), así que fingimos el paso con un hop vertical mientras patrullan. Sin esto
+    // se deslizan como fantasmas.
+    this._walkT = (this._walkT || 0) + dt
+    const targetHop = walking ? -Math.abs(Math.sin(this._walkT * 7)) * 2.6 : 0
+    this.sprite.y += (targetHop - this.sprite.y) * Math.min(1, dt * 14) // ease al valor
 
     // anim stance (loop/pingpong)
     const st = this.d && this.d.anims.stance
