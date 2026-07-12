@@ -73,6 +73,10 @@ export const useGameStore = create((set, get) => ({
   panel: null,              // 'inventory' | 'character' | 'shop' | null
   shopStock: [],            // stock del mercader (rota por día)
   shopVendor: '',           // nombre del mercader abierto
+  nearby: null,             // {name, shop} — NPC cercano interactuable (lo escribe el loop)
+  interactSeq: 0,           // el botón "interactuar" del HUD lo incrementa; el loop lo lee
+  setNearby: (nearby) => set((s) => (s.nearby?.name === nearby?.name ? {} : { nearby })),
+  requestInteract: () => set((s) => ({ interactSeq: s.interactSeq + 1 })),
 
   // --- audio ---
   muted: false,
@@ -257,4 +261,6 @@ export const storeApi = {
   addXp: (n) => useGameStore.getState().addXp(n),
   addSkillXp: (skill, n) => useGameStore.getState().addSkillXp(skill, n),
   getPlayerLevel: () => useGameStore.getState().stats?.level || 1,
+  setNearby: (v) => useGameStore.getState().setNearby(v),
+  getInteractSeq: () => useGameStore.getState().interactSeq,
 }

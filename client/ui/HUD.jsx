@@ -15,6 +15,8 @@ export default function HUD() {
   const stats = useGameStore((s) => s.stats)
   const belt = useGameStore((s) => s.belt)
   const xp = useGameStore((s) => s.xp)
+  const nearby = useGameStore((s) => s.nearby)
+  const requestInteract = useGameStore((s) => s.requestInteract)
   const togglePanel = useGameStore((s) => s.togglePanel)
 
   const s = stats || { level: 1, str: 0, dex: 0, int: 0, vit: 0, hp: 0, hpMax: 1, mp: 0, mpMax: 1 }
@@ -38,6 +40,12 @@ export default function HUD() {
           <span className="dim2">{mapTitle}</span>
         </div>
       </div>
+
+      {nearby && (
+        <button className="interact-btn" onClick={requestInteract}>
+          {nearby.shop ? '🛒 Comerciar con ' : '💬 Hablar con '}{nearby.name}
+        </button>
+      )}
 
       <div className="hud-bottom">
         <div className="globe-row">

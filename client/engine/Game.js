@@ -160,6 +160,7 @@ export class Game {
 
     // Loop. (StrictMode puede desmontar durante los awaits de arriba.)
     if (this.destroyed) { app.destroy(true); return }
+    this._lastInteractSeq = this.store.getInteractSeq() // no interactuar en el primer tick
     this._fpsAccum = 0
     this._fpsFrames = 0
     app.ticker.add(this._tick)
@@ -183,7 +184,11 @@ export class Game {
     const BASE = import.meta.env.BASE_URL || '/'
     let manifest
     try { manifest = await (await fetch(BASE + 'assets/decor.json')).json() } catch { return }
+    // Sólo renderizamos decoraciones que se ven bien (la fuente + animales). Los aldeanos
+    // de HERESY tienen otro formato/escala y chocan con nuestros NPCs, así que se omiten.
+    const OK = new Set(['stone_fountain', 'PigSE', 'PigSW'])
     for (const d of list) {
+      if (!OK.has(d.name)) continue
       const meta = manifest[d.name]
       if (!meta) continue
       let tex
@@ -378,6 +383,17 @@ export class Game {
     // NPCs (anim idle + globos).
     for (const npc of this.npcs) npc.update(dt)
 
+    // NPC cercano interactuable (para el botón del HUD): el más próximo dentro de rango.
+    let near = null, nd = 1e9
+    for (const npc of this.npcs) {
+      const d = Math.abs(npc.tx - this.player.tx) + Math.abs(npc.ty - this.player.ty)
+      if (d < nd) { nd = d; near = npc }
+    }
+    this._nearbyNpc = (near && nd <= 2.5) ? near : null
+    // Botón "interactuar" del HUD: si cambió el contador y hay NPC cerca, hablar/comerciar.
+    const seq = this.store.getInteractSeq()
+    if (seq !== this._lastInteractSeq) { this._lastInteractSeq = seq; if (this._nearbyNpc) this._talkTo(this._nearbyNpc) }
+
     // Abrir el cofre pendiente al llegar cerca.
     if (this._pendingChest && !this.player.moving) {
       const c = this._pendingChest
@@ -406,6 +422,8 @@ export class Game {
     if (this._stamAccum >= 0.08 || (stamina === 0) !== (st.stamina === 0)) {
       this.store.setStamina(Math.round(stamina))
       this.store.setPlayerTile({ x: this.player.tx, y: this.player.ty })
+      const n = this._nearbyNpc
+      this.store.setNearby(n ? { name: n.def.name, shop: !!n.def.shop } : null)
       this._stamAccum = 0
     }
     this.camera.follow(this.player.tx, this.player.ty)
