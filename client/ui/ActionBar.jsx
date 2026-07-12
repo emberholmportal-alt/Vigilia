@@ -6,12 +6,14 @@ import ItemIcon from './ItemIcon.jsx'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 
-export default function ActionBar({ belt, gold }) {
+export default function ActionBar({ belt, gold, onUseBelt }) {
   return (
     <div className="actionbar">
       <div className="ab-belt">
         {belt.map((it, i) => (
-          <div key={i} className="ab-cell" style={{ backgroundImage: `url(${UI}slot_empty.png)` }}>
+          <div key={i} className={'ab-cell' + (it ? ' usable' : '')}
+               style={{ backgroundImage: `url(${UI}slot_empty.png)` }}
+               onClick={it ? () => onUseBelt?.(i) : undefined}>
             {it && <ItemIcon icon={it.icon} fill count={it.count} />}
           </div>
         ))}
@@ -61,14 +63,19 @@ const MENU_CX = [
   { cx: 1184, panel: 'settings', title: 'Ajustes' },
 ]
 
-export function DesktopBar({ belt, onPanel }) {
+export function DesktopBar({ belt, onPanel, onUseBelt }) {
   return (
     <div className="desktop-bar" style={{ backgroundImage: `url(${UI}actionbar_trim.png)` }}>
-      {HOT_CX.map((cx, i) => (
-        <div key={'h' + i} className="db-slot" style={{ left: pc(cx), backgroundImage: `url(${UI}slot_empty.png)` }}>
-          {belt[i] && <ItemIcon icon={belt[i].icon} fill count={belt[i].count} />}
-        </div>
-      ))}
+      {HOT_CX.map((cx, i) => {
+        const it = belt[i]
+        return (
+          <div key={'h' + i} className={'db-slot' + (it ? ' usable' : '')}
+               style={{ left: pc(cx), backgroundImage: `url(${UI}slot_empty.png)` }}
+               onClick={it ? () => onUseBelt?.(i) : undefined}>
+            {it && <ItemIcon icon={it.icon} fill count={it.count} />}
+          </div>
+        )
+      })}
       {M_CX.map((cx, i) => (
         <div key={'m' + i} className="db-slot" style={{ left: pc(cx), backgroundImage: `url(${UI}slot_empty.png)` }} />
       ))}

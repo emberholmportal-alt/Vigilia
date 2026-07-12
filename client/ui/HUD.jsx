@@ -1,10 +1,24 @@
 // HUD permanente estilo Diablo: globos de vida/maná en las esquinas, la barra de acción
 // real de Flare al centro (cinturón + botones de menú) y la barra de XP abajo. Los stats
 // arriba a la izquierda (tocables abren el panel de personaje). Sin stamina ni chat.
+import { useEffect } from 'react'
 import { useGameStore } from '../store.js'
 import { playerProgress } from '../data/progression.js'
 import Globe from './Globe.jsx'
 import ActionBar, { MenuRow, DesktopBar } from './ActionBar.jsx'
+
+// Aviso breve que aparece arriba de la barra y se va solo.
+function Toast() {
+  const toast = useGameStore((s) => s.toast)
+  const clearToast = useGameStore((s) => s.clearToast)
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(clearToast, 2200)
+    return () => clearTimeout(t)
+  }, [toast, clearToast])
+  if (!toast) return null
+  return <div className="toast" key={toast.until}>{toast.text}</div>
+}
 
 export default function HUD() {
   const mapTitle = useGameStore((s) => s.mapTitle)
@@ -18,6 +32,7 @@ export default function HUD() {
   const nearby = useGameStore((s) => s.nearby)
   const requestInteract = useGameStore((s) => s.requestInteract)
   const togglePanel = useGameStore((s) => s.togglePanel)
+  const useBelt = useGameStore((s) => s.useBelt)
 
   const s = stats || { level: 1, str: 0, dex: 0, int: 0, vit: 0, hp: 0, hpMax: 1, mp: 0, mpMax: 1 }
   const prog = playerProgress(xp || 0)
@@ -42,6 +57,8 @@ export default function HUD() {
         <div className="hud-gold"><span className="ab-coin" /> {gold}</div>
       </div>
 
+      <Toast />
+
       <div className="hud-bottom">
         {nearby && (
           <div className="interact-wrap">
@@ -53,8 +70,8 @@ export default function HUD() {
         <MenuRow onPanel={togglePanel} />
         <div className="globe-row">
           <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
-          <ActionBar belt={belt} gold={gold} />
-          <DesktopBar belt={belt} onPanel={togglePanel} />
+          <ActionBar belt={belt} gold={gold} onUseBelt={useBelt} />
+          <DesktopBar belt={belt} onPanel={togglePanel} onUseBelt={useBelt} />
           <Globe type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} />
         </div>
 

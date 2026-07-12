@@ -15,6 +15,22 @@ import { saveGame } from './data/save.js'
 const SELL_RATIO = 0.25
 export const sellValue = (item) => Math.max(1, Math.floor((item.price || 0) * SELL_RATIO))
 
+// Efecto de una poción del cinturón: cuánto cura de vida/maná. Las básicas no traen el
+// valor en `stats`, así que lo derivamos del nombre (Super ×2, Ultra ×3). Cuando haya
+// combate esto va a curar de verdad; por ahora sirve para avisar si no hace falta.
+function potionEffect(it) {
+  if (!it || it.slot !== 'potion') return null
+  const name = (it.name + ' ' + (it.name_en || '')).toLowerCase()
+  let mult = 1
+  if (/super/.test(name)) mult = 2
+  if (/ultra/.test(name)) mult = 3
+  if (/vida|health/.test(name)) return { hp: 50 * mult }
+  if (/mana|maná/.test(name)) return { mp: 35 * mult }
+  if (it.stats?.hp_regen) return { hp: it.stats.hp_regen }
+  if (it.stats?.mp_regen) return { mp: it.stats.mp_regen }
+  return null
+}
+
 // Slots de equipo. Los primeros 7 se ven en el paperdoll; ring/artifact no.
 export const EQUIP_SLOTS = ['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact']
 export const INVENTORY_SIZE = 55 // 5×11, como la grilla del panel de Flare
@@ -77,6 +93,35 @@ export const useGameStore = create((set, get) => ({
   interactSeq: 0,           // el botón "interactuar" del HUD lo incrementa; el loop lo lee
   setNearby: (nearby) => set((s) => (s.nearby?.name === nearby?.name ? {} : { nearby })),
   requestInteract: () => set((s) => ({ interactSeq: s.interactSeq + 1 })),
+
+  // --- avisos breves (toast) ---
+  toast: null,              // {text, until}
+  showToast: (text) => { const t = (text || '').trim(); if (t) set({ toast: { text: t, until: Date.now() + 2400 } }) },
+  clearToast: () => set({ toast: null }),
+
+  // Usar un consumible del cinturón (índice). Cura vida/maná; si no hace falta (ya al
+  // máximo) avisa con un toast y NO gasta la poción. Al usarla, la descuenta del slot.
+  useBelt: (i) => {
+    const s = get()
+    const it = s.belt[i]
+    if (!it) return
+    const eff = potionEffect(it)
+    if (!eff) { get().showToast('No podés usar esto todavía'); return }
+    const st = s.stats || {}
+    if (eff.hp) {
+      if ((st.hp ?? 0) >= (st.hpMax ?? 0)) { get().showToast('Tu vida ya está al máximo'); return }
+      set({ stats: { ...st, hp: Math.min(st.hpMax, st.hp + eff.hp) } })
+    } else if (eff.mp) {
+      if ((st.mp ?? 0) >= (st.mpMax ?? 0)) { get().showToast('Tu maná ya está al máximo'); return }
+      set({ stats: { ...st, mp: Math.min(st.mpMax, st.mp + eff.mp) } })
+    }
+    const belt = s.belt.slice()
+    const cnt = (it.count || 1) - 1
+    belt[i] = cnt > 0 ? { ...it, count: cnt } : null
+    set({ belt })
+    get().showToast(eff.hp ? `+${eff.hp} de vida` : `+${eff.mp} de maná`)
+    saveGame(get())
+  },
 
   // --- audio ---
   muted: false,

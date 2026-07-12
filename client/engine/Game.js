@@ -190,9 +190,11 @@ export class Game {
     const list = map.decorations || []
     if (!list.length) return
     const BASE = import.meta.env.BASE_URL || '/'
+    const skip = DECOR_SKIP[map.name] || null
     let manifest
     try { manifest = await (await fetch(BASE + 'assets/decor.json')).json() } catch { return }
     for (const d of list) {
+      if (skip && skip.has(d.name)) continue      // decoraciones que sacamos a mano por mapa
       const meta = manifest[d.name]
       if (!meta) continue
       // Saltar sprites chicos: son crops mal parseados (salen como "pies" o basura).
@@ -305,18 +307,30 @@ export class Game {
   _updateOcclusion() {
     const p = this.player
     if (!p) return
+    const iso = this.iso, W = this.renderer.w
     const px = p.view.x, py = p.view.y
-    const pd = p.tx + p.ty                       // profundidad del jugador (x+y)
-    const tallMin = this.iso.tileH * 1.5         // sólo props altos (no el piso ni caminos)
+    const pd = p.tx + p.ty                        // profundidad del jugador (x+y)
+    // Sólo EDIFICIOS: sprites anchos Y altos (excluye cercas, árboles, barriles, props del
+    // suelo). Los árboles quedan para más adelante (sólo si tapan y estás muy cerca).
+    const bldMinW = iso.tileW * 2.5
+    const bldMinH = iso.tileH * 2.5
     const occ = this._occAlpha || (this._occAlpha = new Map()) // alpha por tile (persiste entre rebuilds)
     this.renderer.eachVisibleObject((s) => {
       let hide = false
-      const hpx = s.texture ? s.texture.height : s.height
-      if (hpx > tallMin && s.zIndex > pd) {
-        // ¿el pie del jugador cae dentro de la silueta del sprite? (bbox, anchor 0,0)
-        hide = px >= s.x && px <= s.x + s.width && py >= s.y && py <= s.y + s.height
+      const tw = s.texture ? s.texture.width : s.width
+      const th = s.texture ? s.texture.height : s.height
+      if (tw >= bldMinW && th >= bldMinH && s.zIndex > pd) {
+        // Piso del edificio: su tile base -> X/Y de mundo (la textura NO está centrada
+        // sobre su base, así que anclamos la banda horizontal al tile, no al sprite).
+        const tx = s._ti % W, ty = (s._ti / W) | 0
+        const baseX = iso.toWorldX(tx, ty)
+        const baseY = iso.toWorldY(tx, ty)
+        // Tapado SÓLO si el pie del jugador está por detrás de la línea de piso (py<baseY),
+        // dentro del alto del sprite (no por encima del techo) y en una banda horizontal
+        // angosta centrada en el edificio (descarta estar de frente, al costado o lejos).
+        hide = py < baseY && py > s.y && Math.abs(px - baseX) < s.width * 0.4
       }
-      const target = hide ? 0.32 : 1
+      const target = hide ? 0.3 : 1
       let a = occ.get(s._ti); if (a === undefined) a = 1
       a += (target - a) * 0.28                    // desvanecido suave, por tile
       if (a > 0.999) a = 1
@@ -543,6 +557,10 @@ const PLAYER_SCALE = { triston: 0.9 }
 // Zoom de cámara por mapa: al achicar las entidades, acercamos la cámara para que el
 // pueblo no se vea diminuto en pantallas grandes (todo más grande, sin deformar escala).
 const MAP_ZOOM = { triston: 1.3 }
+
+// Decoraciones ambientales de HERESY que sacamos a mano (por mapa). En Triston quitamos
+// al posadero rojo del carro: ese puesto es donde ponemos al mercader (parece un mercado).
+const DECOR_SKIP = { triston: new Set(['Act1_innkeeper_owens']) }
 
 function hubOrCentralSpawn(mapName, grid, map) {
   const h = HUB_SPAWN[mapName]

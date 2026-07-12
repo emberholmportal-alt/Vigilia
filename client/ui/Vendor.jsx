@@ -94,10 +94,14 @@ export default function Vendor() {
 function Tooltip({ item, mode, gold, pos, onAction }) {
   const [x, y] = pos
   const below = y < PH * 0.5
+  // Anclado horizontal por columna para que el tooltip NO se salga del panel.
+  const cx = (x + SLOT / 2) / PW
   const style = {
-    left: ((x + SLOT / 2) / PW * 100) + '%',
     [below ? 'top' : 'bottom']: below ? ((y + SLOT + 6) / PH * 100) + '%' : ((PH - y + 6) / PH * 100) + '%',
   }
+  if (cx > 0.6) { style.right = ((PW - x - SLOT) / PW * 100) + '%'; style.transform = 'none' }
+  else if (cx < 0.4) { style.left = (x / PW * 100) + '%'; style.transform = 'none' }
+  else { style.left = (cx * 100) + '%'; style.transform = 'translateX(-50%)' }
   const price = item.price || 0
   const gain = sellValue(item)
   const canBuy = mode === 'buy' ? gold >= price : true
