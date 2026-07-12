@@ -4,7 +4,7 @@
 import { useGameStore } from '../store.js'
 import { playerProgress } from '../data/progression.js'
 import Globe from './Globe.jsx'
-import ActionBar from './ActionBar.jsx'
+import ActionBar, { MenuRow } from './ActionBar.jsx'
 
 export default function HUD() {
   const mapTitle = useGameStore((s) => s.mapTitle)
@@ -48,9 +48,10 @@ export default function HUD() {
       )}
 
       <div className="hud-bottom">
+        <MenuRow onPanel={togglePanel} />
         <div className="globe-row">
           <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
-          <ActionBar belt={belt} gold={gold} onPanel={togglePanel} />
+          <ActionBar belt={belt} gold={gold} />
           <Globe type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} />
         </div>
 

@@ -135,27 +135,46 @@ html, body, #root {
   font-family: Georgia, serif; font-size: 11px; color: #f7efdd;
   text-shadow: 0 1px 2px #000, 0 0 4px #000; pointer-events: none;
 }
-/* barra de acción REAL de Flare: el frame 1280×70 con cinturón + botones de menú encima */
+/* barra de acción compuesta con piezas reales de Flare: cinturón + oro + botones de menú.
+   Sólo mostramos slots usables (nada de huecos de poderes vacíos). Marco de latón oscuro. */
 .actionbar {
-  position: relative; align-self: center; flex: 1 1 auto;
-  width: calc(100% - 184px); max-width: 100%; aspect-ratio: 1280 / 70;
+  align-self: center; flex: 0 1 auto; max-width: calc(100% - 172px);
+  display: flex; align-items: center; gap: 7px;
+  padding: 4px 9px;
+  background: linear-gradient(180deg, #2a2118 0%, #17120c 55%, #0c0906 100%);
+  border: 1px solid #6b5320; border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(120, 90, 40, 0.35);
+}
+/* cinturón: 4 slots con la textura real de Flare */
+.ab-belt { display: flex; gap: 3px; }
+.ab-cell {
+  position: relative; width: 40px; height: 40px; flex: 0 0 auto;
   background-size: 100% 100%; background-repeat: no-repeat;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
 }
-.ab-slot, .ab-menu {
-  position: absolute; top: 50%; transform: translate(-50%, -50%);
-  height: 82%; aspect-ratio: 1; display: grid; place-items: center;
+/* oro con moneda */
+.ab-gold {
+  display: flex; align-items: center; gap: 4px; padding: 0 4px;
+  font-family: Georgia, serif; font-size: 14px; color: var(--gold);
+  text-shadow: 0 1px 2px #000; white-space: nowrap;
 }
-.ab-slot { pointer-events: none; }
-.ab-menu {
-  border: 0; background: transparent; padding: 0; cursor: pointer;
+.ab-coin {
+  width: 15px; height: 15px; border-radius: 50%; flex: 0 0 auto;
+  background: radial-gradient(circle at 35% 30%, #ffe89a, #c9a227 60%, #8a6a12);
+  box-shadow: 0 0 0 1px #5a4410, inset 0 -2px 3px rgba(0, 0, 0, 0.4);
+}
+/* fila de botones de menú, centrada arriba de la barra (así no la tapan los globos) */
+.menu-row {
+  display: flex; justify-content: center; gap: 6px;
+  padding: 4px 0 2px; pointer-events: auto;
+}
+.ab-btn {
+  width: 46px; height: 46px; flex: 0 0 auto; border: 0; padding: 0; cursor: pointer;
+  background-color: transparent; background-size: 100% 100%; background-repeat: no-repeat;
   -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
 }
-.ab-menu:active { filter: brightness(1.4); }
-.ab-menu u {
-  position: absolute; bottom: -2px; left: -35%; right: -35%; text-align: center;
-  text-decoration: none; font-size: 9px; color: var(--gold); text-shadow: 0 1px 2px #000;
-}
+.ab-btn:active { filter: brightness(1.35); }
 /* botón para interactuar con el NPC cercano (aparece sobre la barra) */
 .interact-btn {
   position: absolute; left: 50%; bottom: 130px; transform: translateX(-50%);
@@ -176,16 +195,6 @@ html, body, #root {
   height: 100%; background: url('/assets/ui/bar_xp_wide.png') left center/100% 100% no-repeat;
   transition: width 0.3s ease;
 }
-.belt { display: flex; align-items: center; gap: 4px; }
-/* botones de menú con los íconos grabados de la action bar de Flare */
-.menu-btn {
-  width: 40px; height: 40px; border: 0; padding: 0; cursor: pointer; position: relative;
-  background-color: transparent; background-size: 100% 100%; background-repeat: no-repeat;
-  -webkit-tap-highlight-color: transparent; flex: 0 0 auto;
-}
-.menu-btn:active { filter: brightness(1.3); }
-.menu-btn u { position: absolute; bottom: -2px; left: 0; right: 0; text-align: center;
-  text-decoration: none; font-size: 9px; color: var(--gold); text-shadow: 0 1px 2px #000; }
 .run-btn {
   display: flex; align-items: center; gap: 6px;
   font-size: 15px; color: var(--parch); background: var(--crypt); border: 1px solid var(--edge);

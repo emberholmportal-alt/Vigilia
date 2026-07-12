@@ -33,11 +33,11 @@ await sleep(400)
 await page.screenshot({ path: OUT + '/hud.png' })
 
 // Inventario modal
-await page.click('.ab-menu[title="Inventario"]')
-await page.waitForSelector('.modal', { timeout: 5000 })
+await page.click('.ab-btn[title="Inventario"]')
+await page.waitForSelector('.flare-panel', { timeout: 5000 })
 await sleep(300)
 await page.screenshot({ path: OUT + '/inv_modal.png' })
-await page.click('.close-btn')
+await page.click('.panel-close')
 await sleep(200)
 
 // Correr + secuencia de movimiento
