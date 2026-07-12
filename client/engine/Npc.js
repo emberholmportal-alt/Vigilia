@@ -3,10 +3,8 @@
 // Diablo— se quedan en su puesto y le dan vida a la plaza con presencia y charla.
 
 import { Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js'
-import { screenVecToDir } from './Paperdoll.js'
 
 const BASE = import.meta.env.BASE_URL || '/'
-const PATROL_PX = 46 // velocidad de paseo del NPC (px de pantalla/seg)
 
 export class Npc {
   constructor(manifest, def, iso) {
@@ -21,10 +19,6 @@ export class Npc {
     this._frame = 0
     this._elapsed = 0
     this._speechT = 0
-    // patrulla: lista de tiles [x,y]; se pasea entre ellos y pausa al llegar.
-    this.patrol = def.patrol || null
-    this._pIdx = 0
-    this._pauseT = 0
 
     this.view = new Container()
     this.sprite = new Sprite()
@@ -108,43 +102,9 @@ export class Npc {
   }
 
   update(dt) {
-    // Patrulla (solo si no está hablando). Se mueve en pixel de mundo para velocidad
-    // de pantalla constante, mira hacia donde va, y pausa en cada punto.
-    let walking = false
-    if (this.patrol && this.patrol.length > 1 && this._speechT <= 0) {
-      if (this._pauseT > 0) {
-        this._pauseT -= dt
-      } else {
-        walking = true
-        const [gx, gy] = this.patrol[this._pIdx]
-        const wx = this.iso.toWorldX(this.tx, this.ty)
-        const wy = this.iso.toWorldY(this.tx, this.ty)
-        const twx = this.iso.toWorldX(gx, gy)
-        const twy = this.iso.toWorldY(gx, gy)
-        const dxp = twx - wx, dyp = twy - wy
-        const distp = Math.hypot(dxp, dyp)
-        const step = PATROL_PX * dt
-        if (distp <= step || distp === 0) {
-          this.tx = gx; this.ty = gy
-          this._pIdx = (this._pIdx + 1) % this.patrol.length
-          this._pauseT = 1.6 + (this._pIdx % 3) * 0.8 // pausa a mirar
-        } else {
-          const t = this.iso.toTile(wx + (dxp / distp) * step, wy + (dyp / distp) * step)
-          this.tx = t.x; this.ty = t.y
-          this.dir = screenVecToDir(dxp, dyp)
-        }
-        this.view.x = this.iso.toWorldX(this.tx, this.ty)
-        this.view.y = this.iso.toWorldY(this.tx, this.ty)
-        this.view.zIndex = this.tx + this.ty
-      }
-    }
-
-    // Rebote de caminata: los sprites de NPC son de 1 frame (Flare no les dio anim de
-    // caminar), así que fingimos el paso con un hop vertical mientras patrullan. Sin esto
-    // se deslizan como fantasmas.
-    this._walkT = (this._walkT || 0) + dt
-    const targetHop = walking ? -Math.abs(Math.sin(this._walkT * 7)) * 2.6 : 0
-    this.sprite.y += (targetHop - this.sprite.y) * Math.min(1, dt * 14) // ease al valor
+    // Los NPCs de ciudad se quedan en su puesto (los sprites de Flare son de 1 frame:
+    // no tienen animación de caminar, así que moverlos los hace deslizar). Le dan vida a
+    // la plaza con presencia y charla, como en Diablo.
 
     // anim stance (loop/pingpong)
     const st = this.d && this.d.anims.stance

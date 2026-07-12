@@ -38,7 +38,6 @@ const LOCHPORT = [
   // --- pobladores (con retrato y algunos patrullando) ---
   {
     sprite: 'knight', name: 'Guardia Bram', portrait: 'male07.png', x: 40, y: 28, dir: 1,
-    patrol: [[40, 28], [40, 24], [36, 27], [40, 28]],
     lines: ['Ojos duros, vigilante. Afuera no perdona.',
             'Anoche hubo tambores del lado de las minas.',
             'No eran duendes. Los duendes no marcan el paso.'],
@@ -57,21 +56,18 @@ const LOCHPORT = [
   },
   {
     sprite: 'peddler_goblin', name: 'Nix', portrait: 'goblin.png', x: 41, y: 30, dir: 4,
-    patrol: [[41, 30], [41, 26], [41, 30]],
     lines: ['¡Psst! Reliquias raras, precios de robo.',
             'Para vos, robo doble.',
             'No preguntes de dónde salió. Preguntá cuánto vale.'],
   },
   {
     sprite: 'peasant_man1', name: 'Tomas', portrait: 'male03.png', x: 32, y: 24, dir: 6,
-    patrol: [[32, 24], [36, 23], [32, 24]],
     lines: ['En Lochport las lápidas cambian de lugar.',
             'Mi hermano salió a cazar duendes.',
             'Volvió su bota. Nada más.'],
   },
   {
     sprite: 'peasant_woman1', name: 'Wren', portrait: 'female02.png', x: 39, y: 31, dir: 3,
-    patrol: [[39, 31], [35, 31], [39, 31]],
     lines: ['Cerrá la puerta al anochecer.',
             'Lo que camina de noche no golpea antes de entrar.',
             'La fragua no se apaga nunca. Menos mal.'],
@@ -95,10 +91,8 @@ const FARM = [
   { sprite: 'statue_guardian_wind', name: 'Guardián del Viento', landmark: true, x: 58, y: 48, dir: 0,
     lines: ['El viento lleva los nombres de los que no volvieron.'] },
   { sprite: 'knight', name: 'Guardia Bram', portrait: 'male07.png', x: 63, y: 53, dir: 1,
-    patrol: [[63, 53], [63, 49], [59, 49], [63, 53]],
     lines: ['Ojos duros, vigilante. Afuera no perdona.'] },
   { sprite: 'peddler_goblin', name: 'Nix', portrait: 'goblin.png', x: 61, y: 57, dir: 4,
-    patrol: [[61, 57], [65, 57], [65, 53], [61, 57]],
     lines: ['¡Psst! Reliquias raras, precios de robo.'] },
 ]
 

@@ -92,12 +92,12 @@ export class Game {
     player.setName(this.store.getPlayerName())
     await player.setEquipment(equipToGfx(this.store.getEquipment()))
 
-    // NPCs de la plaza (vida de la ciudad). Se ubican en su tile, se bloquea ese tile
-    // para que el jugador los rodee, y al tocarlos hablan.
+    // NPCs de la plaza (vida de la ciudad). Se quedan quietos en su tile, se bloquea ese
+    // tile para que el jugador los rodee, y al tocarlos hablan.
     this.npcs = []
     for (const def of NPCS_BY_MAP[mapName] || []) {
       let x = def.x, y = def.y
-      if (!def.landmark && !def.patrol && !grid.isWalkable(x, y)) {
+      if (!def.landmark && !grid.isWalkable(x, y)) {
         const near = grid.nearestWalkable(x, y, 4)
         if (near) { x = near.x; y = near.y }
       }
@@ -106,8 +106,7 @@ export class Game {
       if (this.destroyed) { app.destroy(true); return }
       if (!ok) continue
       renderer.objectLayer.addChild(npc.view)
-      // Los estáticos bloquean su tile; los que patrullan se mueven, no bloquean.
-      if (!def.patrol) grid.blocked[y * grid.w + x] = 1
+      grid.blocked[y * grid.w + x] = 1
       npc.onTap((n) => this._talkTo(n))
       this.npcs.push(npc)
     }
