@@ -6,6 +6,7 @@
 // pasará a pedirle al server y aplicar su respuesta.
 import { create } from 'zustand'
 import { computeStats } from './data/stats.js'
+import { setMuted } from './engine/audio.js'
 
 // Slots de equipo. Los primeros 7 se ven en el paperdoll; ring/artifact no.
 export const EQUIP_SLOTS = ['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact']
@@ -39,8 +40,16 @@ export const useGameStore = create((set, get) => ({
   race: null,
   playerName: 'Vigilante',
   gold: 0,
-  speech: null,             // {text, until} — diálogo sobre la cabeza
+  speech: null,             // {text, until} — chat propio sobre la cabeza
+  dialogue: null,           // {name, portrait, lines, idx} — charla con NPC (caja con retrato)
   setPlayerName: (playerName) => set({ playerName: playerName || 'Vigilante' }),
+  openDialogue: (d) => set({ dialogue: { ...d, idx: 0 } }),
+  advanceDialogue: () => set((s) => {
+    if (!s.dialogue) return {}
+    const idx = s.dialogue.idx + 1
+    return idx >= s.dialogue.lines.length ? { dialogue: null } : { dialogue: { ...s.dialogue, idx } }
+  }),
+  closeDialogue: () => set({ dialogue: null }),
   say: (text) => {
     const t = (text || '').trim().slice(0, 120)
     if (t) set({ speech: { text: t, until: Date.now() + 4500 } })
@@ -50,6 +59,10 @@ export const useGameStore = create((set, get) => ({
   equipment: emptyEquipment(),
   belt: [null, null, null, null], // cinturón de 4 (consumibles)
   panel: null,              // 'inventory' | null
+
+  // --- audio ---
+  muted: false,
+  toggleMute: () => set((s) => { const m = !s.muted; setMuted(m); return { muted: m } }),
 
   // --- correr / stamina ---
   running: false,
@@ -137,6 +150,7 @@ export const storeApi = {
   setPlayerTile: (v) => useGameStore.getState().setPlayerTile(v),
   getPlayerName: () => useGameStore.getState().playerName,
   getSpeech: () => useGameStore.getState().speech,
+  openDialogue: (d) => useGameStore.getState().openDialogue(d),
   getRunState: () => {
     const s = useGameStore.getState()
     return { running: s.running, stamina: s.stamina, staminaMax: s.staminaMax }

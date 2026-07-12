@@ -1,91 +1,91 @@
-// Pobladores por mapa. Sprites reales de Flare, diálogo con personalidad (nada de
-// "Hola, aventurero") y rumores que apuntan al mundo. Varios patrullan entre puntos.
-// Cada línea es corta (un globo). Direcciones: 0=SW 1=W 2=NW 3=N 4=NE 5=E 6=SE 7=S
+// Pobladores por mapa. Sprites reales de Flare, diálogo con personalidad y rumores.
+// `portrait` = retrato pintado de Flare que se muestra al hablar (public/assets/portraits).
+// Varios patrullan. Direcciones: 0=SW 1=W 2=NW 3=N 4=NE 5=E 6=SE 7=S
 
-const FARM = [
-  // --- monumento central: Obelisco de Retorno + los Tres Guardianes (WORLD.md) ---
+const LOCHPORT = [
+  // --- monumento: Obelisco de Retorno + los Tres Guardianes (WORLD.md) ---
   {
-    sprite: 'return_obelisk1', name: 'Obelisco de Retorno', landmark: true,
-    x: 58, y: 50, dir: 7,
+    sprite: 'return_obelisk1', name: 'Obelisco de Retorno', landmark: true, x: 37, y: 24, dir: 7,
     lines: ['La piedra está tibia. Los que caen afuera, vuelven acá.'],
   },
   {
-    sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', landmark: true,
-    x: 56, y: 51, dir: 0,
+    sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', landmark: true, x: 35, y: 25, dir: 0,
     lines: ['Ofrendá oro a la llama y arderás más fuerte hoy.'],
   },
   {
-    sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', landmark: true,
-    x: 60, y: 51, dir: 0,
+    sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', landmark: true, x: 39, y: 25, dir: 0,
     lines: ['El hielo no odia. Solo espera.'],
   },
   {
-    sprite: 'statue_guardian_wind', name: 'Guardián del Viento', landmark: true,
-    x: 58, y: 48, dir: 0,
+    sprite: 'statue_guardian_wind', name: 'Guardián del Viento', landmark: true, x: 37, y: 22, dir: 0,
     lines: ['El viento lleva los nombres de los que no volvieron.'],
   },
 
-  // --- pobladores ---
+  // --- pobladores (con retrato y algunos patrullando) ---
   {
-    sprite: 'knight', name: 'Guardia Bram', x: 63, y: 53, dir: 1,
-    patrol: [[63, 53], [63, 49], [59, 49], [63, 53]],
-    lines: [
-      'Ojos duros, vigilante. Afuera no perdona.',
-      'Anoche hubo tambores del lado de las minas.',
-      'No eran duendes. Los duendes no marcan el paso.',
-    ],
+    sprite: 'knight', name: 'Guardia Bram', portrait: 'male07.png', x: 40, y: 28, dir: 1,
+    patrol: [[40, 28], [40, 24], [36, 27], [40, 28]],
+    lines: ['Ojos duros, vigilante. Afuera no perdona.',
+            'Anoche hubo tambores del lado de las minas.',
+            'No eran duendes. Los duendes no marcan el paso.'],
   },
   {
-    sprite: 'guild_man', name: 'Halvard', x: 51, y: 53, dir: 5,
-    lines: [
-      'Los gremios reclutan de nuevo.',
-      'Quinientos de oro y una sigla de tres letras.',
-      'Un buen estandarte vale más que cien espadas.',
-    ],
+    sprite: 'guild_man', name: 'Halvard', portrait: 'male12.png', x: 33, y: 27, dir: 5,
+    lines: ['Los gremios reclutan de nuevo.',
+            'Quinientos de oro y una sigla de tres letras.',
+            'Un buen estandarte vale más que cien espadas.'],
   },
   {
-    sprite: 'wandering_trader', name: 'Mercader Oswin', x: 53, y: 56, dir: 0,
-    lines: [
-      'Traje acero del sur y algo de cuero.',
-      'El precio sube con la luna, no conmigo.',
-      'Vendé lo que no uses. El hierro oxidado no abriga.',
-    ],
+    sprite: 'wandering_trader', name: 'Mercader Oswin', portrait: 'male10.png', x: 34, y: 30, dir: 0,
+    lines: ['Traje acero del sur y algo de cuero.',
+            'El precio sube con la luna, no conmigo.',
+            'Vendé lo que no uses. El hierro oxidado no abriga.'],
   },
   {
-    sprite: 'peddler_goblin', name: 'Nix', x: 61, y: 57, dir: 4,
-    patrol: [[61, 57], [65, 57], [65, 53], [61, 57]],
-    lines: [
-      '¡Psst! Reliquias raras, precios de robo.',
-      'Para vos, robo doble.',
-      'No preguntes de dónde salió. Preguntá cuánto vale.',
-    ],
+    sprite: 'peddler_goblin', name: 'Nix', portrait: 'goblin.png', x: 41, y: 30, dir: 4,
+    patrol: [[41, 30], [41, 26], [41, 30]],
+    lines: ['¡Psst! Reliquias raras, precios de robo.',
+            'Para vos, robo doble.',
+            'No preguntes de dónde salió. Preguntá cuánto vale.'],
   },
   {
-    sprite: 'peasant_man1', name: 'Tomas', x: 50, y: 50, dir: 6,
-    patrol: [[50, 50], [50, 56], [55, 56], [50, 50]],
-    lines: [
-      'En Lochport las lápidas cambian de lugar.',
-      'Mi hermano salió a cazar duendes.',
-      'Volvió su bota. Nada más.',
-    ],
+    sprite: 'peasant_man1', name: 'Tomas', portrait: 'male03.png', x: 32, y: 24, dir: 6,
+    patrol: [[32, 24], [36, 23], [32, 24]],
+    lines: ['En Lochport las lápidas cambian de lugar.',
+            'Mi hermano salió a cazar duendes.',
+            'Volvió su bota. Nada más.'],
   },
   {
-    sprite: 'peasant_woman1', name: 'Wren', x: 62, y: 60, dir: 3,
-    patrol: [[62, 60], [58, 60], [58, 56], [62, 60]],
-    lines: [
-      'Cerrá la puerta al anochecer.',
-      'Lo que camina de noche no golpea antes de entrar.',
-      'La fragua no se apaga nunca. Menos mal.',
-    ],
+    sprite: 'peasant_woman1', name: 'Wren', portrait: 'female02.png', x: 39, y: 31, dir: 3,
+    patrol: [[39, 31], [35, 31], [39, 31]],
+    lines: ['Cerrá la puerta al anochecer.',
+            'Lo que camina de noche no golpea antes de entrar.',
+            'La fragua no se apaga nunca. Menos mal.'],
   },
   {
-    sprite: 'peasant_man2', name: 'el viejo Garrick', x: 56, y: 60, dir: 2,
-    lines: [
-      'Empyrea cayó en una sola noche.',
-      'Black Oak aguanta por pura terquedad.',
-      'Vi el Laberinto de Hierro de joven. No entres.',
-    ],
+    sprite: 'peasant_man2', name: 'el viejo Garrick', portrait: 'male18.png', x: 35, y: 32, dir: 2,
+    lines: ['Empyrea cayó en una sola noche.',
+            'Black Oak aguanta por pura terquedad.',
+            'Vi el Laberinto de Hierro de joven. No entres.'],
   },
 ]
 
-export const NPCS_BY_MAP = { black_oak_farm: FARM }
+// La granja (mapa abierto con edificios estampados) queda como alternativa (?map=).
+const FARM = [
+  { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', landmark: true, x: 58, y: 50, dir: 7,
+    lines: ['La piedra está tibia. Los que caen afuera, vuelven acá.'] },
+  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', landmark: true, x: 56, y: 51, dir: 0,
+    lines: ['Ofrendá oro a la llama y arderás más fuerte hoy.'] },
+  { sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', landmark: true, x: 60, y: 51, dir: 0,
+    lines: ['El hielo no odia. Solo espera.'] },
+  { sprite: 'statue_guardian_wind', name: 'Guardián del Viento', landmark: true, x: 58, y: 48, dir: 0,
+    lines: ['El viento lleva los nombres de los que no volvieron.'] },
+  { sprite: 'knight', name: 'Guardia Bram', portrait: 'male07.png', x: 63, y: 53, dir: 1,
+    patrol: [[63, 53], [63, 49], [59, 49], [63, 53]],
+    lines: ['Ojos duros, vigilante. Afuera no perdona.'] },
+  { sprite: 'peddler_goblin', name: 'Nix', portrait: 'goblin.png', x: 61, y: 57, dir: 4,
+    patrol: [[61, 57], [65, 57], [65, 53], [61, 57]],
+    lines: ['¡Psst! Reliquias raras, precios de robo.'] },
+]
+
+export const NPCS_BY_MAP = { lochport: LOCHPORT, black_oak_farm: FARM }

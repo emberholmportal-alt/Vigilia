@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Game } from './engine/Game.js'
 import { storeApi, useGameStore } from './store.js'
+import { playMusic } from './engine/audio.js'
 import { startingCharacter } from './data/characters.js'
 import HUD from './ui/HUD.jsx'
 import StartScreen from './ui/StartScreen.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
 import Inventory from './ui/Inventory.jsx'
 import Minimap from './ui/Minimap.jsx'
+import DialogueBox from './ui/DialogueBox.jsx'
 
 // Flujo: Inicio -> Elegir raza -> Juego (con inventario).
 export default function App() {
@@ -18,10 +20,16 @@ export default function App() {
   const panel = useGameStore((s) => s.panel)
   const initCharacter = useGameStore((s) => s.initCharacter)
 
+  function startGame() {
+    playMusic('title_theme.ogg') // gesto del usuario: arranca la música
+    setPhase('race')
+  }
+
   function chooseRace(raceId, name) {
     // Personaje con kit real ANTES de montar el juego (el paperdoll lo lee al arrancar).
     if (name) useGameStore.getState().setPlayerName(name)
     initCharacter(startingCharacter(raceId))
+    playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
   }
@@ -30,8 +38,8 @@ export default function App() {
     if (phase !== 'game' || gameRef.current) return
     const game = new Game(storeApi)
     gameRef.current = game
-    // Hub: la explanada abierta de Black Oak Farm (menos laberinto). ?map=<nombre>.
-    const mapName = new URLSearchParams(location.search).get('map') || 'black_oak_farm'
+    // Hub: el pueblo de Lochport (con fragua). ?map=<nombre> para probar otras zonas.
+    const mapName = new URLSearchParams(location.search).get('map') || 'lochport'
     game
       .mount(canvasRef.current, mapName)
       .then(() => setLoading(false))
@@ -52,9 +60,10 @@ export default function App() {
       {phase === 'game' && !loading && !error && <HUD />}
       {phase === 'game' && !loading && !error && <Minimap />}
       {phase === 'game' && panel === 'inventory' && <Inventory />}
+      {phase === 'game' && !loading && !error && <DialogueBox />}
       {error && <div className="error">Error: {error}</div>}
 
-      {phase === 'start' && <StartScreen onEnter={() => setPhase('race')} loading={false} />}
+      {phase === 'start' && <StartScreen onEnter={startGame} loading={false} />}
       {phase === 'race' && <RaceScreen onChoose={chooseRace} />}
       {phase === 'game' && loading && <div className="loading">Cargando Black Oak City…</div>}
     </div>

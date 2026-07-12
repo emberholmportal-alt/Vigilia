@@ -28,6 +28,8 @@ export default function HUD() {
   const staminaMax = useGameStore((s) => s.staminaMax)
   const toggleRun = useGameStore((s) => s.toggleRun)
   const togglePanel = useGameStore((s) => s.togglePanel)
+  const muted = useGameStore((s) => s.muted)
+  const toggleMute = useGameStore((s) => s.toggleMute)
 
   const s = stats || { level: 1, str: 0, dex: 0, int: 0, vit: 0, hp: 0, hpMax: 1, mp: 0, mpMax: 1 }
 
@@ -62,6 +64,7 @@ export default function HUD() {
             <Bar type="xp" value={stamina} max={staminaMax} width={70} />
           </button>
           <button className="icon-btn" onClick={() => setChatOpen((v) => !v)}>💬</button>
+          <button className="icon-btn" onClick={toggleMute}>{muted ? '🔇' : '🔊'}</button>
           <button className="bag" onClick={() => togglePanel('inventory')}>
             <i>🎒</i>
             <u>{gold}</u>

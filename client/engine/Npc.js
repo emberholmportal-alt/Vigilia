@@ -81,7 +81,7 @@ export class Npc {
 
     // tocable
     this.view.eventMode = 'static'
-    this.view.cursor = 'pointer'
+    this.view.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
     this._applyFrame()
     return true
   }

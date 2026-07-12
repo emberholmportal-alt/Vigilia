@@ -176,6 +176,37 @@ def resolve(roots, rel):
     return None
 
 
+MUSIC = ["title_theme.ogg", "town_theme.ogg"]
+CURSORS = ["cursor_normal.png", "cursor_interact.png", "cursor_attack.png"]
+
+
+def copy_extras(roots, out_dir):
+    """Copia música, retratos y cursores de Flare a public/assets/."""
+    import shutil
+    # música
+    ad = os.path.join(out_dir, "audio"); os.makedirs(ad, exist_ok=True)
+    for f in MUSIC:
+        src = resolve(roots, os.path.join("music", f))
+        if src: shutil.copy(src, os.path.join(ad, f))
+    # retratos (todos)
+    pd = os.path.join(out_dir, "portraits"); os.makedirs(pd, exist_ok=True)
+    npc = 0
+    for r in roots:
+        d = os.path.join(r, "images", "portraits")
+        if not os.path.isdir(d): continue
+        for f in os.listdir(d):
+            if f.endswith(".png") and not os.path.exists(os.path.join(pd, f)):
+                Image.open(os.path.join(d, f)).convert("RGBA").save(os.path.join(pd, f), optimize=True)
+                npc += 1
+    # cursores
+    cd = os.path.join(out_dir, "ui", "cursors"); os.makedirs(cd, exist_ok=True)
+    for f in CURSORS:
+        src = resolve(roots, os.path.join("images", "menus", "..", "cursors", f))
+        src = src or resolve(roots, os.path.join("images", "cursors", f))
+        if src: Image.open(src).convert("RGBA").save(os.path.join(cd, f), optimize=True)
+    print(f"  extras: música {len(MUSIC)}, retratos {npc}, cursores {len(CURSORS)}")
+
+
 def copy_ui(roots, out_dir):
     """Copia el arte de UI de Flare a public/assets/ui/ (sin escalar)."""
     dst_dir = os.path.join(out_dir, "ui")
@@ -346,6 +377,7 @@ def main():
                     help="0.5 = mitad de resolución (los assets v1.15 apuntan a 1080-1440p)")
     ap.add_argument("--gender", default="male", choices=["male", "female", "female_dark"])
     ap.add_argument("--ui-only", action="store_true", help="solo copiar el arte de UI")
+    ap.add_argument("--extras", action="store_true", help="solo copiar música/retratos/cursores")
     a = ap.parse_args()
 
     # Los assets están repartidos entre mods: empyrean_campaign depende de fantasycore.
@@ -360,6 +392,9 @@ def main():
 
     if a.ui_only:
         copy_ui(roots, a.out)
+        return
+    if a.extras:
+        copy_extras(roots, a.out)
         return
 
     man = {
@@ -412,6 +447,8 @@ def main():
 
     # arte de UI (marcos de slot, barras, cinturón)
     copy_ui(roots, a.out)
+    # música, retratos y cursores
+    copy_extras(roots, a.out)
 
     with open(f"{a.out}/assets.json", "w") as fh:
         json.dump(man, fh, indent=1)

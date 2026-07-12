@@ -12,6 +12,13 @@ import { Npc } from './Npc.js'
 import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
 import { stampStructures } from '../data/structures.js'
+import { ParticleField } from './Particles.js'
+
+// Tinte del brillo mágico por landmark.
+const GLOW_TINT = {
+  statue_guardian_fire: 0xff7a2a, statue_guardian_ice: 0x6fd0ff,
+  statue_guardian_wind: 0xbfe6b0, return_obelisk1: 0xd8c070, return_obelisk2: 0xd8c070,
+}
 
 const STAM_DRAIN = 22 // por segundo corriendo
 const STAM_REGEN = 16 // por segundo si no
@@ -101,6 +108,23 @@ export class Game {
       this.npcs.push(npc)
     }
 
+    // Partículas ambientales: luciérnagas sobre la plaza + brillo en los landmarks.
+    this.particles = new ParticleField(app.renderer)
+    renderer.root.addChild(this.particles.container)
+    const sc = iso.toWorld(spawn.x, spawn.y)
+    this.particles.addEmitter({
+      x: sc.x, y: sc.y - 24, rx: iso.wHalf * 11, ry: iso.hHalf * 11,
+      rate: 11, tint: 0xffe08a, vy: -4, spread: 5, life: 3.6, size: 1,
+    })
+    for (const npc of this.npcs) {
+      if (!npc.def.landmark) continue
+      const w = iso.toWorld(npc.tx, npc.ty)
+      this.particles.addEmitter({
+        x: w.x, y: w.y - 30, rx: 9, ry: 6, rate: 9,
+        tint: GLOW_TINT[npc.def.sprite] || 0xffcf5a, vy: -20, spread: 5, life: 1.8, size: 0.9,
+      })
+    }
+
     camera.follow(player.tx, player.ty)
     camera.snap()
 
@@ -126,13 +150,13 @@ export class Game {
     app.ticker.add(this._tick)
   }
 
-  // Tocar un NPC: el jugador se acerca y el NPC habla (y te mira).
+  // Tocar un NPC: el jugador se acerca, el NPC te mira y se abre la caja de diálogo.
   _talkTo(npc) {
     this.player.walkTo(npc.tx, npc.ty) // A* enruta a un tile adyacente (el suyo está bloqueado)
     const pv = this.iso.toWorld(this.player.tx, this.player.ty)
     const nv = this.iso.toWorld(npc.tx, npc.ty)
     npc.dir = screenVecToDir(pv.x - nv.x, pv.y - nv.y)
-    npc.talk()
+    this.store.openDialogue({ name: npc.def.name, portrait: npc.def.portrait, lines: npc.lines })
   }
 
   _onResize = () => {
@@ -224,6 +248,10 @@ export class Game {
     // NPCs (anim idle + globos).
     for (const npc of this.npcs) npc.update(dt)
 
+    // Partículas ambientales.
+    this._pt = (this._pt || 0) + dt
+    this.particles.update(dt, this._pt)
+
     // Empujar la stamina y la posición (minimapa) al HUD a ~12Hz (no cada frame).
     this._stamAccum = (this._stamAccum || 0) + dt
     if (this._stamAccum >= 0.08 || (stamina === 0) !== (st.stamina === 0)) {
@@ -294,7 +322,7 @@ function equipToGfx(equip) {
 }
 
 // Spawn de hub elegido a mano (plaza/centro) por mapa; si no, centroide abierto.
-const HUB_SPAWN = { black_oak_city: [41, 13], black_oak_farm: [58, 54] }
+const HUB_SPAWN = { black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27] }
 
 function hubOrCentralSpawn(mapName, grid, map) {
   const h = HUB_SPAWN[mapName]

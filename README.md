@@ -24,15 +24,18 @@ para las fases y [`docs/WORLD.md`](docs/WORLD.md) para el diseño del mundo.
 
 ### Prueba jugable actual
 
-- Hub: la **explanada abierta de Black Oak Farm** (menos laberinto, mejor para muchos
-  jugadores). Probar otras zonas con `?map=<nombre>`.
+- Hub: el pueblo de **Lochport** (cabañas, cercas, fragua). Probar otras zonas con
+  `?map=<nombre>` (ej. `black_oak_farm` con edificios estampados).
 - **Ciudad viva:** NPCs reales de Flare (guardia, gremio, mercader, buhonero, aldeanos)
-  con nombre sobre la cabeza y diálogo con personalidad al tocarlos; varios **patrullan**
-  entre puntos. Monumento central: **Obelisco de Retorno + los Tres Guardianes** (estatuas
-  de fuego/hielo/viento). Datos en `client/data/npcs.js`.
-- **Edificios** en el mapa abierto: se **estampan** cabañas (tiles reales de Black Oak
-  City, mismo tileset) en la capa de objeto/colisión antes de renderizar
-  (`client/data/structures.js`).
+  con nombre sobre la cabeza; varios **patrullan** entre puntos. Al tocarlos se abre una
+  **caja de diálogo estilo RPG con retrato pintado** (los 36 retratos de Flare). Monumento
+  central: **Obelisco de Retorno + los Tres Guardianes** (estatuas de fuego/hielo/viento),
+  cada uno con su **brillo de partículas** elemental. Datos en `client/data/npcs.js`.
+- **Ambiente:** partículas (luciérnagas sobre la plaza + brillo mágico en los landmarks),
+  **música** de Flare (title/town) con botón de mute, y **cursores** custom. Assets nuevos
+  en `public/assets/{audio,portraits,ui/cursors}` (se copian con `--extras`).
+- **Edificios** en mapas abiertos: se **estampan** cabañas (tiles reales, mismo tileset)
+  antes de renderizar (`client/data/structures.js`).
 - Nombre del jugador **sobre la cabeza** (se elige en la pantalla de raza) y **globo de
   diálogo** con el botón de chat.
 - **Minimapa** (marco de Flare) con la silueta iso de la ciudad y el punto del jugador.
