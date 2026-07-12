@@ -7,6 +7,8 @@ import Bar from './Bar.jsx'
 import Slot from './Slot.jsx'
 import Globe from './Globe.jsx'
 
+const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
+
 export default function HUD() {
   const [chatOpen, setChatOpen] = useState(false)
   const [chatText, setChatText] = useState('')
@@ -32,8 +34,6 @@ export default function HUD() {
   const toggleRun = useGameStore((s) => s.toggleRun)
   const xp = useGameStore((s) => s.xp)
   const togglePanel = useGameStore((s) => s.togglePanel)
-  const muted = useGameStore((s) => s.muted)
-  const toggleMute = useGameStore((s) => s.toggleMute)
 
   const s = stats || { level: 1, str: 0, dex: 0, int: 0, vit: 0, hp: 0, hpMax: 1, mp: 0, mpMax: 1 }
   const prog = playerProgress(xp || 0)
@@ -64,20 +64,25 @@ export default function HUD() {
           <div className="action-cluster">
             <div className="belt">
               {belt.map((it, i) => (
-                <Slot key={i} item={it} size={42} />
+                <Slot key={i} item={it} size={40} />
               ))}
             </div>
             <div className="action-btns">
-              <button className={'run-btn' + (running ? ' on' : '')} onClick={toggleRun}>
+              <button className={'run-btn' + (running ? ' on' : '')} onClick={toggleRun} title="Caminar/correr">
                 {running ? '🏃' : '🚶'}
-                <Bar type="xp" value={stamina} max={staminaMax} width={70} />
+                <Bar type="xp" value={stamina} max={staminaMax} width={60} />
               </button>
-              <button className="icon-btn" onClick={() => setChatOpen((v) => !v)}>💬</button>
-              <button className="icon-btn" onClick={toggleMute}>{muted ? '🔇' : '🔊'}</button>
-              <button className="bag" onClick={() => togglePanel('inventory')}>
-                <i>🎒</i>
+              <button className="icon-btn" onClick={() => setChatOpen((v) => !v)} title="Chat">💬</button>
+              {/* botones de menú con los íconos reales de la action bar de Flare */}
+              <button className="menu-btn" style={{ backgroundImage: `url(${UI}menu_char.png)` }}
+                      onClick={() => togglePanel('character')} title="Personaje" />
+              <button className="menu-btn" style={{ backgroundImage: `url(${UI}menu_powers.png)` }}
+                      onClick={() => togglePanel('powers')} title="Acciones" />
+              <button className="menu-btn bag-btn" style={{ backgroundImage: `url(${UI}menu_inv.png)` }}
+                      onClick={() => togglePanel('inventory')} title="Inventario">
                 <u>{gold}</u>
               </button>
+              <button className="icon-btn" onClick={() => togglePanel('settings')} title="Configuración">⚙️</button>
             </div>
           </div>
 

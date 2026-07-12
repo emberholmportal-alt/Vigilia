@@ -2,7 +2,7 @@
 // coordenadas de menus/character.txt. Nombre, nivel, los 4 atributos en sus casillas
 // (con los íconos ya dibujados: espada/vara/flechas/escudo) y una lista de derivados.
 import { useGameStore } from '../store.js'
-import { SKILLS, SKILL_LABEL, SKILL_CAP, playerProgress } from '../data/progression.js'
+import { playerProgress } from '../data/progression.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 const PW = 640, PH = 832
@@ -24,7 +24,6 @@ export default function Character() {
   const race = useGameStore((s) => s.race)
   const stats = useGameStore((s) => s.stats)
   const xp = useGameStore((s) => s.xp)
-  const skills = useGameStore((s) => s.skills)
   const setPanel = useGameStore((s) => s.setPanel)
   const s = stats || {}
   const prog = playerProgress(xp || 0)
@@ -73,18 +72,6 @@ export default function Character() {
             {derived.map(([k, v]) => (
               <div className="char-stat" key={k}><span>{k}</span><b>{v}</b></div>
             ))}
-          </div>
-
-          <div className="char-skills">
-            <div className="char-skills-h">Acciones</div>
-            {SKILLS.map((k) => {
-              const sk = (skills && skills[k]) || { level: 1 }
-              return (
-                <div className="char-stat" key={k}>
-                  <span>{SKILL_LABEL[k]}</span><b>Nv {sk.level}<em>/{SKILL_CAP}</em></b>
-                </div>
-              )
-            })}
           </div>
         </div>
       </div>

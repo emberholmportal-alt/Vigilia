@@ -9,6 +9,8 @@ import StartScreen from './ui/StartScreen.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
 import Inventory from './ui/Inventory.jsx'
 import Character from './ui/Character.jsx'
+import Powers from './ui/Powers.jsx'
+import Settings from './ui/Settings.jsx'
 import Vendor from './ui/Vendor.jsx'
 import Minimap from './ui/Minimap.jsx'
 import DialogueBox from './ui/DialogueBox.jsx'
@@ -77,6 +79,8 @@ export default function App() {
       {phase === 'game' && !loading && !error && <Minimap />}
       {phase === 'game' && panel === 'inventory' && <Inventory />}
       {phase === 'game' && panel === 'character' && <Character />}
+      {phase === 'game' && panel === 'powers' && <Powers />}
+      {phase === 'game' && panel === 'settings' && <Settings />}
       {phase === 'game' && panel === 'shop' && <Vendor />}
       {phase === 'game' && !loading && !error && <DialogueBox />}
       {error && <div className="error">Error: {error}</div>}

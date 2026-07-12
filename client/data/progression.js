@@ -8,6 +8,14 @@ export const SKILL_LABEL = {
   combate: 'Combate', excavacion: 'Excavación', herboristeria: 'Herboristería',
   alquimia: 'Alquimia', forja: 'Forja', saqueo: 'Saqueo',
 }
+export const SKILL_DESC = {
+  combate: 'Matar enemigos afuera de la ciudad.',
+  excavacion: 'Picar vetas de mastite en cuevas y minas.',
+  herboristeria: 'Juntar hierbas y reactivos en el campo.',
+  alquimia: 'Preparar pociones con reactivos.',
+  forja: 'Forjar y mejorar equipo con mastite.',
+  saqueo: 'Abrir cofres y desenterrar reliquias.',
+}
 export const SKILL_CAP = 20
 
 // XP acumulada necesaria para ALCANZAR un nivel de jugador (curva suave).
