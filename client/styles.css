@@ -131,11 +131,28 @@ html, body, #root {
   font-family: Georgia, serif; font-size: 11px; color: #f7efdd;
   text-shadow: 0 1px 2px #000, 0 0 4px #000; pointer-events: none;
 }
-.action-cluster {
-  display: flex; flex-direction: column; align-items: center; gap: 5px;
-  flex: 1 1 auto; min-width: 0;
+.hud-aux { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 0 auto; }
+/* barra de acción: frame real de Flare (1280×70) con cinturón + botones de menú encima */
+.actionbar {
+  position: relative; flex: 1 1 auto; align-self: center;
+  max-width: 620px; aspect-ratio: 1280 / 70;
+  background-size: 100% 100%; background-repeat: no-repeat;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
 }
-.action-btns { display: flex; align-items: center; gap: 5px; }
+.ab-slot, .ab-menu {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  height: 82%; aspect-ratio: 1; display: grid; place-items: center;
+}
+.ab-slot { pointer-events: none; }
+.ab-menu {
+  border: 0; background: transparent; padding: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ab-menu:active { filter: brightness(1.4); }
+.ab-menu u {
+  position: absolute; bottom: -1px; left: -30%; right: -30%; text-align: center;
+  text-decoration: none; font-size: 9px; color: var(--gold); text-shadow: 0 1px 2px #000;
+}
 .xp-strip {
   height: 9px; background: url('/assets/ui/bar_xp_wide_bg.png') center/100% 100% no-repeat;
   border-top: 1px solid rgba(0, 0, 0, 0.6); pointer-events: auto;

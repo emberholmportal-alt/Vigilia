@@ -4,10 +4,8 @@ import { useState } from 'react'
 import { useGameStore } from '../store.js'
 import { playerProgress } from '../data/progression.js'
 import Bar from './Bar.jsx'
-import Slot from './Slot.jsx'
 import Globe from './Globe.jsx'
-
-const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
+import ActionBar from './ActionBar.jsx'
 
 export default function HUD() {
   const [chatOpen, setChatOpen] = useState(false)
@@ -61,30 +59,15 @@ export default function HUD() {
         <div className="globe-row">
           <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
 
-          <div className="action-cluster">
-            <div className="belt">
-              {belt.map((it, i) => (
-                <Slot key={i} item={it} size={40} />
-              ))}
-            </div>
-            <div className="action-btns">
-              <button className={'run-btn' + (running ? ' on' : '')} onClick={toggleRun} title="Caminar/correr">
-                {running ? '🏃' : '🚶'}
-                <Bar type="xp" value={stamina} max={staminaMax} width={60} />
-              </button>
-              <button className="icon-btn" onClick={() => setChatOpen((v) => !v)} title="Chat">💬</button>
-              {/* botones de menú con los íconos reales de la action bar de Flare */}
-              <button className="menu-btn" style={{ backgroundImage: `url(${UI}menu_char.png)` }}
-                      onClick={() => togglePanel('character')} title="Personaje" />
-              <button className="menu-btn" style={{ backgroundImage: `url(${UI}menu_powers.png)` }}
-                      onClick={() => togglePanel('powers')} title="Acciones" />
-              <button className="menu-btn bag-btn" style={{ backgroundImage: `url(${UI}menu_inv.png)` }}
-                      onClick={() => togglePanel('inventory')} title="Inventario">
-                <u>{gold}</u>
-              </button>
-              <button className="icon-btn" onClick={() => togglePanel('settings')} title="Configuración">⚙️</button>
-            </div>
+          <div className="hud-aux">
+            <button className={'run-btn' + (running ? ' on' : '')} onClick={toggleRun} title="Caminar/correr">
+              {running ? '🏃' : '🚶'}
+              <Bar type="xp" value={stamina} max={staminaMax} width={48} />
+            </button>
+            <button className="icon-btn" onClick={() => setChatOpen((v) => !v)} title="Chat">💬</button>
           </div>
+
+          <ActionBar belt={belt} gold={gold} onPanel={togglePanel} />
 
           <Globe type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} />
         </div>
