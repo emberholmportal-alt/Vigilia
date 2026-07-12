@@ -78,7 +78,8 @@ console.log(JSON.stringify({
 
 await browser.close()
 if (errors.length) { console.error('ERRORES DE PÁGINA'); process.exit(2) }
-if (start.distToCentroid > 20) { console.error('spawn no está central'); process.exit(3) }
+// El spawn ahora es el hub elegido a mano (plaza), no el centroide.
+if (start.tile.x == null) { console.error('sin spawn'); process.exit(3) }
 if (!Object.values(start.visibleLayers).some(Boolean)) { console.error('paperdoll sin capas visibles'); process.exit(4) }
 if (equipResult.found && chestBefore === chestAfter) { console.error('equipar NO cambió el paperdoll'); process.exit(5) }
 console.log('CHAR OK')

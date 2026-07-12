@@ -8,13 +8,13 @@
 // Caminar vs correr con stamina lo maneja Game (lee el store); acá recibimos la
 // velocidad efectiva por frame.
 
-import { Container } from 'pixi.js'
+import { Container, Graphics, Text } from 'pixi.js'
 import { findPath, smoothPath } from './Pathfinding.js'
 import { Paperdoll, screenVecToDir } from './Paperdoll.js'
 
-export const WALK_PX = 105 // px de pantalla por segundo
-export const RUN_PX = 185
-const ANIM_REF_PX = 150    // a esta velocidad la anim de correr va a ritmo nativo
+export const WALK_PX = 170 // px de pantalla por segundo
+export const RUN_PX = 340
+const ANIM_REF_PX = 180    // a esta velocidad la anim de correr va a ritmo nativo
 
 export class Player {
   constructor(iso, grid, manifest, tx, ty) {
@@ -29,6 +29,62 @@ export class Player {
     this.view = new Container()
     this.paperdoll = new Paperdoll(manifest)
     this.view.addChild(this.paperdoll.view)
+
+    const headY = -(this.paperdoll.anchorY + 6) // arriba de la cabeza
+
+    // Nombre flotante sobre la cabeza.
+    this.nameText = new Text({
+      text: '',
+      style: {
+        fontFamily: 'Georgia, serif', fontSize: 13, fill: '#e6dcc6',
+        stroke: { color: '#0a090c', width: 3 }, align: 'center',
+      },
+    })
+    this.nameText.anchor.set(0.5, 1)
+    this.nameText.y = headY
+    this.view.addChild(this.nameText)
+
+    // Globo de diálogo (encima del nombre), oculto por defecto.
+    this.bubble = new Container()
+    this.bubbleBg = new Graphics()
+    this.bubbleText = new Text({
+      text: '',
+      style: {
+        fontFamily: 'Georgia, serif', fontSize: 13, fill: '#f2ead6',
+        align: 'center', wordWrap: true, wordWrapWidth: 220,
+      },
+    })
+    this.bubbleText.anchor.set(0.5, 1)
+    this.bubble.addChild(this.bubbleBg, this.bubbleText)
+    this.bubble.visible = false
+    this.bubble.y = headY - 18
+    this.view.addChild(this.bubble)
+    this._bubbleText = ''
+  }
+
+  setName(name) {
+    this.nameText.text = name || ''
+  }
+
+  showBubble(text) {
+    if (text === this._bubbleText && this.bubble.visible) return
+    this._bubbleText = text
+    this.bubbleText.text = text
+    // fondo redondeado al tamaño del texto
+    const w = Math.min(230, this.bubbleText.width) + 16
+    const h = this.bubbleText.height + 12
+    this.bubbleBg.clear()
+    this.bubbleBg.roundRect(-w / 2, -h, w, h, 6)
+      .fill({ color: 0x14111a, alpha: 0.92 })
+      .stroke({ color: 0x3b3145, width: 1 })
+    this.bubbleText.y = -6
+    this.bubble.visible = true
+  }
+
+  hideBubble() {
+    if (!this.bubble.visible) return
+    this.bubble.visible = false
+    this._bubbleText = ''
   }
 
   async setEquipment(equip) {

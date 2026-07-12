@@ -24,15 +24,19 @@ para las fases y [`docs/WORLD.md`](docs/WORLD.md) para el diseño del mundo.
 
 ### Prueba jugable actual
 
-- Zona inicial abierta: **Black Oak Farm** (probar otras con `?map=<nombre>`).
+- Hub: el **centro de Black Oak City** (plaza con cabañas). Probar otras zonas con
+  `?map=<nombre>`.
+- Nombre del jugador **sobre la cabeza** (se elige en la pantalla de raza) y **globo de
+  diálogo** con el botón de chat.
+- **Minimapa** (marco de Flare) con la silueta iso de la ciudad y el punto del jugador.
 - HUD permanente con arte de Flare: barras de vida/maná, stats siempre a la vista,
   **cinturón de 4 consumibles**, y **caminar/correr con barra de stamina**.
 - Inventario en **modal compacto** con los marcos de slot de Flare (muñeco de equipo +
   grilla), sin retrato.
-- Movimiento con click/tap: se mueve a **velocidad constante en pantalla** (la proyección
-  iso ya no lo acelera/frena según la dirección) con la animación de correr sincronizada;
-  camino A* **suavizado** (string-pulling) y una **X** marca el destino.
-- Arte de UI de Flare en `public/assets/ui/` (marcos de slot, barras, botones);
+- Movimiento con click/tap: **velocidad constante en pantalla** (la proyección iso ya no
+  lo acelera/frena según la dirección) con la animación de correr sincronizada; camino A*
+  **suavizado** (string-pulling) y una **X** marca el destino.
+- Arte de UI de Flare en `public/assets/ui/` (marcos de slot, barras, minimapa, botones);
   se copia con `python3 tools/extract_flare.py --ui-only`.
 
 ## Setup

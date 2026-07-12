@@ -6,6 +6,7 @@ import HUD from './ui/HUD.jsx'
 import StartScreen from './ui/StartScreen.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
 import Inventory from './ui/Inventory.jsx'
+import Minimap from './ui/Minimap.jsx'
 
 // Flujo: Inicio -> Elegir raza -> Juego (con inventario).
 export default function App() {
@@ -17,8 +18,9 @@ export default function App() {
   const panel = useGameStore((s) => s.panel)
   const initCharacter = useGameStore((s) => s.initCharacter)
 
-  function chooseRace(raceId) {
+  function chooseRace(raceId, name) {
     // Personaje con kit real ANTES de montar el juego (el paperdoll lo lee al arrancar).
+    if (name) useGameStore.getState().setPlayerName(name)
     initCharacter(startingCharacter(raceId))
     setLoading(true)
     setPhase('game')
@@ -28,8 +30,8 @@ export default function App() {
     if (phase !== 'game' || gameRef.current) return
     const game = new Game(storeApi)
     gameRef.current = game
-    // Zona inicial abierta (la granja de Black Oak). Probar otras con ?map=<nombre>.
-    const mapName = new URLSearchParams(location.search).get('map') || 'black_oak_farm'
+    // Hub: el centro de Black Oak City. Probar otras zonas con ?map=<nombre>.
+    const mapName = new URLSearchParams(location.search).get('map') || 'black_oak_city'
     game
       .mount(canvasRef.current, mapName)
       .then(() => setLoading(false))
@@ -48,6 +50,7 @@ export default function App() {
     <div id="wrap">
       {phase === 'game' && <div ref={canvasRef} className="canvas-host" />}
       {phase === 'game' && !loading && !error && <HUD />}
+      {phase === 'game' && !loading && !error && <Minimap />}
       {phase === 'game' && panel === 'inventory' && <Inventory />}
       {error && <div className="error">Error: {error}</div>}
 

@@ -4,12 +4,20 @@ import { RACES } from '../data/characters.js'
 
 export default function RaceScreen({ onChoose }) {
   const [sel, setSel] = useState(RACES[0].id)
+  const [name, setName] = useState('')
   const race = RACES.find((r) => r.id === sel)
 
   return (
     <div className="race">
       <div className="race-inner">
         <h2>Elegí tu sangre</h2>
+        <input
+          className="name-input"
+          placeholder="Tu nombre"
+          maxLength={16}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
         <div className="race-grid">
           {RACES.map((r) => (
             <button
@@ -26,7 +34,7 @@ export default function RaceScreen({ onChoose }) {
           <div className="race-mods">{race.modText}</div>
           <p className="race-fantasy">“{race.fantasy}”</p>
         </div>
-        <button className="enter" onClick={() => onChoose(race.id)}>
+        <button className="enter" onClick={() => onChoose(race.id, name.trim())}>
           Encarnar {race.name}
         </button>
       </div>

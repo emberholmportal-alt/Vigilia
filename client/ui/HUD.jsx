@@ -1,10 +1,22 @@
 // HUD permanente. Barras de vida/maná (arte de Flare), stats siempre visibles,
-// cinturón de 4 consumibles, y correr/caminar con barra de stamina.
+// cinturón de 4 consumibles, correr/caminar con stamina y chat sobre la cabeza.
+import { useState } from 'react'
 import { useGameStore } from '../store.js'
 import Bar from './Bar.jsx'
 import Slot from './Slot.jsx'
 
 export default function HUD() {
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatText, setChatText] = useState('')
+  const say = useGameStore((s) => s.say)
+
+  function sendChat(e) {
+    e.preventDefault()
+    say(chatText)
+    setChatText('')
+    setChatOpen(false)
+  }
+
   const mapTitle = useGameStore((s) => s.mapTitle)
   const fps = useGameStore((s) => s.fps)
   const gold = useGameStore((s) => s.gold)
@@ -49,6 +61,7 @@ export default function HUD() {
             {running ? '🏃' : '🚶'}
             <Bar type="xp" value={stamina} max={staminaMax} width={70} />
           </button>
+          <button className="icon-btn" onClick={() => setChatOpen((v) => !v)}>💬</button>
           <button className="bag" onClick={() => togglePanel('inventory')}>
             <i>🎒</i>
             <u>{gold}</u>
@@ -59,6 +72,20 @@ export default function HUD() {
           <Bar type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} width={165} />
         </div>
       </div>
+
+      {chatOpen && (
+        <form className="chat-bar" onSubmit={sendChat}>
+          <input
+            autoFocus
+            value={chatText}
+            maxLength={120}
+            placeholder="Decí algo…"
+            onChange={(e) => setChatText(e.target.value)}
+            onBlur={() => !chatText && setChatOpen(false)}
+          />
+          <button type="submit">Decir</button>
+        </form>
+      )}
     </>
   )
 }

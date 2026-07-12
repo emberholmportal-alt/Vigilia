@@ -130,7 +130,48 @@ html, body, #root {
 .bag i { font-style: normal; font-size: 19px; line-height: 1; }
 .bag u { text-decoration: none; font-size: 9px; color: var(--gold); }
 
+.icon-btn {
+  width: 42px; height: 42px; border: 1px solid var(--edge); background: var(--crypt);
+  color: var(--parch); font-size: 18px; cursor: pointer; display: grid; place-items: center;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+}
+.icon-btn:active { border-color: var(--ember); }
+
+/* ---------- chat ---------- */
+.chat-bar {
+  position: absolute; left: 12px; right: 12px; bottom: 108px; z-index: 6;
+  display: flex; gap: 6px;
+}
+.chat-bar input {
+  flex: 1; background: rgba(20, 17, 26, 0.96); border: 1px solid var(--edge);
+  color: var(--parch); font-family: Georgia, serif; font-size: 14px; padding: 9px 10px;
+}
+.chat-bar input:focus { outline: none; border-color: var(--ember); }
+.chat-bar button {
+  background: var(--stone); border: 1px solid var(--edge); color: var(--gold);
+  font-family: Georgia, serif; padding: 0 14px; cursor: pointer;
+}
+
+/* ---------- minimapa (marco de Flare) ---------- */
+.minimap {
+  position: absolute; top: 56px; right: 8px; width: 124px; height: 124px; z-index: 5;
+  background-size: 100% 100%; background-repeat: no-repeat; pointer-events: none;
+}
+.minimap-inner { position: absolute; left: 9px; right: 9px; top: 50%; transform: translateY(-50%); }
+.minimap-inner img { width: 100%; display: block; image-rendering: auto; }
+.mm-dot {
+  position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+  background: #ffcf5a; box-shadow: 0 0 4px #ffcf5a, 0 0 0 1px #000;
+}
+
 /* ---------- race screen ---------- */
+.name-input {
+  width: 100%; max-width: 260px; margin: 0 auto 16px; display: block;
+  background: var(--crypt); border: 1px solid var(--edge); color: var(--parch);
+  font-family: Georgia, serif; font-size: 15px; text-align: center; padding: 10px;
+}
+.name-input:focus { outline: none; border-color: var(--ember); }
+
 .race {
   position: absolute; inset: 0; display: grid; place-items: center;
   background: radial-gradient(120% 80% at 50% 15%, rgba(194, 85, 31, 0.12), transparent 60%), var(--obsidian);

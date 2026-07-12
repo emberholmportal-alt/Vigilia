@@ -27,13 +27,24 @@ export const useGameStore = create((set, get) => ({
   fps: 0,
   mapTitle: '',
   debug: { tile: '', visibleTiles: 0 },
+  minimap: null,            // {url, scale, minMx, pad}
+  playerTile: { x: 0, y: 0 },
   setFps: (fps) => set({ fps }),
   setMapTitle: (mapTitle) => set({ mapTitle }),
   setDebug: (debug) => set({ debug }),
+  setMinimap: (minimap) => set({ minimap }),
+  setPlayerTile: (playerTile) => set({ playerTile }),
 
   // --- personaje ---
   race: null,
+  playerName: 'Vigilante',
   gold: 0,
+  speech: null,             // {text, until} — diálogo sobre la cabeza
+  setPlayerName: (playerName) => set({ playerName: playerName || 'Vigilante' }),
+  say: (text) => {
+    const t = (text || '').trim().slice(0, 120)
+    if (t) set({ speech: { text: t, until: Date.now() + 4500 } })
+  },
   stats: null,              // {level, str, dex, int, vit, hp, hpMax, mp, mpMax, staminaMax, ...}
   inventory: [],            // array de ítems (huecos = null), largo INVENTORY_SIZE
   equipment: emptyEquipment(),
@@ -122,6 +133,10 @@ export const storeApi = {
   getEquipment: () => useGameStore.getState().getEquipment(),
   onEquipmentChange: (cb) => useGameStore.getState().onEquipmentChange(cb),
   setStamina: (v) => useGameStore.getState().setStamina(v),
+  setMinimap: (v) => useGameStore.getState().setMinimap(v),
+  setPlayerTile: (v) => useGameStore.getState().setPlayerTile(v),
+  getPlayerName: () => useGameStore.getState().playerName,
+  getSpeech: () => useGameStore.getState().speech,
   getRunState: () => {
     const s = useGameStore.getState()
     return { running: s.running, stamina: s.stamina, staminaMax: s.staminaMax }

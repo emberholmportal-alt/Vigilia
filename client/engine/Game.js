@@ -32,6 +32,9 @@ export class Game {
     if (this.destroyed) { app.destroy(true); return }
     this.app = app
     canvasParent.appendChild(app.canvas)
+    // Permitir dt grandes en caídas de fps sin recortar tanto el movimiento (el
+    // camino ya está validado, así que pasos grandes no atraviesan paredes).
+    app.ticker.minFPS = 4
 
     const world = await loadWorld(mapName)
     if (this.destroyed) { app.destroy(true); return }
@@ -62,12 +65,12 @@ export class Game {
     this.ping.zIndex = 1e6
     renderer.groundLayer.addChild(this.ping)
 
-    // Jugador en el CENTRO de la ciudad (no en la puerta de roble). Va DENTRO del
-    // objectLayer para depth-sort con los props.
-    const spawn = centralSpawn(grid, world.map)
+    // Jugador en el centro del pueblo (plaza con cabañas), no en la puerta de roble.
+    const spawn = hubOrCentralSpawn(mapName, grid, world.map)
     const player = new Player(iso, grid, world.manifest, spawn.x, spawn.y)
     renderer.objectLayer.addChild(player.view)
     this.player = player
+    player.setName(this.store.getPlayerName())
     await player.setEquipment(equipToGfx(this.store.getEquipment()))
 
     camera.follow(player.tx, player.ty)
@@ -83,6 +86,7 @@ export class Game {
 
     // Estado inicial al HUD.
     this.store.setMapTitle(world.map.title || mapName)
+    this.store.setMinimap(this._buildMinimap(world.map))
 
     // Hook de inspección para tests/depuración (solo dev).
     if (import.meta.env.DEV) window.__vigilia = this
@@ -97,6 +101,32 @@ export class Game {
   _onResize = () => {
     if (!this.app) return
     this.camera.resize(this.app.screen.width, this.app.screen.height)
+  }
+
+  // Minimapa: proyección iso de la ciudad (misma orientación que la vista).
+  _buildMinimap(map) {
+    const w = map.w, h = map.h
+    const co = map.layers.collision, bg = map.layers.background
+    const scale = 0.72
+    const pad = 3
+    const minMx = -(h - 1)
+    const cw = Math.ceil((w + h - 2) * scale) + pad * 2
+    const ch = Math.ceil((w + h - 2) * 0.5 * scale) + pad * 2
+    const cv = document.createElement('canvas')
+    cv.width = cw; cv.height = ch
+    const ctx = cv.getContext('2d')
+    const dot = Math.max(1, scale * 1.5)
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const ground = bg[y][x] > 0
+        if (!ground) continue // vacío -> transparente
+        const walk = co[y][x] === 0
+        ctx.fillStyle = walk ? 'rgba(150,138,110,0.72)' : 'rgba(40,34,46,0.85)'
+        const mx = x - y, my = (x + y) * 0.5
+        ctx.fillRect((mx - minMx) * scale + pad, my * scale + pad, dot, dot)
+      }
+    }
+    return { url: cv.toDataURL('image/png'), scale, minMx, pad, w: cw, h: ch }
   }
 
   _setupInput(app, camera, player, iso) {
@@ -149,10 +179,16 @@ export class Game {
 
     this.player.update(dt, speedPx)
 
-    // Empujar la stamina al HUD a ~12Hz (no cada frame).
+    // Diálogo sobre la cabeza.
+    const sp = this.store.getSpeech()
+    if (sp && Date.now() < sp.until) this.player.showBubble(sp.text)
+    else this.player.hideBubble()
+
+    // Empujar la stamina y la posición (minimapa) al HUD a ~12Hz (no cada frame).
     this._stamAccum = (this._stamAccum || 0) + dt
     if (this._stamAccum >= 0.08 || (stamina === 0) !== (st.stamina === 0)) {
       this.store.setStamina(Math.round(stamina))
+      this.store.setPlayerTile({ x: this.player.tx, y: this.player.ty })
       this._stamAccum = 0
     }
     this.camera.follow(this.player.tx, this.player.ty)
@@ -215,6 +251,19 @@ function equipToGfx(equip) {
     out[slot] = it && it.gfx ? it.gfx : null
   }
   return out
+}
+
+// Spawn de hub elegido a mano (plaza/centro) por mapa; si no, centroide abierto.
+const HUB_SPAWN = { black_oak_city: [41, 13] }
+
+function hubOrCentralSpawn(mapName, grid, map) {
+  const h = HUB_SPAWN[mapName]
+  if (h && grid.isWalkable(h[0], h[1])) return { x: h[0], y: h[1] }
+  if (h) {
+    const near = grid.nearestWalkable(h[0], h[1], 8)
+    if (near) return near
+  }
+  return centralSpawn(grid, map)
 }
 
 // Spawn en el centro de la ciudad: cerca del centroide caminable, pero preferimos un
