@@ -44,3 +44,38 @@ export function MenuRow({ onPanel }) {
     </div>
   )
 }
+
+// --- Barra completa de Flare (Demonic UI) para ESCRITORIO ---------------------------
+// El marco real actionbar_trim.png (1280×70) en UNA sola fila, con los slots texturizados
+// dibujados encima (el marco trae la zona como bloque; le ponemos slot_empty para que se
+// vea como la Demonic UI original). 10 slots de acción (los primeros 4 = cinturón) + 2
+// slots M1/M2 + los 4 botones de menú grabados. Los slots vacíos se llenan con combate.
+const AW = 1280
+const pc = (x) => (x / AW * 100) + '%'
+const HOT_CX = [96, 160, 224, 288, 352, 416, 480, 544, 608, 672] // 10 slots de acción
+const M_CX = [800, 864]                                           // M1 / M2 (mano/mano sec.)
+const MENU_CX = [
+  { cx: 992, panel: 'character', title: 'Personaje' },
+  { cx: 1056, panel: 'inventory', title: 'Inventario' },
+  { cx: 1120, panel: 'powers', title: 'Acciones' },
+  { cx: 1184, panel: 'settings', title: 'Ajustes' },
+]
+
+export function DesktopBar({ belt, onPanel }) {
+  return (
+    <div className="desktop-bar" style={{ backgroundImage: `url(${UI}actionbar_trim.png)` }}>
+      {HOT_CX.map((cx, i) => (
+        <div key={'h' + i} className="db-slot" style={{ left: pc(cx), backgroundImage: `url(${UI}slot_empty.png)` }}>
+          {belt[i] && <ItemIcon icon={belt[i].icon} fill count={belt[i].count} />}
+        </div>
+      ))}
+      {M_CX.map((cx, i) => (
+        <div key={'m' + i} className="db-slot" style={{ left: pc(cx), backgroundImage: `url(${UI}slot_empty.png)` }} />
+      ))}
+      {MENU_CX.map((m) => (
+        <button key={m.panel} className="db-menu" style={{ left: pc(m.cx) }}
+                title={m.title} onClick={() => onPanel(m.panel)} />
+      ))}
+    </div>
+  )
+}
