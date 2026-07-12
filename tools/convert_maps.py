@@ -126,10 +126,23 @@ def main():
     a = ap.parse_args()
 
     src = os.path.join(a.flare, "mods", "empyrean_campaign", "maps")
+    # Mapas propios/importados (de otros mods, con licencia compatible) que no viven en
+    # vendor. Ej: greenwood_point (pueblo del mod noname, tileset grassland de fantasycore).
+    extra = os.path.join(os.path.dirname(__file__), "maps_extra")
     os.makedirs(a.out, exist_ok=True)
 
-    files = (sorted(glob.glob(os.path.join(src, "*.txt"))) if a.all
-             else [os.path.join(src, n + ".txt") for n in a.maps])
+    def find(name):
+        for d in (src, extra):
+            p = os.path.join(d, name + ".txt")
+            if os.path.exists(p):
+                return p
+        return os.path.join(src, name + ".txt")
+
+    if a.all:
+        files = sorted(glob.glob(os.path.join(src, "*.txt")))
+        files += sorted(glob.glob(os.path.join(extra, "*.txt")))
+    else:
+        files = [find(n) for n in a.maps]
 
     index = []
     for f in files:
