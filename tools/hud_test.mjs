@@ -33,7 +33,7 @@ await sleep(400)
 await page.screenshot({ path: OUT + '/hud.png' })
 
 // Inventario modal
-await page.click('.ab-mbtn[title="Inventario"]')
+await page.click('.ab-menu[title="Inventario"]')
 await page.waitForSelector('.modal', { timeout: 5000 })
 await sleep(300)
 await page.screenshot({ path: OUT + '/inv_modal.png' })

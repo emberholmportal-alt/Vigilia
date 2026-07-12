@@ -1,23 +1,12 @@
-// HUD permanente. Barras de vida/maná (arte de Flare), stats siempre visibles,
-// cinturón de 4 consumibles, correr/caminar con stamina y chat sobre la cabeza.
-import { useState } from 'react'
+// HUD permanente estilo Diablo: globos de vida/maná en las esquinas, la barra de acción
+// real de Flare al centro (cinturón + botones de menú) y la barra de XP abajo. Los stats
+// arriba a la izquierda (tocables abren el panel de personaje). Sin stamina ni chat.
 import { useGameStore } from '../store.js'
 import { playerProgress } from '../data/progression.js'
 import Globe from './Globe.jsx'
 import ActionBar from './ActionBar.jsx'
 
 export default function HUD() {
-  const [chatOpen, setChatOpen] = useState(false)
-  const [chatText, setChatText] = useState('')
-  const say = useGameStore((s) => s.say)
-
-  function sendChat(e) {
-    e.preventDefault()
-    say(chatText)
-    setChatText('')
-    setChatOpen(false)
-  }
-
   const mapTitle = useGameStore((s) => s.mapTitle)
   const playerName = useGameStore((s) => s.playerName)
   const fps = useGameStore((s) => s.fps)
@@ -25,10 +14,6 @@ export default function HUD() {
   const race = useGameStore((s) => s.race)
   const stats = useGameStore((s) => s.stats)
   const belt = useGameStore((s) => s.belt)
-  const running = useGameStore((s) => s.running)
-  const stamina = useGameStore((s) => s.stamina)
-  const staminaMax = useGameStore((s) => s.staminaMax)
-  const toggleRun = useGameStore((s) => s.toggleRun)
   const xp = useGameStore((s) => s.xp)
   const togglePanel = useGameStore((s) => s.togglePanel)
 
@@ -57,10 +42,7 @@ export default function HUD() {
       <div className="hud-bottom">
         <div className="globe-row">
           <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
-
-          <ActionBar belt={belt} gold={gold} running={running} stamina={stamina} staminaMax={staminaMax}
-                     onToggleRun={toggleRun} onChat={() => setChatOpen((v) => !v)} onPanel={togglePanel} />
-
+          <ActionBar belt={belt} gold={gold} onPanel={togglePanel} />
           <Globe type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} />
         </div>
 
@@ -68,20 +50,6 @@ export default function HUD() {
           <div className="xp-strip-fill" style={{ width: `${Math.round(prog.pct * 100)}%` }} />
         </div>
       </div>
-
-      {chatOpen && (
-        <form className="chat-bar" onSubmit={sendChat}>
-          <input
-            autoFocus
-            value={chatText}
-            maxLength={120}
-            placeholder="Decí algo…"
-            onChange={(e) => setChatText(e.target.value)}
-            onBlur={() => !chatText && setChatOpen(false)}
-          />
-          <button type="submit">Decir</button>
-        </form>
-      )}
     </>
   )
 }
