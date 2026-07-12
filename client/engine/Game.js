@@ -67,12 +67,14 @@ export class Game {
     const renderer = new MapRenderer(iso, world.map, world.tileset)
     this.renderer = renderer
 
-    const camera = new Camera(iso, world.map.w, world.map.h)
+    const zoom = MAP_ZOOM[mapName] || 1
+    const camera = new Camera(iso, world.map.w, world.map.h, zoom)
     camera.resize(app.screen.width, app.screen.height)
     this.camera = camera
 
-    // Contenedor del mundo: lo desplaza la cámara.
+    // Contenedor del mundo: lo desplaza la cámara y lo escala el zoom.
     const worldContainer = new Container()
+    worldContainer.scale.set(zoom)
     worldContainer.addChild(renderer.root)
     app.stage.addChild(worldContainer)
     this.worldContainer = worldContainer
@@ -91,7 +93,7 @@ export class Game {
     // Jugador en el centro del pueblo (plaza con cabañas), no en la puerta de roble.
     const spawn = hubOrCentralSpawn(mapName, grid, world.map)
     const player = new Player(iso, grid, world.manifest, spawn.x, spawn.y)
-    player.view.scale.set(eScale)
+    player.view.scale.set(eScale * (PLAYER_SCALE[mapName] || 1))
     renderer.objectLayer.addChild(player.view)
     this.player = player
     player.setName(this.store.getPlayerName(), this.store.getPlayerLevel())
@@ -298,6 +300,31 @@ export class Game {
     return true
   }
 
+  // Atenúa los sprites de objeto altos (edificios/árboles) que quedan dibujados por
+  // encima del jugador y lo cubren, para que el personaje nunca desaparezca detrás.
+  _updateOcclusion() {
+    const p = this.player
+    if (!p) return
+    const px = p.view.x, py = p.view.y
+    const pd = p.tx + p.ty                       // profundidad del jugador (x+y)
+    const tallMin = this.iso.tileH * 1.5         // sólo props altos (no el piso ni caminos)
+    const occ = this._occAlpha || (this._occAlpha = new Map()) // alpha por tile (persiste entre rebuilds)
+    this.renderer.eachVisibleObject((s) => {
+      let hide = false
+      const hpx = s.texture ? s.texture.height : s.height
+      if (hpx > tallMin && s.zIndex > pd) {
+        // ¿el pie del jugador cae dentro de la silueta del sprite? (bbox, anchor 0,0)
+        hide = px >= s.x && px <= s.x + s.width && py >= s.y && py <= s.y + s.height
+      }
+      const target = hide ? 0.32 : 1
+      let a = occ.get(s._ti); if (a === undefined) a = 1
+      a += (target - a) * 0.28                    // desvanecido suave, por tile
+      if (a > 0.999) a = 1
+      occ.set(s._ti, a)
+      s.alpha = a
+    })
+  }
+
   _onResize = () => {
     if (!this.app) return
     this.camera.resize(this.app.screen.width, this.app.screen.height)
@@ -440,6 +467,10 @@ export class Game {
     // Culling de tiles.
     this.renderer.update(this.camera)
 
+    // Transparencia: si un edificio queda DELANTE del jugador (lo tapa), lo atenuamos
+    // para no perderlo de vista al pasar por detrás.
+    this._updateOcclusion()
+
     // Marcador de destino: pulsa mientras caminás; se desvanece al llegar.
     if (this.ping.visible) {
       this._markT += dt
@@ -503,7 +534,15 @@ const HUB_SPAWN = {
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
 // dibuja personajes CHICOS respecto de sus edificios; nuestro héroe (fantasycore) es más
 // grande, así que lo achicamos para que encaje con los aldeanos y la escala del pueblo.
-const ENTITY_SCALE = { triston: 0.72 }
+const ENTITY_SCALE = { triston: 0.66 }
+
+// El héroe con equipo pesado se dibuja un pelín más alto que los aldeanos; lo achicamos
+// un poco MÁS que a los NPCs para que coincidan bien.
+const PLAYER_SCALE = { triston: 0.9 }
+
+// Zoom de cámara por mapa: al achicar las entidades, acercamos la cámara para que el
+// pueblo no se vea diminuto en pantallas grandes (todo más grande, sin deformar escala).
+const MAP_ZOOM = { triston: 1.3 }
 
 function hubOrCentralSpawn(mapName, grid, map) {
   const h = HUB_SPAWN[mapName]

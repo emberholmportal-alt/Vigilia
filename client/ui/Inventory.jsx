@@ -111,10 +111,15 @@ function Tooltip({ item, pos, compareTo, actionLabel, onAction }) {
   // ancla arriba o abajo del ítem según dónde esté en el panel
   const [x, y] = pos
   const below = y < PH * 0.5
+  // Anclado horizontal según la columna, para que el tooltip NO se salga del panel:
+  // izquierda -> alinea por la izquierda; derecha -> por la derecha; centro -> centrado.
+  const cx = (x + SLOT / 2) / PW
   const style = {
-    left: ((x + SLOT / 2) / PW * 100) + '%',
     [below ? 'top' : 'bottom']: below ? ((y + SLOT + 6) / PH * 100) + '%' : ((PH - y + 6) / PH * 100) + '%',
   }
+  if (cx > 0.6) { style.right = ((PW - x - SLOT) / PW * 100) + '%'; style.transform = 'none' }
+  else if (cx < 0.4) { style.left = (x / PW * 100) + '%'; style.transform = 'none' }
+  else { style.left = (cx * 100) + '%'; style.transform = 'translateX(-50%)' }
   return (
     <div className="inv-tooltip" style={style} onClick={(e) => e.stopPropagation()}>
       <b style={{ color: RARITY_COLOR[item.rarity] }}>{item.name}</b>

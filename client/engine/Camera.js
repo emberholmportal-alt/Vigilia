@@ -2,8 +2,9 @@
 // El contenedor del mundo se posiciona en (viewW/2 - camX, viewH/2 - camY).
 
 export class Camera {
-  constructor(iso, mapW, mapH) {
+  constructor(iso, mapW, mapH, zoom = 1) {
     this.iso = iso
+    this.zoom = zoom          // acercamiento de la cámara (escala del contenedor del mundo)
     this.x = 0
     this.y = 0
     this.targetX = 0
@@ -41,27 +42,27 @@ export class Camera {
   }
 
   _clamp() {
-    // No mostrar el vacío más allá del mapa cuando el mapa entra en pantalla.
-    const halfW = this.viewW / 2
-    const halfH = this.viewH / 2
-    if (this.maxX - this.minX > this.viewW) {
+    // Medio-viewport en pixel de MUNDO (el zoom achica lo que entra en pantalla).
+    const halfW = this.viewW / (2 * this.zoom)
+    const halfH = this.viewH / (2 * this.zoom)
+    if (this.maxX - this.minX > halfW * 2) {
       this.x = Math.max(this.minX + halfW, Math.min(this.maxX - halfW, this.x))
     } else {
       this.x = (this.minX + this.maxX) / 2
     }
-    if (this.maxY - this.minY > this.viewH) {
+    if (this.maxY - this.minY > halfH * 2) {
       this.y = Math.max(this.minY + halfH, Math.min(this.maxY - halfH, this.y))
     } else {
       this.y = (this.minY + this.maxY) / 2
     }
   }
 
-  // Offset del contenedor del mundo.
-  get offsetX() { return Math.round(this.viewW / 2 - this.x) }
-  get offsetY() { return Math.round(this.viewH / 2 - this.y) }
+  // Offset del contenedor del mundo (con zoom: screen = world*zoom + offset).
+  get offsetX() { return Math.round(this.viewW / 2 - this.x * this.zoom) }
+  get offsetY() { return Math.round(this.viewH / 2 - this.y * this.zoom) }
 
-  // pixel de pantalla -> pixel de mundo
+  // pixel de pantalla -> pixel de mundo (deshace el zoom)
   screenToWorld(sx, sy) {
-    return { x: sx - this.offsetX, y: sy - this.offsetY }
+    return { x: (sx - this.offsetX) / this.zoom, y: (sy - this.offsetY) / this.zoom }
   }
 }

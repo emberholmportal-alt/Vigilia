@@ -41,13 +41,14 @@ export default function HUD() {
         </div>
       </div>
 
-      {nearby && (
-        <button className="interact-btn" onClick={requestInteract}>
-          {nearby.shop ? '🛒 Comerciar con ' : '💬 Hablar con '}{nearby.name}
-        </button>
-      )}
-
       <div className="hud-bottom">
+        {nearby && (
+          <div className="interact-wrap">
+            <button className="interact-btn" onClick={requestInteract}>
+              {nearby.shop ? '🛒 Comerciar con ' : '💬 Hablar con '}{nearby.name}
+            </button>
+          </div>
+        )}
         <MenuRow onPanel={togglePanel} />
         <div className="globe-row">
           <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
@@ -57,6 +58,7 @@ export default function HUD() {
 
         <div className="xp-strip" title={`XP ${prog.into}/${prog.need}`}>
           <div className="xp-strip-fill" style={{ width: `${Math.round(prog.pct * 100)}%` }} />
+          <span className="xp-strip-label">Nv {s.level} · {prog.into}/{prog.need} XP</span>
         </div>
       </div>
     </>
