@@ -178,6 +178,9 @@ def resolve(roots, rel):
 
 MUSIC = ["title_theme.ogg", "town_theme.ogg"]
 CURSORS = ["cursor_normal.png", "cursor_interact.png", "cursor_attack.png"]
+# Efectos de sonido (rutas relativas a mods/<mod>/soundfx/).
+SFX = ["wood_open.ogg", "flying_loot.ogg", "level_up.ogg", "door_open.ogg",
+       "environment/teleporter.ogg"]
 
 
 def copy_extras(roots, out_dir):
@@ -188,6 +191,11 @@ def copy_extras(roots, out_dir):
     for f in MUSIC:
         src = resolve(roots, os.path.join("music", f))
         if src: shutil.copy(src, os.path.join(ad, f))
+    # efectos de sonido -> audio/sfx/ (aplanado: sólo el nombre de archivo)
+    sd = os.path.join(ad, "sfx"); os.makedirs(sd, exist_ok=True)
+    for f in SFX:
+        src = resolve(roots, os.path.join("soundfx", f))
+        if src: shutil.copy(src, os.path.join(sd, os.path.basename(f)))
     # retratos (todos)
     pd = os.path.join(out_dir, "portraits"); os.makedirs(pd, exist_ok=True)
     npc = 0

@@ -1,9 +1,10 @@
 // Ícono de ítem recortado del atlas icons.png (8 columnas, 32px por celda escalada).
+// `count` muestra el tamaño de pila (consumibles/materiales) en la esquina.
 const BASE = import.meta.env.BASE_URL || '/'
 const COLS = 8
 const CELL = 32
 
-export default function ItemIcon({ icon, size = 34 }) {
+export default function ItemIcon({ icon, size = 34, count }) {
   const col = icon % COLS
   const row = Math.floor(icon / COLS)
   const k = size / CELL
@@ -17,6 +18,8 @@ export default function ItemIcon({ icon, size = 34 }) {
         backgroundSize: `${COLS * CELL * k}px auto`,
         backgroundPosition: `-${col * CELL * k}px -${row * CELL * k}px`,
       }}
-    />
+    >
+      {count > 1 && <b className="item-count">{count}</b>}
+    </span>
   )
 }

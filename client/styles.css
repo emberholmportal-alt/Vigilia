@@ -225,7 +225,12 @@ html, body, #root {
 .race-fantasy { color: var(--dim); font-style: italic; margin-top: 6px; }
 
 /* ---------- inventario: panel real de Flare ---------- */
-.item-icon { display: block; image-rendering: auto; }
+.item-icon { display: block; image-rendering: auto; position: relative; }
+.item-count {
+  position: absolute; right: -2px; bottom: -3px;
+  font-family: Georgia, serif; font-size: 10px; font-weight: 700; color: #f2ead6;
+  text-shadow: 0 0 2px #000, 0 1px 2px #000; pointer-events: none;
+}
 .modal-backdrop {
   position: absolute; inset: 0; z-index: 10; background: rgba(6, 5, 8, 0.55);
   display: grid; place-items: center; padding: 8px;

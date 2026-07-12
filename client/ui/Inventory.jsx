@@ -88,7 +88,7 @@ export default function Inventory() {
             <button key={i} className={'inv-cell' + (sel?.src === 'inv' && sel.i === i ? ' on' : '')}
                     style={slotStyle(x, y)}
                     onClick={() => it && setSel({ src: 'inv', i, pos: [x, y] })}>
-              {it && <ItemIcon icon={it.icon} size={34} />}
+              {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
             </button>
           )
         })}

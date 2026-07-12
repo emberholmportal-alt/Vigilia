@@ -13,6 +13,10 @@ import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
+import { GroundItem, loadIcons } from './GroundItem.js'
+import { rollLoot } from '../../shared/loot.js'
+import { itemById, RARITY_COLOR } from '../data/items.js'
+import { playSfx } from './audio.js'
 
 // Tinte del brillo mágico por landmark.
 const GLOW_TINT = {
@@ -108,6 +112,13 @@ export class Game {
       this.npcs.push(npc)
     }
 
+    // Cofres del mapa (loot). El tile del cofre ya está en la capa `object`; le sumamos
+    // un brillo dorado que pulsa (para que se note) y un hotspot para abrirlo.
+    await loadIcons()
+    this.groundItems = []
+    this._pendingChest = null
+    this._buildChests(renderer, iso, world.map, grid)
+
     // Partículas ambientales: luciérnagas sobre la plaza + brillo en los landmarks.
     this.particles = new ParticleField(app.renderer)
     renderer.root.addChild(this.particles.container)
@@ -158,6 +169,86 @@ export class Game {
     const nv = this.iso.toWorld(npc.tx, npc.ty)
     npc.dir = screenVecToDir(pv.x - nv.x, pv.y - nv.y)
     this.store.openDialogue({ name: npc.def.name, portrait: npc.def.portrait, lines: npc.lines })
+  }
+
+  // --- Cofres y loot ---------------------------------------------------------
+
+  // Crea los cofres del mapa: brillo dorado que pulsa + hotspot para abrir.
+  _buildChests(renderer, iso, map, grid) {
+    this.chests = []
+    for (const c of map.chests || []) {
+      const wx = iso.toWorldX(c.x, c.y), wy = iso.toWorldY(c.x, c.y)
+
+      const glow = new Graphics()
+      glow.ellipse(0, 0, iso.wHalf * 0.7, iso.hHalf * 0.7).fill({ color: 0xffcf5a, alpha: 0.3 })
+      glow.x = wx; glow.y = wy
+      glow.zIndex = c.x + c.y - 1
+      renderer.groundLayer.addChild(glow)
+
+      // hotspot invisible sobre el tile del cofre (el sprite ya está dibujado en object).
+      const hot = new Graphics()
+      hot.poly([0, -iso.hHalf, iso.wHalf, 0, 0, iso.hHalf, -iso.wHalf, 0]).fill({ color: 0xffffff, alpha: 0.001 })
+      hot.x = wx; hot.y = wy - iso.hHalf
+      hot.zIndex = 1e6
+      hot.eventMode = 'static'
+      hot.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
+      renderer.objectLayer.addChild(hot)
+
+      const chest = { x: c.x, y: c.y, loot: c.loot, opened: false, glow, hot }
+      hot.on('pointertap', (e) => { e.stopPropagation(); this._tapChest(chest) })
+      this.chests.push(chest)
+    }
+  }
+
+  // Tocar un cofre: caminar hasta él; se abre al llegar (en el tick).
+  _tapChest(chest) {
+    if (chest.opened) return
+    this.player.walkTo(chest.x, chest.y) // A* enruta a un tile adyacente si está bloqueado
+    this._pendingChest = chest
+  }
+
+  // Abre el cofre: tira la tabla real de Flare, suma oro y desparrama los ítems.
+  _openChest(chest) {
+    chest.opened = true
+    if (chest.glow) { chest.glow.destroy(); chest.glow = null }
+    if (chest.hot) { chest.hot.eventMode = 'none'; chest.hot.cursor = 'default' }
+    playSfx('wood_open.ogg')
+
+    const roll = rollLoot(chest.loot)
+    if (roll.gold > 0) this.store.addGold(roll.gold)
+
+    const tiles = this._scatterTiles(chest.x, chest.y, roll.drops.length)
+    roll.drops.forEach((d, i) => {
+      const item = itemById(d.id)
+      if (!item) return
+      const [tx, ty] = tiles[i] || [chest.x, chest.y]
+      const gi = new GroundItem(this.iso, tx, ty, item, d.qty, RARITY_COLOR[item.rarity])
+      gi.onTap((g) => { this.player.walkTo(g.tx, g.ty) }) // caminar hacia él; se recoge al pasar
+      this.renderer.objectLayer.addChild(gi.view)
+      this.groundItems.push(gi)
+    })
+  }
+
+  // Tiles caminables alrededor del cofre para repartir el loot (sin repetir).
+  _scatterTiles(cx, cy, n) {
+    const ring = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1], [2, 0], [0, 2]]
+    const out = []
+    for (const [dx, dy] of ring) {
+      if (out.length >= n) break
+      const x = cx + dx, y = cy + dy
+      if (this.grid.isWalkable(x, y) && !out.some(([ox, oy]) => ox === x && oy === y)) out.push([x, y])
+    }
+    while (out.length < n) out.push([cx, cy]) // fallback: encima del cofre
+    return out
+  }
+
+  // Recoge un ítem del suelo (oro ya se sumó al abrir). Devuelve true si entró.
+  _pickup(gi) {
+    if (!this.store.addItem(gi.item, gi.qty)) return false // inventario lleno: queda en el piso
+    playSfx('flying_loot.ogg')
+    gi.picked = true
+    gi.destroy()
+    return true
   }
 
   _onResize = () => {
@@ -248,6 +339,25 @@ export class Game {
 
     // NPCs (anim idle + globos).
     for (const npc of this.npcs) npc.update(dt)
+
+    // Abrir el cofre pendiente al llegar cerca.
+    if (this._pendingChest && !this.player.moving) {
+      const c = this._pendingChest
+      const near = Math.abs(this.player.tx - c.x) <= 1.6 && Math.abs(this.player.ty - c.y) <= 1.6
+      if (near && !c.opened) this._openChest(c)
+      this._pendingChest = null
+    }
+
+    // Loot en el suelo: bob + recoger al caminarle encima.
+    if (this.groundItems.length) {
+      const px = this.player.tx, py = this.player.ty
+      for (const gi of this.groundItems) {
+        if (gi.picked) continue
+        gi.update(dt)
+        if (Math.abs(px - gi.tx) <= 0.75 && Math.abs(py - gi.ty) <= 0.75) this._pickup(gi)
+      }
+      this.groundItems = this.groundItems.filter((g) => !g.picked)
+    }
 
     // Partículas ambientales.
     this._pt = (this._pt || 0) + dt

@@ -12,6 +12,9 @@ import { setMuted } from './engine/audio.js'
 export const EQUIP_SLOTS = ['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact']
 export const INVENTORY_SIZE = 55 // 5×11, como la grilla del panel de Flare
 
+// Slots cuyos ítems se apilan (consumibles / materiales) en vez de ocupar un hueco cada uno.
+const STACK_SLOTS = new Set(['potion', 'consumable', 'crafting', 'crafting_tool', 'scroll', 'gem', 'book'])
+
 function emptyEquipment() {
   const e = {}
   for (const s of EQUIP_SLOTS) e[s] = null
@@ -105,6 +108,30 @@ export const useGameStore = create((set, get) => ({
     set({ inventory: inv, equipment })
   },
 
+  // Agrega oro (loot).
+  addGold: (n) => set((s) => ({ gold: s.gold + (n | 0) })),
+
+  // Mete un ítem al inventario. Los apilables (poción/crafting/scroll) se acumulan en
+  // una celda con `count`; el resto va a un hueco libre. Devuelve true si entró.
+  addItem: (item, qty = 1) => {
+    const s = get()
+    const inv = s.inventory.slice()
+    const stackable = STACK_SLOTS.has(item.slot)
+    if (stackable) {
+      const at = inv.findIndex((x) => x && x.id === item.id)
+      if (at >= 0) {
+        inv[at] = { ...inv[at], count: (inv[at].count || 1) + qty }
+        set({ inventory: inv })
+        return true
+      }
+    }
+    const free = inv.findIndex((x) => x == null)
+    if (free < 0) return false // inventario lleno
+    inv[free] = stackable ? { ...item, count: qty } : { ...item }
+    set({ inventory: inv })
+    return true
+  },
+
   // Saca lo equipado en un slot y lo manda al primer hueco libre.
   unequip: (slot) => {
     const s = get()
@@ -155,4 +182,7 @@ export const storeApi = {
     const s = useGameStore.getState()
     return { running: s.running, stamina: s.stamina, staminaMax: s.staminaMax }
   },
+  addGold: (n) => useGameStore.getState().addGold(n),
+  addItem: (item, qty) => useGameStore.getState().addItem(item, qty),
+  inventoryFull: () => useGameStore.getState().inventory.every((x) => x != null),
 }
