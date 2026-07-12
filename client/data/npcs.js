@@ -145,4 +145,48 @@ const GREENWOOD = [
             'Para vos, robo doble.'] },
 ]
 
-export const NPCS_BY_MAP = { lochport: LOCHPORT, black_oak_farm: FARM, greenwood_point: GREENWOOD }
+// Triston (ciudad del mod HERESY): edificios isométricos de OpenGameArt (taberna,
+// casas de entramado, graneros, fragua). Es el hub principal + punto de respawn.
+const TRISTON = [
+  { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', landmark: true, x: 44, y: 48, dir: 7,
+    lines: ['La piedra está tibia. Los que caen afuera, vuelven acá.'] },
+  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', landmark: true, x: 43, y: 49, dir: 0,
+    lines: ['Ofrendá oro a la llama y arderás más fuerte hoy.'] },
+  { sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', landmark: true, x: 45, y: 47, dir: 0,
+    lines: ['El hielo no odia. Solo espera.'] },
+  { sprite: 'statue_guardian_wind', name: 'Guardián del Viento', landmark: true, x: 42, y: 48, dir: 0,
+    lines: ['El viento lleva los nombres de los que no volvieron.'] },
+
+  { sprite: 'return_obelisk2', name: 'Portal del Oeste', landmark: true, portal: true, glow: 0xb060ff,
+    x: 24, y: 53, dir: 7,
+    lines: ['El arco del oeste zumba, pero su destino todavía duerme.',
+            'Cuando el sello ceda, llevará a tierras que aún no tienen nombre.'] },
+  { sprite: 'return_obelisk2', name: 'Portal del Este', landmark: true, portal: true, glow: 0x50d0ff,
+    x: 70, y: 58, dir: 7,
+    lines: ['El arco del este está frío al tacto.',
+            'Algo espera del otro lado. Todavía no es la hora.'] },
+
+  { sprite: 'wandering_trader', name: 'Mercader Oswin', portrait: 'male10.png', x: 48, y: 55, dir: 3, shop: true,
+    lines: ['Traje acero del sur y algo de cuero.',
+            'El precio sube con la luna, no conmigo.',
+            'Vendé lo que no uses. El hierro oxidado no abriga.'] },
+  { sprite: 'guild_man', name: 'Halvard', portrait: 'male12.png', x: 57, y: 43, dir: 1,
+    lines: ['Los gremios reclutan de nuevo.',
+            'Quinientos de oro y una sigla de tres letras.',
+            'Un buen estandarte vale más que cien espadas.'] },
+  { sprite: 'knight', name: 'Guardia Bram', portrait: 'male07.png', x: 64, y: 50, dir: 1,
+    lines: ['Ojos duros, vigilante. Afuera no perdona.',
+            'Anoche hubo tambores del lado de las minas.'] },
+  { sprite: 'peasant_man1', name: 'Tomas', portrait: 'male03.png', x: 49, y: 37, dir: 3,
+    lines: ['En Triston las lápidas cambian de lugar.',
+            'Mi hermano salió a cazar duendes. Volvió su bota. Nada más.'] },
+  { sprite: 'peasant_woman1', name: 'Wren', portrait: 'female02.png', x: 58, y: 60, dir: 5,
+    lines: ['Cerrá la puerta al anochecer.',
+            'Lo que camina de noche no golpea antes de entrar.'] },
+  { sprite: 'peddler_goblin', name: 'Nix', portrait: 'goblin.png', x: 58, y: 52, dir: 2,
+    lines: ['¡Psst! Reliquias raras, precios de robo.', 'Para vos, robo doble.'] },
+]
+
+export const NPCS_BY_MAP = {
+  lochport: LOCHPORT, black_oak_farm: FARM, greenwood_point: GREENWOOD, triston: TRISTON,
+}
