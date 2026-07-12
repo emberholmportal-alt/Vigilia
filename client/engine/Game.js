@@ -8,6 +8,9 @@ import { Grid } from './Pathfinding.js'
 import { MapRenderer } from './MapRenderer.js'
 import { Camera } from './Camera.js'
 import { Player, WALK_PX, RUN_PX } from './Player.js'
+import { Npc } from './Npc.js'
+import { screenVecToDir } from './Paperdoll.js'
+import { NPCS } from '../data/npcs.js'
 
 const STAM_DRAIN = 22 // por segundo corriendo
 const STAM_REGEN = 16 // por segundo si no
@@ -73,6 +76,25 @@ export class Game {
     player.setName(this.store.getPlayerName())
     await player.setEquipment(equipToGfx(this.store.getEquipment()))
 
+    // NPCs de la plaza (vida de la ciudad). Se ubican en su tile, se bloquea ese tile
+    // para que el jugador los rodee, y al tocarlos hablan.
+    this.npcs = []
+    for (const def of NPCS) {
+      let x = def.x, y = def.y
+      if (!def.landmark && !grid.isWalkable(x, y)) {
+        const near = grid.nearestWalkable(x, y, 4)
+        if (near) { x = near.x; y = near.y }
+      }
+      const npc = new Npc(world.manifest, { ...def, x, y }, iso)
+      const ok = await npc.load()
+      if (this.destroyed) { app.destroy(true); return }
+      if (!ok) continue
+      renderer.objectLayer.addChild(npc.view)
+      grid.blocked[y * grid.w + x] = 1 // el jugador no atraviesa NPCs
+      npc.onTap((n) => this._talkTo(n))
+      this.npcs.push(npc)
+    }
+
     camera.follow(player.tx, player.ty)
     camera.snap()
 
@@ -96,6 +118,15 @@ export class Game {
     this._fpsAccum = 0
     this._fpsFrames = 0
     app.ticker.add(this._tick)
+  }
+
+  // Tocar un NPC: el jugador se acerca y el NPC habla (y te mira).
+  _talkTo(npc) {
+    this.player.walkTo(npc.tx, npc.ty) // A* enruta a un tile adyacente (el suyo está bloqueado)
+    const pv = this.iso.toWorld(this.player.tx, this.player.ty)
+    const nv = this.iso.toWorld(npc.tx, npc.ty)
+    npc.dir = screenVecToDir(pv.x - nv.x, pv.y - nv.y)
+    npc.talk()
   }
 
   _onResize = () => {
@@ -183,6 +214,9 @@ export class Game {
     const sp = this.store.getSpeech()
     if (sp && Date.now() < sp.until) this.player.showBubble(sp.text)
     else this.player.hideBubble()
+
+    // NPCs (anim idle + globos).
+    for (const npc of this.npcs) npc.update(dt)
 
     // Empujar la stamina y la posición (minimapa) al HUD a ~12Hz (no cada frame).
     this._stamAccum = (this._stamAccum || 0) + dt

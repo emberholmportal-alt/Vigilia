@@ -26,6 +26,9 @@ para las fases y [`docs/WORLD.md`](docs/WORLD.md) para el diseño del mundo.
 
 - Hub: el **centro de Black Oak City** (plaza con cabañas). Probar otras zonas con
   `?map=<nombre>`.
+- **Ciudad viva:** NPCs reales de Flare en la plaza (guardia, gremio, mercader,
+  buhonero, aldeanos) con nombre sobre la cabeza y diálogo con personalidad al tocarlos,
+  más el **Obelisco de Retorno** como landmark. Datos en `client/data/npcs.js`.
 - Nombre del jugador **sobre la cabeza** (se elige en la pantalla de raza) y **globo de
   diálogo** con el botón de chat.
 - **Minimapa** (marco de Flare) con la silueta iso de la ciudad y el punto del jugador.

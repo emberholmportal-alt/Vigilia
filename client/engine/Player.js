@@ -51,7 +51,7 @@ export class Player {
       text: '',
       style: {
         fontFamily: 'Georgia, serif', fontSize: 13, fill: '#f2ead6',
-        align: 'center', wordWrap: true, wordWrapWidth: 220,
+        stroke: { color: '#0a090c', width: 3 }, align: 'center', wordWrap: false,
       },
     })
     this.bubbleText.anchor.set(0.5, 1)
@@ -70,9 +70,10 @@ export class Player {
     if (text === this._bubbleText && this.bubble.visible) return
     this._bubbleText = text
     this.bubbleText.text = text
-    // fondo redondeado al tamaño del texto
-    const w = Math.min(230, this.bubbleText.width) + 16
-    const h = this.bubbleText.height + 12
+    // Ancho estimado por caracteres (las métricas de Pixi sub-miden con esta fuente).
+    const b = this.bubbleText.getLocalBounds()
+    const w = Math.ceil(b.width) + 24
+    const h = Math.ceil(b.height) + 12
     this.bubbleBg.clear()
     this.bubbleBg.roundRect(-w / 2, -h, w, h, 6)
       .fill({ color: 0x14111a, alpha: 0.92 })
