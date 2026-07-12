@@ -1,7 +1,7 @@
 // Razas y kit inicial. Los modificadores salen de docs/WORLD.md. El equipamiento
 // inicial es distinto por raza (WORLD.md: "Diferenciá con equipamiento inicial
 // distinto") y usa ítems REALES de Flare, elegidos por su capa de paperdoll (gfx).
-import { itemByGfx } from './items.js'
+import { itemByGfx, itemsBySlot } from './items.js'
 
 export const RACES = [
   {
@@ -62,5 +62,12 @@ export function startingCharacter(raceId) {
     if (it && !usedIds.has(it.id)) { inventory.push(it); usedIds.add(it.id) }
   }
 
-  return { race, gold: 250, equipment, inventory }
+  // Cinturón: 4 consumibles reales (pociones de vida/maná si las hay).
+  const potions = itemsBySlot('potion')
+  const health = potions.find((p) => /health|vida/i.test(p.name_en + p.name))
+  const mana = potions.find((p) => /mana|maná/i.test(p.name_en + p.name))
+  const belt = [health || potions[0] || null, health || potions[0] || null,
+                mana || potions[1] || null, mana || potions[1] || null]
+
+  return { race, gold: 250, equipment, inventory, belt }
 }

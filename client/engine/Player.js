@@ -1,18 +1,20 @@
 // Jugador: paperdoll real de Flare + movimiento por A*.
 //
-// La posición es tile fraccional; se mueve waypoint a waypoint sobre el camino A*.
-// La dirección (8) sale del vector de movimiento en espacio de PANTALLA. El aspecto
-// (paperdoll) cambia al equiparse: ver setEquipment.
+// El movimiento se hace en ESPACIO DE PANTALLA (pixeles de mundo), no en tiles: así
+// la velocidad visual es constante en todas las direcciones (moverse en tiles hace que
+// la proyección iso acelere/frene según la dirección, y se siente tosco). La animación
+// de correr se sincroniza con la velocidad para que los pies no patinen.
 //
-// Nota de arquitectura: cuando llegue el servidor autoritativo (regla 2 de CLAUDE.md),
-// este módulo pide moverse/equipar y aplica lo que confirma el server. Por ahora el
-// movimiento y el equipo se resuelven en el cliente, pero viven en un solo lugar.
+// Caminar vs correr con stamina lo maneja Game (lee el store); acá recibimos la
+// velocidad efectiva por frame.
 
 import { Container } from 'pixi.js'
 import { findPath, smoothPath } from './Pathfinding.js'
 import { Paperdoll, screenVecToDir } from './Paperdoll.js'
 
-const SPEED = 3.2 // tiles por segundo
+export const WALK_PX = 105 // px de pantalla por segundo
+export const RUN_PX = 185
+const ANIM_REF_PX = 150    // a esta velocidad la anim de correr va a ritmo nativo
 
 export class Player {
   constructor(iso, grid, manifest, tx, ty) {
@@ -45,32 +47,45 @@ export class Player {
     return path
   }
 
-  update(dt) {
+  stop() {
+    this.path = []
+    this.moving = false
+  }
+
+  // dt en segundos. speedPx = velocidad de pantalla efectiva (walk o run).
+  update(dt, speedPx = WALK_PX) {
     let vx = 0, vy = 0
     if (this.moving && this.path.length) {
       const target = this.path[0]
-      const dx = target.x - this.tx
-      const dy = target.y - this.ty
-      const dist = Math.hypot(dx, dy)
-      const step = SPEED * dt
-      // dirección en espacio de pantalla (proyección iso del vector de movimiento)
-      vx = this.iso.toWorldX(dx, dy)
-      vy = this.iso.toWorldY(dx, dy)
-      if (dist <= step || dist === 0) {
+      // trabajamos en pixel de mundo para velocidad de pantalla constante
+      const wx = this.iso.toWorldX(this.tx, this.ty)
+      const wy = this.iso.toWorldY(this.tx, this.ty)
+      const twx = this.iso.toWorldX(target.x, target.y)
+      const twy = this.iso.toWorldY(target.x, target.y)
+      const dxp = twx - wx, dyp = twy - wy
+      const distp = Math.hypot(dxp, dyp)
+      const step = speedPx * dt
+      vx = dxp; vy = dyp
+      if (distp <= step || distp === 0) {
         this.tx = target.x
         this.ty = target.y
         this.path.shift()
         if (!this.path.length) this.moving = false
       } else {
-        this.tx += (dx / dist) * step
-        this.ty += (dy / dist) * step
+        const nx = wx + (dxp / distp) * step
+        const ny = wy + (dyp / distp) * step
+        const t = this.iso.toTile(nx, ny)
+        this.tx = t.x
+        this.ty = t.y
       }
     }
 
     if (vx !== 0 || vy !== 0) this.dir = screenVecToDir(vx, vy)
     this.paperdoll.setDirection(this.dir)
     this.paperdoll.setMoving(this.moving)
-    this.paperdoll.update(dt)
+    // sincronizar la cadencia de la anim con la velocidad real (anti-patinaje)
+    const animFactor = this.moving ? Math.max(0.5, speedPx / ANIM_REF_PX) : 1
+    this.paperdoll.update(dt, animFactor)
 
     this.view.x = this.iso.toWorldX(this.tx, this.ty)
     this.view.y = this.iso.toWorldY(this.tx, this.ty)

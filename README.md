@@ -25,9 +25,15 @@ para las fases y [`docs/WORLD.md`](docs/WORLD.md) para el diseño del mundo.
 ### Prueba jugable actual
 
 - Zona inicial abierta: **Black Oak Farm** (probar otras con `?map=<nombre>`).
-- HUD permanente estilo Diablo: orbe de vida (izq) y maná (der), stats siempre a la vista.
-- Movimiento con click/tap: camino A* **suavizado** (string-pulling, se mueve libre y no
-  en zigzag de grilla) y una **X** marca el destino.
+- HUD permanente con arte de Flare: barras de vida/maná, stats siempre a la vista,
+  **cinturón de 4 consumibles**, y **caminar/correr con barra de stamina**.
+- Inventario en **modal compacto** con los marcos de slot de Flare (muñeco de equipo +
+  grilla), sin retrato.
+- Movimiento con click/tap: se mueve a **velocidad constante en pantalla** (la proyección
+  iso ya no lo acelera/frena según la dirección) con la animación de correr sincronizada;
+  camino A* **suavizado** (string-pulling) y una **X** marca el destino.
+- Arte de UI de Flare en `public/assets/ui/` (marcos de slot, barras, botones);
+  se copia con `python3 tools/extract_flare.py --ui-only`.
 
 ## Setup
 

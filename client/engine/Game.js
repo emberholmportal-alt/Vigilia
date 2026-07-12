@@ -7,7 +7,10 @@ import { loadWorld } from './assets.js'
 import { Grid } from './Pathfinding.js'
 import { MapRenderer } from './MapRenderer.js'
 import { Camera } from './Camera.js'
-import { Player } from './Player.js'
+import { Player, WALK_PX, RUN_PX } from './Player.js'
+
+const STAM_DRAIN = 22 // por segundo corriendo
+const STAM_REGEN = 16 // por segundo si no
 
 export class Game {
   constructor(store) {
@@ -78,9 +81,6 @@ export class Game {
       player.setEquipment(equipToGfx(equip))
     })
 
-    // Puente para que el inventario muestre un retrato real del paperdoll.
-    this.store.setGameApi({ renderPortrait: () => this._renderPortrait() })
-
     // Estado inicial al HUD.
     this.store.setMapTitle(world.map.title || mapName)
 
@@ -92,28 +92,6 @@ export class Game {
     this._fpsAccum = 0
     this._fpsFrames = 0
     app.ticker.add(this._tick)
-  }
-
-  // Retrato del héroe (paperdoll de frente, pose quieta) como dataURL para la UI.
-  _renderPortrait() {
-    if (!this.app || !this.player) return null
-    const pd = this.player.paperdoll
-    pd.setMoving(false)
-    pd.setDirection(7) // sur (de frente)
-    pd._frame = 0
-    pd._apply()
-    try {
-      // 2x para que el retrato no salga borroso al ampliarlo en la UI.
-      const canvas = this.app.renderer.extract.canvas({ target: pd.view, resolution: 2 })
-      return canvas.toDataURL ? canvas.toDataURL('image/png') : null
-    } catch (e) {
-      try {
-        const canvas = this.app.renderer.extract.canvas(pd.view)
-        return canvas.toDataURL ? canvas.toDataURL('image/png') : null
-      } catch (e2) {
-        return null
-      }
-    }
   }
 
   _onResize = () => {
@@ -161,7 +139,22 @@ export class Game {
     const dtFrames = ticker.deltaTime            // ~1 a 60fps
     const dt = ticker.deltaMS / 1000             // segundos
 
-    this.player.update(dt)
+    // Correr/caminar con stamina.
+    const st = this.store.getRunState()
+    const runningNow = st.running && st.stamina > 0 && this.player.moving
+    let stamina = st.stamina
+    if (runningNow) stamina = Math.max(0, stamina - STAM_DRAIN * dt)
+    else stamina = Math.min(st.staminaMax, stamina + STAM_REGEN * dt)
+    const speedPx = runningNow ? RUN_PX : WALK_PX
+
+    this.player.update(dt, speedPx)
+
+    // Empujar la stamina al HUD a ~12Hz (no cada frame).
+    this._stamAccum = (this._stamAccum || 0) + dt
+    if (this._stamAccum >= 0.08 || (stamina === 0) !== (st.stamina === 0)) {
+      this.store.setStamina(Math.round(stamina))
+      this._stamAccum = 0
+    }
     this.camera.follow(this.player.tx, this.player.ty)
     this.camera.update(dtFrames)
 

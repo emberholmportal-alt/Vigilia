@@ -1,26 +1,23 @@
-// Inventario + equipo estilo Diablo: muñeco con slots alrededor del retrato del
-// héroe, grilla de inventario abajo, y detalle con comparación de stats.
-import { useEffect, useState } from 'react'
+// Inventario: modal compacto (no pantalla completa) con el arte de slots de Flare.
+// Muñeco de equipo (arreglo de Flare) + grilla, sin retrato. Detalle con comparación.
+import { useState } from 'react'
 import { useGameStore, equipSlotFor } from '../store.js'
 import { RARITY_COLOR, RARITY_LABEL } from '../data/items.js'
 import ItemIcon from './ItemIcon.jsx'
+import Slot from './Slot.jsx'
+
+const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 
 const SLOT_LABEL = {
   head: 'Cabeza', chest: 'Torso', legs: 'Piernas', hands: 'Manos', feet: 'Pies',
   main: 'Arma', off: 'Escudo', ring: 'Anillo', artifact: 'Reliquia',
 }
 
-// Disposición del muñeco (grid-areas). El retrato ocupa el centro.
+// Muñeco 3×3 (arreglo de Flare, compacto).
 const DOLL = [
-  { slot: 'head', area: 'head' },
-  { slot: 'artifact', area: 'arti' },
-  { slot: 'main', area: 'main' },
-  { slot: 'off', area: 'off' },
-  { slot: 'chest', area: 'chest' },
-  { slot: 'legs', area: 'legs' },
-  { slot: 'hands', area: 'hands' },
-  { slot: 'feet', area: 'feet' },
-  { slot: 'ring', area: 'ring' },
+  { slot: 'hands', area: 'hands' }, { slot: 'head', area: 'head' }, { slot: 'artifact', area: 'arti' },
+  { slot: 'main', area: 'main' }, { slot: 'chest', area: 'chest' }, { slot: 'off', area: 'off' },
+  { slot: 'ring', area: 'ring' }, { slot: 'legs', area: 'legs' }, { slot: 'feet', area: 'feet' },
 ]
 
 const STAT_LABEL = {
@@ -43,17 +40,8 @@ export default function Inventory() {
   const equipFromInventory = useGameStore((s) => s.equipFromInventory)
   const unequip = useGameStore((s) => s.unequip)
   const setPanel = useGameStore((s) => s.setPanel)
-  const gameApi = useGameStore((s) => s.gameApi)
 
   const [sel, setSel] = useState(null)
-  const [portrait, setPortrait] = useState(null)
-
-  // Retrato real del paperdoll; se regenera al cambiar el equipo.
-  useEffect(() => {
-    if (!gameApi) return
-    const t = setTimeout(() => setPortrait(gameApi.renderPortrait()), 260)
-    return () => clearTimeout(t)
-  }, [gameApi, equipment])
 
   const selectedItem =
     sel?.src === 'inv' ? inventory[sel.i] : sel?.src === 'equip' ? equipment[sel.slot] : null
@@ -65,57 +53,54 @@ export default function Inventory() {
     setSel(null)
   }
 
-  const slotBtn = (slot, area) => {
-    const it = equipment[slot]
-    return (
-      <button
-        key={slot}
-        className={'slot doll-slot' + (sel?.src === 'equip' && sel.slot === slot ? ' on' : '')}
-        style={{ gridArea: area, ...(it ? { borderColor: RARITY_COLOR[it.rarity] } : null) }}
-        onClick={() => setSel({ src: 'equip', slot })}
-        title={SLOT_LABEL[slot]}
-      >
-        {it ? <ItemIcon icon={it.icon} /> : <em>{SLOT_LABEL[slot]}</em>}
-      </button>
-    )
-  }
-
   return (
-    <div className="panel">
-      <div className="panel-head">
-        <b>Vigilante {race ? '· ' + race.name : ''}</b>
-        <span className="gold">{gold} oro</span>
-        <button className="x" onClick={() => setPanel(null)}>✕</button>
-      </div>
-
-      <div className="doll">
-        {DOLL.map((d) => slotBtn(d.slot, d.area))}
-        <div className="portrait" style={{ gridArea: 'port' }}>
-          {portrait ? <img src={portrait} alt="héroe" /> : <div className="portrait-empty" />}
-        </div>
-      </div>
-
-      <div className="inv-grid">
-        {inventory.map((it, i) => (
+    <div className="modal-backdrop" onClick={() => setPanel(null)}>
+      <div className="modal inv-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <b>Equipo</b>
+          <span className="gold">{gold} oro</span>
           <button
-            key={i}
-            className={'slot' + (sel?.src === 'inv' && sel.i === i ? ' on' : '')}
-            style={it ? { borderColor: RARITY_COLOR[it.rarity] } : undefined}
-            onClick={() => it && setSel({ src: 'inv', i })}
-          >
-            {it && <ItemIcon icon={it.icon} />}
-          </button>
-        ))}
-      </div>
+            className="close-btn"
+            style={{ backgroundImage: `url(${UI}button_x.png)` }}
+            onClick={() => setPanel(null)}
+          />
+        </div>
 
-      {selectedItem && (
-        <ItemDetail
-          item={selectedItem}
-          compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selectedItem)] : null}
-          actionLabel={sel.src === 'inv' ? 'Equipar' : 'Sacar'}
-          onAction={act}
-        />
-      )}
+        <div className="doll">
+          {DOLL.map((d) => (
+            <div key={d.slot} style={{ gridArea: d.area }} className="doll-cell">
+              <Slot
+                item={equipment[d.slot]}
+                size={48}
+                selected={sel?.src === 'equip' && sel.slot === d.slot}
+                label={SLOT_LABEL[d.slot]}
+                onClick={() => setSel({ src: 'equip', slot: d.slot })}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="inv-grid">
+          {inventory.map((it, i) => (
+            <Slot
+              key={i}
+              item={it}
+              size={46}
+              selected={sel?.src === 'inv' && sel.i === i}
+              onClick={() => it && setSel({ src: 'inv', i })}
+            />
+          ))}
+        </div>
+
+        {selectedItem && (
+          <ItemDetail
+            item={selectedItem}
+            compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selectedItem)] : null}
+            actionLabel={sel.src === 'inv' ? 'Equipar' : 'Sacar'}
+            onAction={act}
+          />
+        )}
+      </div>
     </div>
   )
 }
@@ -125,7 +110,7 @@ function ItemDetail({ item, compareTo, actionLabel, onAction }) {
   return (
     <div className="detail">
       <div className="detail-head">
-        <ItemIcon icon={item.icon} size={40} />
+        <ItemIcon icon={item.icon} size={36} />
         <div>
           <b style={{ color: RARITY_COLOR[item.rarity] }}>{item.name}</b>
           <span className="detail-sub">

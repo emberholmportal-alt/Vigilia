@@ -22,12 +22,14 @@ export function computeStats(raceId) {
 
   const hpMax = Math.round(40 + vit * 4 + (r.hpFlat || 0))
   const mpMax = Math.round((15 + int * 3 + (r.mpFlat || 0)) * (r.mpMul || 1))
+  const staminaMax = Math.round(90 + vit * 6)
 
   return {
     level: 1,
     str, dex, int, vit,
     hp: hpMax, hpMax,
     mp: mpMax, mpMax,
+    staminaMax,
     dmgMul: r.dmgMul || 1,
     speedMul: r.speedMul || 1,
     xpMul: r.xpMul || 1,

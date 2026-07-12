@@ -86,6 +86,19 @@ TILESETS = [
 # Animaciones que exportamos. Sacá las que no uses para achicar el bundle.
 ANIMS = ["stance", "run", "swing", "cast", "shoot", "block", "hit", "die"]
 
+# Arte de UI de Flare (menus/) que copiamos tal cual a public/assets/ui/. Son marcos
+# de slot, barras de vida/maná, la barra de acción (cinturón) y botones. Encajan con
+# la estética piedra+oro del juego. Se copian sin escalar (ya son chicos).
+UI_IMAGES = [
+    "slot_empty.png", "slot_selected.png",
+    "bar_hp.png", "bar_hp_background.png",
+    "bar_mp.png", "bar_mp_background.png",
+    "bar_xp.png", "bar_xp_background.png",
+    "actionbar_trim.png", "portrait_border.png", "frame_background.png",
+    "buttons/button_x.png", "buttons/left.png", "buttons/right.png",
+    "buttons/button_plus.png",
+]
+
 # Celda de destino ANTES de escalar. Los sprites de Flare v1.15 llegan a ~125px de
 # ancho y ~145px de alto por encima del punto de anclaje.
 CELL_W, CELL_H = 170, 175
@@ -158,6 +171,23 @@ def resolve(roots, rel):
         if os.path.exists(p):
             return p
     return None
+
+
+def copy_ui(roots, out_dir):
+    """Copia el arte de UI de Flare a public/assets/ui/ (sin escalar)."""
+    dst_dir = os.path.join(out_dir, "ui")
+    os.makedirs(dst_dir, exist_ok=True)
+    n = 0
+    for rel in UI_IMAGES:
+        src = resolve(roots, os.path.join("images", "menus", rel))
+        if not src:
+            print("  (falta ui)", rel)
+            continue
+        dst = os.path.join(dst_dir, os.path.basename(rel))
+        Image.open(src).convert("RGBA").save(dst, optimize=True)
+        n += 1
+    print(f"  ui: {n}/{len(UI_IMAGES)} imágenes -> {dst_dir}")
+    return n
 
 
 def repack(anim_txt, roots, out_png, scale, anims=ANIMS):
@@ -312,6 +342,7 @@ def main():
     ap.add_argument("--scale", type=float, default=0.5,
                     help="0.5 = mitad de resolución (los assets v1.15 apuntan a 1080-1440p)")
     ap.add_argument("--gender", default="male", choices=["male", "female", "female_dark"])
+    ap.add_argument("--ui-only", action="store_true", help="solo copiar el arte de UI")
     a = ap.parse_args()
 
     # Los assets están repartidos entre mods: empyrean_campaign depende de fantasycore.
@@ -320,6 +351,10 @@ def main():
     roots = [r for r in roots if os.path.isdir(r)]
     if not roots:
         sys.exit(f"No encuentro los mods de Flare en {a.flare}. Cloná flare-game primero.")
+
+    if a.ui_only:
+        copy_ui(roots, a.out)
+        return
 
     man = {
         "scale": a.scale,
@@ -368,6 +403,9 @@ def main():
         isz = int(isz * a.scale)
     ic.save(f"{a.out}/icons.png", optimize=True)
     man["icons"] = {"src": "icons.png", "size": isz, "cols": 8}
+
+    # arte de UI (marcos de slot, barras, cinturón)
+    copy_ui(roots, a.out)
 
     with open(f"{a.out}/assets.json", "w") as fh:
         json.dump(man, fh, indent=1)

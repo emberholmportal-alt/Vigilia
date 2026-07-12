@@ -34,14 +34,18 @@ export const useGameStore = create((set, get) => ({
   // --- personaje ---
   race: null,
   gold: 0,
-  stats: null,              // {level, str, dex, int, vit, hp, hpMax, mp, mpMax, ...}
+  stats: null,              // {level, str, dex, int, vit, hp, hpMax, mp, mpMax, staminaMax, ...}
   inventory: [],            // array de ítems (huecos = null), largo INVENTORY_SIZE
   equipment: emptyEquipment(),
+  belt: [null, null, null, null], // cinturón de 4 (consumibles)
   panel: null,              // 'inventory' | null
 
-  // Puente hacia el juego (Pixi) para cosas como el retrato del paperdoll.
-  gameApi: null,
-  setGameApi: (gameApi) => set({ gameApi }),
+  // --- correr / stamina ---
+  running: false,
+  stamina: 100,
+  staminaMax: 100,
+  toggleRun: () => set((s) => ({ running: !s.running })),
+  setStamina: (stamina) => set({ stamina }),
 
   setRace: (race) => set({ race }),
   setGold: (gold) => set({ gold }),
@@ -49,12 +53,16 @@ export const useGameStore = create((set, get) => ({
   togglePanel: (p) => set((s) => ({ panel: s.panel === p ? null : p })),
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats.
-  initCharacter: ({ race, gold, inventory, equipment }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
+    const st = computeStats(race.id)
+    const b = (belt || []).slice(0, 4)
+    while (b.length < 4) b.push(null)
     set({
-      race, gold, stats: computeStats(race.id),
-      inventory: inv, equipment: { ...emptyEquipment(), ...equipment },
+      race, gold, stats: st,
+      inventory: inv, equipment: { ...emptyEquipment(), ...equipment }, belt: b,
+      staminaMax: st.staminaMax, stamina: st.staminaMax,
     })
   },
 
@@ -113,5 +121,9 @@ export const storeApi = {
   setDebug: (v) => useGameStore.getState().setDebug(v),
   getEquipment: () => useGameStore.getState().getEquipment(),
   onEquipmentChange: (cb) => useGameStore.getState().onEquipmentChange(cb),
-  setGameApi: (api) => useGameStore.getState().setGameApi(api),
+  setStamina: (v) => useGameStore.getState().setStamina(v),
+  getRunState: () => {
+    const s = useGameStore.getState()
+    return { running: s.running, stamina: s.stamina, staminaMax: s.staminaMax }
+  },
 }

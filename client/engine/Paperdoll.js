@@ -146,12 +146,13 @@ export class Paperdoll {
     }
   }
 
-  // Avanza la animación. dt en segundos.
-  update(dt) {
+  // Avanza la animación. dt en segundos. factor escala la cadencia (para sincronizar
+  // correr con la velocidad real y que los pies no patinen).
+  update(dt, factor = 1) {
     // duración del frame: la tomamos de la capa chest (o la primera que tenga la anim).
     const timing = this._timing(this._anim)
     if (timing) {
-      this._elapsed += dt * 1000
+      this._elapsed += dt * 1000 * factor
       const per = timing.ms / timing.frames
       while (this._elapsed >= per) {
         this._elapsed -= per
