@@ -70,11 +70,12 @@ const info = await page.evaluate(() => {
 // tile del jugador durante todo el trayecto: NUNCA debe estar bloqueado.
 const plan = await page.evaluate(() => {
   const g = window.__vigilia
-  // destino caminable cerca del centro de la ciudad
+  // destino caminable LEJANO al jugador (agnóstico del mapa)
   let dest = null
-  for (let r = 0; r < 45 && !dest; r++) {
-    for (let dy = -r; dy <= r && !dest; dy++) for (let dx = -r; dx <= r && !dest; dx++) {
-      const x = 22 + dx, y = 40 + dy
+  for (let r = 30; r >= 8 && !dest; r--) {
+    for (let a = 0; a < 16 && !dest; a++) {
+      const x = Math.round(g.player.tx + Math.cos(a) * r)
+      const y = Math.round(g.player.ty + Math.sin(a) * r)
       if (g.grid.isWalkable(x, y)) dest = { x, y }
     }
   }
@@ -100,11 +101,10 @@ for (let i = 0; i < 260; i++) {          // hasta ~15.6s
   endDist = Math.hypot(s.x - plan.dest.x, s.y - plan.dest.y)
   if (!s.moving) { reached = endDist < 1.5; break }
 }
-// Waypoints del A* efectivamente consumidos (prueba directa de traversal sin trabarse).
-const endPathLen = await page.evaluate(() => window.__vigilia.player.path.length)
-const consumed = plan.pathLen - endPathLen
+// Con el suavizado (string-pulling) el camino tiene pocos waypoints largos, así que
+// medimos progreso REAL en distancia hacia el destino, no waypoints.
 const progress = startDist - endDist
-const progressed = reached || consumed >= 20
+const progressed = reached || progress >= 12
 
 // Además unos taps sueltos para ejercitar el input de pantalla.
 let moved = 0
@@ -132,13 +132,13 @@ const fps = await page.evaluate(() => {
 })
 
 console.log(JSON.stringify(
-  { info, plan, samples, violations, reached, progress: +progress.toFixed(1), consumed, moved, fps, errors },
+  { info, plan, samples, violations, reached, progress: +progress.toFixed(1), moved, fps, errors },
   null, 2))
 
 await browser.close()
 if (errors.length) { console.error('HUBO ERRORES DE PÁGINA'); process.exit(2) }
 if (violations > 0) { console.error(`COLISIÓN VIOLADA ${violations} veces`); process.exit(3) }
-if (plan.pathLen < 30) { console.error(`A* devolvió un camino sospechosamente corto (${plan.pathLen})`); process.exit(4) }
+if (!plan.dest) { console.error('no encontré destino caminable'); process.exit(4) }
 if (!progressed) { console.error(`El jugador no avanzó hacia el destino (progreso ${progress.toFixed(1)})`); process.exit(5) }
 if (moved < 2) { console.error(`Los taps casi no movieron al jugador (${moved}/3)`); process.exit(6) }
 console.log('SMOKE OK')

@@ -17,9 +17,17 @@ para las fases y [`docs/WORLD.md`](docs/WORLD.md) para el diseño del mundo.
   centro de la ciudad + selección de raza (modificadores de WORLD.md).
 - **Fase 4 (parcial) — Ítems e inventario:** ✅ los 552 ítems reales parseados a
   `shared/items.json` (nombres en español, slot, ícono, tier, stats, rareza, capa de
-  paperdoll). Inventario 30 slots + 9 de equipo + oro, con rareza por color, comparación
-  de stats y **equipar cambia el aspecto del héroe al instante**. Falta: loot en el suelo
-  y validación en servidor (llega con las fases de combate/servidor).
+  paperdoll). Inventario estilo Diablo: muñeco con slots alrededor de un **retrato real
+  del héroe**, grilla de 30 + 9 de equipo + oro, rareza por color, comparación de stats y
+  **equipar cambia el aspecto al instante**. Falta: loot en el suelo y validación en
+  servidor (llega con las fases de combate/servidor).
+
+### Prueba jugable actual
+
+- Zona inicial abierta: **Black Oak Farm** (probar otras con `?map=<nombre>`).
+- HUD permanente estilo Diablo: orbe de vida (izq) y maná (der), stats siempre a la vista.
+- Movimiento con click/tap: camino A* **suavizado** (string-pulling, se mueve libre y no
+  en zigzag de grilla) y una **X** marca el destino.
 
 ## Setup
 

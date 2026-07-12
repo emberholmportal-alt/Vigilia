@@ -52,9 +52,11 @@ export class Game {
     app.stage.addChild(worldContainer)
     this.worldContainer = worldContainer
 
-    // Marcador de destino (feedback de tap sobre el suelo).
+    // Marcador de destino (X sobre el suelo). zIndex alto para que quede por encima
+    // de los tiles de pasto (que ordenan por x+y) pero debajo de objetos y personaje.
     this.ping = new Graphics()
     this.ping.visible = false
+    this.ping.zIndex = 1e6
     renderer.groundLayer.addChild(this.ping)
 
     // Jugador en el CENTRO de la ciudad (no en la puerta de roble). Va DENTRO del
@@ -76,6 +78,9 @@ export class Game {
       player.setEquipment(equipToGfx(equip))
     })
 
+    // Puente para que el inventario muestre un retrato real del paperdoll.
+    this.store.setGameApi({ renderPortrait: () => this._renderPortrait() })
+
     // Estado inicial al HUD.
     this.store.setMapTitle(world.map.title || mapName)
 
@@ -87,6 +92,28 @@ export class Game {
     this._fpsAccum = 0
     this._fpsFrames = 0
     app.ticker.add(this._tick)
+  }
+
+  // Retrato del héroe (paperdoll de frente, pose quieta) como dataURL para la UI.
+  _renderPortrait() {
+    if (!this.app || !this.player) return null
+    const pd = this.player.paperdoll
+    pd.setMoving(false)
+    pd.setDirection(7) // sur (de frente)
+    pd._frame = 0
+    pd._apply()
+    try {
+      // 2x para que el retrato no salga borroso al ampliarlo en la UI.
+      const canvas = this.app.renderer.extract.canvas({ target: pd.view, resolution: 2 })
+      return canvas.toDataURL ? canvas.toDataURL('image/png') : null
+    } catch (e) {
+      try {
+        const canvas = this.app.renderer.extract.canvas(pd.view)
+        return canvas.toDataURL ? canvas.toDataURL('image/png') : null
+      } catch (e2) {
+        return null
+      }
+    }
   }
 
   _onResize = () => {
@@ -105,23 +132,29 @@ export class Game {
       const path = player.walkTo(tx, ty)
       if (path.length) {
         const dest = path[path.length - 1]
-        this._showPing(dest.x, dest.y)
+        this._showDestination(dest.x, dest.y)
       }
     }
     app.stage.on('pointertap', onTap)
     this._onTap = onTap
   }
 
-  _showPing(tx, ty) {
+  // Marca el destino con una X (estilo Diablo): queda mientras el personaje camina.
+  _showDestination(tx, ty) {
     const p = this.ping
     p.clear()
     p.x = this.iso.toWorldX(tx, ty)
     p.y = this.iso.toWorldY(tx, ty)
-    p.ellipse(0, 0, this.iso.wHalf * 0.55, this.iso.hHalf * 0.55)
-      .stroke({ color: 0xc9a227, width: 2, alpha: 0.9 })
+    const rx = this.iso.wHalf * 0.62, ry = this.iso.hHalf * 0.62
+    // halo oscuro (contraste) + X dorada encima, apoyada en el plano del piso
+    p.moveTo(-rx, -ry).lineTo(rx, ry).moveTo(rx, -ry).lineTo(-rx, ry)
+      .stroke({ color: 0x000000, width: 6, alpha: 0.55, cap: 'round' })
+    p.moveTo(-rx, -ry).lineTo(rx, ry).moveTo(rx, -ry).lineTo(-rx, ry)
+      .stroke({ color: 0xffcf5a, width: 3, alpha: 1, cap: 'round' })
     p.visible = true
     p.alpha = 1
-    this._pingT = 0.6
+    this._markT = 0
+    this._markFade = 0
   }
 
   _tick = (ticker) => {
@@ -139,11 +172,16 @@ export class Game {
     // Culling de tiles.
     this.renderer.update(this.camera)
 
-    // Ping fade.
-    if (this._pingT > 0) {
-      this._pingT -= dt
-      this.ping.alpha = Math.max(0, this._pingT / 0.6)
-      if (this._pingT <= 0) this.ping.visible = false
+    // Marcador de destino: pulsa mientras caminás; se desvanece al llegar.
+    if (this.ping.visible) {
+      this._markT += dt
+      const pulse = 1 + 0.12 * Math.sin(this._markT * 9)
+      this.ping.scale.set(pulse)
+      if (!this.player.moving) {
+        this._markFade += dt
+        this.ping.alpha = Math.max(0, 1 - this._markFade / 0.35)
+        if (this._markFade >= 0.35) this.ping.visible = false
+      }
     }
 
     // Telemetría al HUD.

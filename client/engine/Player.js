@@ -9,7 +9,7 @@
 // movimiento y el equipo se resuelven en el cliente, pero viven en un solo lugar.
 
 import { Container } from 'pixi.js'
-import { findPath } from './Pathfinding.js'
+import { findPath, smoothPath } from './Pathfinding.js'
 import { Paperdoll, screenVecToDir } from './Paperdoll.js'
 
 const SPEED = 3.2 // tiles por segundo
@@ -34,10 +34,13 @@ export class Player {
   }
 
   walkTo(tx, ty) {
-    const path = findPath(this.grid, Math.round(this.tx), Math.round(this.ty), tx, ty)
+    const raw = findPath(this.grid, Math.round(this.tx), Math.round(this.ty), tx, ty)
+    // String-pulling: el camino queda con tramos largos y diagonales, no zigzag de grilla.
+    const path = smoothPath(this.grid, raw, this.tx, this.ty)
     if (path.length) {
       this.path = path
       this.moving = true
+      this.dest = path[path.length - 1]
     }
     return path
   }

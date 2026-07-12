@@ -5,6 +5,7 @@
 // vía onEquipmentChange. Cuando llegue el servidor autoritativo (regla 2), equip()
 // pasará a pedirle al server y aplicar su respuesta.
 import { create } from 'zustand'
+import { computeStats } from './data/stats.js'
 
 // Slots de equipo. Los primeros 7 se ven en el paperdoll; ring/artifact no.
 export const EQUIP_SLOTS = ['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact']
@@ -33,20 +34,28 @@ export const useGameStore = create((set, get) => ({
   // --- personaje ---
   race: null,
   gold: 0,
+  stats: null,              // {level, str, dex, int, vit, hp, hpMax, mp, mpMax, ...}
   inventory: [],            // array de ítems (huecos = null), largo INVENTORY_SIZE
   equipment: emptyEquipment(),
   panel: null,              // 'inventory' | null
+
+  // Puente hacia el juego (Pixi) para cosas como el retrato del paperdoll.
+  gameApi: null,
+  setGameApi: (gameApi) => set({ gameApi }),
 
   setRace: (race) => set({ race }),
   setGold: (gold) => set({ gold }),
   setPanel: (panel) => set({ panel }),
   togglePanel: (p) => set((s) => ({ panel: s.panel === p ? null : p })),
 
-  // Inicializa personaje con su kit real (inventario + equipo).
+  // Inicializa personaje con su kit real (inventario + equipo) y calcula stats.
   initCharacter: ({ race, gold, inventory, equipment }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
-    set({ race, gold, inventory: inv, equipment: { ...emptyEquipment(), ...equipment } })
+    set({
+      race, gold, stats: computeStats(race.id),
+      inventory: inv, equipment: { ...emptyEquipment(), ...equipment },
+    })
   },
 
   // Equipa un ítem del inventario (índice). Lo que ya estaba equipado vuelve al hueco.
@@ -104,4 +113,5 @@ export const storeApi = {
   setDebug: (v) => useGameStore.getState().setDebug(v),
   getEquipment: () => useGameStore.getState().getEquipment(),
   onEquipmentChange: (cb) => useGameStore.getState().onEquipmentChange(cb),
+  setGameApi: (api) => useGameStore.getState().setGameApi(api),
 }

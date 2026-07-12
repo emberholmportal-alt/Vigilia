@@ -136,6 +136,48 @@ export function findPath(grid, sx, sy, tx, ty) {
   return [] // sin camino
 }
 
+// ¿Hay línea recta caminable entre dos tiles? Supercover: chequea TODOS los tiles
+// que toca el segmento (sin cortar esquinas). Sirve para suavizar el camino A*.
+export function lineWalkable(grid, x0, y0, x1, y1) {
+  let dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0)
+  const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1
+  let x = x0, y = y0
+  if (!grid.isWalkable(x, y)) return false
+  let n = dx + dy
+  let err = dx - dy
+  dx *= 2; dy *= 2
+  for (; n > 0; n--) {
+    if (err > 0) {
+      x += sx; err -= dy
+    } else if (err < 0) {
+      y += sy; err += dx
+    } else {
+      // paso diagonal: exigimos que los dos ortogonales estén libres (no cortar esquina)
+      if (!grid.isWalkable(x + sx, y) || !grid.isWalkable(x, y + sy)) return false
+      x += sx; y += sy; err -= dy; err += dx; n--
+    }
+    if (!grid.isWalkable(x, y)) return false
+  }
+  return true
+}
+
+// Suaviza el camino A* (string-pulling): saca waypoints intermedios cuando hay línea
+// recta caminable. El resultado son tramos largos y diagonales -> movimiento natural.
+export function smoothPath(grid, path, sx, sy) {
+  if (path.length <= 1) return path
+  const pts = [{ x: Math.round(sx), y: Math.round(sy) }, ...path]
+  const out = []
+  let anchor = 0
+  for (let i = 2; i < pts.length; i++) {
+    if (!lineWalkable(grid, pts[anchor].x, pts[anchor].y, pts[i].x, pts[i].y)) {
+      out.push(pts[i - 1])
+      anchor = i - 1
+    }
+  }
+  out.push(pts[pts.length - 1])
+  return out
+}
+
 function reconstruct(cameFrom, goalIdx, w) {
   const path = []
   let idx = goalIdx

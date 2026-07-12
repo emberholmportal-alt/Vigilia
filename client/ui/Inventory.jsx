@@ -1,7 +1,7 @@
-// Inventario + equipo. Fuente de verdad: el store (React). Equipar cambia el
-// paperdoll al instante (Pixi reacciona vía onEquipmentChange).
-import { useState } from 'react'
-import { useGameStore, EQUIP_SLOTS, equipSlotFor } from '../store.js'
+// Inventario + equipo estilo Diablo: muñeco con slots alrededor del retrato del
+// héroe, grilla de inventario abajo, y detalle con comparación de stats.
+import { useEffect, useState } from 'react'
+import { useGameStore, equipSlotFor } from '../store.js'
 import { RARITY_COLOR, RARITY_LABEL } from '../data/items.js'
 import ItemIcon from './ItemIcon.jsx'
 
@@ -9,6 +9,19 @@ const SLOT_LABEL = {
   head: 'Cabeza', chest: 'Torso', legs: 'Piernas', hands: 'Manos', feet: 'Pies',
   main: 'Arma', off: 'Escudo', ring: 'Anillo', artifact: 'Reliquia',
 }
+
+// Disposición del muñeco (grid-areas). El retrato ocupa el centro.
+const DOLL = [
+  { slot: 'head', area: 'head' },
+  { slot: 'artifact', area: 'arti' },
+  { slot: 'main', area: 'main' },
+  { slot: 'off', area: 'off' },
+  { slot: 'chest', area: 'chest' },
+  { slot: 'legs', area: 'legs' },
+  { slot: 'hands', area: 'hands' },
+  { slot: 'feet', area: 'feet' },
+  { slot: 'ring', area: 'ring' },
+]
 
 const STAT_LABEL = {
   absorb_min: 'Def. mín', absorb_max: 'Def. máx',
@@ -20,7 +33,6 @@ const STAT_LABEL = {
   physical: 'Físico', mental: 'Mental', offense: 'Ofensiva', defense: 'Defensa',
   crit: 'Crítico', accuracy: 'Precisión', avoidance: 'Evasión', speed: 'Velocidad',
 }
-
 const statLabel = (k) => STAT_LABEL[k] || k
 
 export default function Inventory() {
@@ -31,8 +43,17 @@ export default function Inventory() {
   const equipFromInventory = useGameStore((s) => s.equipFromInventory)
   const unequip = useGameStore((s) => s.unequip)
   const setPanel = useGameStore((s) => s.setPanel)
+  const gameApi = useGameStore((s) => s.gameApi)
 
-  const [sel, setSel] = useState(null) // {src:'inv'|'equip', i|slot}
+  const [sel, setSel] = useState(null)
+  const [portrait, setPortrait] = useState(null)
+
+  // Retrato real del paperdoll; se regenera al cambiar el equipo.
+  useEffect(() => {
+    if (!gameApi) return
+    const t = setTimeout(() => setPortrait(gameApi.renderPortrait()), 260)
+    return () => clearTimeout(t)
+  }, [gameApi, equipment])
 
   const selectedItem =
     sel?.src === 'inv' ? inventory[sel.i] : sel?.src === 'equip' ? equipment[sel.slot] : null
@@ -44,6 +65,21 @@ export default function Inventory() {
     setSel(null)
   }
 
+  const slotBtn = (slot, area) => {
+    const it = equipment[slot]
+    return (
+      <button
+        key={slot}
+        className={'slot doll-slot' + (sel?.src === 'equip' && sel.slot === slot ? ' on' : '')}
+        style={{ gridArea: area, ...(it ? { borderColor: RARITY_COLOR[it.rarity] } : null) }}
+        onClick={() => setSel({ src: 'equip', slot })}
+        title={SLOT_LABEL[slot]}
+      >
+        {it ? <ItemIcon icon={it.icon} /> : <em>{SLOT_LABEL[slot]}</em>}
+      </button>
+    )
+  }
+
   return (
     <div className="panel">
       <div className="panel-head">
@@ -52,21 +88,11 @@ export default function Inventory() {
         <button className="x" onClick={() => setPanel(null)}>✕</button>
       </div>
 
-      <div className="equip-row">
-        {EQUIP_SLOTS.map((slot) => {
-          const it = equipment[slot]
-          return (
-            <button
-              key={slot}
-              className={'slot' + (sel?.src === 'equip' && sel.slot === slot ? ' on' : '')}
-              style={it ? { borderColor: RARITY_COLOR[it.rarity] } : undefined}
-              onClick={() => setSel({ src: 'equip', slot })}
-              title={SLOT_LABEL[slot]}
-            >
-              {it ? <ItemIcon icon={it.icon} /> : <em>{SLOT_LABEL[slot]}</em>}
-            </button>
-          )
-        })}
+      <div className="doll">
+        {DOLL.map((d) => slotBtn(d.slot, d.area))}
+        <div className="portrait" style={{ gridArea: 'port' }}>
+          {portrait ? <img src={portrait} alt="héroe" /> : <div className="portrait-empty" />}
+        </div>
       </div>
 
       <div className="inv-grid">
@@ -120,11 +146,7 @@ function ItemDetail({ item, compareTo, actionLabel, onAction }) {
                 <span>
                   {cur}
                   {compareTo && delta !== 0 && (
-                    <b className={delta > 0 ? 'up' : 'down'}>
-                      {' '}
-                      {delta > 0 ? '+' : ''}
-                      {delta}
-                    </b>
+                    <b className={delta > 0 ? 'up' : 'down'}> {delta > 0 ? '+' : ''}{delta}</b>
                   )}
                 </span>
               </div>

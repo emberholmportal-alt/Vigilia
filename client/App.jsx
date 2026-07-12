@@ -28,8 +28,10 @@ export default function App() {
     if (phase !== 'game' || gameRef.current) return
     const game = new Game(storeApi)
     gameRef.current = game
+    // Zona inicial abierta (la granja de Black Oak). Probar otras con ?map=<nombre>.
+    const mapName = new URLSearchParams(location.search).get('map') || 'black_oak_farm'
     game
-      .mount(canvasRef.current, 'black_oak_city')
+      .mount(canvasRef.current, mapName)
       .then(() => setLoading(false))
       .catch((e) => {
         console.error(e)
