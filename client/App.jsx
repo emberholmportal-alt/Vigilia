@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Game } from './engine/Game.js'
 import { storeApi, useGameStore } from './store.js'
 import { playMusic } from './engine/audio.js'
-import { startingCharacter } from './data/characters.js'
+import { startingCharacter, raceById, RACES } from './data/characters.js'
+import { loadGame, hasSave } from './data/save.js'
 import HUD from './ui/HUD.jsx'
 import StartScreen from './ui/StartScreen.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
@@ -31,6 +32,19 @@ export default function App() {
     // Personaje con kit real ANTES de montar el juego (el paperdoll lo lee al arrancar).
     if (name) useGameStore.getState().setPlayerName(name)
     initCharacter(startingCharacter(raceId))
+    playMusic('town_theme.ogg')
+    setLoading(true)
+    setPhase('game')
+  }
+
+  // Continuar la partida guardada (progreso, oro, XP, skills, inventario y equipo).
+  function continueGame() {
+    const s = loadGame()
+    if (!s) { startGame(); return }
+    useGameStore.getState().setPlayerName(s.playerName)
+    const race = raceById(s.raceId) || RACES[0]
+    initCharacter({ race, gold: s.gold, inventory: s.inventory, equipment: s.equipment,
+                    belt: s.belt, xp: s.xp, skills: s.skills })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
@@ -67,7 +81,7 @@ export default function App() {
       {phase === 'game' && !loading && !error && <DialogueBox />}
       {error && <div className="error">Error: {error}</div>}
 
-      {phase === 'start' && <StartScreen onEnter={startGame} loading={false} />}
+      {phase === 'start' && <StartScreen onEnter={startGame} onContinue={continueGame} canContinue={hasSave()} loading={false} />}
       {phase === 'race' && <RaceScreen onChoose={chooseRace} />}
       {phase === 'game' && loading && <div className="loading">Cargando Black Oak City…</div>}
     </div>

@@ -89,7 +89,8 @@ export class Game {
     const player = new Player(iso, grid, world.manifest, spawn.x, spawn.y)
     renderer.objectLayer.addChild(player.view)
     this.player = player
-    player.setName(this.store.getPlayerName())
+    player.setName(this.store.getPlayerName(), this.store.getPlayerLevel())
+    this._nameLevel = this.store.getPlayerLevel()
     await player.setEquipment(equipToGfx(this.store.getEquipment()))
 
     // NPCs de la plaza (vida de la ciudad). Se quedan quietos en su tile, se bloquea ese
@@ -213,6 +214,10 @@ export class Game {
     if (chest.glow) { chest.glow.destroy(); chest.glow = null }
     if (chest.hot) { chest.hot.eventMode = 'none'; chest.hot.cursor = 'default' }
     playSfx('wood_open.ogg')
+
+    // Abrir un cofre es la acción de Saqueo (+XP de skill y de jugador).
+    this.store.addSkillXp('saqueo', 14)
+    this.store.addXp(10)
 
     const roll = rollLoot(chest.loot)
     if (roll.gold > 0) this.store.addGold(roll.gold)
@@ -398,6 +403,8 @@ export class Game {
     if (this._fpsAccum >= 500) {
       const fps = Math.round((this._fpsFrames * 1000) / this._fpsAccum)
       this.store.setFps(fps)
+      const lvl = this.store.getPlayerLevel()
+      if (lvl !== this._nameLevel) { this._nameLevel = lvl; this.player.setName(this.store.getPlayerName(), lvl) }
       this.store.setDebug({
         tile: `${Math.round(this.player.tx)},${Math.round(this.player.ty)}`,
         visibleTiles: this.renderer.visibleTiles,

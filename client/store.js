@@ -8,6 +8,8 @@ import { create } from 'zustand'
 import { computeStats } from './data/stats.js'
 import { setMuted } from './engine/audio.js'
 import { dailyStock } from './data/shop.js'
+import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP } from './data/progression.js'
+import { saveGame } from './data/save.js'
 
 // El mercader compra a fracción del precio (Flare: vendor_ratio_sell = 0.25).
 const SELL_RATIO = 0.25
@@ -63,6 +65,8 @@ export const useGameStore = create((set, get) => ({
     if (t) set({ speech: { text: t, until: Date.now() + 4500 } })
   },
   stats: null,              // {level, str, dex, int, vit, hp, hpMax, mp, mpMax, staminaMax, ...}
+  xp: 0,                    // XP total del jugador (define el nivel)
+  skills: emptySkills(),    // las 6 acciones: { skill: {xp, level} }
   inventory: [],            // array de ítems (huecos = null), largo INVENTORY_SIZE
   equipment: emptyEquipment(),
   belt: [null, null, null, null], // cinturón de 4 (consumibles)
@@ -86,18 +90,41 @@ export const useGameStore = create((set, get) => ({
   setPanel: (panel) => set({ panel }),
   togglePanel: (p) => set((s) => ({ panel: s.panel === p ? null : p })),
 
-  // Inicializa personaje con su kit real (inventario + equipo) y calcula stats.
-  initCharacter: ({ race, gold, inventory, equipment, belt }) => {
+  // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
+  // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
+  initCharacter: ({ race, gold, inventory, equipment, belt, xp = 0, skills = null }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const st = computeStats(race.id)
+    st.level = playerLevelFromXp(xp)
     const b = (belt || []).slice(0, 4)
     while (b.length < 4) b.push(null)
     set({
-      race, gold, stats: st,
+      race, gold, stats: st, xp, skills: skills || emptySkills(),
       inventory: inv, equipment: { ...emptyEquipment(), ...equipment }, belt: b,
       staminaMax: st.staminaMax, stamina: st.staminaMax,
     })
+    saveGame(get())
+  },
+
+  // Suma XP de jugador; recalcula el nivel y persiste.
+  addXp: (n) => {
+    const s = get()
+    const xp = s.xp + Math.max(0, n | 0)
+    const level = playerLevelFromXp(xp)
+    set({ xp, stats: s.stats ? { ...s.stats, level } : s.stats })
+    saveGame(get())
+  },
+
+  // Suma XP a una de las 6 acciones (cap nivel 20); recalcula su nivel y persiste.
+  addSkillXp: (skill, n) => {
+    const s = get()
+    const cur = s.skills[skill]
+    if (!cur || cur.level >= SKILL_CAP) return
+    const xp = cur.xp + Math.max(0, n | 0)
+    const skills = { ...s.skills, [skill]: { xp, level: skillLevelFromXp(xp) } }
+    set({ skills })
+    saveGame(get())
   },
 
   // Equipa un ítem del inventario (índice). Lo que ya estaba equipado vuelve al hueco.
@@ -113,10 +140,11 @@ export const useGameStore = create((set, get) => ({
     equipment[slot] = item
     inv[invIndex] = prev || null
     set({ inventory: inv, equipment })
+    saveGame(get())
   },
 
   // Agrega oro (loot).
-  addGold: (n) => set((s) => ({ gold: s.gold + (n | 0) })),
+  addGold: (n) => { set((s) => ({ gold: s.gold + (n | 0) })); saveGame(get()) },
 
   // Mete un ítem al inventario. Los apilables (poción/crafting/scroll) se acumulan en
   // una celda con `count`; el resto va a un hueco libre. Devuelve true si entró.
@@ -129,6 +157,7 @@ export const useGameStore = create((set, get) => ({
       if (at >= 0) {
         inv[at] = { ...inv[at], count: (inv[at].count || 1) + qty }
         set({ inventory: inv })
+        saveGame(get())
         return true
       }
     }
@@ -136,6 +165,7 @@ export const useGameStore = create((set, get) => ({
     if (free < 0) return false // inventario lleno
     inv[free] = stackable ? { ...item, count: qty } : { ...item }
     set({ inventory: inv })
+    saveGame(get())
     return true
   },
 
@@ -151,6 +181,7 @@ export const useGameStore = create((set, get) => ({
     if (s.gold < price) return { ok: false, reason: 'no-gold' }
     if (!get().addItem(item, 1)) return { ok: false, reason: 'full' }
     set({ gold: get().gold - price })
+    saveGame(get())
     return { ok: true }
   },
 
@@ -164,6 +195,7 @@ export const useGameStore = create((set, get) => ({
     if (item.count && item.count > 1) inv[invIndex] = { ...item, count: item.count - 1 }
     else inv[invIndex] = null
     set({ inventory: inv, gold: s.gold + gain })
+    saveGame(get())
     return { ok: true, gain }
   },
 
@@ -178,6 +210,7 @@ export const useGameStore = create((set, get) => ({
     inv[idx] = item
     const equipment = { ...s.equipment, [slot]: null }
     set({ inventory: inv, equipment })
+    saveGame(get())
   },
 
   getEquipment: () => get().equipment,
@@ -221,4 +254,7 @@ export const storeApi = {
   addGold: (n) => useGameStore.getState().addGold(n),
   addItem: (item, qty) => useGameStore.getState().addItem(item, qty),
   inventoryFull: () => useGameStore.getState().inventory.every((x) => x != null),
+  addXp: (n) => useGameStore.getState().addXp(n),
+  addSkillXp: (skill, n) => useGameStore.getState().addSkillXp(skill, n),
+  getPlayerLevel: () => useGameStore.getState().stats?.level || 1,
 }

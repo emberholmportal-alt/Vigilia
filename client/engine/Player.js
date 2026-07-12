@@ -62,8 +62,8 @@ export class Player {
     this._bubbleText = ''
   }
 
-  setName(name) {
-    this.nameText.text = name || ''
+  setName(name, level) {
+    this.nameText.text = level ? `${name || ''} · Nv ${level}` : (name || '')
   }
 
   showBubble(text) {
