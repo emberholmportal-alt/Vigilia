@@ -35,6 +35,11 @@ import os, re, json, argparse, glob
 
 TXT_INT = re.compile(r"^(\w+)=(.*)$")
 
+# Override de tamaño de tile por mapa. Triston (HERESY) es nativo 64px y su tileset se
+# extrae a escala 1.0, así que el diamante debe ser 64px -> tileW=128 (128×0.5/2=32=wHalf,
+# diamante 64) para que coincida con el arte y quede al zoom de los demás mapas.
+TILE_OVERRIDE = {"triston": (128, 64)}
+
 
 def parse_map(path):
     m = {"layers": {}, "portals": [], "chests": [], "npcs": [], "spawners": []}
@@ -154,6 +159,8 @@ def main():
         if not m.get("w"):
             continue
         m["name"] = name
+        if name in TILE_OVERRIDE:
+            m["tileW"], m["tileH"] = TILE_OVERRIDE[name]
         with open(os.path.join(a.out, name + ".json"), "w") as fh:
             json.dump(m, fh, separators=(",", ":"))
         index.append({"name": name, "title": m.get("title", name),
