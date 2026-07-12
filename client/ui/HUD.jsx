@@ -18,6 +18,7 @@ export default function HUD() {
   }
 
   const mapTitle = useGameStore((s) => s.mapTitle)
+  const playerName = useGameStore((s) => s.playerName)
   const fps = useGameStore((s) => s.fps)
   const gold = useGameStore((s) => s.gold)
   const race = useGameStore((s) => s.race)
@@ -36,8 +37,8 @@ export default function HUD() {
   return (
     <>
       <div className="hud">
-        <div className="who">
-          <b>Vigilante {race ? '· ' + race.name : ''}</b>
+        <button className="who" onClick={() => togglePanel('character')} title="Ver personaje">
+          <b>{playerName} {race ? '· ' + race.name : ''}</b>
           <div className="attrs">
             <span>Nv {s.level}</span>
             <span>FUE {s.str}</span>
@@ -45,7 +46,7 @@ export default function HUD() {
             <span>INT {s.int}</span>
             <span>VIT {s.vit}</span>
           </div>
-        </div>
+        </button>
         <div className="telemetry">
           <span className={fps >= 55 ? 'ok' : fps >= 40 ? 'warn' : 'bad'}>{fps} fps</span>
           <span className="dim2">{mapTitle}</span>

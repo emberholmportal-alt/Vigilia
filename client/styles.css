@@ -34,6 +34,11 @@ html, body, #root {
   background: linear-gradient(180deg, rgba(10, 9, 12, 0.9), rgba(10, 9, 12, 0));
   display: flex; justify-content: space-between; align-items: flex-start;
 }
+.who {
+  pointer-events: auto; cursor: pointer; background: none; border: 0; padding: 2px 4px;
+  text-align: left; -webkit-tap-highlight-color: transparent; border-radius: 6px;
+}
+.who:active { background: rgba(230, 220, 198, 0.08); }
 .who b {
   font-family: Georgia, serif; letter-spacing: 0.05em; font-size: 14px;
   color: #e6dcc6; text-shadow: 0 1px 2px #000; display: block;
@@ -251,6 +256,42 @@ html, body, #root {
   text-align: center; color: var(--gold); font-family: Georgia, serif; font-size: 13px;
   text-shadow: 0 1px 2px #000;
 }
+
+/* hoja de personaje (panel character.png) */
+.char-title {
+  position: absolute; transform: translate(-50%, -50%);
+  font-family: Georgia, serif; font-size: 15px; letter-spacing: 0.08em;
+  color: var(--gold); text-shadow: 0 1px 2px #000; white-space: nowrap;
+}
+.char-name {
+  position: absolute; transform: translate(-50%, -50%);
+  font-family: Georgia, serif; font-size: 13px; color: #e6dcc6;
+  text-shadow: 0 1px 2px #000; white-space: nowrap; max-width: 36%; overflow: hidden;
+}
+.char-level {
+  position: absolute; transform: translate(-50%, -50%);
+  font-family: Georgia, serif; font-size: 14px; color: var(--gold); text-shadow: 0 1px 2px #000;
+}
+.char-primary-val {
+  position: absolute; transform: translate(-50%, -50%);
+  font-family: Georgia, serif; font-size: 14px; color: #f2ead6; text-shadow: 0 1px 2px #000;
+}
+.char-primary-lbl {
+  position: absolute; transform: translateY(-50%);
+  font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  text-shadow: 0 1px 2px #000; white-space: nowrap;
+}
+.char-primary-lbl em { color: var(--gold); font-style: normal; font-size: 10px; }
+.char-stats {
+  position: absolute; width: 44%; display: flex; flex-direction: column; gap: 5px;
+}
+.char-stat {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-bottom: 1px solid rgba(120, 104, 80, 0.25); padding-bottom: 3px;
+  font-family: Georgia, serif; font-size: 12px;
+}
+.char-stat span { color: var(--parch); text-shadow: 0 1px 2px #000; }
+.char-stat b { color: #f2ead6; text-shadow: 0 1px 2px #000; }
 
 /* tooltip estilo Flare */
 .inv-tooltip {
