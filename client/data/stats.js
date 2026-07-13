@@ -3,6 +3,7 @@
 // crit, etc.), no atributos, así que sumamos esos bonus al derivar los stats finales.
 //
 // FUE (fuerza) · DES (destreza) · INT (inteligencia) · VIT (vitalidad)
+import { treeBonus } from './skilltree.js'
 
 const BASE = { str: 10, dex: 10, int: 10, vit: 10 }
 
@@ -112,19 +113,22 @@ export function weaponDamage(equipment) {
   return { min: base.min + up, max: base.max + up }
 }
 
-export function computeStats(raceId, level = 1, equipment = null) {
+export function computeStats(raceId, level = 1, equipment = null, attrAlloc = null, skillRanks = null) {
   const r = RACE_RULES[raceId] || {}
-  const str = BASE.str + (r.str || 0)
-  const dex = BASE.dex + (r.dex || 0)
-  const int = BASE.int + (r.int || 0)
-  const vit = BASE.vit + (r.vit || 0)
+  const a = attrAlloc || {}
+  // Atributos: base + raza + puntos repartidos al subir de nivel.
+  const str = BASE.str + (r.str || 0) + (a.str || 0)
+  const dex = BASE.dex + (r.dex || 0) + (a.dex || 0)
+  const int = BASE.int + (r.int || 0) + (a.int || 0)
+  const vit = BASE.vit + (r.vit || 0) + (a.vit || 0)
   const e = equipBonus(equipment)
   const aff = affinityBonus(raceId, equipment)   // bonus si la raza porta equipo afín
+  const tb = treeBonus(skillRanks)               // bonus pasivo de los nodos del árbol
   const lv = Math.max(1, level | 0)
 
-  // Vida/maná: base por atributo + crecimiento por nivel + bonus plano del equipo + afinidad.
-  const hpMax = Math.round(40 + vit * 4 + (r.hpFlat || 0) + (lv - 1) * 8 + e.hp + aff.hp)
-  const mpMax = Math.round((15 + int * 3 + (r.mpFlat || 0)) * (r.mpMul || 1) + (lv - 1) * 3 + e.mp + aff.mp)
+  // Vida/maná: base por atributo + crecimiento por nivel + bonus plano del equipo + afinidad + árbol.
+  const hpMax = Math.round(40 + vit * 4 + (r.hpFlat || 0) + (lv - 1) * 8 + e.hp + aff.hp + tb.hp)
+  const mpMax = Math.round((15 + int * 3 + (r.mpFlat || 0)) * (r.mpMul || 1) + (lv - 1) * 3 + e.mp + aff.mp + tb.mp)
   const staminaMax = Math.round(90 + vit * 6)
   const wd = weaponDamage(equipment)
 
@@ -134,15 +138,15 @@ export function computeStats(raceId, level = 1, equipment = null) {
     hp: hpMax, hpMax,
     mp: mpMax, mpMax,
     staminaMax,
-    defense: e.absorb + aff.absorb, // reduce el daño recibido (+ afinidad)
-    hpRegen: e.hpRegen, mpRegen: e.mpRegen,
-    crit: e.crit, accuracy: e.accuracy, avoidance: e.avoidance,
-    itemFind: e.itemFind,           // +% de hallazgo (magic find) para el loot
+    defense: e.absorb + aff.absorb + tb.absorb, // reduce el daño recibido (+ afinidad + árbol)
+    hpRegen: e.hpRegen, mpRegen: e.mpRegen + tb.mpRegen,
+    crit: e.crit + tb.crit, accuracy: e.accuracy + tb.accuracy, avoidance: e.avoidance,
+    itemFind: e.itemFind + tb.itemFind, // +% de hallazgo (magic find) para el loot
     fireResist: e.fireResist, iceResist: e.iceResist,
     dmgMin: wd.min, dmgMax: wd.max, // daño del arma
     weaponKind: weaponKind(equipment), // melee / ranged / mental (define ataque a distancia)
-    dmgMul: (r.dmgMul || 1) * aff.dmgMul,
-    speedMul: r.speedMul || 1,
-    xpMul: (r.xpMul || 1) * (1 + e.xpGain / 100),
+    dmgMul: (r.dmgMul || 1) * aff.dmgMul * (1 + tb.dmgMul),
+    speedMul: (r.speedMul || 1) * (1 + tb.speedMul),
+    xpMul: (r.xpMul || 1) * (1 + e.xpGain / 100) * (1 + tb.xpMul),
   }
 }

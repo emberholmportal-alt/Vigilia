@@ -3,6 +3,7 @@
 // (con los íconos ya dibujados: espada/vara/flechas/escudo) y una lista de derivados.
 import { useGameStore } from '../store.js'
 import { playerProgress } from '../data/progression.js'
+import { attrEarned, attrSpent } from '../data/skilltree.js'
 import { useT } from './useT.js'
 import { raceName } from '../i18n.js'
 
@@ -22,10 +23,14 @@ export default function Character() {
   const race = useGameStore((s) => s.race)
   const stats = useGameStore((s) => s.stats)
   const xp = useGameStore((s) => s.xp)
+  const attrAlloc = useGameStore((s) => s.attrAlloc)
+  const allocAttr = useGameStore((s) => s.allocAttr)
   const setPanel = useGameStore((s) => s.setPanel)
   const t = useT()
   const s = stats || {}
   const prog = playerProgress(xp || 0)
+  // Puntos de atributo disponibles (se reparten con el botón "+" de cada atributo).
+  const attrPts = attrEarned(s.level || 1) - attrSpent(attrAlloc)
 
   // Derivados que mostramos en la lista (reflejan raza/nivel + equipo).
   const derived = [
@@ -53,13 +58,22 @@ export default function Character() {
         <div className="char-name" style={at(288, 80)}>{playerName}{race ? ` · ${raceName(race, t.lang)}` : ''}</div>
         <div className="char-level" style={at(592, 80)}>{s.level ?? 1}</div>
 
-        {/* atributos primarios: valor en la casilla + nombre a la derecha del ícono */}
+        {/* atributos primarios: valor en la casilla + nombre a la derecha del ícono.
+            Con puntos disponibles aparece un "+" para repartirlos. */}
         {PRIMARIES.map((p) => (
           <div key={p.key}>
             <div className="char-primary-val" style={at(192, p.y + 14)}>{s[p.key] ?? 0}</div>
             <div className="char-primary-lbl" style={at(300, p.y + 14)}>{t('attr_' + p.key)} <em>{t('abbr_' + p.key)}</em></div>
+            {attrPts > 0 && (
+              <button className="char-attr-add" style={at(244, p.y + 14)}
+                      onClick={() => allocAttr(p.key)} aria-label={t('attr_' + p.key)}>+</button>
+            )}
           </div>
         ))}
+
+        {attrPts > 0 && (
+          <div className="char-attr-pts" style={at(320, 286)}>{t('attr_points_n', { n: attrPts })}</div>
+        )}
 
         {/* sección inferior: fluye verticalmente (el texto tiene alto fijo en px, así que
             posicionar cada bloque en % del panel se solapa; mejor apilarlos en un contenedor). */}

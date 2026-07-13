@@ -6,6 +6,7 @@
 // pasará a pedirle al server y aplicar su respuesta.
 import { create } from 'zustand'
 import { computeStats, upgradeLevel } from './data/stats.js'
+import { NODE_BY_ID, attrEarned, skillEarned, attrSpent, skillSpent } from './data/skilltree.js'
 import { rollLoot } from '../shared/loot.js'
 
 const FORGE_MAX = 5        // nivel máximo de mejora por pieza
@@ -105,6 +106,8 @@ export const useGameStore = create((set, get) => ({
   stats: null,              // {level, str, dex, int, vit, hp, hpMax, mp, mpMax, staminaMax, ...}
   xp: 0,                    // XP total del jugador (define el nivel)
   skills: emptySkills(),    // las 6 acciones: { skill: {xp, level} }
+  attrAlloc: { str: 0, dex: 0, int: 0, vit: 0 }, // puntos de atributo repartidos (por nivel)
+  skillRanks: {},           // { nodeId: rango } — árbol de habilidades
   inventory: [],            // array de ítems (huecos = null), largo INVENTORY_SIZE
   equipment: emptyEquipment(),
   belt: [null, null, null, null], // cinturón (slots usables = capacidad del cinturón equipado)
@@ -429,7 +432,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0 }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -439,11 +442,14 @@ export const useGameStore = create((set, get) => ({
       const it = equip[sl]
       if (isDurable(it) && it.dur == null) equip[sl] = { ...it, dur: durabilityMax(it) }
     }
-    const st = computeStats(race.id, level, equip)   // stats incluyen el equipo
+    const alloc = { str: 0, dex: 0, int: 0, vit: 0, ...(attrAlloc || {}) }
+    const ranks = skillRanks || {}
+    const st = computeStats(race.id, level, equip, alloc, ranks)   // stats incluyen equipo + atributos + árbol
     const b = (belt || []).slice(0, 4)
     while (b.length < 4) b.push(null)
     set({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
+      attrAlloc: alloc, skillRanks: ranks,
       inventory: inv, equipment: equip, belt: b, equippedBelt,
       discovered: discovered || {},
       missions: missions || [], missionsDate: missionsDate || '', seals: seals || 0,
@@ -457,7 +463,7 @@ export const useGameStore = create((set, get) => ({
   recomputeStats: () => {
     const s = get()
     if (!s.race || !s.stats) return
-    const fresh = computeStats(s.race.id, s.stats.level, s.equipment)
+    const fresh = computeStats(s.race.id, s.stats.level, s.equipment, s.attrAlloc, s.skillRanks)
     const hp = Math.min(s.stats.hp, fresh.hpMax)
     const mp = Math.min(s.stats.mp, fresh.mpMax)
     set({ stats: { ...fresh, hp, mp } })
@@ -469,7 +475,7 @@ export const useGameStore = create((set, get) => ({
     const xp = s.xp + Math.max(0, n | 0)
     const level = playerLevelFromXp(xp)
     if (s.stats && level !== s.stats.level) {
-      const fresh = computeStats(s.race?.id, level, s.equipment) // subir de nivel cura
+      const fresh = computeStats(s.race?.id, level, s.equipment, s.attrAlloc, s.skillRanks) // subir de nivel cura
       set({ xp, stats: fresh })
       get().showToast(tt('levelup_toast', { n: level }))
     } else {
@@ -487,6 +493,50 @@ export const useGameStore = create((set, get) => ({
     const skills = { ...s.skills, [skill]: { xp, level: skillLevelFromXp(xp) } }
     set({ skills })
     saveGame(get())
+  },
+
+  // --- árbol de habilidades + puntos de atributo ---
+  // Puntos de atributo disponibles (ganados por nivel − repartidos).
+  attrPoints: () => attrEarned(get().stats?.level || 1) - attrSpent(get().attrAlloc),
+  // Puntos de habilidad disponibles (ganados por nivel − gastados en nodos).
+  skillPoints: () => skillEarned(get().stats?.level || 1) - skillSpent(get().skillRanks),
+  // Reparte un punto en un atributo (str/dex/int/vit). Recalcula stats.
+  allocAttr: (attr) => {
+    const s = get()
+    if (!['str', 'dex', 'int', 'vit'].includes(attr)) return
+    if (get().attrPoints() <= 0) { get().showToast(tt('no_attr_points')); return }
+    const attrAlloc = { ...s.attrAlloc, [attr]: (s.attrAlloc[attr] || 0) + 1 }
+    set({ attrAlloc })
+    get().recomputeStats()
+    saveGame(get())
+  },
+  // Sube un rango de un nodo del árbol. Chequea puntos, requisito de atributo y máximo.
+  rankSkill: (nodeId) => {
+    const s = get()
+    const node = NODE_BY_ID[nodeId]
+    if (!node) return
+    const cur = s.skillRanks[nodeId] || 0
+    if (cur >= node.max) { get().showToast(tt('node_max')); return }
+    if (get().skillPoints() <= 0) { get().showToast(tt('no_skill_points')); return }
+    const attrVal = s.stats?.[node.attr] || 0
+    if (attrVal < node.req) { get().showToast(tt('node_req', { n: node.req })); return }
+    const skillRanks = { ...s.skillRanks, [nodeId]: cur + 1 }
+    set({ skillRanks })
+    get().recomputeStats()
+    saveGame(get())
+  },
+  // Reinicia atributos y árbol (devuelve todos los puntos). Cuesta oro.
+  respecCost: () => 50 + (get().stats?.level || 1) * 25,
+  respec: () => {
+    const s = get()
+    if (attrSpent(s.attrAlloc) === 0 && skillSpent(s.skillRanks) === 0) { get().showToast(tt('respec_nothing')); return { ok: false } }
+    const cost = get().respecCost()
+    if (s.gold < cost) { get().showToast(tt('respec_no_gold', { n: cost })); return { ok: false } }
+    set({ attrAlloc: { str: 0, dex: 0, int: 0, vit: 0 }, skillRanks: {}, gold: s.gold - cost })
+    get().recomputeStats()
+    get().showToast(tt('respec_done', { n: cost }))
+    saveGame(get())
+    return { ok: true }
   },
 
   // Equipa un ítem del inventario (índice). Lo que ya estaba equipado vuelve al hueco.
