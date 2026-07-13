@@ -22,6 +22,9 @@ import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
 import { GroundItem, loadIcons, iconsTexture } from './GroundItem.js'
 import { Grave } from './Grave.js'
+import { RemotePlayer } from './RemotePlayer.js'
+import { net, ONLINE } from '../net/net.js'
+import { deviceAuth } from '../net/online.js'
 import { rollLoot } from '../../shared/loot.js'
 import { rollMonsterDrop } from '../data/drops.js'
 import { itemById, RARITY_COLOR } from '../data/items.js'
@@ -146,11 +149,13 @@ export class Game {
       ? spawnOverride
       : hubOrCentralSpawn(mapName, grid, world.map)
     this._spawn = spawn
+    this._manifest = world.manifest   // para spawnear jugadores remotos / invocaciones
     const player = new Player(iso, grid, world.manifest, spawn.x, spawn.y)
     player.view.scale.set(eScale * (PLAYER_SCALE[mapName] || 1))
     this._playerScale = eScale * (PLAYER_SCALE[mapName] || 1)
     renderer.objectLayer.addChild(player.view)
     this.player = player
+    this.remotes = new Map()          // id -> RemotePlayer (otros jugadores en este mapa)
     player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'))
     this._nameLevel = this.store.getPlayerLevel()
     await player.setEquipment(equipToGfx(this.store.getEquipment()))
@@ -248,6 +253,57 @@ export class Game {
       this.store.logMessage({ channel: 'sistema', text: tt('name_found', { name: revealed }) })
     }
     this._loading = false
+
+    // Online: conectar (una vez) y anunciar el mapa actual para ver a otros jugadores.
+    if (ONLINE) this._enterOnlineMap(mapName, spawn)
+  }
+
+  // Conecta al servidor la primera vez y engancha los eventos de presencia; luego, en cada
+  // mapa, anuncia dónde estás (join) para recibir a los demás de esa sala.
+  async _enterOnlineMap(mapName, spawn) {
+    if (!this._onlineInit) {
+      this._onlineInit = true
+      try {
+        await net.connect()
+        const auth = await deviceAuth(net)
+        if (!auth.ok) { this.store.logMessage({ channel: 'sistema', text: tt('online_off') }); return }
+        this._online = true
+        net.on('present', (m) => this._onPresent(m))
+        net.on('join', (m) => this._addRemote(m.player))
+        net.on('move', (m) => { const r = this.remotes?.get(m.id); if (r) r.setTarget(m.x, m.y, m.dir) })
+        net.on('leave', (m) => this._removeRemote(m.id))
+        net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
+        this.store.logMessage({ channel: 'sistema', text: tt('online_on') })
+      } catch { this.store.logMessage({ channel: 'sistema', text: tt('online_off') }); return }
+    }
+    if (!this._online) return
+    this._clearRemotes()
+    net.join({
+      name: this.store.getPlayerName(), race: this.store.getRaceName(),
+      map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
+    }).catch(() => {})
+  }
+
+  _onPresent(m) {
+    this._selfId = m.you
+    this._clearRemotes()
+    for (const p of m.players || []) this._addRemote(p)
+  }
+  _addRemote(p) {
+    if (!p || p.id === this._selfId || !this.remotes || this.remotes.has(p.id) || !this._manifest) return
+    const r = new RemotePlayer(this.iso, this._manifest, p)
+    r.view.scale.set(this._playerScale || 1)
+    this.renderer.objectLayer.addChild(r.view)
+    this.remotes.set(p.id, r)
+  }
+  _removeRemote(id) {
+    const r = this.remotes?.get(id)
+    if (r) { r.destroy(); this.remotes.delete(id) }
+  }
+  _clearRemotes() {
+    if (!this.remotes) return
+    for (const r of this.remotes.values()) r.destroy()
+    this.remotes.clear()
   }
 
   // Arma la lista de destinos del modal de waypoints: SÓLO las zonas que el jugador
@@ -1480,6 +1536,27 @@ export class Game {
       this.graves = this.graves.filter((m) => !m.taken)
     }
 
+    // Online: interpolar a los jugadores remotos + difundir mi posición (throttle ~8Hz).
+    if (this._online) {
+      if (this.remotes) for (const r of this.remotes.values()) r.update(dt)
+      this._netAccum = (this._netAccum || 0) + dt
+      if (this._netAccum >= 0.12) {
+        this._netAccum = 0
+        const tx = Math.round(this.player.tx), ty = Math.round(this.player.ty), dir = this.player.dir
+        if (tx !== this._netTx || ty !== this._netTy || dir !== this._netDir) {
+          this._netTx = tx; this._netTy = ty; this._netDir = dir
+          net.move(this.mapName, tx, ty, dir)
+        }
+      }
+      // Persistencia en el servidor: subo el personaje cada ~20s (respaldo real en la DB).
+      this._netSaveAccum = (this._netSaveAccum || 0) + dt
+      if (this._netSaveAccum >= 20) {
+        this._netSaveAccum = 0
+        const b = this.store.getSaveBlob ? this.store.getSaveBlob() : null
+        if (b) net.save(b.name, b.race, b.char)
+      }
+    }
+
     // Partículas ambientales.
     this._pt = (this._pt || 0) + dt
     this.particles.update(dt, this._pt)
@@ -1596,6 +1673,7 @@ export class Game {
 
   destroy() {
     this.destroyed = true
+    if (this._online) { this._clearRemotes(); net.close() }
     window.removeEventListener('resize', this._onResize)
     if (this._onContext && this.app?.canvas) this.app.canvas.removeEventListener('contextmenu', this._onContext)
     if (this._unsub) { this._unsub(); this._unsub = null }

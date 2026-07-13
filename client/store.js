@@ -9,6 +9,7 @@ import { computeStats, upgradeLevel } from './data/stats.js'
 import { NODE_BY_ID, attrEarned, skillEarned, attrSpent, skillSpent } from './data/skilltree.js'
 import { QUESTS, ZONE_REVEALS } from './data/quests.js'
 import { unlockedAbilities } from './data/abilities.js'
+import { net } from './net/net.js'
 import { rollLoot } from '../shared/loot.js'
 
 const FORGE_MAX = 5        // nivel máximo de mejora por pieza
@@ -20,7 +21,7 @@ import { tt, setLangGlobal, itemName, raceName, questName } from './i18n.js'
 import { dailyStock, todayStr } from './data/shop.js'
 import { dailyMissions } from './data/missions.js'
 import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryCapacity } from './data/progression.js'
-import { saveGame } from './data/save.js'
+import { saveGame, snapshot } from './data/save.js'
 
 // Idioma persistido (aparte del save: es una preferencia del dispositivo, no de la partida).
 const LANG_KEY = 'vigilia:lang'
@@ -273,6 +274,7 @@ export const useGameStore = create((set, get) => ({
     if (!t) return
     get().say(t)
     get().logMessage({ channel: 'yo', name: get().playerName, text: t })
+    net.chat(t)   // si hay conexión, lo oyen los del mismo mapa (si no, no-op)
   },
 
   // Usar un consumible del cinturón (índice). Cura vida/maná; si no hace falta (ya al
@@ -988,6 +990,7 @@ export const storeApi = {
   recoverGrave: (id) => useGameStore.getState().recoverGrave(id),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
+  getSaveBlob: () => { const s = useGameStore.getState(); return { name: s.playerName, race: s.race?.id, char: snapshot(s) } },
   showToast: (t) => useGameStore.getState().showToast(t),
   logMessage: (m) => useGameStore.getState().logMessage(m),
 }

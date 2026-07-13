@@ -56,30 +56,33 @@ export function loadGame() {
   } catch { return null }
 }
 
+// Construye el blob serializable del personaje (mismo shape para localStorage y para el server).
+export function snapshot(state) {
+  return {
+    playerName: state.playerName,
+    raceId: state.race?.id,
+    gold: state.gold,
+    xp: state.xp,
+    skills: state.skills,
+    inventory: (state.inventory || []).map(packItem),
+    equipment: Object.fromEntries(Object.entries(state.equipment || {}).map(([k, v]) => [k, packItem(v)])),
+    belt: (state.belt || []).map(packItem),
+    equippedBelt: packItem(state.equippedBelt),
+    discovered: state.discovered || {},
+    missions: state.missions || [],
+    missionsDate: state.missionsDate || '',
+    seals: state.seals || 0,
+    attrAlloc: state.attrAlloc || { str: 0, dex: 0, int: 0, vit: 0 },
+    skillRanks: state.skillRanks || {},
+    questFlags: state.questFlags || {},
+    specialAbility: state.specialAbility ?? null,
+    graves: state.graves || [],
+  }
+}
+
 export function saveGame(state) {
-  try {
-    const snap = {
-      playerName: state.playerName,
-      raceId: state.race?.id,
-      gold: state.gold,
-      xp: state.xp,
-      skills: state.skills,
-      inventory: (state.inventory || []).map(packItem),
-      equipment: Object.fromEntries(Object.entries(state.equipment || {}).map(([k, v]) => [k, packItem(v)])),
-      belt: (state.belt || []).map(packItem),
-      equippedBelt: packItem(state.equippedBelt),
-      discovered: state.discovered || {},
-      missions: state.missions || [],
-      missionsDate: state.missionsDate || '',
-      seals: state.seals || 0,
-      attrAlloc: state.attrAlloc || { str: 0, dex: 0, int: 0, vit: 0 },
-      skillRanks: state.skillRanks || {},
-      questFlags: state.questFlags || {},
-      specialAbility: state.specialAbility ?? null,
-      graves: state.graves || [],
-    }
-    localStorage.setItem(KEY, JSON.stringify(snap))
-  } catch { /* almacenamiento lleno / bloqueado: ignorar */ }
+  try { localStorage.setItem(KEY, JSON.stringify(snapshot(state))) }
+  catch { /* almacenamiento lleno / bloqueado: ignorar */ }
 }
 
 export function clearSave() {

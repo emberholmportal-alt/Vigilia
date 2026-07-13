@@ -267,6 +267,8 @@ const DICT = {
   guardian_asleep: { es: 'La estatua duerme. Le falta oír los nombres que la sellaron.', en: 'The statue sleeps. It must hear the names that sealed it.' },
   enemy_summons: { es: '{name} invoca a los muertos', en: '{name} summons the dead' },
   no_combat_town: { es: 'En el pueblo no se combate', en: 'No fighting in town' },
+  online_on: { es: 'Conectado al mundo compartido', en: 'Connected to the shared world' },
+  online_off: { es: 'Modo sin conexión', en: 'Offline mode' },
   // slots del mouse (M1 / M2) + configuración del especial
   m1_normal: { es: 'Ataque normal (clic izquierdo)', en: 'Normal attack (left click)' },
   bind_special: { es: 'Elegir especial (clic derecho)', en: 'Set special (right click)' },
