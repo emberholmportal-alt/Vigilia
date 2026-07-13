@@ -2,7 +2,7 @@
   "items": [
     {
       "id": 2,
-      "name": "de vida Pocion",
+      "name": "Poción de vida",
       "name_en": "Health Potion",
       "slot": "potion",
       "icon": 64,
@@ -15,7 +15,7 @@
     },
     {
       "id": 3,
-      "name": "de mana Pocion",
+      "name": "Poción de maná",
       "name_en": "Mana Potion",
       "slot": "potion",
       "icon": 65,
@@ -132,7 +132,7 @@
     },
     {
       "id": 12,
-      "name": "Fighting Camisa de tela",
+      "name": "Camisa de tela de combate",
       "name_en": "Fighting Cloth Shirt",
       "slot": "chest",
       "icon": 129,
@@ -147,7 +147,7 @@
     },
     {
       "id": 13,
-      "name": "Recon Camisa de tela",
+      "name": "Camisa de tela de reconocimiento",
       "name_en": "Recon Cloth Shirt",
       "slot": "chest",
       "icon": 129,
@@ -162,7 +162,7 @@
     },
     {
       "id": 14,
-      "name": "Sorcerer Camisa de tela",
+      "name": "Camisa de tela de hechicero",
       "name_en": "Sorcerer Cloth Shirt",
       "slot": "chest",
       "icon": 129,
@@ -177,7 +177,7 @@
     },
     {
       "id": 15,
-      "name": "Fighting Pantalones de tela",
+      "name": "Pantalones de tela de combate",
       "name_en": "Fighting Cloth Pants",
       "slot": "legs",
       "icon": 131,
@@ -192,7 +192,7 @@
     },
     {
       "id": 16,
-      "name": "Recon Pantalones de tela",
+      "name": "Pantalones de tela de reconocimiento",
       "name_en": "Recon Cloth Pants",
       "slot": "legs",
       "icon": 131,
@@ -207,7 +207,7 @@
     },
     {
       "id": 17,
-      "name": "Sorcerer Pantalones de tela",
+      "name": "Pantalones de tela de hechicero",
       "name_en": "Sorcerer Cloth Pants",
       "slot": "legs",
       "icon": 131,
@@ -222,7 +222,7 @@
     },
     {
       "id": 18,
-      "name": "Fighting Sandalias de tela",
+      "name": "Sandalias de tela de combate",
       "name_en": "Fighting Cloth Sandals",
       "slot": "feet",
       "icon": 132,
@@ -237,7 +237,7 @@
     },
     {
       "id": 19,
-      "name": "Recon Sandalias de tela",
+      "name": "Sandalias de tela de reconocimiento",
       "name_en": "Recon Cloth Sandals",
       "slot": "feet",
       "icon": 132,
@@ -252,7 +252,7 @@
     },
     {
       "id": 20,
-      "name": "Sorcerer Sandalias de tela",
+      "name": "Sandalias de tela de hechicero",
       "name_en": "Sorcerer Cloth Sandals",
       "slot": "feet",
       "icon": 132,
@@ -267,7 +267,7 @@
     },
     {
       "id": 21,
-      "name": "Fighting Guantes de tela",
+      "name": "Guantes de tela de combate",
       "name_en": "Fighting Cloth Gloves",
       "slot": "hands",
       "icon": 130,
@@ -282,7 +282,7 @@
     },
     {
       "id": 22,
-      "name": "Recon Guantes de tela",
+      "name": "Guantes de tela de reconocimiento",
       "name_en": "Recon Cloth Gloves",
       "slot": "hands",
       "icon": 130,
@@ -297,7 +297,7 @@
     },
     {
       "id": 23,
-      "name": "Sorcerer Guantes de tela",
+      "name": "Guantes de tela de hechicero",
       "name_en": "Sorcerer Cloth Gloves",
       "slot": "hands",
       "icon": 130,
@@ -312,7 +312,7 @@
     },
     {
       "id": 24,
-      "name": "Wandering Cinturon de cuero",
+      "name": "Cinturón de cuero errante",
       "name_en": "Wandering Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -327,7 +327,7 @@
     },
     {
       "id": 25,
-      "name": "Wandering Pendant",
+      "name": "Colgante errante",
       "name_en": "Wandering Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -342,7 +342,7 @@
     },
     {
       "id": 26,
-      "name": "Wandering Spellbook",
+      "name": "Libro de hechizos errante",
       "name_en": "Wandering Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -357,7 +357,7 @@
     },
     {
       "id": 27,
-      "name": "Fighting Daga",
+      "name": "Daga de combate",
       "name_en": "Fighting Dagger",
       "slot": "main",
       "icon": 96,
@@ -373,7 +373,7 @@
     },
     {
       "id": 28,
-      "name": "Recon Honda",
+      "name": "Honda de reconocimiento",
       "name_en": "Recon Slingshot",
       "slot": null,
       "icon": null,
@@ -389,7 +389,7 @@
     },
     {
       "id": 29,
-      "name": "Sorcerer Varita",
+      "name": "Varita de hechicero",
       "name_en": "Sorcerer Wand",
       "slot": "main",
       "icon": 104,
@@ -405,7 +405,7 @@
     },
     {
       "id": 30,
-      "name": "Keeper Broquel de madera",
+      "name": "Broquel de madera del guardián",
       "name_en": "Keeper Wood Buckler",
       "slot": "off",
       "icon": 120,
@@ -420,7 +420,7 @@
     },
     {
       "id": 31,
-      "name": "Wandering Fire Anillo",
+      "name": "Anillo errante de fuego",
       "name_en": "Wandering Fire Ring",
       "slot": "ring",
       "icon": 207,
@@ -435,7 +435,7 @@
     },
     {
       "id": 32,
-      "name": "Wandering Ice Anillo",
+      "name": "Anillo errante de hielo",
       "name_en": "Wandering Ice Ring",
       "slot": "ring",
       "icon": 204,
@@ -450,7 +450,7 @@
     },
     {
       "id": 33,
-      "name": "Wandering Lightning Anillo",
+      "name": "Anillo errante del rayo",
       "name_en": "Wandering Lightning Ring",
       "slot": "ring",
       "icon": 206,
@@ -465,7 +465,7 @@
     },
     {
       "id": 34,
-      "name": "Wandering Dark Anillo",
+      "name": "Anillo errante de las sombras",
       "name_en": "Wandering Dark Ring",
       "slot": "ring",
       "icon": 203,
@@ -480,7 +480,7 @@
     },
     {
       "id": 35,
-      "name": "Wandering Experience Anillo",
+      "name": "Anillo errante de experiencia",
       "name_en": "Wandering Experience Ring",
       "slot": "ring",
       "icon": 200,
@@ -495,7 +495,7 @@
     },
     {
       "id": 36,
-      "name": "Wandering Wealth Anillo",
+      "name": "Anillo errante de riqueza",
       "name_en": "Wandering Wealth Ring",
       "slot": "ring",
       "icon": 201,
@@ -510,7 +510,7 @@
     },
     {
       "id": 37,
-      "name": "Wandering Treasure Anillo",
+      "name": "Anillo errante del tesoro",
       "name_en": "Wandering Treasure Ring",
       "slot": "ring",
       "icon": 205,
@@ -525,7 +525,7 @@
     },
     {
       "id": 38,
-      "name": "Warrior Camisa de tela",
+      "name": "Camisa de tela de guerrero",
       "name_en": "Warrior Cloth Shirt",
       "slot": "chest",
       "icon": 129,
@@ -540,7 +540,7 @@
     },
     {
       "id": 39,
-      "name": "Ranger Camisa de tela",
+      "name": "Camisa de tela de montaraz",
       "name_en": "Ranger Cloth Shirt",
       "slot": "chest",
       "icon": 129,
@@ -555,7 +555,7 @@
     },
     {
       "id": 40,
-      "name": "Wizard Camisa de tela",
+      "name": "Camisa de tela de mago",
       "name_en": "Wizard Cloth Shirt",
       "slot": "chest",
       "icon": 129,
@@ -570,7 +570,7 @@
     },
     {
       "id": 41,
-      "name": "Warrior Pantalones de tela",
+      "name": "Pantalones de tela de guerrero",
       "name_en": "Warrior Cloth Pants",
       "slot": "legs",
       "icon": 131,
@@ -585,7 +585,7 @@
     },
     {
       "id": 42,
-      "name": "Ranger Pantalones de tela",
+      "name": "Pantalones de tela de montaraz",
       "name_en": "Ranger Cloth Pants",
       "slot": "legs",
       "icon": 131,
@@ -600,7 +600,7 @@
     },
     {
       "id": 43,
-      "name": "Wizard Pantalones de tela",
+      "name": "Pantalones de tela de mago",
       "name_en": "Wizard Cloth Pants",
       "slot": "legs",
       "icon": 131,
@@ -615,7 +615,7 @@
     },
     {
       "id": 44,
-      "name": "Warrior Sandalias de tela",
+      "name": "Sandalias de tela de guerrero",
       "name_en": "Warrior Cloth Sandals",
       "slot": "feet",
       "icon": 132,
@@ -630,7 +630,7 @@
     },
     {
       "id": 45,
-      "name": "Ranger Sandalias de tela",
+      "name": "Sandalias de tela de montaraz",
       "name_en": "Ranger Cloth Sandals",
       "slot": "feet",
       "icon": 132,
@@ -645,7 +645,7 @@
     },
     {
       "id": 46,
-      "name": "Wizard Sandalias de tela",
+      "name": "Sandalias de tela de mago",
       "name_en": "Wizard Cloth Sandals",
       "slot": "feet",
       "icon": 132,
@@ -660,7 +660,7 @@
     },
     {
       "id": 47,
-      "name": "Warrior Guantes de tela",
+      "name": "Guantes de tela de guerrero",
       "name_en": "Warrior Cloth Gloves",
       "slot": "hands",
       "icon": 130,
@@ -675,7 +675,7 @@
     },
     {
       "id": 48,
-      "name": "Ranger Guantes de tela",
+      "name": "Guantes de tela de montaraz",
       "name_en": "Ranger Cloth Gloves",
       "slot": "hands",
       "icon": 130,
@@ -690,7 +690,7 @@
     },
     {
       "id": 49,
-      "name": "Wizard Guantes de tela",
+      "name": "Guantes de tela de mago",
       "name_en": "Wizard Cloth Gloves",
       "slot": "hands",
       "icon": 130,
@@ -705,7 +705,7 @@
     },
     {
       "id": 50,
-      "name": "Adventurer Cinturon de cuero",
+      "name": "Cinturón de cuero de aventurero",
       "name_en": "Adventurer Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -720,7 +720,7 @@
     },
     {
       "id": 51,
-      "name": "Adventurer Pendant",
+      "name": "Colgante de aventurero",
       "name_en": "Adventurer Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -735,7 +735,7 @@
     },
     {
       "id": 52,
-      "name": "Adventurer Spellbook",
+      "name": "Libro de hechizos de aventurero",
       "name_en": "Adventurer Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -750,7 +750,7 @@
     },
     {
       "id": 53,
-      "name": "Warrior Daga",
+      "name": "Daga de guerrero",
       "name_en": "Warrior Dagger",
       "slot": "main",
       "icon": 96,
@@ -766,7 +766,7 @@
     },
     {
       "id": 54,
-      "name": "Ranger Honda",
+      "name": "Honda de montaraz",
       "name_en": "Ranger Slingshot",
       "slot": null,
       "icon": null,
@@ -782,7 +782,7 @@
     },
     {
       "id": 55,
-      "name": "Wizard Varita",
+      "name": "Varita de mago",
       "name_en": "Wizard Wand",
       "slot": "main",
       "icon": 104,
@@ -798,7 +798,7 @@
     },
     {
       "id": 56,
-      "name": "Paladin Broquel de madera",
+      "name": "Broquel de madera de paladín",
       "name_en": "Paladin Wood Buckler",
       "slot": "off",
       "icon": 120,
@@ -813,7 +813,7 @@
     },
     {
       "id": 57,
-      "name": "Adventurer Fire Anillo",
+      "name": "Anillo de aventurero de fuego",
       "name_en": "Adventurer Fire Ring",
       "slot": "ring",
       "icon": 207,
@@ -828,7 +828,7 @@
     },
     {
       "id": 58,
-      "name": "Adventurer Ice Anillo",
+      "name": "Anillo de aventurero de hielo",
       "name_en": "Adventurer Ice Ring",
       "slot": "ring",
       "icon": 204,
@@ -843,7 +843,7 @@
     },
     {
       "id": 59,
-      "name": "Adventurer Lightning Anillo",
+      "name": "Anillo de aventurero del rayo",
       "name_en": "Adventurer Lightning Ring",
       "slot": "ring",
       "icon": 206,
@@ -858,7 +858,7 @@
     },
     {
       "id": 60,
-      "name": "Adventurer Dark Anillo",
+      "name": "Anillo de aventurero de las sombras",
       "name_en": "Adventurer Dark Ring",
       "slot": "ring",
       "icon": 203,
@@ -873,7 +873,7 @@
     },
     {
       "id": 61,
-      "name": "Adventurer Experience Anillo",
+      "name": "Anillo de aventurero de experiencia",
       "name_en": "Adventurer Experience Ring",
       "slot": "ring",
       "icon": 200,
@@ -888,7 +888,7 @@
     },
     {
       "id": 62,
-      "name": "Adventurer Wealth Anillo",
+      "name": "Anillo de aventurero de riqueza",
       "name_en": "Adventurer Wealth Ring",
       "slot": "ring",
       "icon": 201,
@@ -903,7 +903,7 @@
     },
     {
       "id": 63,
-      "name": "Adventurer Treasure Anillo",
+      "name": "Anillo de aventurero del tesoro",
       "name_en": "Adventurer Treasure Ring",
       "slot": "ring",
       "icon": 205,
@@ -918,7 +918,7 @@
     },
     {
       "id": 64,
-      "name": "del Caudillo Camisa de tela",
+      "name": "Camisa de tela del Caudillo",
       "name_en": "Warlord Cloth Shirt",
       "slot": "chest",
       "icon": 129,
@@ -933,7 +933,7 @@
     },
     {
       "id": 65,
-      "name": "del Francotirador Camisa de tela",
+      "name": "Camisa de tela del Francotirador",
       "name_en": "Sniper Cloth Shirt",
       "slot": "chest",
       "icon": 129,
@@ -948,7 +948,7 @@
     },
     {
       "id": 66,
-      "name": "del Archimago Camisa de tela",
+      "name": "Camisa de tela del Archimago",
       "name_en": "Archwizard Cloth Shirt",
       "slot": "chest",
       "icon": 129,
@@ -963,7 +963,7 @@
     },
     {
       "id": 67,
-      "name": "del Caudillo Pantalones de tela",
+      "name": "Pantalones de tela del Caudillo",
       "name_en": "Warlord Cloth Pants",
       "slot": "legs",
       "icon": 131,
@@ -978,7 +978,7 @@
     },
     {
       "id": 68,
-      "name": "del Francotirador Pantalones de tela",
+      "name": "Pantalones de tela del Francotirador",
       "name_en": "Sniper Cloth Pants",
       "slot": "legs",
       "icon": 131,
@@ -993,7 +993,7 @@
     },
     {
       "id": 69,
-      "name": "del Archimago Pantalones de tela",
+      "name": "Pantalones de tela del Archimago",
       "name_en": "Archwizard Cloth Pants",
       "slot": "legs",
       "icon": 131,
@@ -1008,7 +1008,7 @@
     },
     {
       "id": 70,
-      "name": "del Caudillo Sandalias de tela",
+      "name": "Sandalias de tela del Caudillo",
       "name_en": "Warlord Cloth Sandals",
       "slot": "feet",
       "icon": 132,
@@ -1023,7 +1023,7 @@
     },
     {
       "id": 71,
-      "name": "del Francotirador Sandalias de tela",
+      "name": "Sandalias de tela del Francotirador",
       "name_en": "Sniper Cloth Sandals",
       "slot": "feet",
       "icon": 132,
@@ -1038,7 +1038,7 @@
     },
     {
       "id": 72,
-      "name": "del Archimago Sandalias de tela",
+      "name": "Sandalias de tela del Archimago",
       "name_en": "Archwizard Cloth Sandals",
       "slot": "feet",
       "icon": 132,
@@ -1053,7 +1053,7 @@
     },
     {
       "id": 73,
-      "name": "del Caudillo Guantes de tela",
+      "name": "Guantes de tela del Caudillo",
       "name_en": "Warlord Cloth Gloves",
       "slot": "hands",
       "icon": 130,
@@ -1068,7 +1068,7 @@
     },
     {
       "id": 74,
-      "name": "del Francotirador Guantes de tela",
+      "name": "Guantes de tela del Francotirador",
       "name_en": "Sniper Cloth Gloves",
       "slot": "hands",
       "icon": 130,
@@ -1083,7 +1083,7 @@
     },
     {
       "id": 75,
-      "name": "del Archimago Guantes de tela",
+      "name": "Guantes de tela del Archimago",
       "name_en": "Archwizard Cloth Gloves",
       "slot": "hands",
       "icon": 130,
@@ -1098,7 +1098,7 @@
     },
     {
       "id": 76,
-      "name": "Master Cinturon de cuero",
+      "name": "Cinturón de cuero del maestro",
       "name_en": "Master Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -1113,7 +1113,7 @@
     },
     {
       "id": 77,
-      "name": "Master Pendant",
+      "name": "Colgante del maestro",
       "name_en": "Master Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -1128,7 +1128,7 @@
     },
     {
       "id": 78,
-      "name": "Master Spellbook",
+      "name": "Libro de hechizos del maestro",
       "name_en": "Master Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -1143,7 +1143,7 @@
     },
     {
       "id": 79,
-      "name": "del Caudillo Daga",
+      "name": "Daga del Caudillo",
       "name_en": "Warlord Dagger",
       "slot": "main",
       "icon": 96,
@@ -1159,7 +1159,7 @@
     },
     {
       "id": 80,
-      "name": "del Francotirador Honda",
+      "name": "Honda del Francotirador",
       "name_en": "Sniper Slingshot",
       "slot": null,
       "icon": null,
@@ -1175,7 +1175,7 @@
     },
     {
       "id": 81,
-      "name": "del Archimago Varita",
+      "name": "Varita del Archimago",
       "name_en": "Archwizard Wand",
       "slot": "main",
       "icon": 104,
@@ -1191,7 +1191,7 @@
     },
     {
       "id": 82,
-      "name": "Templar Broquel de madera",
+      "name": "Broquel de madera de templario",
       "name_en": "Templar Wood Buckler",
       "slot": "off",
       "icon": 120,
@@ -1206,7 +1206,7 @@
     },
     {
       "id": 83,
-      "name": "Master Fire Anillo",
+      "name": "Anillo del maestro de fuego",
       "name_en": "Master Fire Ring",
       "slot": "ring",
       "icon": 207,
@@ -1221,7 +1221,7 @@
     },
     {
       "id": 84,
-      "name": "Master Ice Anillo",
+      "name": "Anillo del maestro de hielo",
       "name_en": "Master Ice Ring",
       "slot": "ring",
       "icon": 204,
@@ -1236,7 +1236,7 @@
     },
     {
       "id": 85,
-      "name": "Master Lightning Anillo",
+      "name": "Anillo del maestro del rayo",
       "name_en": "Master Lightning Ring",
       "slot": "ring",
       "icon": 206,
@@ -1251,7 +1251,7 @@
     },
     {
       "id": 86,
-      "name": "Master Dark Anillo",
+      "name": "Anillo del maestro de las sombras",
       "name_en": "Master Dark Ring",
       "slot": "ring",
       "icon": 203,
@@ -1266,7 +1266,7 @@
     },
     {
       "id": 87,
-      "name": "Master Experience Anillo",
+      "name": "Anillo del maestro de experiencia",
       "name_en": "Master Experience Ring",
       "slot": "ring",
       "icon": 200,
@@ -1281,7 +1281,7 @@
     },
     {
       "id": 88,
-      "name": "Master Wealth Anillo",
+      "name": "Anillo del maestro de riqueza",
       "name_en": "Master Wealth Ring",
       "slot": "ring",
       "icon": 201,
@@ -1296,7 +1296,7 @@
     },
     {
       "id": 89,
-      "name": "Master Treasure Anillo",
+      "name": "Anillo del maestro del tesoro",
       "name_en": "Master Treasure Ring",
       "slot": "ring",
       "icon": 205,
@@ -1311,7 +1311,7 @@
     },
     {
       "id": 90,
-      "name": "Krolan's Martillo",
+      "name": "Martillo de Krolan",
       "name_en": "Krolan's Hammer",
       "slot": "main",
       "icon": 101,
@@ -1329,7 +1329,7 @@
     },
     {
       "id": 91,
-      "name": "Goblin Branch",
+      "name": "Rama Goblin",
       "name_en": "Goblin Branch",
       "slot": "main",
       "icon": 109,
@@ -1347,7 +1347,7 @@
     },
     {
       "id": 92,
-      "name": "Ardwen's Guantes",
+      "name": "Guantes de Ardwen",
       "name_en": "Ardwen's Gloves",
       "slot": "hands",
       "icon": 130,
@@ -1364,7 +1364,7 @@
     },
     {
       "id": 93,
-      "name": "Blood Tunic",
+      "name": "Túnica de sangre",
       "name_en": "Blood Tunic",
       "slot": "chest",
       "icon": 129,
@@ -1380,7 +1380,7 @@
     },
     {
       "id": 94,
-      "name": "Dark Steppers",
+      "name": "Zapatillas de las sombras",
       "name_en": "Dark Steppers",
       "slot": "feet",
       "icon": 132,
@@ -1396,7 +1396,7 @@
     },
     {
       "id": 95,
-      "name": "Seagate's Tri-pants",
+      "name": "Pantalón triple de Seagate",
       "name_en": "Seagate's Tri-pants",
       "slot": "legs",
       "icon": 131,
@@ -1426,7 +1426,7 @@
     },
     {
       "id": 97,
-      "name": "Tunic de cuero",
+      "name": "Túnica de cuero",
       "name_en": "Leather Tunic",
       "slot": "chest",
       "icon": 145,
@@ -1478,7 +1478,7 @@
     },
     {
       "id": 101,
-      "name": "Wool Capucha",
+      "name": "Capucha de lana",
       "name_en": "Wool Hood",
       "slot": "head",
       "icon": 136,
@@ -1491,7 +1491,7 @@
     },
     {
       "id": 102,
-      "name": "Wool Chaleco",
+      "name": "Chaleco de lana",
       "name_en": "Wool Vest",
       "slot": "chest",
       "icon": 137,
@@ -1504,7 +1504,7 @@
     },
     {
       "id": 103,
-      "name": "Wool Faldon",
+      "name": "Faldón de lana",
       "name_en": "Wool Skirt",
       "slot": "legs",
       "icon": 139,
@@ -1517,7 +1517,7 @@
     },
     {
       "id": 104,
-      "name": "Wool Botas",
+      "name": "Botas de lana",
       "name_en": "Wool Boots",
       "slot": "feet",
       "icon": 140,
@@ -1530,7 +1530,7 @@
     },
     {
       "id": 105,
-      "name": "Wool Mangas",
+      "name": "Mangas de lana",
       "name_en": "Wool Sleeves",
       "slot": "hands",
       "icon": 138,
@@ -1595,7 +1595,7 @@
     },
     {
       "id": 110,
-      "name": "Fighting Capucha de cuero",
+      "name": "Capucha de cuero de combate",
       "name_en": "Fighting Leather Hood",
       "slot": "head",
       "icon": 144,
@@ -1610,7 +1610,7 @@
     },
     {
       "id": 111,
-      "name": "Recon Capucha de cuero",
+      "name": "Capucha de cuero de reconocimiento",
       "name_en": "Recon Leather Hood",
       "slot": "head",
       "icon": 144,
@@ -1625,7 +1625,7 @@
     },
     {
       "id": 112,
-      "name": "Sorcerer Wool Capucha",
+      "name": "Capucha de lana de hechicero",
       "name_en": "Sorcerer Wool Hood",
       "slot": "head",
       "icon": 136,
@@ -1640,7 +1640,7 @@
     },
     {
       "id": 113,
-      "name": "Fighting Tunic de cuero",
+      "name": "Túnica de cuero de combate",
       "name_en": "Fighting Leather Tunic",
       "slot": "chest",
       "icon": 145,
@@ -1655,7 +1655,7 @@
     },
     {
       "id": 114,
-      "name": "Recon Tunic de cuero",
+      "name": "Túnica de cuero de reconocimiento",
       "name_en": "Recon Leather Tunic",
       "slot": "chest",
       "icon": 145,
@@ -1670,7 +1670,7 @@
     },
     {
       "id": 115,
-      "name": "Sorcerer Wool Chaleco",
+      "name": "Chaleco de lana de hechicero",
       "name_en": "Sorcerer Wool Vest",
       "slot": "chest",
       "icon": 137,
@@ -1685,7 +1685,7 @@
     },
     {
       "id": 116,
-      "name": "Fighting Pantalones de cuero",
+      "name": "Pantalones de cuero de combate",
       "name_en": "Fighting Leather Pants",
       "slot": "legs",
       "icon": 147,
@@ -1700,7 +1700,7 @@
     },
     {
       "id": 117,
-      "name": "Recon Pantalones de cuero",
+      "name": "Pantalones de cuero de reconocimiento",
       "name_en": "Recon Leather Pants",
       "slot": "legs",
       "icon": 147,
@@ -1715,7 +1715,7 @@
     },
     {
       "id": 118,
-      "name": "Sorcerer Wool Faldon",
+      "name": "Faldón de lana de hechicero",
       "name_en": "Sorcerer Wool Skirt",
       "slot": "legs",
       "icon": 139,
@@ -1730,7 +1730,7 @@
     },
     {
       "id": 119,
-      "name": "Fighting Botas de cuero",
+      "name": "Botas de cuero de combate",
       "name_en": "Fighting Leather Boots",
       "slot": "feet",
       "icon": 148,
@@ -1745,7 +1745,7 @@
     },
     {
       "id": 120,
-      "name": "Recon Botas de cuero",
+      "name": "Botas de cuero de reconocimiento",
       "name_en": "Recon Leather Boots",
       "slot": "feet",
       "icon": 148,
@@ -1760,7 +1760,7 @@
     },
     {
       "id": 121,
-      "name": "Sorcerer Wool Botas",
+      "name": "Botas de lana de hechicero",
       "name_en": "Sorcerer Wool Boots",
       "slot": "feet",
       "icon": 140,
@@ -1775,7 +1775,7 @@
     },
     {
       "id": 122,
-      "name": "Fighting Guantes de cuero",
+      "name": "Guantes de cuero de combate",
       "name_en": "Fighting Leather Gloves",
       "slot": "hands",
       "icon": 146,
@@ -1790,7 +1790,7 @@
     },
     {
       "id": 123,
-      "name": "Recon Guantes de cuero",
+      "name": "Guantes de cuero de reconocimiento",
       "name_en": "Recon Leather Gloves",
       "slot": "hands",
       "icon": 146,
@@ -1805,7 +1805,7 @@
     },
     {
       "id": 124,
-      "name": "Sorcerer Wool Mangas",
+      "name": "Mangas de lana de hechicero",
       "name_en": "Sorcerer Wool Sleeves",
       "slot": "hands",
       "icon": 138,
@@ -1820,7 +1820,7 @@
     },
     {
       "id": 125,
-      "name": "Wandering Fighting Cinturon de cuero",
+      "name": "Cinturón de cuero errante de combate",
       "name_en": "Wandering Fighting Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -1835,7 +1835,7 @@
     },
     {
       "id": 126,
-      "name": "Wandering Recon Pendant",
+      "name": "Colgante errante de reconocimiento",
       "name_en": "Wandering Recon Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -1850,7 +1850,7 @@
     },
     {
       "id": 127,
-      "name": "Wandering Sorcerer Spellbook",
+      "name": "Libro de hechizos errante de hechicero",
       "name_en": "Wandering Sorcerer Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -1865,7 +1865,7 @@
     },
     {
       "id": 128,
-      "name": "Fighting Espada corta",
+      "name": "Espada corta de combate",
       "name_en": "Fighting Shortsword",
       "slot": "main",
       "icon": 97,
@@ -1881,7 +1881,7 @@
     },
     {
       "id": 129,
-      "name": "Recon Arco corto",
+      "name": "Arco corto de reconocimiento",
       "name_en": "Recon Shortbow",
       "slot": null,
       "icon": null,
@@ -1897,7 +1897,7 @@
     },
     {
       "id": 130,
-      "name": "Sorcerer Vara",
+      "name": "Vara de hechicero",
       "name_en": "Sorcerer Rod",
       "slot": "main",
       "icon": 105,
@@ -1913,7 +1913,7 @@
     },
     {
       "id": 131,
-      "name": "Keeper Broquel de hierro",
+      "name": "Broquel de hierro del guardián",
       "name_en": "Keeper Iron Buckler",
       "slot": "off",
       "icon": 121,
@@ -1928,7 +1928,7 @@
     },
     {
       "id": 132,
-      "name": "Wandering Burn Anillo",
+      "name": "Anillo errante de quemadura",
       "name_en": "Wandering Burn Ring",
       "slot": "ring",
       "icon": 207,
@@ -1943,7 +1943,7 @@
     },
     {
       "id": 133,
-      "name": "Wandering Frost Anillo",
+      "name": "Anillo errante de escarcha",
       "name_en": "Wandering Frost Ring",
       "slot": "ring",
       "icon": 204,
@@ -1958,7 +1958,7 @@
     },
     {
       "id": 134,
-      "name": "Wandering Electric Anillo",
+      "name": "Anillo errante eléctrico",
       "name_en": "Wandering Electric Ring",
       "slot": "ring",
       "icon": 206,
@@ -1973,7 +1973,7 @@
     },
     {
       "id": 135,
-      "name": "Wandering Shadow Anillo",
+      "name": "Anillo errante de sombra",
       "name_en": "Wandering Shadow Ring",
       "slot": "ring",
       "icon": 203,
@@ -1988,7 +1988,7 @@
     },
     {
       "id": 136,
-      "name": "Wandering Knowledge Anillo",
+      "name": "Anillo errante de conocimiento",
       "name_en": "Wandering Knowledge Ring",
       "slot": "ring",
       "icon": 200,
@@ -2003,7 +2003,7 @@
     },
     {
       "id": 137,
-      "name": "Wandering Prosperity Anillo",
+      "name": "Anillo errante de prosperidad",
       "name_en": "Wandering Prosperity Ring",
       "slot": "ring",
       "icon": 201,
@@ -2018,7 +2018,7 @@
     },
     {
       "id": 138,
-      "name": "Wandering Loot Anillo",
+      "name": "Anillo errante de botín",
       "name_en": "Wandering Loot Ring",
       "slot": "ring",
       "icon": 205,
@@ -2033,7 +2033,7 @@
     },
     {
       "id": 139,
-      "name": "Warrior Capucha de cuero",
+      "name": "Capucha de cuero de guerrero",
       "name_en": "Warrior Leather Hood",
       "slot": "head",
       "icon": 144,
@@ -2048,7 +2048,7 @@
     },
     {
       "id": 140,
-      "name": "Ranger Capucha de cuero",
+      "name": "Capucha de cuero de montaraz",
       "name_en": "Ranger Leather Hood",
       "slot": "head",
       "icon": 144,
@@ -2063,7 +2063,7 @@
     },
     {
       "id": 141,
-      "name": "Wizard Wool Capucha",
+      "name": "Capucha de lana de mago",
       "name_en": "Wizard Wool Hood",
       "slot": "head",
       "icon": 136,
@@ -2078,7 +2078,7 @@
     },
     {
       "id": 142,
-      "name": "Warrior Tunic de cuero",
+      "name": "Túnica de cuero de guerrero",
       "name_en": "Warrior Leather Tunic",
       "slot": "chest",
       "icon": 145,
@@ -2093,7 +2093,7 @@
     },
     {
       "id": 143,
-      "name": "Ranger Tunic de cuero",
+      "name": "Túnica de cuero de montaraz",
       "name_en": "Ranger Leather Tunic",
       "slot": "chest",
       "icon": 145,
@@ -2108,7 +2108,7 @@
     },
     {
       "id": 144,
-      "name": "Wizard Wool Chaleco",
+      "name": "Chaleco de lana de mago",
       "name_en": "Wizard Wool Vest",
       "slot": "chest",
       "icon": 137,
@@ -2123,7 +2123,7 @@
     },
     {
       "id": 145,
-      "name": "Warrior Pantalones de cuero",
+      "name": "Pantalones de cuero de guerrero",
       "name_en": "Warrior Leather Pants",
       "slot": "legs",
       "icon": 147,
@@ -2138,7 +2138,7 @@
     },
     {
       "id": 146,
-      "name": "Ranger Pantalones de cuero",
+      "name": "Pantalones de cuero de montaraz",
       "name_en": "Ranger Leather Pants",
       "slot": "legs",
       "icon": 147,
@@ -2153,7 +2153,7 @@
     },
     {
       "id": 147,
-      "name": "Wizard Wool Faldon",
+      "name": "Faldón de lana de mago",
       "name_en": "Wizard Wool Skirt",
       "slot": "legs",
       "icon": 139,
@@ -2168,7 +2168,7 @@
     },
     {
       "id": 148,
-      "name": "Warrior Botas de cuero",
+      "name": "Botas de cuero de guerrero",
       "name_en": "Warrior Leather Boots",
       "slot": "feet",
       "icon": 148,
@@ -2183,7 +2183,7 @@
     },
     {
       "id": 149,
-      "name": "Ranger Botas de cuero",
+      "name": "Botas de cuero de montaraz",
       "name_en": "Ranger Leather Boots",
       "slot": "feet",
       "icon": 148,
@@ -2198,7 +2198,7 @@
     },
     {
       "id": 150,
-      "name": "Wizard Wool Botas",
+      "name": "Botas de lana de mago",
       "name_en": "Wizard Wool Boots",
       "slot": "feet",
       "icon": 140,
@@ -2213,7 +2213,7 @@
     },
     {
       "id": 151,
-      "name": "Warrior Guantes de cuero",
+      "name": "Guantes de cuero de guerrero",
       "name_en": "Warrior Leather Gloves",
       "slot": "hands",
       "icon": 146,
@@ -2228,7 +2228,7 @@
     },
     {
       "id": 152,
-      "name": "Ranger Guantes de cuero",
+      "name": "Guantes de cuero de montaraz",
       "name_en": "Ranger Leather Gloves",
       "slot": "hands",
       "icon": 146,
@@ -2243,7 +2243,7 @@
     },
     {
       "id": 153,
-      "name": "Wizard Wool Mangas",
+      "name": "Mangas de lana de mago",
       "name_en": "Wizard Wool Sleeves",
       "slot": "hands",
       "icon": 138,
@@ -2258,7 +2258,7 @@
     },
     {
       "id": 154,
-      "name": "Adventurer Fighting Cinturon de cuero",
+      "name": "Cinturón de cuero de aventurero de combate",
       "name_en": "Adventurer Fighting Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -2273,7 +2273,7 @@
     },
     {
       "id": 155,
-      "name": "Adventurer Recon Pendant",
+      "name": "Colgante de aventurero de reconocimiento",
       "name_en": "Adventurer Recon Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -2288,7 +2288,7 @@
     },
     {
       "id": 156,
-      "name": "Adventurer Sorcerer Spellbook",
+      "name": "Libro de hechizos de aventurero de hechicero",
       "name_en": "Adventurer Sorcerer Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -2303,7 +2303,7 @@
     },
     {
       "id": 157,
-      "name": "Warrior Espada corta",
+      "name": "Espada corta de guerrero",
       "name_en": "Warrior Shortsword",
       "slot": "main",
       "icon": 97,
@@ -2319,7 +2319,7 @@
     },
     {
       "id": 158,
-      "name": "Ranger Arco corto",
+      "name": "Arco corto de montaraz",
       "name_en": "Ranger Shortbow",
       "slot": null,
       "icon": null,
@@ -2335,7 +2335,7 @@
     },
     {
       "id": 159,
-      "name": "Wizard Vara",
+      "name": "Vara de mago",
       "name_en": "Wizard Rod",
       "slot": "main",
       "icon": 105,
@@ -2351,7 +2351,7 @@
     },
     {
       "id": 160,
-      "name": "Paladin Broquel de hierro",
+      "name": "Broquel de hierro de paladín",
       "name_en": "Paladin Iron Buckler",
       "slot": "off",
       "icon": 121,
@@ -2366,7 +2366,7 @@
     },
     {
       "id": 161,
-      "name": "Adventurer Burn Anillo",
+      "name": "Anillo de aventurero de quemadura",
       "name_en": "Adventurer Burn Ring",
       "slot": "ring",
       "icon": 207,
@@ -2381,7 +2381,7 @@
     },
     {
       "id": 162,
-      "name": "Adventurer Frost Anillo",
+      "name": "Anillo de aventurero de escarcha",
       "name_en": "Adventurer Frost Ring",
       "slot": "ring",
       "icon": 204,
@@ -2396,7 +2396,7 @@
     },
     {
       "id": 163,
-      "name": "Adventurer Electric Anillo",
+      "name": "Anillo de aventurero eléctrico",
       "name_en": "Adventurer Electric Ring",
       "slot": "ring",
       "icon": 206,
@@ -2411,7 +2411,7 @@
     },
     {
       "id": 164,
-      "name": "Adventurer Shadow Anillo",
+      "name": "Anillo de aventurero de sombra",
       "name_en": "Adventurer Shadow Ring",
       "slot": "ring",
       "icon": 203,
@@ -2426,7 +2426,7 @@
     },
     {
       "id": 165,
-      "name": "Adventurer Knowledge Anillo",
+      "name": "Anillo de aventurero de conocimiento",
       "name_en": "Adventurer Knowledge Ring",
       "slot": "ring",
       "icon": 200,
@@ -2441,7 +2441,7 @@
     },
     {
       "id": 166,
-      "name": "Adventurer Prosperity Anillo",
+      "name": "Anillo de aventurero de prosperidad",
       "name_en": "Adventurer Prosperity Ring",
       "slot": "ring",
       "icon": 201,
@@ -2456,7 +2456,7 @@
     },
     {
       "id": 167,
-      "name": "Adventurer Loot Anillo",
+      "name": "Anillo de aventurero de botín",
       "name_en": "Adventurer Loot Ring",
       "slot": "ring",
       "icon": 205,
@@ -2471,7 +2471,7 @@
     },
     {
       "id": 168,
-      "name": "del Caudillo Capucha de cuero",
+      "name": "Capucha de cuero del Caudillo",
       "name_en": "Warlord Leather Hood",
       "slot": "head",
       "icon": 144,
@@ -2486,7 +2486,7 @@
     },
     {
       "id": 169,
-      "name": "del Francotirador Capucha de cuero",
+      "name": "Capucha de cuero del Francotirador",
       "name_en": "Sniper Leather Hood",
       "slot": "head",
       "icon": 144,
@@ -2501,7 +2501,7 @@
     },
     {
       "id": 170,
-      "name": "del Archimago Wool Capucha",
+      "name": "Capucha de lana del Archimago",
       "name_en": "Archwizard Wool Hood",
       "slot": "head",
       "icon": 136,
@@ -2516,7 +2516,7 @@
     },
     {
       "id": 171,
-      "name": "del Caudillo Tunic de cuero",
+      "name": "Túnica de cuero del Caudillo",
       "name_en": "Warlord Leather Tunic",
       "slot": "chest",
       "icon": 145,
@@ -2531,7 +2531,7 @@
     },
     {
       "id": 172,
-      "name": "del Francotirador Tunic de cuero",
+      "name": "Túnica de cuero del Francotirador",
       "name_en": "Sniper Leather Tunic",
       "slot": "chest",
       "icon": 145,
@@ -2546,7 +2546,7 @@
     },
     {
       "id": 173,
-      "name": "del Archimago Wool Chaleco",
+      "name": "Chaleco de lana del Archimago",
       "name_en": "Archwizard Wool Vest",
       "slot": "chest",
       "icon": 137,
@@ -2561,7 +2561,7 @@
     },
     {
       "id": 174,
-      "name": "del Caudillo Pantalones de cuero",
+      "name": "Pantalones de cuero del Caudillo",
       "name_en": "Warlord Leather Pants",
       "slot": "legs",
       "icon": 147,
@@ -2576,7 +2576,7 @@
     },
     {
       "id": 175,
-      "name": "del Francotirador Pantalones de cuero",
+      "name": "Pantalones de cuero del Francotirador",
       "name_en": "Sniper Leather Pants",
       "slot": "legs",
       "icon": 147,
@@ -2591,7 +2591,7 @@
     },
     {
       "id": 176,
-      "name": "del Archimago Wool Faldon",
+      "name": "Faldón de lana del Archimago",
       "name_en": "Archwizard Wool Skirt",
       "slot": "legs",
       "icon": 139,
@@ -2606,7 +2606,7 @@
     },
     {
       "id": 177,
-      "name": "del Caudillo Botas de cuero",
+      "name": "Botas de cuero del Caudillo",
       "name_en": "Warlord Leather Boots",
       "slot": "feet",
       "icon": 148,
@@ -2621,7 +2621,7 @@
     },
     {
       "id": 178,
-      "name": "del Francotirador Botas de cuero",
+      "name": "Botas de cuero del Francotirador",
       "name_en": "Sniper Leather Boots",
       "slot": "feet",
       "icon": 148,
@@ -2636,7 +2636,7 @@
     },
     {
       "id": 179,
-      "name": "del Archimago Wool Botas",
+      "name": "Botas de lana del Archimago",
       "name_en": "Archwizard Wool Boots",
       "slot": "feet",
       "icon": 140,
@@ -2651,7 +2651,7 @@
     },
     {
       "id": 180,
-      "name": "del Caudillo Guantes de cuero",
+      "name": "Guantes de cuero del Caudillo",
       "name_en": "Warlord Leather Gloves",
       "slot": "hands",
       "icon": 146,
@@ -2666,7 +2666,7 @@
     },
     {
       "id": 181,
-      "name": "del Francotirador Guantes de cuero",
+      "name": "Guantes de cuero del Francotirador",
       "name_en": "Sniper Leather Gloves",
       "slot": "hands",
       "icon": 146,
@@ -2681,7 +2681,7 @@
     },
     {
       "id": 182,
-      "name": "del Archimago Wool Mangas",
+      "name": "Mangas de lana del Archimago",
       "name_en": "Archwizard Wool Sleeves",
       "slot": "hands",
       "icon": 138,
@@ -2696,7 +2696,7 @@
     },
     {
       "id": 183,
-      "name": "Master Fighting Cinturon de cuero",
+      "name": "Cinturón de cuero del maestro de combate",
       "name_en": "Master Fighting Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -2711,7 +2711,7 @@
     },
     {
       "id": 184,
-      "name": "Master Recon Pendant",
+      "name": "Colgante del maestro de reconocimiento",
       "name_en": "Master Recon Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -2726,7 +2726,7 @@
     },
     {
       "id": 185,
-      "name": "Master Sorcerer Spellbook",
+      "name": "Libro de hechizos del maestro de hechicero",
       "name_en": "Master Sorcerer Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -2741,7 +2741,7 @@
     },
     {
       "id": 186,
-      "name": "del Caudillo Espada corta",
+      "name": "Espada corta del Caudillo",
       "name_en": "Warlord Shortsword",
       "slot": "main",
       "icon": 97,
@@ -2757,7 +2757,7 @@
     },
     {
       "id": 187,
-      "name": "del Francotirador Arco corto",
+      "name": "Arco corto del Francotirador",
       "name_en": "Sniper Shortbow",
       "slot": null,
       "icon": null,
@@ -2773,7 +2773,7 @@
     },
     {
       "id": 188,
-      "name": "del Archimago Vara",
+      "name": "Vara del Archimago",
       "name_en": "Archwizard Rod",
       "slot": "main",
       "icon": 105,
@@ -2789,7 +2789,7 @@
     },
     {
       "id": 189,
-      "name": "Templar Broquel de hierro",
+      "name": "Broquel de hierro de templario",
       "name_en": "Templar Iron Buckler",
       "slot": "off",
       "icon": 121,
@@ -2804,7 +2804,7 @@
     },
     {
       "id": 190,
-      "name": "Master Burn Anillo",
+      "name": "Anillo del maestro de quemadura",
       "name_en": "Master Burn Ring",
       "slot": "ring",
       "icon": 207,
@@ -2819,7 +2819,7 @@
     },
     {
       "id": 191,
-      "name": "Master Frost Anillo",
+      "name": "Anillo del maestro de escarcha",
       "name_en": "Master Frost Ring",
       "slot": "ring",
       "icon": 204,
@@ -2834,7 +2834,7 @@
     },
     {
       "id": 192,
-      "name": "Master Electric Anillo",
+      "name": "Anillo del maestro eléctrico",
       "name_en": "Master Electric Ring",
       "slot": "ring",
       "icon": 206,
@@ -2849,7 +2849,7 @@
     },
     {
       "id": 193,
-      "name": "Master Shadow Anillo",
+      "name": "Anillo del maestro de sombra",
       "name_en": "Master Shadow Ring",
       "slot": "ring",
       "icon": 203,
@@ -2864,7 +2864,7 @@
     },
     {
       "id": 194,
-      "name": "Master Knowledge Anillo",
+      "name": "Anillo del maestro de conocimiento",
       "name_en": "Master Knowledge Ring",
       "slot": "ring",
       "icon": 200,
@@ -2879,7 +2879,7 @@
     },
     {
       "id": 195,
-      "name": "Master Prosperity Anillo",
+      "name": "Anillo del maestro de prosperidad",
       "name_en": "Master Prosperity Ring",
       "slot": "ring",
       "icon": 201,
@@ -2894,7 +2894,7 @@
     },
     {
       "id": 196,
-      "name": "Master Loot Anillo",
+      "name": "Anillo del maestro de botín",
       "name_en": "Master Loot Ring",
       "slot": "ring",
       "icon": 205,
@@ -2909,7 +2909,7 @@
     },
     {
       "id": 197,
-      "name": "Amir Blade",
+      "name": "Hoja Amir",
       "name_en": "Amir Blade",
       "slot": "main",
       "icon": 100,
@@ -2927,7 +2927,7 @@
     },
     {
       "id": 198,
-      "name": "Huntsman Arco",
+      "name": "Arco de cazador",
       "name_en": "Huntsman Bow",
       "slot": null,
       "icon": null,
@@ -2944,7 +2944,7 @@
     },
     {
       "id": 199,
-      "name": "Greed Cowl",
+      "name": "Capirote de codicia",
       "name_en": "Greed Cowl",
       "slot": "head",
       "icon": 184,
@@ -2961,7 +2961,7 @@
     },
     {
       "id": 200,
-      "name": "Battle Leathers",
+      "name": "Cueros de batalla",
       "name_en": "Battle Leathers",
       "slot": "legs",
       "icon": 147,
@@ -2978,7 +2978,7 @@
     },
     {
       "id": 201,
-      "name": "Escape Botas",
+      "name": "Botas Escape",
       "name_en": "Escape Boots",
       "slot": "feet",
       "icon": 176,
@@ -2995,7 +2995,7 @@
     },
     {
       "id": 202,
-      "name": "Mez's Wraps",
+      "name": "Vendas de Mez",
       "name_en": "Mez's Wraps",
       "slot": "chest",
       "icon": 145,
@@ -3011,7 +3011,7 @@
     },
     {
       "id": 203,
-      "name": "Summon Zombie Pergamino",
+      "name": "Pergamino Summon Zombie",
       "name_en": "Summon Zombie Scroll",
       "slot": "scroll",
       "icon": 73,
@@ -3089,7 +3089,7 @@
     },
     {
       "id": 209,
-      "name": "Silk Capucha",
+      "name": "Capucha de seda",
       "name_en": "Silk Hood",
       "slot": "head",
       "icon": 184,
@@ -3102,7 +3102,7 @@
     },
     {
       "id": 210,
-      "name": "Silk Chaleco",
+      "name": "Chaleco de seda",
       "name_en": "Silk Vest",
       "slot": "chest",
       "icon": 185,
@@ -3115,7 +3115,7 @@
     },
     {
       "id": 211,
-      "name": "Silk Faldon",
+      "name": "Faldón de seda",
       "name_en": "Silk Skirt",
       "slot": "legs",
       "icon": 187,
@@ -3128,7 +3128,7 @@
     },
     {
       "id": 212,
-      "name": "Silk Botas",
+      "name": "Botas de seda",
       "name_en": "Silk Boots",
       "slot": "feet",
       "icon": 188,
@@ -3141,7 +3141,7 @@
     },
     {
       "id": 213,
-      "name": "Silk Mangas",
+      "name": "Mangas de seda",
       "name_en": "Silk Sleeves",
       "slot": "hands",
       "icon": 186,
@@ -3180,7 +3180,7 @@
     },
     {
       "id": 216,
-      "name": "Baston",
+      "name": "Bastón",
       "name_en": "Staff",
       "slot": "main",
       "icon": 106,
@@ -3193,7 +3193,7 @@
     },
     {
       "id": 217,
-      "name": "Crest Escudo",
+      "name": "Cimera Escudo",
       "name_en": "Crest Shield",
       "slot": "off",
       "icon": 122,
@@ -3206,7 +3206,7 @@
     },
     {
       "id": 218,
-      "name": "Fighting Cofia de malla",
+      "name": "Cofia de malla de combate",
       "name_en": "Fighting Chain Coif",
       "slot": "head",
       "icon": 152,
@@ -3221,7 +3221,7 @@
     },
     {
       "id": 219,
-      "name": "Recon Cofia de malla",
+      "name": "Cofia de malla de reconocimiento",
       "name_en": "Recon Chain Coif",
       "slot": "head",
       "icon": 152,
@@ -3236,7 +3236,7 @@
     },
     {
       "id": 220,
-      "name": "Sorcerer Silk Capucha",
+      "name": "Capucha de seda de hechicero",
       "name_en": "Sorcerer Silk Hood",
       "slot": "head",
       "icon": 184,
@@ -3251,7 +3251,7 @@
     },
     {
       "id": 221,
-      "name": "Fighting Coraza de malla",
+      "name": "Coraza de malla de combate",
       "name_en": "Fighting Chain Cuirass",
       "slot": "chest",
       "icon": 153,
@@ -3266,7 +3266,7 @@
     },
     {
       "id": 222,
-      "name": "Recon Coraza de malla",
+      "name": "Coraza de malla de reconocimiento",
       "name_en": "Recon Chain Cuirass",
       "slot": "chest",
       "icon": 153,
@@ -3281,7 +3281,7 @@
     },
     {
       "id": 223,
-      "name": "Sorcerer Silk Chaleco",
+      "name": "Chaleco de seda de hechicero",
       "name_en": "Sorcerer Silk Vest",
       "slot": "chest",
       "icon": 185,
@@ -3296,7 +3296,7 @@
     },
     {
       "id": 224,
-      "name": "Fighting Grebas de malla",
+      "name": "Grebas de malla de combate",
       "name_en": "Fighting Chain Greaves",
       "slot": "legs",
       "icon": 155,
@@ -3311,7 +3311,7 @@
     },
     {
       "id": 225,
-      "name": "Recon Grebas de malla",
+      "name": "Grebas de malla de reconocimiento",
       "name_en": "Recon Chain Greaves",
       "slot": "legs",
       "icon": 155,
@@ -3326,7 +3326,7 @@
     },
     {
       "id": 226,
-      "name": "Sorcerer Silk Faldon",
+      "name": "Faldón de seda de hechicero",
       "name_en": "Sorcerer Silk Skirt",
       "slot": "legs",
       "icon": 187,
@@ -3341,7 +3341,7 @@
     },
     {
       "id": 227,
-      "name": "Fighting Botas de malla",
+      "name": "Botas de malla de combate",
       "name_en": "Fighting Chain Boots",
       "slot": "feet",
       "icon": 156,
@@ -3356,7 +3356,7 @@
     },
     {
       "id": 228,
-      "name": "Recon Botas de malla",
+      "name": "Botas de malla de reconocimiento",
       "name_en": "Recon Chain Boots",
       "slot": "feet",
       "icon": 156,
@@ -3371,7 +3371,7 @@
     },
     {
       "id": 229,
-      "name": "Sorcerer Silk Botas",
+      "name": "Botas de seda de hechicero",
       "name_en": "Sorcerer Silk Boots",
       "slot": "feet",
       "icon": 188,
@@ -3386,7 +3386,7 @@
     },
     {
       "id": 230,
-      "name": "Fighting Guantes de malla",
+      "name": "Guantes de malla de combate",
       "name_en": "Fighting Chain Gloves",
       "slot": "hands",
       "icon": 154,
@@ -3401,7 +3401,7 @@
     },
     {
       "id": 231,
-      "name": "Recon Guantes de malla",
+      "name": "Guantes de malla de reconocimiento",
       "name_en": "Recon Chain Gloves",
       "slot": "hands",
       "icon": 154,
@@ -3416,7 +3416,7 @@
     },
     {
       "id": 232,
-      "name": "Sorcerer Silk Mangas",
+      "name": "Mangas de seda de hechicero",
       "name_en": "Sorcerer Silk Sleeves",
       "slot": "hands",
       "icon": 186,
@@ -3431,7 +3431,7 @@
     },
     {
       "id": 233,
-      "name": "Wandering Warrior Cinturon de cuero",
+      "name": "Cinturón de cuero errante de guerrero",
       "name_en": "Wandering Warrior Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -3446,7 +3446,7 @@
     },
     {
       "id": 234,
-      "name": "Wandering Ranger Pendant",
+      "name": "Colgante errante de montaraz",
       "name_en": "Wandering Ranger Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -3461,7 +3461,7 @@
     },
     {
       "id": 235,
-      "name": "Wandering Wizard Spellbook",
+      "name": "Libro de hechizos errante de mago",
       "name_en": "Wandering Wizard Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -3476,7 +3476,7 @@
     },
     {
       "id": 236,
-      "name": "Fighting Espada larga",
+      "name": "Espada larga de combate",
       "name_en": "Fighting Longsword",
       "slot": "main",
       "icon": 98,
@@ -3492,7 +3492,7 @@
     },
     {
       "id": 237,
-      "name": "Recon Arco largo",
+      "name": "Arco largo de reconocimiento",
       "name_en": "Recon Longbow",
       "slot": null,
       "icon": null,
@@ -3508,7 +3508,7 @@
     },
     {
       "id": 238,
-      "name": "Sorcerer Baston",
+      "name": "Bastón de hechicero",
       "name_en": "Sorcerer Staff",
       "slot": "main",
       "icon": 106,
@@ -3524,7 +3524,7 @@
     },
     {
       "id": 239,
-      "name": "Keeper Crest Escudo",
+      "name": "Cimera Escudo del guardián",
       "name_en": "Keeper Crest Shield",
       "slot": "off",
       "icon": 122,
@@ -3539,7 +3539,7 @@
     },
     {
       "id": 240,
-      "name": "Wandering Blaze Anillo",
+      "name": "Anillo errante de llamas",
       "name_en": "Wandering Blaze Ring",
       "slot": "ring",
       "icon": 207,
@@ -3554,7 +3554,7 @@
     },
     {
       "id": 241,
-      "name": "Wandering Freeze Anillo",
+      "name": "Anillo errante de congelación",
       "name_en": "Wandering Freeze Ring",
       "slot": "ring",
       "icon": 204,
@@ -3569,7 +3569,7 @@
     },
     {
       "id": 242,
-      "name": "Wandering Shock Anillo",
+      "name": "Anillo errante de descarga",
       "name_en": "Wandering Shock Ring",
       "slot": "ring",
       "icon": 206,
@@ -3584,7 +3584,7 @@
     },
     {
       "id": 243,
-      "name": "Wandering Gloom Anillo",
+      "name": "Anillo errante de penumbra",
       "name_en": "Wandering Gloom Ring",
       "slot": "ring",
       "icon": 203,
@@ -3599,7 +3599,7 @@
     },
     {
       "id": 244,
-      "name": "Wandering Intellectual Anillo",
+      "name": "Anillo errante del intelecto",
       "name_en": "Wandering Intellectual Ring",
       "slot": "ring",
       "icon": 200,
@@ -3614,7 +3614,7 @@
     },
     {
       "id": 245,
-      "name": "Wandering Lucrative Anillo",
+      "name": "Anillo errante lucrativo",
       "name_en": "Wandering Lucrative Ring",
       "slot": "ring",
       "icon": 201,
@@ -3629,7 +3629,7 @@
     },
     {
       "id": 246,
-      "name": "Wandering Artifact Anillo",
+      "name": "Anillo errante Artifact",
       "name_en": "Wandering Artifact Ring",
       "slot": "ring",
       "icon": 205,
@@ -3644,7 +3644,7 @@
     },
     {
       "id": 247,
-      "name": "Warrior Cofia de malla",
+      "name": "Cofia de malla de guerrero",
       "name_en": "Warrior Chain Coif",
       "slot": "head",
       "icon": 152,
@@ -3659,7 +3659,7 @@
     },
     {
       "id": 248,
-      "name": "Ranger Cofia de malla",
+      "name": "Cofia de malla de montaraz",
       "name_en": "Ranger Chain Coif",
       "slot": "head",
       "icon": 152,
@@ -3674,7 +3674,7 @@
     },
     {
       "id": 249,
-      "name": "Wizard Silk Capucha",
+      "name": "Capucha de seda de mago",
       "name_en": "Wizard Silk Hood",
       "slot": "head",
       "icon": 184,
@@ -3689,7 +3689,7 @@
     },
     {
       "id": 250,
-      "name": "Warrior Coraza de malla",
+      "name": "Coraza de malla de guerrero",
       "name_en": "Warrior Chain Cuirass",
       "slot": "chest",
       "icon": 153,
@@ -3704,7 +3704,7 @@
     },
     {
       "id": 251,
-      "name": "Ranger Coraza de malla",
+      "name": "Coraza de malla de montaraz",
       "name_en": "Ranger Chain Cuirass",
       "slot": "chest",
       "icon": 153,
@@ -3719,7 +3719,7 @@
     },
     {
       "id": 252,
-      "name": "Wizard Silk Chaleco",
+      "name": "Chaleco de seda de mago",
       "name_en": "Wizard Silk Vest",
       "slot": "chest",
       "icon": 185,
@@ -3734,7 +3734,7 @@
     },
     {
       "id": 253,
-      "name": "Warrior Grebas de malla",
+      "name": "Grebas de malla de guerrero",
       "name_en": "Warrior Chain Greaves",
       "slot": "legs",
       "icon": 155,
@@ -3749,7 +3749,7 @@
     },
     {
       "id": 254,
-      "name": "Ranger Grebas de malla",
+      "name": "Grebas de malla de montaraz",
       "name_en": "Ranger Chain Greaves",
       "slot": "legs",
       "icon": 155,
@@ -3764,7 +3764,7 @@
     },
     {
       "id": 255,
-      "name": "Wizard Silk Faldon",
+      "name": "Faldón de seda de mago",
       "name_en": "Wizard Silk Skirt",
       "slot": "legs",
       "icon": 187,
@@ -3779,7 +3779,7 @@
     },
     {
       "id": 256,
-      "name": "Warrior Botas de malla",
+      "name": "Botas de malla de guerrero",
       "name_en": "Warrior Chain Boots",
       "slot": "feet",
       "icon": 156,
@@ -3794,7 +3794,7 @@
     },
     {
       "id": 257,
-      "name": "Ranger Botas de malla",
+      "name": "Botas de malla de montaraz",
       "name_en": "Ranger Chain Boots",
       "slot": "feet",
       "icon": 156,
@@ -3809,7 +3809,7 @@
     },
     {
       "id": 258,
-      "name": "Wizard Silk Botas",
+      "name": "Botas de seda de mago",
       "name_en": "Wizard Silk Boots",
       "slot": "feet",
       "icon": 188,
@@ -3824,7 +3824,7 @@
     },
     {
       "id": 259,
-      "name": "Warrior Guantes de malla",
+      "name": "Guantes de malla de guerrero",
       "name_en": "Warrior Chain Gloves",
       "slot": "hands",
       "icon": 154,
@@ -3839,7 +3839,7 @@
     },
     {
       "id": 260,
-      "name": "Ranger Guantes de malla",
+      "name": "Guantes de malla de montaraz",
       "name_en": "Ranger Chain Gloves",
       "slot": "hands",
       "icon": 154,
@@ -3854,7 +3854,7 @@
     },
     {
       "id": 261,
-      "name": "Wizard Silk Mangas",
+      "name": "Mangas de seda de mago",
       "name_en": "Wizard Silk Sleeves",
       "slot": "hands",
       "icon": 186,
@@ -3869,7 +3869,7 @@
     },
     {
       "id": 262,
-      "name": "Adventurer Warrior Cinturon de cuero",
+      "name": "Cinturón de cuero de aventurero de guerrero",
       "name_en": "Adventurer Warrior Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -3884,7 +3884,7 @@
     },
     {
       "id": 263,
-      "name": "Adventurer Ranger Pendant",
+      "name": "Colgante de aventurero de montaraz",
       "name_en": "Adventurer Ranger Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -3899,7 +3899,7 @@
     },
     {
       "id": 264,
-      "name": "Adventurer Wizard Spellbook",
+      "name": "Libro de hechizos de aventurero de mago",
       "name_en": "Adventurer Wizard Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -3914,7 +3914,7 @@
     },
     {
       "id": 265,
-      "name": "Warrior Espada larga",
+      "name": "Espada larga de guerrero",
       "name_en": "Warrior Longsword",
       "slot": "main",
       "icon": 98,
@@ -3930,7 +3930,7 @@
     },
     {
       "id": 266,
-      "name": "Ranger Arco largo",
+      "name": "Arco largo de montaraz",
       "name_en": "Ranger Longbow",
       "slot": null,
       "icon": null,
@@ -3946,7 +3946,7 @@
     },
     {
       "id": 267,
-      "name": "Wizard Baston",
+      "name": "Bastón de mago",
       "name_en": "Wizard Staff",
       "slot": "main",
       "icon": 106,
@@ -3962,7 +3962,7 @@
     },
     {
       "id": 268,
-      "name": "Paladin Crest Escudo",
+      "name": "Cimera Escudo de paladín",
       "name_en": "Paladin Crest Shield",
       "slot": "off",
       "icon": 122,
@@ -3977,7 +3977,7 @@
     },
     {
       "id": 269,
-      "name": "Adventurer Blaze Anillo",
+      "name": "Anillo de aventurero de llamas",
       "name_en": "Adventurer Blaze Ring",
       "slot": "ring",
       "icon": 207,
@@ -3992,7 +3992,7 @@
     },
     {
       "id": 270,
-      "name": "Adventurer Freeze Anillo",
+      "name": "Anillo de aventurero de congelación",
       "name_en": "Adventurer Freeze Ring",
       "slot": "ring",
       "icon": 204,
@@ -4007,7 +4007,7 @@
     },
     {
       "id": 271,
-      "name": "Adventurer Shock Anillo",
+      "name": "Anillo de aventurero de descarga",
       "name_en": "Adventurer Shock Ring",
       "slot": "ring",
       "icon": 206,
@@ -4022,7 +4022,7 @@
     },
     {
       "id": 272,
-      "name": "Adventurer Gloom Anillo",
+      "name": "Anillo de aventurero de penumbra",
       "name_en": "Adventurer Gloom Ring",
       "slot": "ring",
       "icon": 203,
@@ -4037,7 +4037,7 @@
     },
     {
       "id": 273,
-      "name": "Adventurer Intellectual Anillo",
+      "name": "Anillo de aventurero del intelecto",
       "name_en": "Adventurer Intellectual Ring",
       "slot": "ring",
       "icon": 200,
@@ -4052,7 +4052,7 @@
     },
     {
       "id": 274,
-      "name": "Adventurer Lucrative Anillo",
+      "name": "Anillo de aventurero lucrativo",
       "name_en": "Adventurer Lucrative Ring",
       "slot": "ring",
       "icon": 201,
@@ -4067,7 +4067,7 @@
     },
     {
       "id": 275,
-      "name": "Adventurer Artifact Anillo",
+      "name": "Anillo de aventurero Artifact",
       "name_en": "Adventurer Artifact Ring",
       "slot": "ring",
       "icon": 205,
@@ -4082,7 +4082,7 @@
     },
     {
       "id": 276,
-      "name": "del Caudillo Cofia de malla",
+      "name": "Cofia de malla del Caudillo",
       "name_en": "Warlord Chain Coif",
       "slot": "head",
       "icon": 152,
@@ -4097,7 +4097,7 @@
     },
     {
       "id": 277,
-      "name": "del Francotirador Cofia de malla",
+      "name": "Cofia de malla del Francotirador",
       "name_en": "Sniper Chain Coif",
       "slot": "head",
       "icon": 152,
@@ -4112,7 +4112,7 @@
     },
     {
       "id": 278,
-      "name": "del Archimago Silk Capucha",
+      "name": "Capucha de seda del Archimago",
       "name_en": "Archwizard Silk Hood",
       "slot": "head",
       "icon": 184,
@@ -4127,7 +4127,7 @@
     },
     {
       "id": 279,
-      "name": "del Caudillo Coraza de malla",
+      "name": "Coraza de malla del Caudillo",
       "name_en": "Warlord Chain Cuirass",
       "slot": "chest",
       "icon": 153,
@@ -4142,7 +4142,7 @@
     },
     {
       "id": 280,
-      "name": "del Francotirador Coraza de malla",
+      "name": "Coraza de malla del Francotirador",
       "name_en": "Sniper Chain Cuirass",
       "slot": "chest",
       "icon": 153,
@@ -4157,7 +4157,7 @@
     },
     {
       "id": 281,
-      "name": "del Archimago Silk Chaleco",
+      "name": "Chaleco de seda del Archimago",
       "name_en": "Archwizard Silk Vest",
       "slot": "chest",
       "icon": 185,
@@ -4172,7 +4172,7 @@
     },
     {
       "id": 282,
-      "name": "del Caudillo Grebas de malla",
+      "name": "Grebas de malla del Caudillo",
       "name_en": "Warlord Chain Greaves",
       "slot": "legs",
       "icon": 155,
@@ -4187,7 +4187,7 @@
     },
     {
       "id": 283,
-      "name": "del Francotirador Grebas de malla",
+      "name": "Grebas de malla del Francotirador",
       "name_en": "Sniper Chain Greaves",
       "slot": "legs",
       "icon": 155,
@@ -4202,7 +4202,7 @@
     },
     {
       "id": 284,
-      "name": "del Archimago Silk Faldon",
+      "name": "Faldón de seda del Archimago",
       "name_en": "Archwizard Silk Skirt",
       "slot": "legs",
       "icon": 187,
@@ -4217,7 +4217,7 @@
     },
     {
       "id": 285,
-      "name": "del Caudillo Botas de malla",
+      "name": "Botas de malla del Caudillo",
       "name_en": "Warlord Chain Boots",
       "slot": "feet",
       "icon": 156,
@@ -4232,7 +4232,7 @@
     },
     {
       "id": 286,
-      "name": "del Francotirador Botas de malla",
+      "name": "Botas de malla del Francotirador",
       "name_en": "Sniper Chain Boots",
       "slot": "feet",
       "icon": 156,
@@ -4247,7 +4247,7 @@
     },
     {
       "id": 287,
-      "name": "del Archimago Silk Botas",
+      "name": "Botas de seda del Archimago",
       "name_en": "Archwizard Silk Boots",
       "slot": "feet",
       "icon": 188,
@@ -4262,7 +4262,7 @@
     },
     {
       "id": 288,
-      "name": "del Caudillo Guantes de malla",
+      "name": "Guantes de malla del Caudillo",
       "name_en": "Warlord Chain Gloves",
       "slot": "hands",
       "icon": 154,
@@ -4277,7 +4277,7 @@
     },
     {
       "id": 289,
-      "name": "del Francotirador Guantes de malla",
+      "name": "Guantes de malla del Francotirador",
       "name_en": "Sniper Chain Gloves",
       "slot": "hands",
       "icon": 154,
@@ -4292,7 +4292,7 @@
     },
     {
       "id": 290,
-      "name": "del Archimago Silk Mangas",
+      "name": "Mangas de seda del Archimago",
       "name_en": "Archwizard Silk Sleeves",
       "slot": "hands",
       "icon": 186,
@@ -4307,7 +4307,7 @@
     },
     {
       "id": 291,
-      "name": "Master Warrior Cinturon de cuero",
+      "name": "Cinturón de cuero del maestro de guerrero",
       "name_en": "Master Warrior Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -4322,7 +4322,7 @@
     },
     {
       "id": 292,
-      "name": "Master Ranger Pendant",
+      "name": "Colgante del maestro de montaraz",
       "name_en": "Master Ranger Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -4337,7 +4337,7 @@
     },
     {
       "id": 293,
-      "name": "Master Wizard Spellbook",
+      "name": "Libro de hechizos del maestro de mago",
       "name_en": "Master Wizard Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -4352,7 +4352,7 @@
     },
     {
       "id": 294,
-      "name": "del Caudillo Espada larga",
+      "name": "Espada larga del Caudillo",
       "name_en": "Warlord Longsword",
       "slot": "main",
       "icon": 98,
@@ -4368,7 +4368,7 @@
     },
     {
       "id": 295,
-      "name": "del Francotirador Arco largo",
+      "name": "Arco largo del Francotirador",
       "name_en": "Sniper Longbow",
       "slot": null,
       "icon": null,
@@ -4384,7 +4384,7 @@
     },
     {
       "id": 296,
-      "name": "del Archimago Baston",
+      "name": "Bastón del Archimago",
       "name_en": "Archwizard Staff",
       "slot": "main",
       "icon": 106,
@@ -4400,7 +4400,7 @@
     },
     {
       "id": 297,
-      "name": "Templar Crest Escudo",
+      "name": "Cimera Escudo de templario",
       "name_en": "Templar Crest Shield",
       "slot": "off",
       "icon": 122,
@@ -4415,7 +4415,7 @@
     },
     {
       "id": 298,
-      "name": "Master Blaze Anillo",
+      "name": "Anillo del maestro de llamas",
       "name_en": "Master Blaze Ring",
       "slot": "ring",
       "icon": 207,
@@ -4430,7 +4430,7 @@
     },
     {
       "id": 299,
-      "name": "Master Freeze Anillo",
+      "name": "Anillo del maestro de congelación",
       "name_en": "Master Freeze Ring",
       "slot": "ring",
       "icon": 204,
@@ -4445,7 +4445,7 @@
     },
     {
       "id": 300,
-      "name": "Master Shock Anillo",
+      "name": "Anillo del maestro de descarga",
       "name_en": "Master Shock Ring",
       "slot": "ring",
       "icon": 206,
@@ -4460,7 +4460,7 @@
     },
     {
       "id": 301,
-      "name": "Master Gloom Anillo",
+      "name": "Anillo del maestro de penumbra",
       "name_en": "Master Gloom Ring",
       "slot": "ring",
       "icon": 203,
@@ -4475,7 +4475,7 @@
     },
     {
       "id": 302,
-      "name": "Master Intellectual Anillo",
+      "name": "Anillo del maestro del intelecto",
       "name_en": "Master Intellectual Ring",
       "slot": "ring",
       "icon": 200,
@@ -4490,7 +4490,7 @@
     },
     {
       "id": 303,
-      "name": "Master Lucrative Anillo",
+      "name": "Anillo del maestro lucrativo",
       "name_en": "Master Lucrative Ring",
       "slot": "ring",
       "icon": 201,
@@ -4505,7 +4505,7 @@
     },
     {
       "id": 304,
-      "name": "Master Artifact Anillo",
+      "name": "Anillo del maestro Artifact",
       "name_en": "Master Artifact Ring",
       "slot": "ring",
       "icon": 205,
@@ -4520,7 +4520,7 @@
     },
     {
       "id": 305,
-      "name": "Lost Totem",
+      "name": "Tótem Lost",
       "name_en": "Lost Totem",
       "slot": "artifact",
       "icon": 225,
@@ -4538,7 +4538,7 @@
     },
     {
       "id": 306,
-      "name": "Mog's Hacha",
+      "name": "Hacha de Mog",
       "name_en": "Mog's Axe",
       "slot": "main",
       "icon": 118,
@@ -4555,7 +4555,7 @@
     },
     {
       "id": 307,
-      "name": "Guardsman Coraza",
+      "name": "Coraza de guardia",
       "name_en": "Guardsman Cuirass",
       "slot": "chest",
       "icon": 153,
@@ -4573,7 +4573,7 @@
     },
     {
       "id": 308,
-      "name": "Inferno Pendant",
+      "name": "Colgante del infierno",
       "name_en": "Inferno Pendant",
       "slot": "artifact",
       "icon": 213,
@@ -4589,7 +4589,7 @@
     },
     {
       "id": 309,
-      "name": "Alchemist's Faldon",
+      "name": "Faldón de Alchemist",
       "name_en": "Alchemist's Skirt",
       "slot": "legs",
       "icon": 195,
@@ -4606,7 +4606,7 @@
     },
     {
       "id": 310,
-      "name": "Metzger's Battlemace",
+      "name": "Maza de guerra de Metzger",
       "name_en": "Metzger's Battlemace",
       "slot": "main",
       "icon": 110,
@@ -4687,7 +4687,7 @@
     },
     {
       "id": 316,
-      "name": "Velvet Capucha",
+      "name": "Capucha de terciopelo",
       "name_en": "Velvet Hood",
       "slot": "head",
       "icon": 192,
@@ -4700,7 +4700,7 @@
     },
     {
       "id": 317,
-      "name": "Velvet Chaleco",
+      "name": "Chaleco de terciopelo",
       "name_en": "Velvet Vest",
       "slot": "chest",
       "icon": 193,
@@ -4713,7 +4713,7 @@
     },
     {
       "id": 318,
-      "name": "Velvet Faldon",
+      "name": "Faldón de terciopelo",
       "name_en": "Velvet Skirt",
       "slot": "legs",
       "icon": 195,
@@ -4726,7 +4726,7 @@
     },
     {
       "id": 319,
-      "name": "Velvet Botas",
+      "name": "Botas de terciopelo",
       "name_en": "Velvet Boots",
       "slot": "feet",
       "icon": 196,
@@ -4739,7 +4739,7 @@
     },
     {
       "id": 320,
-      "name": "Velvet Mangas",
+      "name": "Mangas de terciopelo",
       "name_en": "Velvet Sleeves",
       "slot": "hands",
       "icon": 194,
@@ -4752,7 +4752,7 @@
     },
     {
       "id": 321,
-      "name": "Espadon",
+      "name": "Espadón",
       "name_en": "Greatsword",
       "slot": "main",
       "icon": 99,
@@ -4778,7 +4778,7 @@
     },
     {
       "id": 323,
-      "name": "Gran baston",
+      "name": "Gran bastón",
       "name_en": "Greatstaff",
       "slot": "main",
       "icon": 107,
@@ -4791,7 +4791,7 @@
     },
     {
       "id": 324,
-      "name": "Tower Escudo",
+      "name": "Escudo Tower",
       "name_en": "Tower Shield",
       "slot": "off",
       "icon": 123,
@@ -4804,7 +4804,7 @@
     },
     {
       "id": 325,
-      "name": "Fighting Yelmo de placas",
+      "name": "Yelmo de placas de combate",
       "name_en": "Fighting Plate Helmet",
       "slot": "head",
       "icon": 160,
@@ -4819,7 +4819,7 @@
     },
     {
       "id": 326,
-      "name": "Recon Yelmo de placas",
+      "name": "Yelmo de placas de reconocimiento",
       "name_en": "Recon Plate Helmet",
       "slot": "head",
       "icon": 160,
@@ -4834,7 +4834,7 @@
     },
     {
       "id": 327,
-      "name": "Sorcerer Velvet Capucha",
+      "name": "Capucha de terciopelo de hechicero",
       "name_en": "Sorcerer Velvet Hood",
       "slot": "head",
       "icon": 192,
@@ -4849,7 +4849,7 @@
     },
     {
       "id": 328,
-      "name": "Fighting Coraza de placas",
+      "name": "Coraza de placas de combate",
       "name_en": "Fighting Plate Cuirass",
       "slot": "chest",
       "icon": 161,
@@ -4864,7 +4864,7 @@
     },
     {
       "id": 329,
-      "name": "Recon Coraza de placas",
+      "name": "Coraza de placas de reconocimiento",
       "name_en": "Recon Plate Cuirass",
       "slot": "chest",
       "icon": 161,
@@ -4879,7 +4879,7 @@
     },
     {
       "id": 330,
-      "name": "Sorcerer Velvet Chaleco",
+      "name": "Chaleco de terciopelo de hechicero",
       "name_en": "Sorcerer Velvet Vest",
       "slot": "chest",
       "icon": 193,
@@ -4894,7 +4894,7 @@
     },
     {
       "id": 331,
-      "name": "Fighting Grebas de placas",
+      "name": "Grebas de placas de combate",
       "name_en": "Fighting Plate Greaves",
       "slot": "legs",
       "icon": 163,
@@ -4909,7 +4909,7 @@
     },
     {
       "id": 332,
-      "name": "Recon Grebas de placas",
+      "name": "Grebas de placas de reconocimiento",
       "name_en": "Recon Plate Greaves",
       "slot": "legs",
       "icon": 163,
@@ -4924,7 +4924,7 @@
     },
     {
       "id": 333,
-      "name": "Sorcerer Velvet Faldon",
+      "name": "Faldón de terciopelo de hechicero",
       "name_en": "Sorcerer Velvet Skirt",
       "slot": "legs",
       "icon": 195,
@@ -4939,7 +4939,7 @@
     },
     {
       "id": 334,
-      "name": "Fighting Botas de placas",
+      "name": "Botas de placas de combate",
       "name_en": "Fighting Plate Boots",
       "slot": "feet",
       "icon": 164,
@@ -4954,7 +4954,7 @@
     },
     {
       "id": 335,
-      "name": "Recon Botas de placas",
+      "name": "Botas de placas de reconocimiento",
       "name_en": "Recon Plate Boots",
       "slot": "feet",
       "icon": 164,
@@ -4969,7 +4969,7 @@
     },
     {
       "id": 336,
-      "name": "Sorcerer Velvet Botas",
+      "name": "Botas de terciopelo de hechicero",
       "name_en": "Sorcerer Velvet Boots",
       "slot": "feet",
       "icon": 196,
@@ -4984,7 +4984,7 @@
     },
     {
       "id": 337,
-      "name": "Fighting Guanteletes de placas",
+      "name": "Guanteletes de placas de combate",
       "name_en": "Fighting Plate Gauntlets",
       "slot": "hands",
       "icon": 162,
@@ -4999,7 +4999,7 @@
     },
     {
       "id": 338,
-      "name": "Recon Guanteletes de placas",
+      "name": "Guanteletes de placas de reconocimiento",
       "name_en": "Recon Plate Gauntlets",
       "slot": "hands",
       "icon": 162,
@@ -5014,7 +5014,7 @@
     },
     {
       "id": 339,
-      "name": "Sorcerer Velvet Mangas",
+      "name": "Mangas de terciopelo de hechicero",
       "name_en": "Sorcerer Velvet Sleeves",
       "slot": "hands",
       "icon": 194,
@@ -5029,7 +5029,7 @@
     },
     {
       "id": 340,
-      "name": "Wandering del Caudillo Cinturon de cuero",
+      "name": "Cinturón de cuero errante del Caudillo",
       "name_en": "Wandering Warlord Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -5044,7 +5044,7 @@
     },
     {
       "id": 341,
-      "name": "Wandering del Francotirador Pendant",
+      "name": "Colgante errante del Francotirador",
       "name_en": "Wandering Sniper Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -5059,7 +5059,7 @@
     },
     {
       "id": 342,
-      "name": "Wandering del Archimago Spellbook",
+      "name": "Libro de hechizos errante del Archimago",
       "name_en": "Wandering Archwizard Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -5074,7 +5074,7 @@
     },
     {
       "id": 343,
-      "name": "Fighting Espadon",
+      "name": "Espadón de combate",
       "name_en": "Fighting Greatsword",
       "slot": "main",
       "icon": 99,
@@ -5090,7 +5090,7 @@
     },
     {
       "id": 344,
-      "name": "Recon Arco de guerra",
+      "name": "Arco de guerra de reconocimiento",
       "name_en": "Recon Greatbow",
       "slot": null,
       "icon": null,
@@ -5106,7 +5106,7 @@
     },
     {
       "id": 345,
-      "name": "Sorcerer Gran baston",
+      "name": "Gran bastón de hechicero",
       "name_en": "Sorcerer Greatstaff",
       "slot": "main",
       "icon": 107,
@@ -5122,7 +5122,7 @@
     },
     {
       "id": 346,
-      "name": "Keeper Tower Escudo",
+      "name": "Escudo del guardián Tower",
       "name_en": "Keeper Tower Shield",
       "slot": "off",
       "icon": 123,
@@ -5137,7 +5137,7 @@
     },
     {
       "id": 347,
-      "name": "Wandering Inferno Anillo",
+      "name": "Anillo errante del infierno",
       "name_en": "Wandering Inferno Ring",
       "slot": "ring",
       "icon": 207,
@@ -5152,7 +5152,7 @@
     },
     {
       "id": 348,
-      "name": "Wandering Glacial Anillo",
+      "name": "Anillo errante glacial",
       "name_en": "Wandering Glacial Ring",
       "slot": "ring",
       "icon": 204,
@@ -5167,7 +5167,7 @@
     },
     {
       "id": 349,
-      "name": "Wandering Volt Anillo",
+      "name": "Anillo errante de voltaje",
       "name_en": "Wandering Volt Ring",
       "slot": "ring",
       "icon": 206,
@@ -5182,7 +5182,7 @@
     },
     {
       "id": 350,
-      "name": "Wandering Void Anillo",
+      "name": "Anillo errante del vacío",
       "name_en": "Wandering Void Ring",
       "slot": "ring",
       "icon": 203,
@@ -5197,7 +5197,7 @@
     },
     {
       "id": 351,
-      "name": "Wandering Scholar Anillo",
+      "name": "Anillo errante de erudito",
       "name_en": "Wandering Scholar Ring",
       "slot": "ring",
       "icon": 200,
@@ -5212,7 +5212,7 @@
     },
     {
       "id": 352,
-      "name": "Wandering Affluence Anillo",
+      "name": "Anillo errante de opulencia",
       "name_en": "Wandering Affluence Ring",
       "slot": "ring",
       "icon": 201,
@@ -5227,7 +5227,7 @@
     },
     {
       "id": 353,
-      "name": "Wandering Relic Anillo",
+      "name": "Anillo errante Relic",
       "name_en": "Wandering Relic Ring",
       "slot": "ring",
       "icon": 205,
@@ -5242,7 +5242,7 @@
     },
     {
       "id": 354,
-      "name": "Warrior Yelmo de placas",
+      "name": "Yelmo de placas de guerrero",
       "name_en": "Warrior Plate Helmet",
       "slot": "head",
       "icon": 160,
@@ -5257,7 +5257,7 @@
     },
     {
       "id": 355,
-      "name": "Ranger Yelmo de placas",
+      "name": "Yelmo de placas de montaraz",
       "name_en": "Ranger Plate Helmet",
       "slot": "head",
       "icon": 160,
@@ -5272,7 +5272,7 @@
     },
     {
       "id": 356,
-      "name": "Wizard Velvet Capucha",
+      "name": "Capucha de terciopelo de mago",
       "name_en": "Wizard Velvet Hood",
       "slot": "head",
       "icon": 192,
@@ -5287,7 +5287,7 @@
     },
     {
       "id": 357,
-      "name": "Warrior Coraza de placas",
+      "name": "Coraza de placas de guerrero",
       "name_en": "Warrior Plate Cuirass",
       "slot": "chest",
       "icon": 161,
@@ -5302,7 +5302,7 @@
     },
     {
       "id": 358,
-      "name": "Ranger Coraza de placas",
+      "name": "Coraza de placas de montaraz",
       "name_en": "Ranger Plate Cuirass",
       "slot": "chest",
       "icon": 161,
@@ -5317,7 +5317,7 @@
     },
     {
       "id": 359,
-      "name": "Wizard Velvet Chaleco",
+      "name": "Chaleco de terciopelo de mago",
       "name_en": "Wizard Velvet Vest",
       "slot": "chest",
       "icon": 193,
@@ -5332,7 +5332,7 @@
     },
     {
       "id": 360,
-      "name": "Warrior Grebas de placas",
+      "name": "Grebas de placas de guerrero",
       "name_en": "Warrior Plate Greaves",
       "slot": "legs",
       "icon": 163,
@@ -5347,7 +5347,7 @@
     },
     {
       "id": 361,
-      "name": "Ranger Grebas de placas",
+      "name": "Grebas de placas de montaraz",
       "name_en": "Ranger Plate Greaves",
       "slot": "legs",
       "icon": 163,
@@ -5362,7 +5362,7 @@
     },
     {
       "id": 362,
-      "name": "Wizard Velvet Faldon",
+      "name": "Faldón de terciopelo de mago",
       "name_en": "Wizard Velvet Skirt",
       "slot": "legs",
       "icon": 195,
@@ -5377,7 +5377,7 @@
     },
     {
       "id": 363,
-      "name": "Warrior Botas de placas",
+      "name": "Botas de placas de guerrero",
       "name_en": "Warrior Plate Boots",
       "slot": "feet",
       "icon": 164,
@@ -5392,7 +5392,7 @@
     },
     {
       "id": 364,
-      "name": "Ranger Botas de placas",
+      "name": "Botas de placas de montaraz",
       "name_en": "Ranger Plate Boots",
       "slot": "feet",
       "icon": 164,
@@ -5407,7 +5407,7 @@
     },
     {
       "id": 365,
-      "name": "Wizard Velvet Botas",
+      "name": "Botas de terciopelo de mago",
       "name_en": "Wizard Velvet Boots",
       "slot": "feet",
       "icon": 196,
@@ -5422,7 +5422,7 @@
     },
     {
       "id": 366,
-      "name": "Warrior Guanteletes de placas",
+      "name": "Guanteletes de placas de guerrero",
       "name_en": "Warrior Plate Gauntlets",
       "slot": "hands",
       "icon": 162,
@@ -5437,7 +5437,7 @@
     },
     {
       "id": 367,
-      "name": "Ranger Guanteletes de placas",
+      "name": "Guanteletes de placas de montaraz",
       "name_en": "Ranger Plate Gauntlets",
       "slot": "hands",
       "icon": 162,
@@ -5452,7 +5452,7 @@
     },
     {
       "id": 368,
-      "name": "Wizard Velvet Mangas",
+      "name": "Mangas de terciopelo de mago",
       "name_en": "Wizard Velvet Sleeves",
       "slot": "hands",
       "icon": 194,
@@ -5467,7 +5467,7 @@
     },
     {
       "id": 369,
-      "name": "Adventurer del Caudillo Cinturon de cuero",
+      "name": "Cinturón de cuero de aventurero del Caudillo",
       "name_en": "Adventurer Warlord Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -5482,7 +5482,7 @@
     },
     {
       "id": 370,
-      "name": "Adventurer del Francotirador Pendant",
+      "name": "Colgante de aventurero del Francotirador",
       "name_en": "Adventurer Sniper Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -5497,7 +5497,7 @@
     },
     {
       "id": 371,
-      "name": "Adventurer del Archimago Spellbook",
+      "name": "Libro de hechizos de aventurero del Archimago",
       "name_en": "Adventurer Archwizard Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -5512,7 +5512,7 @@
     },
     {
       "id": 372,
-      "name": "Warrior Espadon",
+      "name": "Espadón de guerrero",
       "name_en": "Warrior Greatsword",
       "slot": "main",
       "icon": 99,
@@ -5528,7 +5528,7 @@
     },
     {
       "id": 373,
-      "name": "Ranger Arco de guerra",
+      "name": "Arco de guerra de montaraz",
       "name_en": "Ranger Greatbow",
       "slot": null,
       "icon": null,
@@ -5544,7 +5544,7 @@
     },
     {
       "id": 374,
-      "name": "Wizard Gran baston",
+      "name": "Gran bastón de mago",
       "name_en": "Wizard Greatstaff",
       "slot": "main",
       "icon": 107,
@@ -5560,7 +5560,7 @@
     },
     {
       "id": 375,
-      "name": "Paladin Tower Escudo",
+      "name": "Escudo de paladín Tower",
       "name_en": "Paladin Tower Shield",
       "slot": "off",
       "icon": 123,
@@ -5575,7 +5575,7 @@
     },
     {
       "id": 376,
-      "name": "Adventurer Inferno Anillo",
+      "name": "Anillo de aventurero del infierno",
       "name_en": "Adventurer Inferno Ring",
       "slot": "ring",
       "icon": 207,
@@ -5590,7 +5590,7 @@
     },
     {
       "id": 377,
-      "name": "Adventurer Glacial Anillo",
+      "name": "Anillo de aventurero glacial",
       "name_en": "Adventurer Glacial Ring",
       "slot": "ring",
       "icon": 204,
@@ -5605,7 +5605,7 @@
     },
     {
       "id": 378,
-      "name": "Adventurer Volt Anillo",
+      "name": "Anillo de aventurero de voltaje",
       "name_en": "Adventurer Volt Ring",
       "slot": "ring",
       "icon": 206,
@@ -5620,7 +5620,7 @@
     },
     {
       "id": 379,
-      "name": "Adventurer Void Anillo",
+      "name": "Anillo de aventurero del vacío",
       "name_en": "Adventurer Void Ring",
       "slot": "ring",
       "icon": 203,
@@ -5635,7 +5635,7 @@
     },
     {
       "id": 380,
-      "name": "Adventurer Scholar Anillo",
+      "name": "Anillo de aventurero de erudito",
       "name_en": "Adventurer Scholar Ring",
       "slot": "ring",
       "icon": 200,
@@ -5650,7 +5650,7 @@
     },
     {
       "id": 381,
-      "name": "Adventurer Affluence Anillo",
+      "name": "Anillo de aventurero de opulencia",
       "name_en": "Adventurer Affluence Ring",
       "slot": "ring",
       "icon": 201,
@@ -5665,7 +5665,7 @@
     },
     {
       "id": 382,
-      "name": "Adventurer Relic Anillo",
+      "name": "Anillo de aventurero Relic",
       "name_en": "Adventurer Relic Ring",
       "slot": "ring",
       "icon": 205,
@@ -5680,7 +5680,7 @@
     },
     {
       "id": 383,
-      "name": "del Caudillo Yelmo de placas",
+      "name": "Yelmo de placas del Caudillo",
       "name_en": "Warlord Plate Helmet",
       "slot": "head",
       "icon": 160,
@@ -5695,7 +5695,7 @@
     },
     {
       "id": 384,
-      "name": "del Francotirador Yelmo de placas",
+      "name": "Yelmo de placas del Francotirador",
       "name_en": "Sniper Plate Helmet",
       "slot": "head",
       "icon": 160,
@@ -5710,7 +5710,7 @@
     },
     {
       "id": 385,
-      "name": "del Archimago Velvet Capucha",
+      "name": "Capucha de terciopelo del Archimago",
       "name_en": "Archwizard Velvet Hood",
       "slot": "head",
       "icon": 192,
@@ -5725,7 +5725,7 @@
     },
     {
       "id": 386,
-      "name": "del Caudillo Coraza de placas",
+      "name": "Coraza de placas del Caudillo",
       "name_en": "Warlord Plate Cuirass",
       "slot": "chest",
       "icon": 161,
@@ -5740,7 +5740,7 @@
     },
     {
       "id": 387,
-      "name": "del Francotirador Coraza de placas",
+      "name": "Coraza de placas del Francotirador",
       "name_en": "Sniper Plate Cuirass",
       "slot": "chest",
       "icon": 161,
@@ -5755,7 +5755,7 @@
     },
     {
       "id": 388,
-      "name": "del Archimago Velvet Chaleco",
+      "name": "Chaleco de terciopelo del Archimago",
       "name_en": "Archwizard Velvet Vest",
       "slot": "chest",
       "icon": 193,
@@ -5770,7 +5770,7 @@
     },
     {
       "id": 389,
-      "name": "del Caudillo Grebas de placas",
+      "name": "Grebas de placas del Caudillo",
       "name_en": "Warlord Plate Greaves",
       "slot": "legs",
       "icon": 163,
@@ -5785,7 +5785,7 @@
     },
     {
       "id": 390,
-      "name": "del Francotirador Grebas de placas",
+      "name": "Grebas de placas del Francotirador",
       "name_en": "Sniper Plate Greaves",
       "slot": "legs",
       "icon": 163,
@@ -5800,7 +5800,7 @@
     },
     {
       "id": 391,
-      "name": "del Archimago Velvet Faldon",
+      "name": "Faldón de terciopelo del Archimago",
       "name_en": "Archwizard Velvet Skirt",
       "slot": "legs",
       "icon": 195,
@@ -5815,7 +5815,7 @@
     },
     {
       "id": 392,
-      "name": "del Caudillo Botas de placas",
+      "name": "Botas de placas del Caudillo",
       "name_en": "Warlord Plate Boots",
       "slot": "feet",
       "icon": 164,
@@ -5830,7 +5830,7 @@
     },
     {
       "id": 393,
-      "name": "del Francotirador Botas de placas",
+      "name": "Botas de placas del Francotirador",
       "name_en": "Sniper Plate Boots",
       "slot": "feet",
       "icon": 164,
@@ -5845,7 +5845,7 @@
     },
     {
       "id": 394,
-      "name": "del Archimago Velvet Botas",
+      "name": "Botas de terciopelo del Archimago",
       "name_en": "Archwizard Velvet Boots",
       "slot": "feet",
       "icon": 196,
@@ -5860,7 +5860,7 @@
     },
     {
       "id": 395,
-      "name": "del Caudillo Guanteletes de placas",
+      "name": "Guanteletes de placas del Caudillo",
       "name_en": "Warlord Plate Gauntlets",
       "slot": "hands",
       "icon": 162,
@@ -5875,7 +5875,7 @@
     },
     {
       "id": 396,
-      "name": "del Francotirador Guanteletes de placas",
+      "name": "Guanteletes de placas del Francotirador",
       "name_en": "Sniper Plate Gauntlets",
       "slot": "hands",
       "icon": 162,
@@ -5890,7 +5890,7 @@
     },
     {
       "id": 397,
-      "name": "del Archimago Velvet Mangas",
+      "name": "Mangas de terciopelo del Archimago",
       "name_en": "Archwizard Velvet Sleeves",
       "slot": "hands",
       "icon": 194,
@@ -5905,7 +5905,7 @@
     },
     {
       "id": 398,
-      "name": "Master del Caudillo Cinturon de cuero",
+      "name": "Cinturón de cuero del maestro del Caudillo",
       "name_en": "Master Warlord Leather Belt",
       "slot": "artifact",
       "icon": 208,
@@ -5920,7 +5920,7 @@
     },
     {
       "id": 399,
-      "name": "Master del Francotirador Pendant",
+      "name": "Colgante del maestro del Francotirador",
       "name_en": "Master Sniper Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -5935,7 +5935,7 @@
     },
     {
       "id": 400,
-      "name": "Master del Archimago Spellbook",
+      "name": "Libro de hechizos del maestro del Archimago",
       "name_en": "Master Archwizard Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -5950,7 +5950,7 @@
     },
     {
       "id": 401,
-      "name": "del Caudillo Espadon",
+      "name": "Espadón del Caudillo",
       "name_en": "Warlord Greatsword",
       "slot": "main",
       "icon": 99,
@@ -5966,7 +5966,7 @@
     },
     {
       "id": 402,
-      "name": "del Francotirador Arco de guerra",
+      "name": "Arco de guerra del Francotirador",
       "name_en": "Sniper Greatbow",
       "slot": null,
       "icon": null,
@@ -5982,7 +5982,7 @@
     },
     {
       "id": 403,
-      "name": "del Archimago Gran baston",
+      "name": "Gran bastón del Archimago",
       "name_en": "Archwizard Greatstaff",
       "slot": "main",
       "icon": 107,
@@ -5998,7 +5998,7 @@
     },
     {
       "id": 404,
-      "name": "Templar Tower Escudo",
+      "name": "Escudo de templario Tower",
       "name_en": "Templar Tower Shield",
       "slot": "off",
       "icon": 123,
@@ -6013,7 +6013,7 @@
     },
     {
       "id": 405,
-      "name": "Master Inferno Anillo",
+      "name": "Anillo del maestro del infierno",
       "name_en": "Master Inferno Ring",
       "slot": "ring",
       "icon": 207,
@@ -6028,7 +6028,7 @@
     },
     {
       "id": 406,
-      "name": "Master Glacial Anillo",
+      "name": "Anillo del maestro glacial",
       "name_en": "Master Glacial Ring",
       "slot": "ring",
       "icon": 204,
@@ -6043,7 +6043,7 @@
     },
     {
       "id": 407,
-      "name": "Master Volt Anillo",
+      "name": "Anillo del maestro de voltaje",
       "name_en": "Master Volt Ring",
       "slot": "ring",
       "icon": 206,
@@ -6058,7 +6058,7 @@
     },
     {
       "id": 408,
-      "name": "Master Void Anillo",
+      "name": "Anillo del maestro del vacío",
       "name_en": "Master Void Ring",
       "slot": "ring",
       "icon": 203,
@@ -6073,7 +6073,7 @@
     },
     {
       "id": 409,
-      "name": "Master Scholar Anillo",
+      "name": "Anillo del maestro de erudito",
       "name_en": "Master Scholar Ring",
       "slot": "ring",
       "icon": 200,
@@ -6088,7 +6088,7 @@
     },
     {
       "id": 410,
-      "name": "Master Affluence Anillo",
+      "name": "Anillo del maestro de opulencia",
       "name_en": "Master Affluence Ring",
       "slot": "ring",
       "icon": 201,
@@ -6103,7 +6103,7 @@
     },
     {
       "id": 411,
-      "name": "Master Relic Anillo",
+      "name": "Anillo del maestro Relic",
       "name_en": "Master Relic Ring",
       "slot": "ring",
       "icon": 205,
@@ -6118,7 +6118,7 @@
     },
     {
       "id": 412,
-      "name": "Perdition Pergamino",
+      "name": "Pergamino Perdition",
       "name_en": "Perdition Scroll",
       "slot": "scroll",
       "icon": 79,
@@ -6144,7 +6144,7 @@
     },
     {
       "id": 414,
-      "name": "Fireball Pergamino",
+      "name": "Pergamino de bola de fuego",
       "name_en": "Fireball Scroll",
       "slot": "scroll",
       "icon": 74,
@@ -6157,7 +6157,7 @@
     },
     {
       "id": 415,
-      "name": "Ice Bolt Pergamino",
+      "name": "Pergamino de hielo de descarga",
       "name_en": "Ice Bolt Scroll",
       "slot": "scroll",
       "icon": 78,
@@ -6170,7 +6170,7 @@
     },
     {
       "id": 416,
-      "name": "Haste Pergamino",
+      "name": "Pergamino de premura",
       "name_en": "Haste Scroll",
       "slot": "scroll",
       "icon": 72,
@@ -6183,7 +6183,7 @@
     },
     {
       "id": 417,
-      "name": "Immunity Pergamino",
+      "name": "Pergamino de inmunidad",
       "name_en": "Immunity Scroll",
       "slot": "scroll",
       "icon": 76,
@@ -6196,7 +6196,7 @@
     },
     {
       "id": 418,
-      "name": "Reflection Pergamino",
+      "name": "Pergamino de reflejo",
       "name_en": "Reflection Scroll",
       "slot": "scroll",
       "icon": 77,
@@ -6209,7 +6209,7 @@
     },
     {
       "id": 419,
-      "name": "Fleshband",
+      "name": "Banda de carne",
       "name_en": "Fleshband",
       "slot": "ring",
       "icon": 199,
@@ -6228,7 +6228,7 @@
     },
     {
       "id": 420,
-      "name": "Soulband",
+      "name": "Banda de alma",
       "name_en": "Soulband",
       "slot": "ring",
       "icon": 198,
@@ -6247,7 +6247,7 @@
     },
     {
       "id": 421,
-      "name": "Underworld Capa",
+      "name": "Capa Underworld",
       "name_en": "Underworld Cloak",
       "slot": "head",
       "icon": 192,
@@ -6262,7 +6262,7 @@
     },
     {
       "id": 422,
-      "name": "Underworld Platemail",
+      "name": "Cota de placas Underworld",
       "name_en": "Underworld Platemail",
       "slot": "chest",
       "icon": 161,
@@ -6277,7 +6277,7 @@
     },
     {
       "id": 423,
-      "name": "Underworld Botas",
+      "name": "Botas Underworld",
       "name_en": "Underworld Boots",
       "slot": "feet",
       "icon": 164,
@@ -6292,7 +6292,7 @@
     },
     {
       "id": 424,
-      "name": "Underworld Armguards",
+      "name": "Brazaletes Underworld",
       "name_en": "Underworld Armguards",
       "slot": "hands",
       "icon": 162,
@@ -6307,7 +6307,7 @@
     },
     {
       "id": 425,
-      "name": "Underworld Grebas",
+      "name": "Grebas Underworld",
       "name_en": "Underworld Greaves",
       "slot": "legs",
       "icon": 163,
@@ -6322,7 +6322,7 @@
     },
     {
       "id": 426,
-      "name": "Underworld Tomo",
+      "name": "Tomo Underworld",
       "name_en": "Underworld Tome",
       "slot": "artifact",
       "icon": 225,
@@ -6337,7 +6337,7 @@
     },
     {
       "id": 427,
-      "name": "Underworld Blade",
+      "name": "Hoja Underworld",
       "name_en": "Underworld Blade",
       "slot": "main",
       "icon": 99,
@@ -6353,7 +6353,7 @@
     },
     {
       "id": 428,
-      "name": "Underworld Arco",
+      "name": "Arco Underworld",
       "name_en": "Underworld Bow",
       "slot": null,
       "icon": null,
@@ -6369,7 +6369,7 @@
     },
     {
       "id": 429,
-      "name": "Underworld Sceptre",
+      "name": "Cetro Underworld",
       "name_en": "Underworld Sceptre",
       "slot": "main",
       "icon": 107,
@@ -6385,7 +6385,7 @@
     },
     {
       "id": 430,
-      "name": "Ardwen's Anillo",
+      "name": "Anillo de Ardwen",
       "name_en": "Ardwen's Ring",
       "slot": "ring",
       "icon": 202,
@@ -6414,7 +6414,7 @@
     },
     {
       "id": 432,
-      "name": "Mastite Camisa",
+      "name": "Camisa de mastita",
       "name_en": "Mastite Shirt",
       "slot": "chest",
       "icon": 129,
@@ -6427,7 +6427,7 @@
     },
     {
       "id": 433,
-      "name": "Mastite Pantalones",
+      "name": "Pantalones de mastita",
       "name_en": "Mastite Pants",
       "slot": "legs",
       "icon": 131,
@@ -6440,7 +6440,7 @@
     },
     {
       "id": 434,
-      "name": "Mastite Sandalias",
+      "name": "Sandalias de mastita",
       "name_en": "Mastite Sandals",
       "slot": "feet",
       "icon": 132,
@@ -6453,7 +6453,7 @@
     },
     {
       "id": 435,
-      "name": "Mastite Guantes",
+      "name": "Guantes de mastita",
       "name_en": "Mastite Gloves",
       "slot": "hands",
       "icon": 130,
@@ -6466,7 +6466,7 @@
     },
     {
       "id": 436,
-      "name": "Mastite Daga",
+      "name": "Daga de mastita",
       "name_en": "Mastite Dagger",
       "slot": "main",
       "icon": 96,
@@ -6479,7 +6479,7 @@
     },
     {
       "id": 437,
-      "name": "Mastite Honda",
+      "name": "Honda de mastita",
       "name_en": "Mastite Slingshot",
       "slot": null,
       "icon": null,
@@ -6492,7 +6492,7 @@
     },
     {
       "id": 438,
-      "name": "Mastite Varita",
+      "name": "Varita de mastita",
       "name_en": "Mastite Wand",
       "slot": "main",
       "icon": 104,
@@ -6505,7 +6505,7 @@
     },
     {
       "id": 439,
-      "name": "Mastite Broquel",
+      "name": "Broquel de mastita",
       "name_en": "Mastite Buckler",
       "slot": "off",
       "icon": 120,
@@ -6518,7 +6518,7 @@
     },
     {
       "id": 440,
-      "name": "Mastite Cinturon",
+      "name": "Cinturón de mastita",
       "name_en": "Mastite Belt",
       "slot": "artifact",
       "icon": 208,
@@ -6531,7 +6531,7 @@
     },
     {
       "id": 441,
-      "name": "Mastite Pendant",
+      "name": "Colgante de mastita",
       "name_en": "Mastite Pendant",
       "slot": "artifact",
       "icon": 212,
@@ -6544,7 +6544,7 @@
     },
     {
       "id": 442,
-      "name": "Mastite Pendant",
+      "name": "Colgante de mastita",
       "name_en": "Mastite Pendant",
       "slot": "artifact",
       "icon": 213,
@@ -6557,7 +6557,7 @@
     },
     {
       "id": 443,
-      "name": "Mastite Pendant",
+      "name": "Colgante de mastita",
       "name_en": "Mastite Pendant",
       "slot": "artifact",
       "icon": 214,
@@ -6570,7 +6570,7 @@
     },
     {
       "id": 444,
-      "name": "Mastite Pendant",
+      "name": "Colgante de mastita",
       "name_en": "Mastite Pendant",
       "slot": "artifact",
       "icon": 215,
@@ -6583,7 +6583,7 @@
     },
     {
       "id": 445,
-      "name": "Mastite Spellbook",
+      "name": "Libro de hechizos de mastita",
       "name_en": "Mastite Spellbook",
       "slot": "artifact",
       "icon": 225,
@@ -6596,7 +6596,7 @@
     },
     {
       "id": 446,
-      "name": "Mastite Anillo",
+      "name": "Anillo de mastita",
       "name_en": "Mastite Ring",
       "slot": "ring",
       "icon": 207,
@@ -6609,7 +6609,7 @@
     },
     {
       "id": 447,
-      "name": "Mastite Anillo",
+      "name": "Anillo de mastita",
       "name_en": "Mastite Ring",
       "slot": "ring",
       "icon": 204,
@@ -6622,7 +6622,7 @@
     },
     {
       "id": 448,
-      "name": "Mastite Anillo",
+      "name": "Anillo de mastita",
       "name_en": "Mastite Ring",
       "slot": "ring",
       "icon": 206,
@@ -6635,7 +6635,7 @@
     },
     {
       "id": 449,
-      "name": "Mastite Anillo",
+      "name": "Anillo de mastita",
       "name_en": "Mastite Ring",
       "slot": "ring",
       "icon": 203,
@@ -6648,7 +6648,7 @@
     },
     {
       "id": 450,
-      "name": "Mastite Anillo",
+      "name": "Anillo de mastita",
       "name_en": "Mastite Ring",
       "slot": "ring",
       "icon": 200,
@@ -6661,7 +6661,7 @@
     },
     {
       "id": 451,
-      "name": "Mastite Anillo",
+      "name": "Anillo de mastita",
       "name_en": "Mastite Ring",
       "slot": "ring",
       "icon": 201,
@@ -6674,7 +6674,7 @@
     },
     {
       "id": 452,
-      "name": "Mastite Anillo",
+      "name": "Anillo de mastita",
       "name_en": "Mastite Ring",
       "slot": "ring",
       "icon": 205,
@@ -6687,7 +6687,7 @@
     },
     {
       "id": 453,
-      "name": "Mastite Capucha de cuero",
+      "name": "Capucha de mastita de cuero",
       "name_en": "Mastite Leather Hood",
       "slot": "head",
       "icon": 144,
@@ -6700,7 +6700,7 @@
     },
     {
       "id": 454,
-      "name": "Mastite Tunic de cuero",
+      "name": "Túnica de mastita de cuero",
       "name_en": "Mastite Leather Tunic",
       "slot": "chest",
       "icon": 145,
@@ -6713,7 +6713,7 @@
     },
     {
       "id": 455,
-      "name": "Mastite Pantalones de cuero",
+      "name": "Pantalones de mastita de cuero",
       "name_en": "Mastite Leather Pants",
       "slot": "legs",
       "icon": 147,
@@ -6726,7 +6726,7 @@
     },
     {
       "id": 456,
-      "name": "Mastite Botas de cuero",
+      "name": "Botas de mastita de cuero",
       "name_en": "Mastite Leather Boots",
       "slot": "feet",
       "icon": 148,
@@ -6739,7 +6739,7 @@
     },
     {
       "id": 457,
-      "name": "Mastite Guantes de cuero",
+      "name": "Guantes de mastita de cuero",
       "name_en": "Mastite Leather Gloves",
       "slot": "hands",
       "icon": 146,
@@ -6752,7 +6752,7 @@
     },
     {
       "id": 458,
-      "name": "Mastite Mage Capucha",
+      "name": "Capucha de mastita de mago",
       "name_en": "Mastite Mage Hood",
       "slot": "head",
       "icon": 136,
@@ -6765,7 +6765,7 @@
     },
     {
       "id": 459,
-      "name": "Mastite Mage Chaleco",
+      "name": "Chaleco de mastita de mago",
       "name_en": "Mastite Mage Vest",
       "slot": "chest",
       "icon": 137,
@@ -6778,7 +6778,7 @@
     },
     {
       "id": 460,
-      "name": "Mastite Mage Faldon",
+      "name": "Faldón de mastita de mago",
       "name_en": "Mastite Mage Skirt",
       "slot": "legs",
       "icon": 139,
@@ -6791,7 +6791,7 @@
     },
     {
       "id": 461,
-      "name": "Mastite Mage Botas",
+      "name": "Botas de mastita de mago",
       "name_en": "Mastite Mage Boots",
       "slot": "feet",
       "icon": 140,
@@ -6804,7 +6804,7 @@
     },
     {
       "id": 462,
-      "name": "Mastite Mage Mangas",
+      "name": "Mangas de mastita de mago",
       "name_en": "Mastite Mage Sleeves",
       "slot": "hands",
       "icon": 138,
@@ -6817,7 +6817,7 @@
     },
     {
       "id": 463,
-      "name": "Mastite Espada corta",
+      "name": "Espada corta de mastita",
       "name_en": "Mastite Shortsword",
       "slot": "main",
       "icon": 97,
@@ -6830,7 +6830,7 @@
     },
     {
       "id": 464,
-      "name": "Mastite Arco corto",
+      "name": "Arco corto de mastita",
       "name_en": "Mastite Shortbow",
       "slot": null,
       "icon": null,
@@ -6843,7 +6843,7 @@
     },
     {
       "id": 465,
-      "name": "Mastite Vara",
+      "name": "Vara de mastita",
       "name_en": "Mastite Rod",
       "slot": "main",
       "icon": 105,
@@ -6856,7 +6856,7 @@
     },
     {
       "id": 466,
-      "name": "Mastite Broquel de hierro",
+      "name": "Broquel de mastita de hierro",
       "name_en": "Mastite Iron Buckler",
       "slot": "off",
       "icon": 121,
@@ -6869,7 +6869,7 @@
     },
     {
       "id": 467,
-      "name": "Mastite Cofia de malla",
+      "name": "Cofia de mastita de malla",
       "name_en": "Mastite Chain Coif",
       "slot": "head",
       "icon": 152,
@@ -6882,7 +6882,7 @@
     },
     {
       "id": 468,
-      "name": "Mastite Coraza de malla",
+      "name": "Coraza de mastita de malla",
       "name_en": "Mastite Chain Cuirass",
       "slot": "chest",
       "icon": 153,
@@ -6895,7 +6895,7 @@
     },
     {
       "id": 469,
-      "name": "Mastite Grebas de malla",
+      "name": "Grebas de mastita de malla",
       "name_en": "Mastite Chain Greaves",
       "slot": "legs",
       "icon": 155,
@@ -6908,7 +6908,7 @@
     },
     {
       "id": 470,
-      "name": "Mastite Botas de malla",
+      "name": "Botas de mastita de malla",
       "name_en": "Mastite Chain Boots",
       "slot": "feet",
       "icon": 156,
@@ -6921,7 +6921,7 @@
     },
     {
       "id": 471,
-      "name": "Mastite Guantes de malla",
+      "name": "Guantes de mastita de malla",
       "name_en": "Mastite Chain Gloves",
       "slot": "hands",
       "icon": 154,
@@ -6934,7 +6934,7 @@
     },
     {
       "id": 472,
-      "name": "Mastite Wizard Capucha",
+      "name": "Capucha de mastita de mago",
       "name_en": "Mastite Wizard Hood",
       "slot": "head",
       "icon": 184,
@@ -6947,7 +6947,7 @@
     },
     {
       "id": 473,
-      "name": "Mastite Wizard Chaleco",
+      "name": "Chaleco de mastita de mago",
       "name_en": "Mastite Wizard Vest",
       "slot": "chest",
       "icon": 185,
@@ -6960,7 +6960,7 @@
     },
     {
       "id": 474,
-      "name": "Mastite Wizard Faldon",
+      "name": "Faldón de mastita de mago",
       "name_en": "Mastite Wizard Skirt",
       "slot": "legs",
       "icon": 187,
@@ -6973,7 +6973,7 @@
     },
     {
       "id": 475,
-      "name": "Mastite Wizard Botas",
+      "name": "Botas de mastita de mago",
       "name_en": "Mastite Wizard Boots",
       "slot": "feet",
       "icon": 188,
@@ -6986,7 +6986,7 @@
     },
     {
       "id": 476,
-      "name": "Mastite Wizard Mangas",
+      "name": "Mangas de mastita de mago",
       "name_en": "Mastite Wizard Sleeves",
       "slot": "hands",
       "icon": 186,
@@ -6999,7 +6999,7 @@
     },
     {
       "id": 477,
-      "name": "Mastite Espada larga",
+      "name": "Espada larga de mastita",
       "name_en": "Mastite Longsword",
       "slot": "main",
       "icon": 98,
@@ -7012,7 +7012,7 @@
     },
     {
       "id": 478,
-      "name": "Mastite Arco largo",
+      "name": "Arco largo de mastita",
       "name_en": "Mastite Longbow",
       "slot": null,
       "icon": null,
@@ -7025,7 +7025,7 @@
     },
     {
       "id": 479,
-      "name": "Mastite Baston",
+      "name": "Bastón de mastita",
       "name_en": "Mastite Staff",
       "slot": "main",
       "icon": 106,
@@ -7038,7 +7038,7 @@
     },
     {
       "id": 480,
-      "name": "Mastite Tower Escudo",
+      "name": "Escudo de mastita Tower",
       "name_en": "Mastite Tower Shield",
       "slot": "off",
       "icon": 123,
@@ -7051,7 +7051,7 @@
     },
     {
       "id": 481,
-      "name": "Mastite Yelmo de placas",
+      "name": "Yelmo de mastita de placas",
       "name_en": "Mastite Plate Helmet",
       "slot": "head",
       "icon": 160,
@@ -7064,7 +7064,7 @@
     },
     {
       "id": 482,
-      "name": "Mastite Coraza de placas",
+      "name": "Coraza de mastita de placas",
       "name_en": "Mastite Plate Cuirass",
       "slot": "chest",
       "icon": 161,
@@ -7077,7 +7077,7 @@
     },
     {
       "id": 483,
-      "name": "Mastite Grebas de placas",
+      "name": "Grebas de mastita de placas",
       "name_en": "Mastite Plate Greaves",
       "slot": "legs",
       "icon": 163,
@@ -7090,7 +7090,7 @@
     },
     {
       "id": 484,
-      "name": "Mastite Botas de placas",
+      "name": "Botas de mastita de placas",
       "name_en": "Mastite Plate Boots",
       "slot": "feet",
       "icon": 164,
@@ -7103,7 +7103,7 @@
     },
     {
       "id": 485,
-      "name": "Mastite Guanteletes de placas",
+      "name": "Guanteletes de mastita de placas",
       "name_en": "Mastite Plate Gauntlets",
       "slot": "hands",
       "icon": 162,
@@ -7116,7 +7116,7 @@
     },
     {
       "id": 486,
-      "name": "Mastite del Archimago Capucha",
+      "name": "Capucha de mastita del Archimago",
       "name_en": "Mastite Archwizard Hood",
       "slot": "head",
       "icon": 192,
@@ -7129,7 +7129,7 @@
     },
     {
       "id": 487,
-      "name": "Mastite del Archimago Chaleco",
+      "name": "Chaleco de mastita del Archimago",
       "name_en": "Mastite Archwizard Vest",
       "slot": "chest",
       "icon": 193,
@@ -7142,7 +7142,7 @@
     },
     {
       "id": 488,
-      "name": "Mastite del Archimago Faldon",
+      "name": "Faldón de mastita del Archimago",
       "name_en": "Mastite Archwizard Skirt",
       "slot": "legs",
       "icon": 195,
@@ -7155,7 +7155,7 @@
     },
     {
       "id": 489,
-      "name": "Mastite del Archimago Botas",
+      "name": "Botas de mastita del Archimago",
       "name_en": "Mastite Archwizard Boots",
       "slot": "feet",
       "icon": 196,
@@ -7168,7 +7168,7 @@
     },
     {
       "id": 490,
-      "name": "Mastite del Archimago Mangas",
+      "name": "Mangas de mastita del Archimago",
       "name_en": "Mastite Archwizard Sleeves",
       "slot": "hands",
       "icon": 194,
@@ -7181,7 +7181,7 @@
     },
     {
       "id": 491,
-      "name": "Mastite Espadon",
+      "name": "Espadón de mastita",
       "name_en": "Mastite Greatsword",
       "slot": "main",
       "icon": 99,
@@ -7194,7 +7194,7 @@
     },
     {
       "id": 492,
-      "name": "Mastite Arco de guerra",
+      "name": "Arco de guerra de mastita",
       "name_en": "Mastite Greatbow",
       "slot": null,
       "icon": null,
@@ -7207,7 +7207,7 @@
     },
     {
       "id": 493,
-      "name": "Mastite Gran baston",
+      "name": "Gran bastón de mastita",
       "name_en": "Mastite Greatstaff",
       "slot": "main",
       "icon": 107,
@@ -7220,7 +7220,7 @@
     },
     {
       "id": 494,
-      "name": "Mastite Crest Escudo",
+      "name": "Cimera Escudo de mastita",
       "name_en": "Mastite Crest Shield",
       "slot": "off",
       "icon": 122,
@@ -7233,7 +7233,7 @@
     },
     {
       "id": 750,
-      "name": "Empty Bottle",
+      "name": "Botella vacía",
       "name_en": "Empty Bottle",
       "slot": "crafting",
       "icon": 512,
@@ -7259,7 +7259,7 @@
     },
     {
       "id": 752,
-      "name": "de mana Crystal",
+      "name": "Cristal de maná",
       "name_en": "Mana Crystal",
       "slot": "crafting",
       "icon": 514,
@@ -7272,7 +7272,7 @@
     },
     {
       "id": 753,
-      "name": "Mortar and Pestle",
+      "name": "Mortero maja y",
       "name_en": "Mortar and Pestle",
       "slot": "crafting_tool",
       "icon": 515,
@@ -7285,7 +7285,7 @@
     },
     {
       "id": 754,
-      "name": "Mushrooms",
+      "name": "Hongos",
       "name_en": "Mushrooms",
       "slot": "crafting",
       "icon": 516,
@@ -7298,7 +7298,7 @@
     },
     {
       "id": 775,
-      "name": "Stamina Pocion",
+      "name": "Poción de aguante",
       "name_en": "Stamina Potion",
       "slot": "potion",
       "icon": 80,
@@ -7311,7 +7311,7 @@
     },
     {
       "id": 776,
-      "name": "Restoration Pocion",
+      "name": "Poción de restauración",
       "name_en": "Restoration Potion",
       "slot": "potion",
       "icon": 81,
@@ -7324,7 +7324,7 @@
     },
     {
       "id": 777,
-      "name": "Treasure Pocion",
+      "name": "Poción del tesoro",
       "name_en": "Treasure Potion",
       "slot": "potion",
       "icon": 82,
@@ -7337,7 +7337,7 @@
     },
     {
       "id": 778,
-      "name": "Elemental Pocion",
+      "name": "Poción elemental",
       "name_en": "Elemental Potion",
       "slot": "potion",
       "icon": 83,
@@ -7350,7 +7350,7 @@
     },
     {
       "id": 779,
-      "name": "Super de vida Pocion",
+      "name": "Poción súper de vida",
       "name_en": "Super Health Potion",
       "slot": "potion",
       "icon": 84,
@@ -7363,7 +7363,7 @@
     },
     {
       "id": 780,
-      "name": "Ultra de vida Pocion",
+      "name": "Poción ultra de vida",
       "name_en": "Ultra Health Potion",
       "slot": "potion",
       "icon": 85,
@@ -7376,7 +7376,7 @@
     },
     {
       "id": 781,
-      "name": "Super de mana Pocion",
+      "name": "Poción súper de maná",
       "name_en": "Super Mana Potion",
       "slot": "potion",
       "icon": 86,
@@ -7389,7 +7389,7 @@
     },
     {
       "id": 782,
-      "name": "Ultra de mana Pocion",
+      "name": "Poción ultra de maná",
       "name_en": "Ultra Mana Potion",
       "slot": "potion",
       "icon": 87,
@@ -7402,7 +7402,7 @@
     },
     {
       "id": 1000,
-      "name": "Krolan's Llave",
+      "name": "Llave de Krolan",
       "name_en": "Krolan's Key",
       "slot": "key",
       "icon": 226,
@@ -7415,7 +7415,7 @@
     },
     {
       "id": 1001,
-      "name": "Krolan's Emerald",
+      "name": "Esmeralda de Krolan",
       "name_en": "Krolan's Emerald",
       "slot": "gem",
       "icon": 69,
@@ -7428,7 +7428,7 @@
     },
     {
       "id": 1002,
-      "name": "Abasi's Journal",
+      "name": "Diario de Abasi",
       "name_en": "Abasi's Journal",
       "slot": "book",
       "icon": 225,
@@ -7441,7 +7441,7 @@
     },
     {
       "id": 1003,
-      "name": "Gold Family Anillo",
+      "name": "Anillo de oro Family",
       "name_en": "Gold Family Ring",
       "slot": "ring",
       "icon": 199,
@@ -7456,7 +7456,7 @@
     },
     {
       "id": 1004,
-      "name": "St. Maria Mausoleum Llave",
+      "name": "Llave St. Maria Mausoleum",
       "name_en": "St. Maria Mausoleum Key",
       "slot": "key",
       "icon": 226,
@@ -7469,7 +7469,7 @@
     },
     {
       "id": 1005,
-      "name": "St. Maria Catacombs Llave",
+      "name": "Llave St. Maria Catacombs",
       "name_en": "St. Maria Catacombs Key",
       "slot": "key",
       "icon": 226,
@@ -7482,7 +7482,7 @@
     },
     {
       "id": 1006,
-      "name": "Strange Sapphire A",
+      "name": "Zafiro extraño A",
       "name_en": "Strange Sapphire A",
       "slot": "gem",
       "icon": 68,
@@ -7495,7 +7495,7 @@
     },
     {
       "id": 1007,
-      "name": "Strange Sapphire B",
+      "name": "Zafiro extraño B",
       "name_en": "Strange Sapphire B",
       "slot": "gem",
       "icon": 68,
@@ -7508,7 +7508,7 @@
     },
     {
       "id": 1008,
-      "name": "Goblin's Ruby",
+      "name": "Rubí de Goblin",
       "name_en": "Goblin's Ruby",
       "slot": "gem",
       "icon": 70,
@@ -7521,7 +7521,7 @@
     },
     {
       "id": 1009,
-      "name": "Bear Figurine",
+      "name": "Figurilla de oso",
       "name_en": "Bear Figurine",
       "slot": "artifact",
       "icon": 216,
@@ -7536,7 +7536,7 @@
     },
     {
       "id": 1010,
-      "name": "Owl Figurine",
+      "name": "Figurilla de búho",
       "name_en": "Owl Figurine",
       "slot": "artifact",
       "icon": 217,
@@ -7551,7 +7551,7 @@
     },
     {
       "id": 1011,
-      "name": "Cat Figurine",
+      "name": "Figurilla de gato",
       "name_en": "Cat Figurine",
       "slot": "artifact",
       "icon": 218,
@@ -7566,7 +7566,7 @@
     },
     {
       "id": 1012,
-      "name": "Turtle Figurine",
+      "name": "Figurilla de tortuga",
       "name_en": "Turtle Figurine",
       "slot": "artifact",
       "icon": 219,
@@ -7581,7 +7581,7 @@
     },
     {
       "id": 1013,
-      "name": "Stormrock Llave",
+      "name": "Llave Stormrock",
       "name_en": "Stormrock Key",
       "slot": "key",
       "icon": 226,
@@ -7594,7 +7594,7 @@
     },
     {
       "id": 1014,
-      "name": "Temple de Mez Basement Llave",
+      "name": "Llave Temple de Mez Basement",
       "name_en": "Temple of Mez Basement Key",
       "slot": "key",
       "icon": 226,
@@ -7607,7 +7607,7 @@
     },
     {
       "id": 1015,
-      "name": "Temple de Mez Main Hall Llave",
+      "name": "Llave Temple de Mez Main Hall",
       "name_en": "Temple of Mez Main Hall Key",
       "slot": "key",
       "icon": 226,
@@ -7620,7 +7620,7 @@
     },
     {
       "id": 1016,
-      "name": "Dynamite",
+      "name": "Dinamita",
       "name_en": "Dynamite",
       "slot": "relic",
       "icon": 261,
@@ -7633,7 +7633,7 @@
     },
     {
       "id": 1017,
-      "name": "Worn Note #1",
+      "name": "Nota desgastado #1",
       "name_en": "Worn Note #1",
       "slot": "book",
       "icon": 224,
@@ -7646,7 +7646,7 @@
     },
     {
       "id": 1018,
-      "name": "Worn Note #2",
+      "name": "Nota desgastado #2",
       "name_en": "Worn Note #2",
       "slot": "book",
       "icon": 224,
@@ -7659,7 +7659,7 @@
     },
     {
       "id": 1019,
-      "name": "Worn Note #3",
+      "name": "Nota desgastado #3",
       "name_en": "Worn Note #3",
       "slot": "book",
       "icon": 224,
@@ -7672,7 +7672,7 @@
     },
     {
       "id": 1020,
-      "name": "Worn Note #4",
+      "name": "Nota desgastado #4",
       "name_en": "Worn Note #4",
       "slot": "book",
       "icon": 224,
@@ -7685,7 +7685,7 @@
     },
     {
       "id": 1021,
-      "name": "Worn Note #5",
+      "name": "Nota desgastado #5",
       "name_en": "Worn Note #5",
       "slot": "book",
       "icon": 224,
@@ -7698,7 +7698,7 @@
     },
     {
       "id": 1022,
-      "name": "Wizard's Tower Entrance Llave",
+      "name": "Llave de de mago Tower Entrance",
       "name_en": "Wizard's Tower Entrance Key",
       "slot": "key",
       "icon": 226,
@@ -7711,7 +7711,7 @@
     },
     {
       "id": 1023,
-      "name": "Wizard's Tower Research Hall Llave",
+      "name": "Llave de de mago Tower Research Hall",
       "name_en": "Wizard's Tower Research Hall Key",
       "slot": "key",
       "icon": 226,
@@ -7724,7 +7724,7 @@
     },
     {
       "id": 1024,
-      "name": "Warden's Notes",
+      "name": "Notas de Warden",
       "name_en": "Warden's Notes",
       "slot": "book",
       "icon": 225,
@@ -7737,7 +7737,7 @@
     },
     {
       "id": 1025,
-      "name": "Lorund's Espada",
+      "name": "Espada de Lorund",
       "name_en": "Lorund's Sword",
       "slot": "main",
       "icon": 98,
@@ -7752,7 +7752,7 @@
     },
     {
       "id": 1026,
-      "name": "Nerin's Arco",
+      "name": "Arco de Nerin",
       "name_en": "Nerin's Bow",
       "slot": null,
       "icon": null,
@@ -7767,7 +7767,7 @@
     },
     {
       "id": 1027,
-      "name": "Kayl's Baston",
+      "name": "Bastón de Kayl",
       "name_en": "Kayl's Staff",
       "slot": "main",
       "icon": 106,
@@ -7782,7 +7782,7 @@
     },
     {
       "id": 1028,
-      "name": "Underworld Stronghold Foyer Llave",
+      "name": "Llave Underworld Stronghold Foyer",
       "name_en": "Underworld Stronghold Foyer Key",
       "slot": "key",
       "icon": 226,
@@ -7795,7 +7795,7 @@
     },
     {
       "id": 1029,
-      "name": "Underworld Stronghold Barracks Llave",
+      "name": "Llave Underworld Stronghold Barracks",
       "name_en": "Underworld Stronghold Barracks Key",
       "slot": "key",
       "icon": 226,
@@ -7808,7 +7808,7 @@
     },
     {
       "id": 1030,
-      "name": "Treasure Chest Llave",
+      "name": "Cofre Llave del tesoro",
       "name_en": "Treasure Chest Key",
       "slot": "key",
       "icon": 226,
@@ -7821,7 +7821,7 @@
     },
     {
       "id": 1031,
-      "name": "Silver Family Anillo",
+      "name": "Anillo de plata Family",
       "name_en": "Silver Family Ring",
       "slot": "ring",
       "icon": 198,
@@ -7836,7 +7836,7 @@
     },
     {
       "id": 1032,
-      "name": "Blast Powder",
+      "name": "Pólvora de detonación",
       "name_en": "Blast Powder",
       "slot": "crafting",
       "icon": 262,
@@ -7849,7 +7849,7 @@
     },
     {
       "id": 1100,
-      "name": "Gravebloom",
+      "name": "Flor de tumba",
       "name_en": "Gravebloom",
       "slot": "relic",
       "icon": 256,
@@ -7862,7 +7862,7 @@
     },
     {
       "id": 1101,
-      "name": "Black Quill",
+      "name": "Pluma Black",
       "name_en": "Black Quill",
       "slot": "relic",
       "icon": 257,
@@ -7875,7 +7875,7 @@
     },
     {
       "id": 1102,
-      "name": "Knife de Sacrifices",
+      "name": "Cuchillo de Sacrifices",
       "name_en": "Knife of Sacrifices",
       "slot": "relic",
       "icon": 258,
@@ -7888,7 +7888,7 @@
     },
     {
       "id": 1103,
-      "name": "Vial de Your Blood",
+      "name": "Vial de Your de sangre",
       "name_en": "Vial of Your Blood",
       "slot": "relic",
       "icon": 259,
@@ -7901,7 +7901,7 @@
     },
     {
       "id": 1104,
-      "name": "Blood Inkwell",
+      "name": "Tintero de sangre",
       "name_en": "Blood Inkwell",
       "slot": "relic",
       "icon": 260,
@@ -7914,7 +7914,7 @@
     },
     {
       "id": 1105,
-      "name": "Labyrinth Llave de hierro",
+      "name": "Llave de hierro Labyrinth",
       "name_en": "Iron Labyrinth Key",
       "slot": "key",
       "icon": 226,
@@ -7927,7 +7927,7 @@
     },
     {
       "id": 1106,
-      "name": "Excavation Journal Pages",
+      "name": "Diario Páginas Excavation",
       "name_en": "Excavation Journal Pages",
       "slot": "book",
       "icon": 224,
@@ -7940,7 +7940,7 @@
     },
     {
       "id": 1107,
-      "name": "Excavation Journal Pages",
+      "name": "Diario Páginas Excavation",
       "name_en": "Excavation Journal Pages",
       "slot": "book",
       "icon": 224,
@@ -7953,7 +7953,7 @@
     },
     {
       "id": 1108,
-      "name": "Excavation Journal Pages",
+      "name": "Diario Páginas Excavation",
       "name_en": "Excavation Journal Pages",
       "slot": "book",
       "icon": 224,
@@ -7966,7 +7966,7 @@
     },
     {
       "id": 1109,
-      "name": "Excavation Journal Pages",
+      "name": "Diario Páginas Excavation",
       "name_en": "Excavation Journal Pages",
       "slot": "book",
       "icon": 224,
@@ -7979,7 +7979,7 @@
     },
     {
       "id": 1110,
-      "name": "Excavation Journal Pages",
+      "name": "Diario Páginas Excavation",
       "name_en": "Excavation Journal Pages",
       "slot": "book",
       "icon": 224,
@@ -7992,7 +7992,7 @@
     },
     {
       "id": 1111,
-      "name": "Excavation Journal Pages",
+      "name": "Diario Páginas Excavation",
       "name_en": "Excavation Journal Pages",
       "slot": "book",
       "icon": 224,
@@ -8005,7 +8005,7 @@
     },
     {
       "id": 1112,
-      "name": "Excavation Journal Pages",
+      "name": "Diario Páginas Excavation",
       "name_en": "Excavation Journal Pages",
       "slot": "book",
       "icon": 224,

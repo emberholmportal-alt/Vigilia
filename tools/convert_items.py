@@ -33,51 +33,120 @@ QUALITY_TO_RARITY = {
 # Equippable-visible slots (paperdoll), for the final report.
 VISIBLE_SLOTS = {"chest", "legs", "hands", "feet", "head", "main", "off"}
 
-# English material adjectives that go BEFORE the noun in English but AFTER it in
-# Spanish (e.g. "Cloth Shirt" -> "Camisa de tela"). Moved to the tail on output.
+# English material adjectives that go BEFORE the noun in English but right AFTER it
+# in Spanish (e.g. "Cloth Shirt" -> "Camisa de tela"). Placed first in the tail.
 MATERIAL_WORDS = {
     "Cloth", "Leather", "Chain", "Plate", "Iron", "Steel", "Wooden", "Wood",
+    "Wool", "Silk", "Velvet", "Mastite", "Silver", "Gold",
+}
+
+# English base nouns (the item type). These stay at the HEAD; everything else in the
+# name is a modifier that moves to the tail (Spanish word order).
+NOUN_WORDS = {
+    # armor
+    "Shirt", "Pants", "Vest", "Skirt", "Sleeves", "Robe", "Tunic", "Cuirass",
+    "Greaves", "Gauntlets", "Gloves", "Boots", "Sandals", "Steppers", "Helm",
+    "Helmet", "Hood", "Coif", "Cap", "Hat", "Crown", "Mask", "Cowl", "Wraps",
+    "Leathers", "Platemail", "Armguards", "Crest", "Tri-pants",
+    # weapons
+    "Dagger", "Knife", "Shortsword", "Longsword", "Greatsword", "Sword",
+    "Zweihander", "Blade", "Axe", "Hatchet", "Mace", "Battlemace", "Maul",
+    "Hammer", "Club", "Spear", "Bow", "Shortbow", "Longbow", "Greatbow",
+    "Sling", "Slingshot", "Crossbow", "Wand", "Rod", "Staff", "Greatstaff",
+    "Sceptre", "Battleaxe", "Battlemace",
+    # shields / accessories
+    "Buckler", "Shield", "Ring", "Amulet", "Necklace", "Pendant", "Cloak",
+    "Cape", "Belt", "Bracers", "Fleshband", "Soulband",
+    # consumables / misc
+    "Potion", "Scroll", "Book", "Spellbook", "Gem", "Key", "Elixir", "Tome",
+    "Journal", "Note", "Notes", "Pages", "Vial", "Bottle", "Quill", "Inkwell",
+    "Mortar", "Pestle", "Powder", "Dynamite", "Branch", "Totem", "Figurine",
+    "Chest", "Sapphire", "Ruby", "Emerald", "Crystal", "Mushrooms",
 }
 
 # Token-by-token translation dictionary (English -> Spanish rioplatense neutro).
 TRANSLATE = {
-    # materials
+    # materials (tail)
     "Cloth": "de tela", "Leather": "de cuero", "Chain": "de malla",
     "Plate": "de placas", "Iron": "de hierro", "Steel": "de acero",
-    "Wooden": "de madera", "Wood": "de madera",
-    # armor pieces
+    "Wooden": "de madera", "Wood": "de madera", "Wool": "de lana",
+    "Silk": "de seda", "Velvet": "de terciopelo", "Mastite": "de mastita",
+    "Silver": "de plata", "Gold": "de oro",
+    # armor pieces (head)
     "Shirt": "Camisa", "Pants": "Pantalones", "Vest": "Chaleco",
-    "Skirt": "Faldon", "Sleeves": "Mangas", "Robe": "Tunica",
+    "Skirt": "Faldón", "Sleeves": "Mangas", "Robe": "Túnica", "Tunic": "Túnica",
     "Cuirass": "Coraza", "Greaves": "Grebas", "Gauntlets": "Guanteletes",
     "Gloves": "Guantes", "Boots": "Botas", "Sandals": "Sandalias",
-    "Helm": "Yelmo", "Helmet": "Yelmo", "Hood": "Capucha", "Coif": "Cofia",
-    "Cap": "Gorro", "Hat": "Sombrero", "Crown": "Corona", "Mask": "Mascara",
-    # weapons - blades
-    "Dagger": "Daga", "Shortsword": "Espada corta", "Longsword": "Espada larga",
-    "Greatsword": "Espadon", "Sword": "Espada", "Zweihander": "Mandoble",
-    # weapons - blunt / axe
-    "Axe": "Hacha", "Hatchet": "Hacha de mano", "Mace": "Maza", "Maul": "Mazo",
+    "Steppers": "Zapatillas", "Helm": "Yelmo", "Helmet": "Yelmo",
+    "Hood": "Capucha", "Coif": "Cofia", "Cap": "Gorro", "Hat": "Sombrero",
+    "Crown": "Corona", "Mask": "Máscara", "Cowl": "Capirote", "Wraps": "Vendas",
+    "Leathers": "Cueros", "Platemail": "Cota de placas", "Armguards": "Brazaletes",
+    "Crest": "Cimera", "Tri-pants": "Pantalón triple",
+    # weapons - blades (head)
+    "Dagger": "Daga", "Knife": "Cuchillo", "Shortsword": "Espada corta",
+    "Longsword": "Espada larga", "Greatsword": "Espadón", "Sword": "Espada",
+    "Zweihander": "Mandoble", "Blade": "Hoja",
+    # weapons - blunt / axe (head)
+    "Axe": "Hacha", "Battleaxe": "Hacha de guerra", "Hatchet": "Hacha de mano",
+    "Mace": "Maza", "Battlemace": "Maza de guerra", "Maul": "Mazo",
     "Hammer": "Martillo", "Club": "Garrote", "Spear": "Lanza",
-    # ranged
+    # ranged (head)
     "Bow": "Arco", "Shortbow": "Arco corto", "Longbow": "Arco largo",
     "Greatbow": "Arco de guerra", "Sling": "Honda", "Slingshot": "Honda",
     "Crossbow": "Ballesta",
-    # magic
-    "Wand": "Varita", "Rod": "Vara", "Staff": "Baston", "Greatstaff": "Gran baston",
-    # shields
+    # magic (head)
+    "Wand": "Varita", "Rod": "Vara", "Staff": "Bastón", "Greatstaff": "Gran bastón",
+    "Sceptre": "Cetro",
+    # shields (head, except Kite modifier)
     "Buckler": "Broquel", "Shield": "Escudo", "Kite": "de cometa",
-    # accessories / misc wear
+    # accessories / misc wear (head)
     "Ring": "Anillo", "Amulet": "Amuleto", "Necklace": "Collar",
-    "Cloak": "Capa", "Cape": "Capa", "Belt": "Cinturon", "Bracers": "Brazales",
-    # consumables / misc
-    "Potion": "Pocion", "Scroll": "Pergamino", "Book": "Libro", "Gem": "Gema",
-    "Key": "Llave", "Elixir": "Elixir", "Tome": "Tomo",
-    # connective words / affixes
-    "of": "de", "the": "el", "Health": "de vida", "Mana": "de mana",
-    "Healing": "de curacion",
-    # sets
+    "Pendant": "Colgante", "Cloak": "Capa", "Cape": "Capa", "Belt": "Cinturón",
+    "Bracers": "Brazales", "Fleshband": "Banda de carne", "Soulband": "Banda de alma",
+    # consumables / misc (head)
+    "Potion": "Poción", "Scroll": "Pergamino", "Book": "Libro",
+    "Spellbook": "Libro de hechizos", "Gem": "Gema", "Key": "Llave",
+    "Elixir": "Elixir", "Tome": "Tomo", "Journal": "Diario", "Note": "Nota",
+    "Notes": "Notas", "Pages": "Páginas", "Vial": "Vial", "Bottle": "Botella",
+    "Quill": "Pluma", "Inkwell": "Tintero", "Mortar": "Mortero", "Pestle": "maja",
+    "Powder": "Pólvora", "Dynamite": "Dinamita", "Branch": "Rama", "Totem": "Tótem",
+    "Figurine": "Figurilla", "Chest": "Cofre",
+    # gems (head)
+    "Sapphire": "Zafiro", "Ruby": "Rubí", "Emerald": "Esmeralda", "Crystal": "Cristal",
+    # potion / property words (tail)
+    "Health": "de vida", "Mana": "de maná", "Healing": "de curación",
+    "Stamina": "de aguante", "Restoration": "de restauración", "Elemental": "elemental",
+    "Super": "súper", "Ultra": "ultra",
+    # element affixes (tail)
+    "Fire": "de fuego", "Ice": "de hielo", "Lightning": "del rayo",
+    "Dark": "de las sombras", "Frost": "de escarcha", "Blood": "de sangre",
+    "Burn": "de quemadura", "Electric": "eléctrico", "Shadow": "de sombra",
+    "Inferno": "del infierno", "Blaze": "de llamas", "Freeze": "de congelación",
+    "Shock": "de descarga", "Gloom": "de penumbra", "Glacial": "glacial",
+    "Volt": "de voltaje", "Void": "del vacío",
+    # purpose affixes (tail)
+    "Experience": "de experiencia", "Wealth": "de riqueza", "Treasure": "del tesoro",
+    "Knowledge": "de conocimiento", "Prosperity": "de prosperidad", "Loot": "de botín",
+    "Greed": "de codicia", "Affluence": "de opulencia", "Intellectual": "del intelecto",
+    "Lucrative": "lucrativo", "Fireball": "de bola de fuego", "Bolt": "de descarga",
+    "Haste": "de premura", "Immunity": "de inmunidad", "Reflection": "de reflejo",
+    # set / tier prefixes (tail)
+    "Fighting": "de combate", "Recon": "de reconocimiento", "Sorcerer": "de hechicero",
+    "Warrior": "de guerrero", "Ranger": "de montaraz", "Wandering": "errante",
+    "Adventurer": "de aventurero", "Master": "del maestro", "Wizard": "de mago",
+    "Mage": "de mago", "Paladin": "de paladín", "Templar": "de templario",
+    "Scholar": "de erudito", "Huntsman": "de cazador", "Guardsman": "de guardia",
+    "Worn": "desgastado", "Battle": "de batalla", "Keeper": "del guardián",
+    "Strange": "extraño",
+    # named sets (tail)
     "Warlord": "del Caudillo", "Sniper": "del Francotirador",
     "Archwizard": "del Archimago",
+    # crafting / consumable extras
+    "Empty": "vacía", "Mushrooms": "Hongos", "Aloe": "Aloe", "Vera": "Vera",
+    "Gravebloom": "Flor de tumba", "Blast": "de detonación",
+    "Bear": "de oso", "Owl": "de búho", "Cat": "de gato", "Turtle": "de tortuga",
+    # connective words
+    "of": "de", "the": "el", "and": "y",
 }
 
 
@@ -181,18 +250,48 @@ def to_int(value, default=0):
 
 
 def translate_name(name_en):
-    """Translate an item name token by token; unknown tokens are kept as-is.
-    Leading material adjectives ("Cloth", "Plate", ...) are moved after the noun,
-    so "Cloth Shirt" -> "Camisa de tela" (Spanish word order)."""
-    head = []
-    tail = []
-    for token in name_en.split():
-        translated = TRANSLATE.get(token, token)
-        if token in MATERIAL_WORDS:
-            tail.append(translated)
+    """Translate an item name into Spanish with proper word order. The base noun
+    stays first (head); materials come right after it, then every other modifier
+    (elements, sets, tiers) — so "Health Potion" -> "Poción de vida" and
+    "Warlord Cloth Shirt" -> "Camisa de tela del Caudillo". Possessives ("Krolan's")
+    and "of [the] X" become "de[l] X". Unknown tokens are kept as-is."""
+    if not name_en:
+        return name_en
+    head, mat_tail, tail = [], [], []
+    tokens = name_en.split()
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok == "the":
+            i += 1
+            continue
+        if tok == "of":
+            j = i + 1
+            art = ""
+            if j < len(tokens) and tokens[j] == "the":
+                art = "l"
+                j += 1
+            if j < len(tokens):
+                nxt = TRANSLATE.get(tokens[j], tokens[j])
+                tail.append(nxt if nxt.startswith("de") else ("de%s " % art) + nxt)
+                i = j + 1
+                continue
+            i += 1
+            continue
+        if tok.endswith("'s"):
+            base = tok[:-2]
+            tail.append("de " + TRANSLATE.get(base, base))
+            i += 1
+            continue
+        trans = TRANSLATE.get(tok, tok)
+        if tok in NOUN_WORDS:
+            head.append(trans)
+        elif tok in MATERIAL_WORDS:
+            mat_tail.append(trans)
         else:
-            head.append(translated)
-    return " ".join(head + tail)
+            tail.append(trans)
+        i += 1
+    return " ".join(head + mat_tail + tail).strip()
 
 
 def load_layers(assets_path):
