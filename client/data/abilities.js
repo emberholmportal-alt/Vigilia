@@ -35,6 +35,17 @@ export const ABILITIES = [
   // Mago — Restaurar: recupera vida escalada por INT (utilidad de la vía arcana).
   { id: 'restaurar', branch: 'mago', attr: 'int', req: 16, mp: 20, cd: 10, icon: 64,
     kind: 'heal', base: 30, intMul: 1.4 },
+
+  // --- vía 3 (req 20): el "ultimate" de cada rama ---
+  // Guerrero — Cercenar: molinete devastador que te cura una fracción del daño (robo de vida).
+  { id: 'cercenar', branch: 'guerrero', attr: 'str', req: 20, mp: 26, cd: 12, icon: 118,
+    kind: 'melee_aoe', radius: 3.4, dmgMul: 2.4, lifesteal: 0.25 },
+  // Cazador — Andanada: volea brutal en gran área sobre el objetivo (crítico).
+  { id: 'andanada', branch: 'cazador', attr: 'dex', req: 20, mp: 24, cd: 11, icon: 100,
+    kind: 'area_phys', radius: 3.2, dmgMul: 1.9 },
+  // Mago — Meteoro: estallido enorme; daño base alto + INT, en gran área.
+  { id: 'meteoro', branch: 'mago', attr: 'int', req: 20, mp: 32, cd: 14, icon: 107,
+    kind: 'fireball', radius: 3.2, base: 42, intMul: 1.7 },
 ]
 
 export const ABILITY_BY_ID = Object.fromEntries(ABILITIES.map((a) => [a.id, a]))

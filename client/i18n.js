@@ -245,6 +245,12 @@ const DICT = {
   abd_lluvia: { es: 'Volea que cae en área sobre el objetivo.', en: 'A volley that falls over the target area.' },
   ab_restaurar: { es: 'Restaurar', en: 'Restore' },
   abd_restaurar: { es: 'Recuperás vida escalada por tu INT.', en: 'Recover health scaled by your INT.' },
+  ab_cercenar: { es: 'Cercenar', en: 'Reap' },
+  abd_cercenar: { es: 'Molinete devastador que te cura parte del daño infligido.', en: 'A devastating spin that heals you for part of the damage dealt.' },
+  ab_andanada: { es: 'Andanada', en: 'Volley' },
+  abd_andanada: { es: 'Volea brutal que cae en gran área sobre el objetivo.', en: 'A brutal volley over a wide area at the target.' },
+  ab_meteoro: { es: 'Meteoro', en: 'Meteor' },
+  abd_meteoro: { es: 'Estallido enorme de fuego por INT, en gran área.', en: 'A huge fiery burst scaled by INT, over a wide area.' },
   // quests narrativas / registro
   tab_daily: { es: 'Diarias', en: 'Daily' },
   tab_story: { es: 'Historia', en: 'Story' },

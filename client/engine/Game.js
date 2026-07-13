@@ -883,13 +883,21 @@ export class Game {
 
     if (ab.kind === 'melee_aoe') {
       p.attack('swing'); playSfx('swing.ogg')
-      this._castRing(p.view.x, p.view.y - 20, 0xffcf6a)
+      this._castRing(p.view.x, p.view.y - 20, ab.lifesteal ? 0xd05a5a : 0xffcf6a)
+      let dealt = 0
       for (const e of this.enemies) {
         if (e.dead) continue
         if (Math.abs(e.tx - p.tx) + Math.abs(e.ty - p.ty) > ab.radius) continue
         const dmg = Math.max(1, Math.round(this._abilityRoll() * ab.dmgMul))
+        dealt += dmg
         this._floatText(e.view.x, e.view.y + e._hpY, `¡${dmg}!`, '#ff9a3a')
         if (e.takeDamage(dmg)) this._enemyKilled(e)
+      }
+      // Robo de vida (ultimate del guerrero): te curás una fracción del daño total infligido.
+      if (ab.lifesteal && dealt > 0) {
+        const heal = Math.max(1, Math.round(dealt * ab.lifesteal))
+        this.store.heal(heal)
+        this._floatText(p.view.x, p.view.y - 60, `+${heal}`, '#9fe0a0')
       }
       if (Math.random() < 0.5) this.store.degradeGear('weapon', 1)
     } else if (ab.kind === 'bolt') {
