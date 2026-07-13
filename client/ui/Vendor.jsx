@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useGameStore, equipSlotFor, sellValue } from '../store.js'
 import { RARITY_COLOR } from '../data/items.js'
-import { armorDefense } from '../data/stats.js'
+import { armorDefense, itemAffinity } from '../data/stats.js'
 import ItemIcon from './ItemIcon.jsx'
 import { useT } from './useT.js'
 
@@ -65,11 +65,10 @@ export default function Vendor() {
         {list.map((it, i) => {
           const col = i % GRID.cols, row = (i / GRID.cols) | 0
           const x = GRID.x + col * SLOT, y = GRID.y + row * SLOT
-          const soldOut = tab === 'buy' && it && (it.stock | 0) <= 0
           return (
-            <button key={i} className={'inv-cell' + (sel === i ? ' on' : '') + (soldOut ? ' locked' : '')}
+            <button key={i} className={'inv-cell' + (sel === i ? ' on' : '')}
                     style={slotStyle(x, y)} onClick={() => it && setSel(i)}>
-              {it && <ItemIcon icon={it.icon} size={34} count={tab === 'buy' ? it.stock : it.count} />}
+              {it && <ItemIcon icon={it.icon} size={34} count={tab === 'buy' ? undefined : it.count} />}
             </button>
           )
         })}
@@ -97,24 +96,23 @@ function Tooltip({ item, mode, gold, pos, onAction, t }) {
   else { style.left = (cx * 100) + '%'; style.transform = 'translateX(-50%)' }
   const price = item.price || 0
   const gain = sellValue(item)
-  const soldOut = mode === 'buy' && (item.stock | 0) <= 0
-  const canBuy = mode === 'buy' ? (gold >= price && !soldOut) : true
+  const canBuy = mode === 'buy' ? gold >= price : true
   const stats = Object.entries(item.stats || {})
   return (
     <div className="inv-tooltip" style={style} onClick={(e) => e.stopPropagation()}>
       <b style={{ color: RARITY_COLOR[item.rarity] }}>{t.item(item)}</b>
       <span className="tt-sub">{t.rarity(item.rarity)}{item.tier ? ` · ${t('level_n', { n: item.tier })}` : ''}</span>
       <span className="tt-sub">{t.slot(item.slot)}</span>
+      {itemAffinity(item) && <span className="tt-sub aff">{t('affinity', { race: t('race_' + itemAffinity(item)) })}</span>}
       {armorDefense(item) > 0 && !hasAbsorb(item) && (
         <div className="tt-stat"><span>{t('stat_def')}</span><span>{armorDefense(item)}</span></div>
       )}
       {stats.map(([k, v]) => (
         <div className="tt-stat" key={k}><span>{t.stat(k)}</span><span>{v}</span></div>
       ))}
-      {mode === 'buy' && <div className="tt-sub">{soldOut ? t('sold_today') : t('in_stock', { n: item.stock })}</div>}
       <div className="tt-price">{mode === 'buy' ? `${price} ${t('gold')}` : `+${gain} ${t('gold')}`}</div>
       <button className="tt-do" onClick={onAction} disabled={!canBuy}>
-        {mode === 'buy' ? (soldOut ? t('sold_out') : canBuy ? t('buy') : t('no_gold')) : t('sell')}
+        {mode === 'buy' ? (canBuy ? t('buy') : t('no_gold')) : t('sell')}
       </button>
     </div>
   )

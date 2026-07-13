@@ -26,15 +26,16 @@ export function todayStr() {
   return new Date().toISOString().slice(0, 10) // YYYY-MM-DD (día del servidor a futuro)
 }
 
-// Devuelve ~24 ítems reales para vender hoy: siempre unas pociones + equipo de tier bajo/medio,
-// barajado de forma estable por la fecha.
+// Mercado del día: MISMO catálogo para todos los jugadores (barajado determinístico por la
+// fecha, como el "mercado global" de un MMO). Rota cada día. Sin límite de stock: todos ven y
+// pueden comprar los mismos ítems (el límite por-usuario no tenía sentido sin servidor).
 export function dailyStock(dateStr = todayStr()) {
   const rng = mulberry32(hashStr('vigilia-' + dateStr))
   const pool = ITEMS.filter((it) => (it.price || 0) > 0 && it.slot && SELLABLE.has(it.slot))
 
-  const potions = pool.filter((it) => it.slot === 'potion').slice(0, 3)
+  const potions = pool.filter((it) => it.slot === 'potion').slice(0, 4)
 
-  const gear = pool.filter((it) => it.slot !== 'potion' && (it.tier || 1) <= 8)
+  const gear = pool.filter((it) => it.slot !== 'potion' && (it.tier || 1) <= 10)
   for (let i = gear.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
     ;[gear[i], gear[j]] = [gear[j], gear[i]]
@@ -43,11 +44,6 @@ export function dailyStock(dateStr = todayStr()) {
   const seen = new Set()
   // Cinturones, Piedras de Retorno y Botellas Vacías siempre disponibles (utilidad básica).
   const staples = [RECALL_STONE, ...(EMPTY_BOTTLE ? [EMPTY_BOTTLE] : []), ...BELTS]
-  const list = [...potions, ...staples, ...gear.slice(0, 20)].filter((it) => !seen.has(it.id) && seen.add(it.id)).slice(0, 26)
-  // Stock limitado por día (determinístico por fecha+ítem). Consumibles básicos traen más.
-  return list.map((it) => {
-    const base = it.slot === 'potion' ? 5 : it.id === 750 ? 8 : it.recall ? 4 : 1
-    const extra = hashStr(dateStr + ':' + it.id) % 4 // 0..3
-    return { ...it, stock: base + extra }
-  })
+  // Catálogo más amplio para dar variedad al mercado compartido.
+  return [...potions, ...staples, ...gear.slice(0, 28)].filter((it) => !seen.has(it.id) && seen.add(it.id)).slice(0, 36)
 }

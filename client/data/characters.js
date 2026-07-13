@@ -1,7 +1,7 @@
 // Razas y kit inicial. Los modificadores salen de docs/WORLD.md. El equipamiento
 // inicial es distinto por raza (WORLD.md: "Diferenciá con equipamiento inicial
 // distinto") y usa ítems REALES de Flare, elegidos por su capa de paperdoll (gfx).
-import { itemByGfx, itemsBySlot } from './items.js'
+import { itemByGfx, itemsBySlot, RECALL_STONE } from './items.js'
 
 export const RACES = [
   {
@@ -38,14 +38,15 @@ export const raceById = (id) => RACES.find((r) => r.id === id)
 
 // Ítems variados (reales) que van al inventario para poder equipar y ver el paperdoll
 // cambiar. Elegidos por gfx; los que no tengan ítem se ignoran.
-const INVENTORY_SAMPLER = [
-  'plate_cuirass', 'plate_greaves', 'plate_gauntlets', 'plate_boots', 'plate_helm',
-  'chain_cuirass', 'chain_coif', 'leather_hood',
-  'greatsword', 'zweihander', 'infantry_axe', 'greatstaff', 'staff',
-  'kite_shield', 'iron_buckler',
-]
+// Un extra útil por raza en el inventario inicial (algo afín a su rol), NADA de un arsenal.
+const STARTER_EXTRA = {
+  humano: 'iron_buckler',   // guardia con escudo de repuesto
+  elfo: 'staff',            // hechicero con un bastón alternativo
+  enano: 'chain_coif',      // guardián con una pieza extra de malla
+  orco: 'infantry_axe',     // bruto con un hacha de repuesto
+}
 
-// Arma el personaje inicial para una raza: equipo puesto + inventario con opciones + oro.
+// Arma el personaje inicial para una raza: equipo puesto + pocas cosas más + oro.
 export function startingCharacter(raceId) {
   const race = raceById(raceId) || RACES[0]
 
@@ -56,14 +57,14 @@ export function startingCharacter(raceId) {
     if (it) { equipment[slot] = it; usedIds.add(it.id) }
   }
 
+  // Inventario mínimo: sólo UN extra afín a la raza + una Piedra de Retorno para aprender
+  // el viaje. El resto se consigue jugando (loot, tienda, forja).
   const inventory = []
-  for (const gfx of INVENTORY_SAMPLER) {
-    const it = itemByGfx(gfx)
-    if (it && !usedIds.has(it.id)) { inventory.push(it); usedIds.add(it.id) }
-  }
+  const extra = itemByGfx(STARTER_EXTRA[race.id])
+  if (extra && !usedIds.has(extra.id)) { inventory.push(extra); usedIds.add(extra.id) }
+  inventory.push({ ...RECALL_STONE, count: 1 })
 
-  // Cinturón inicial: 2 slots (sin cinturón equipado). Una poción de vida y una de maná;
-  // se compran cinturones más grandes al mercader para tener más espacio.
+  // Cinturón inicial: 2 slots (sin cinturón equipado). Una poción de vida y una de maná.
   const potions = itemsBySlot('potion')
   const health = potions.find((p) => /health|vida/i.test(p.name_en + p.name))
   const mana = potions.find((p) => /mana|maná/i.test(p.name_en + p.name))
@@ -73,5 +74,5 @@ export function startingCharacter(raceId) {
     null, null,
   ]
 
-  return { race, gold: 250, equipment, inventory, belt }
+  return { race, gold: 200, equipment, inventory, belt }
 }

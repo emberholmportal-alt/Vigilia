@@ -64,11 +64,16 @@ export default function HUD() {
           <span className="dim2">{mapTitle}</span>
         </div>
         <div className="hud-right">
-          <button className="hud-missions" onClick={openMissions} title={t('missions_menu')}>
-            📜
-            {(() => { const c = (missions || []).filter((m) => m.progress >= m.target && !m.claimed).length
-              return c > 0 ? <span className="hud-badge">{c}</span> : null })()}
-          </button>
+          {(() => {
+            const claimable = (missions || []).filter((m) => m.progress >= m.target && !m.claimed).length
+            return (
+              <button className={'hud-missions' + (claimable > 0 ? ' ready' : '')} onClick={openMissions} title={t('missions_menu')}>
+                <span className="hud-missions-ic">📜</span>
+                <span className="hud-missions-lbl">{t('missions_menu')}</span>
+                {claimable > 0 ? <span className="hud-badge">{claimable}</span> : null}
+              </button>
+            )
+          })()}
           <div className="hud-gold"><span className="ab-coin" /> {gold}</div>
         </div>
       </div>

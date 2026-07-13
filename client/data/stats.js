@@ -22,11 +22,39 @@ const broken = (it) => it && it.dur != null && it.dur <= 0
 // para que TODA la armadura sume defensa que crece con el tier. El torso protege más; guantes
 // y botas, menos. El escudo (off) también aporta.
 const ARMOR_SLOT = { chest: [2, 1.7], legs: [1, 1.4], head: [1, 1.2], off: [1, 1.5], feet: [0, 1.0], hands: [0, 0.9] }
+// Nivel de forja (mejora en el herrero): sube defensa/daño de la pieza.
+export const upgradeLevel = (it) => (it && it.upgrade) || 0
 export function armorDefense(item) {
   if (!item || broken(item)) return 0
   const w = ARMOR_SLOT[item.slot]
   if (!w) return 0
-  return Math.round(w[0] + (item.tier || 1) * w[1])
+  return Math.round(w[0] + (item.tier || 1) * w[1]) + upgradeLevel(item) * 2
+}
+
+// Afinidad racial de un ítem (por su familia de gfx de Flare): la raza afín lo aprovecha
+// mejor. Da un bonus cuando la porta la raza correcta (se aplica en computeStats).
+export function itemAffinity(item) {
+  const g = (item && item.gfx) || ''
+  if (/mage_|wand|staff/.test(g)) return 'elfo'
+  if (/chain_|plate_/.test(g)) return 'enano'
+  if (/leather_|_axe|axe$|hammer/.test(g)) return 'orco'
+  if (/buckler|kite_shield|longsword|shortsword|broadsword|dagger|bow|sling/.test(g)) return 'humano'
+  return null
+}
+// Bonus total por afinidad de las piezas equipadas que coinciden con la raza.
+function affinityBonus(raceId, equipment) {
+  const b = { absorb: 0, dmgMul: 1, hp: 0, mp: 0 }
+  if (!equipment) return b
+  for (const sl of Object.keys(equipment)) {
+    const it = equipment[sl]
+    if (!it || broken(it) || itemAffinity(it) !== raceId) continue
+    if (ARMOR_SLOT[it.slot]) b.absorb += Math.round(armorDefense(it) * 0.25)
+    if (it.slot === 'main') b.dmgMul += 0.15
+    if (raceId === 'enano') b.hp += 6
+    else if (raceId === 'elfo') b.mp += 5
+  }
+  b.absorb = Math.round(b.absorb)
+  return b
 }
 
 // Suma los bonus de todos los ítems equipados.
@@ -73,11 +101,15 @@ export function weaponKind(equipment) {
 export function weaponDamage(equipment) {
   const main = equipment && equipment.main
   const w = main && !broken(main) && main.stats
-  if (!w) return { min: 2, max: 5 }
-  if (w.dmg_ranged_max) return { min: w.dmg_ranged_min || w.dmg_ranged_max, max: w.dmg_ranged_max }
-  if (w.dmg_ment_max) return { min: w.dmg_ment_min || w.dmg_ment_max, max: w.dmg_ment_max }
-  if (w.dmg_melee_max) return { min: w.dmg_melee_min || w.dmg_melee_max, max: w.dmg_melee_max }
-  return { min: 2, max: 5 }
+  const up = upgradeLevel(main)
+  const base = (() => {
+    if (!w) return { min: 2, max: 5 }
+    if (w.dmg_ranged_max) return { min: w.dmg_ranged_min || w.dmg_ranged_max, max: w.dmg_ranged_max }
+    if (w.dmg_ment_max) return { min: w.dmg_ment_min || w.dmg_ment_max, max: w.dmg_ment_max }
+    if (w.dmg_melee_max) return { min: w.dmg_melee_min || w.dmg_melee_max, max: w.dmg_melee_max }
+    return { min: 2, max: 5 }
+  })()
+  return { min: base.min + up, max: base.max + up }
 }
 
 export function computeStats(raceId, level = 1, equipment = null) {
@@ -87,11 +119,12 @@ export function computeStats(raceId, level = 1, equipment = null) {
   const int = BASE.int + (r.int || 0)
   const vit = BASE.vit + (r.vit || 0)
   const e = equipBonus(equipment)
+  const aff = affinityBonus(raceId, equipment)   // bonus si la raza porta equipo afín
   const lv = Math.max(1, level | 0)
 
-  // Vida/maná: base por atributo + crecimiento por nivel + bonus plano del equipo.
-  const hpMax = Math.round(40 + vit * 4 + (r.hpFlat || 0) + (lv - 1) * 8 + e.hp)
-  const mpMax = Math.round((15 + int * 3 + (r.mpFlat || 0)) * (r.mpMul || 1) + (lv - 1) * 3 + e.mp)
+  // Vida/maná: base por atributo + crecimiento por nivel + bonus plano del equipo + afinidad.
+  const hpMax = Math.round(40 + vit * 4 + (r.hpFlat || 0) + (lv - 1) * 8 + e.hp + aff.hp)
+  const mpMax = Math.round((15 + int * 3 + (r.mpFlat || 0)) * (r.mpMul || 1) + (lv - 1) * 3 + e.mp + aff.mp)
   const staminaMax = Math.round(90 + vit * 6)
   const wd = weaponDamage(equipment)
 
@@ -101,13 +134,13 @@ export function computeStats(raceId, level = 1, equipment = null) {
     hp: hpMax, hpMax,
     mp: mpMax, mpMax,
     staminaMax,
-    defense: e.absorb,              // reduce el daño recibido
+    defense: e.absorb + aff.absorb, // reduce el daño recibido (+ afinidad)
     hpRegen: e.hpRegen, mpRegen: e.mpRegen,
     crit: e.crit, accuracy: e.accuracy, avoidance: e.avoidance,
     fireResist: e.fireResist, iceResist: e.iceResist,
     dmgMin: wd.min, dmgMax: wd.max, // daño del arma
     weaponKind: weaponKind(equipment), // melee / ranged / mental (define ataque a distancia)
-    dmgMul: r.dmgMul || 1,
+    dmgMul: (r.dmgMul || 1) * aff.dmgMul,
     speedMul: r.speedMul || 1,
     xpMul: (r.xpMul || 1) * (1 + e.xpGain / 100),
   }

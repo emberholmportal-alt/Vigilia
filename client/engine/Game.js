@@ -523,12 +523,17 @@ export class Game {
 
     const roll = rollLoot(chest.loot)
     if (roll.gold > 0) this.store.addGold(roll.gold)
+    this._dropItems(chest.x, chest.y, roll.drops)
+  }
 
-    const tiles = this._scatterTiles(chest.x, chest.y, roll.drops.length)
-    roll.drops.forEach((d, i) => {
+  // Desparrama ítems (como objetos reales) en tiles caminables alrededor de (cx,cy).
+  _dropItems(cx, cy, drops) {
+    if (!drops || !drops.length) return
+    const tiles = this._scatterTiles(cx, cy, drops.length)
+    drops.forEach((d, i) => {
       const item = itemById(d.id)
       if (!item) return
-      const [tx, ty] = tiles[i] || [chest.x, chest.y]
+      const [tx, ty] = tiles[i] || [cx, cy]
       const gi = new GroundItem(this.iso, tx, ty, item, d.qty, RARITY_COLOR[item.rarity])
       gi.onTap((g) => { this.player.walkTo(g.tx, g.ty) }) // caminar hacia él; se recoge al pasar
       this.renderer.objectLayer.addChild(gi.view)
@@ -658,7 +663,7 @@ export class Game {
         const e = new Enemy(manifest, {
           sprite, x: tile.x, y: tile.y, level,
           hpMax: st.hpMax, damage: st.damage, xp: st.xp, gold: st.gold, name: enemyName(sprite),
-          ranged, projKind: projectileKind(sprite),
+          ranged, projKind: projectileKind(sprite), boss: st.boss,
         }, this.iso, grid)
         const ok = await e.load()
         if (this.destroyed) return
@@ -753,10 +758,25 @@ export class Game {
   _enemyKilled(e) {
     this.store.addSkillXp('combate', e.def.xp)
     this.store.addXp(e.def.xp)
-    this.store.addGold(e.def.gold)
     this.store.missionProgress('kill', 1)
     this._floatText(e.view.x, e.view.y + e._hpY, `+${e.def.xp} XP`, '#9fe0ff')
-    this.store.logMessage({ channel: 'sistema', text: tt('defeated', { name: enemyName(e.def.sprite, getLang()), xp: e.def.xp, gold: e.def.gold }) })
+    this.store.logMessage({ channel: 'sistema', text: tt('defeated', { name: enemyName(e.def.sprite, getLang()) }) })
+
+    // Botín aleatorio según dificultad: los jefes casi siempre sueltan; los comunes, a veces.
+    const boss = !!e.def.boss, lvl = Math.max(1, Math.min(16, e.level || 1))
+    // Oro: cae parcial, más seguido en jefes.
+    if (Math.random() < (boss ? 1 : 0.55)) {
+      const g = Math.max(1, Math.round(e.def.gold * (0.35 + Math.random() * 0.6)))
+      this.store.addGold(g)
+      this._floatText(e.view.x, e.view.y + e._hpY - 16, `+${g}`, '#e6c85a')
+    }
+    // Ítems: caen a veces (jefes casi seguro), de la tabla del nivel, limitados a 1-3.
+    const itemChance = boss ? 0.85 : Math.min(0.4, 0.12 + lvl * 0.02)
+    if (Math.random() < itemChance) {
+      const roll = rollLoot('chest_level_' + lvl)
+      const drops = roll.drops.slice(0, boss ? 3 : 1)
+      this._dropItems(Math.round(e.tx), Math.round(e.ty), drops)
+    }
     if (this._target === e) this._target = null
   }
 

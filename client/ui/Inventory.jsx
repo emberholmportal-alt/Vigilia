@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useGameStore, equipSlotFor, beltEligible } from '../store.js'
 import { RARITY_COLOR, isDurable, durabilityMax } from '../data/items.js'
 import { inventoryCapacity } from '../data/progression.js'
-import { armorDefense } from '../data/stats.js'
+import { armorDefense, upgradeLevel, itemAffinity } from '../data/stats.js'
 import ItemIcon from './ItemIcon.jsx'
 import { useT } from './useT.js'
 
@@ -133,9 +133,10 @@ function Tooltip({ item, pos, compareTo, actionLabel, onAction, onBelt, onEquipB
   else { style.left = (cx * 100) + '%'; style.transform = 'translateX(-50%)' }
   return (
     <div className="inv-tooltip" style={style} onClick={(e) => e.stopPropagation()}>
-      <b style={{ color: RARITY_COLOR[item.rarity] }}>{t.item(item)}</b>
+      <b style={{ color: RARITY_COLOR[item.rarity] }}>{t.item(item)}{upgradeLevel(item) ? ` +${upgradeLevel(item)}` : ''}</b>
       <span className="tt-sub">{t.rarity(item.rarity)}{item.tier ? ` · ${t('level_n', { n: item.tier })}` : ''}</span>
       <span className="tt-sub">{t.slot(item.slot)}</span>
+      {itemAffinity(item) && <span className="tt-sub aff">{t('affinity', { race: t('race_' + itemAffinity(item)) })}</span>}
       {armorDefense(item) > 0 && !hasAbsorb(item) && (
         <div className="tt-stat"><span>{t('stat_def')}</span><span>{armorDefense(item)}</span></div>
       )}

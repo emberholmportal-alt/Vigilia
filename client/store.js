@@ -5,7 +5,9 @@
 // vía onEquipmentChange. Cuando llegue el servidor autoritativo (regla 2), equip()
 // pasará a pedirle al server y aplicar su respuesta.
 import { create } from 'zustand'
-import { computeStats } from './data/stats.js'
+import { computeStats, upgradeLevel } from './data/stats.js'
+
+const FORGE_MAX = 5   // nivel máximo de mejora por pieza
 import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
 import { tt, setLangGlobal, itemName, raceName } from './i18n.js'
@@ -347,6 +349,40 @@ export const useGameStore = create((set, get) => ({
     return { ok: true }
   },
 
+  // --- forja: mejorar equipo con Cristal de maná (excavación) + oro (skill forja) ---
+  // Costo de mejorar una pieza: cristales + oro, crece con el nivel de forja actual.
+  upgradeCost: (it) => {
+    const up = upgradeLevel(it)
+    return { crystals: 2 + up, gold: 60 + (it.tier || 1) * 10 + up * 50, max: up >= FORGE_MAX }
+  },
+  // Mejora la pieza del slot dado: +1 a su nivel de forja (más defensa/daño). Gasta materiales.
+  upgradeGear: (slot) => {
+    const s = get()
+    const it = s.equipment[slot]
+    if (!isDurable(it)) return { ok: false }
+    const up = upgradeLevel(it)
+    if (up >= FORGE_MAX) { get().showToast(tt('forge_max')); return { ok: false } }
+    const c = get().upgradeCost(it)
+    const haveCrystal = get().countItem(752)
+    if (haveCrystal < c.crystals) { get().showToast(tt('forge_need_crystals', { n: c.crystals })); return { ok: false } }
+    if (s.gold < c.gold) { get().showToast(tt('forge_need_gold', { n: c.gold })); return { ok: false } }
+    // consumir cristales del inventario
+    let left = c.crystals
+    const inv = s.inventory.slice()
+    for (let i = 0; i < inv.length && left > 0; i++) {
+      const x = inv[i]; if (!x || x.id !== 752) continue
+      const take = Math.min(x.count || 1, left); left -= take
+      inv[i] = (x.count || 1) - take > 0 ? { ...x, count: (x.count || 1) - take } : null
+    }
+    const eq = { ...s.equipment, [slot]: { ...it, upgrade: up + 1 } }
+    set({ inventory: inv, equipment: eq, gold: s.gold - c.gold })
+    get().addSkillXp('forja', 16)
+    get().recomputeStats()
+    get().showToast(tt('forge_done', { name: itemName(it), n: up + 1 }))
+    saveGame(get())
+    return { ok: true }
+  },
+
   // --- audio ---
   muted: false,
   toggleMute: () => set((s) => { const m = !s.muted; setMuted(m); return { muted: m } }),
@@ -571,19 +607,17 @@ export const useGameStore = create((set, get) => ({
     return { ok: true }
   },
 
-  // Compra un ítem del stock (precio completo). El stock del día se agota al comprar.
+  // Compra un ítem del mercado del día (precio completo). Sin límite de stock: el catálogo es
+  // compartido y todos pueden comprar los mismos ítems mientras tengan oro.
   buyItem: (stockIndex) => {
     const s = get()
     const item = s.shopStock[stockIndex]
     if (!item) return { ok: false, reason: 'no-item' }
-    if ((item.stock | 0) <= 0) return { ok: false, reason: 'sold-out' }
     const price = item.price || 0
     if (s.gold < price) return { ok: false, reason: 'no-gold' }
     const clean = { ...item }; delete clean.stock
     if (!get().addItem(clean, 1)) return { ok: false, reason: 'full' }
-    const shopStock = s.shopStock.slice()
-    shopStock[stockIndex] = { ...item, stock: item.stock - 1 }
-    set({ gold: get().gold - price, shopStock })
+    set({ gold: get().gold - price })
     saveGame(get())
     return { ok: true }
   },
