@@ -5,8 +5,20 @@
 
 import { Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js'
 import { screenVecToDir } from './Paperdoll.js'
+import { playSfx } from './audio.js'
 
 const BASE = import.meta.env.BASE_URL || '/'
+
+// Familia de sonido según el sprite del enemigo (tenemos hit/die por familia).
+function enemySfxType(sprite) {
+  if (/skeleton/.test(sprite)) return 'skeleton'
+  if (/zombie/.test(sprite)) return 'zombie'
+  if (/ant|antlion/.test(sprite)) return 'antlion'
+  if (/minotaur/.test(sprite)) return 'minotaur'
+  if (/wyvern/.test(sprite)) return 'wyvern'
+  if (/grave/.test(sprite)) return 'grave'
+  return 'goblin'
+}
 
 const AGGRO = 6.5           // tiles: rango en que despierta y persigue
 const ATTACK_RANGE = 1.5    // tiles: alcance del golpe
@@ -29,6 +41,7 @@ export class Enemy {
     this.hp = def.hpMax
     this.damage = def.damage
 
+    this._sfx = enemySfxType(def.sprite)
     this.state = 'idle'
     this.dead = false
     this.remove = false
@@ -85,8 +98,10 @@ export class Enemy {
       this._startAnim('die'); this.state = 'dead'; this.dead = true; this._deathT = this._animS('die')
       this.view.eventMode = 'none'; this.view.cursor = 'default'  // el cadáver no intercepta clicks al suelo
       this.hpBar.visible = false
+      playSfx(this._sfx + '_die.ogg')
       return true
     }
+    playSfx(this._sfx + '_hit.ogg')
     // reacción de dolor (no interrumpe si ya está muriendo)
     if (this.state !== 'attack') this._startAnim('hit')
     return false

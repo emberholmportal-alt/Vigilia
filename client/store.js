@@ -129,10 +129,35 @@ export const useGameStore = create((set, get) => ({
     saveGame(get())
   },
 
-  // --- avisos breves (toast) ---
+  // --- avisos breves (toast) + chat/registro ---
   toast: null,              // {text, until}
-  showToast: (text) => { const t = (text || '').trim(); if (t) set({ toast: { text: t, until: Date.now() + 2400 } }) },
+  chatLog: [],              // [{id, channel, name, text}] — registro estilo Valorant
+  _chatId: 0,
+  showToast: (text) => {
+    const t = (text || '').trim()
+    if (!t) return
+    set({ toast: { text: t, until: Date.now() + 2400 } })
+    get().logMessage({ channel: 'sistema', text: t }) // el toast también queda en el chat
+  },
   clearToast: () => set({ toast: null }),
+  // Agrega una línea al registro/chat (canal: 'sistema' | 'yo' | 'mundo').
+  logMessage: ({ channel = 'sistema', name = '', text }) => {
+    const t = (text || '').toString().trim()
+    if (!t) return
+    set((s) => {
+      const id = (s._chatId || 0) + 1
+      const log = [...s.chatLog, { id, channel, name, text: t }]
+      while (log.length > 40) log.shift()
+      return { chatLog: log, _chatId: id }
+    })
+  },
+  // El jugador dice algo: globo sobre la cabeza + línea en el chat.
+  sayChat: (text) => {
+    const t = (text || '').toString().trim().slice(0, 120)
+    if (!t) return
+    get().say(t)
+    get().logMessage({ channel: 'yo', name: get().playerName, text: t })
+  },
 
   // Usar un consumible del cinturón (índice). Cura vida/maná; si no hace falta (ya al
   // máximo) avisa con un toast y NO gasta la poción. Al usarla, la descuenta del slot.
@@ -211,13 +236,26 @@ export const useGameStore = create((set, get) => ({
     }
     if (!target) return
     const it = eq[target]
-    const dur = Math.max(0, (it.dur != null ? it.dur : durabilityMax(it)) - amount)
     const wasBroken = it.dur != null && it.dur <= 0
+    if (wasBroken) {
+      // Ya roto: si se lo sigue usando sin reparar, puede DESTRUIRSE (desaparece).
+      if (Math.random() < 0.15) {
+        eq[target] = null
+        set({ equipment: eq })
+        get().recomputeStats()
+        get().showToast('¡Tu ' + (it.name || 'equipo') + ' se destruyó!')
+        saveGame(get())
+      }
+      return
+    }
+    const dur = Math.max(0, (it.dur != null ? it.dur : durabilityMax(it)) - amount)
     eq[target] = { ...it, dur }
     set({ equipment: eq })
-    if (dur <= 0 && !wasBroken) { get().recomputeStats(); get().showToast('¡Se rompió tu ' + (it.name || 'equipo') + '!') }
-    // sólo guardamos de a ratos (el combate llama seguido); guardamos al romperse.
-    if (dur <= 0) saveGame(get())
+    if (dur <= 0) {
+      get().recomputeStats()
+      get().showToast('¡Se rompió tu ' + (it.name || 'equipo') + '! Llevalo al herrero.')
+      saveGame(get())
+    }
   },
 
   // Costo de reparar todo el equipo (oro por punto de durabilidad faltante).
@@ -495,4 +533,5 @@ export const storeApi = {
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
   showToast: (t) => useGameStore.getState().showToast(t),
+  logMessage: (m) => useGameStore.getState().logMessage(m),
 }

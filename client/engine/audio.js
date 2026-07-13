@@ -29,11 +29,12 @@ export function setMuted(m) {
 
 export function isMuted() { return muted }
 
-// Efecto de sonido de una sola vez (loot, cofres). Vive en assets/audio/sfx/.
+// Efecto de sonido de una sola vez (loot, cofres, combate, pasos). Vive en assets/audio/sfx/.
+// `vol` (0..1) escala el volumen base (para pasos suaves, por ejemplo).
 const SFX_VOLUME = 0.6
-export function playSfx(file) {
+export function playSfx(file, vol = 1) {
   if (muted) return
   const a = new Audio(BASE + 'sfx/' + file)
-  a.volume = SFX_VOLUME
+  a.volume = Math.max(0, Math.min(1, SFX_VOLUME * vol))
   a.play().catch(() => {})
 }

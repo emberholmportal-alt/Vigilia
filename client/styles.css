@@ -212,6 +212,38 @@ html, body, #root {
   font-family: Georgia, serif; font-size: 15px; color: var(--gold); text-shadow: 0 1px 2px #000;
 }
 
+/* chat / registro de eventos, abajo a la izquierda (estilo Valorant, estética Vigilia) */
+.chat {
+  position: absolute; left: 8px; bottom: 150px; z-index: 5;
+  width: min(42vw, 360px); display: flex; flex-direction: column; gap: 4px;
+  pointer-events: none;
+}
+.chat-log {
+  display: flex; flex-direction: column; gap: 1px; max-height: 168px; overflow: hidden;
+  font-family: Georgia, serif; font-size: 12px; line-height: 1.35;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22px);
+  mask-image: linear-gradient(to bottom, transparent, #000 22px);
+}
+.chat-line {
+  color: #d7cdbb; text-shadow: 0 1px 2px #000, 0 0 3px #000;
+  background: rgba(10, 9, 12, 0.34); padding: 1px 6px; border-radius: 3px; width: fit-content;
+}
+.chat-tag { font-weight: bold; }
+.chat-name { color: #7fd0e6; font-weight: bold; }
+.chat-say {
+  pointer-events: auto; align-self: flex-start; cursor: pointer;
+  font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  background: linear-gradient(180deg, #2a2320, #17120e); border: 1px solid var(--gold);
+  border-radius: 4px; padding: 4px 12px; text-shadow: 0 1px 2px #000;
+}
+.chat-say:active { filter: brightness(1.2); }
+.chat-input { pointer-events: auto; }
+.chat-input input {
+  width: 100%; box-sizing: border-box; font-family: Georgia, serif; font-size: 13px;
+  color: #f2ead6; background: rgba(10, 9, 12, 0.9); border: 1px solid var(--gold);
+  border-radius: 4px; padding: 6px 10px; outline: none;
+}
+
 /* aviso breve (toast): arriba-centro, se va solo */
 .toast {
   position: absolute; left: 50%; top: 66px; transform: translateX(-50%);

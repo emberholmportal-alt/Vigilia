@@ -208,6 +208,7 @@ export class Game {
 
     this.store.setMapTitle(world.map.title || mapName)
     this.store.setMinimap(this._buildMinimap(world.map))
+    this.store.logMessage({ channel: 'mundo', text: 'Llegaste a ' + (world.map.title || mapName) })
     this._loading = false
   }
 
@@ -420,6 +421,7 @@ export class Game {
   _pickup(gi) {
     if (!this.store.addItem(gi.item, gi.qty)) return false // inventario lleno: queda en el piso
     playSfx('flying_loot.ogg')
+    this.store.logMessage({ channel: 'sistema', text: `Recogiste ${gi.item.name}${gi.qty > 1 ? ' ×' + gi.qty : ''}` })
     gi.picked = true
     gi.destroy()
     return true
@@ -553,6 +555,7 @@ export class Game {
     this.store.addXp(e.def.xp)
     this.store.addGold(e.def.gold)
     this._floatText(e.view.x, e.view.y + e._hpY, `+${e.def.xp} XP`, '#9fe0ff')
+    this.store.logMessage({ channel: 'sistema', text: `Derrotaste a ${e.def.name} (+${e.def.xp} XP, +${e.def.gold} oro)` })
     if (this._target === e) this._target = null
   }
 
@@ -574,6 +577,7 @@ export class Game {
     this.player.moving = false
     this.player.path.length = 0
     this.player.playDie()
+    playSfx('player_die.ogg')
     this.store.showToast('Caíste en combate...')
   }
 
@@ -625,7 +629,7 @@ export class Game {
       const hp = this.store.takeDamage(dmgToPlayer)
       this._floatText(p.view.x, p.view.y - 70, `-${dmgToPlayer}`, '#ff6a5a')
       this.store.degradeGear('armor', 1)   // recibir golpes gasta la armadura
-      if (this._hurtCd <= 0) { p.hurt(); this._hurtCd = 0.5 }
+      if (this._hurtCd <= 0) { p.hurt(); playSfx('player_hit.ogg'); this._hurtCd = 0.5 }
       if (hp <= 0) { this._playerDeath(); return }
     }
 
@@ -640,6 +644,7 @@ export class Game {
         p.faceTile(t.tx, t.ty)
         if (this._playerAtkCd <= 0) {
           const ms = p.attack() || 400
+          playSfx('swing.ogg')
           this._playerAtkCd = Math.max(0.65, ms / 1000)
           const hit = this._playerMeleeDamage()
           this._pendingHit = { at: (ms / 1000) * 0.5, dmg: hit.dmg, crit: hit.crit, target: t }
@@ -771,6 +776,13 @@ export class Game {
     const speedPx = runningNow ? RUN_PX : WALK_PX
 
     this.player.update(dt, speedPx)
+
+    // Pasos: un sonido de pisada cada tanto mientras camina (más rápido si corre).
+    if (this.player.moving && !this._dead) {
+      this._stepT = (this._stepT || 0) + dt
+      const interval = speedPx >= RUN_PX ? 0.26 : 0.36
+      if (this._stepT >= interval) { this._stepT = 0; playSfx('step' + (1 + ((Math.random() * 4) | 0)) + '.ogg', 0.5) }
+    } else this._stepT = 0
 
     // Diálogo sobre la cabeza.
     const sp = this.store.getSpeech()
