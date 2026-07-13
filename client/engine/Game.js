@@ -21,6 +21,7 @@ import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
 import { GroundItem, loadIcons, iconsTexture } from './GroundItem.js'
 import { rollLoot } from '../../shared/loot.js'
+import { rollMonsterDrop } from '../data/drops.js'
 import { itemById, RARITY_COLOR } from '../data/items.js'
 import { playSfx } from './audio.js'
 
@@ -806,21 +807,15 @@ export class Game {
     this._floatText(e.view.x, e.view.y + e._hpY, `+${e.def.xp} XP`, '#9fe0ff')
     this.store.logMessage({ channel: 'sistema', text: tt('defeated', { name: enemyName(e.def.sprite, getLang()) }) })
 
-    // Botín aleatorio según dificultad: los jefes casi siempre sueltan; los comunes, a veces.
+    // Botín estilo Diablo: casi siempre cae algo, rareza tirada por dificultad + magic-find.
     const boss = !!e.def.boss, lvl = Math.max(1, Math.min(16, e.level || 1))
-    // Oro: cae parcial, más seguido en jefes.
-    if (Math.random() < (boss ? 1 : 0.55)) {
-      const g = Math.max(1, Math.round(e.def.gold * (0.35 + Math.random() * 0.6)))
-      this.store.addGold(g)
-      this._floatText(e.view.x, e.view.y + e._hpY - 16, `+${g}`, '#e6c85a')
+    const mf = this.store.getStats()?.itemFind || 0
+    const roll = rollMonsterDrop(lvl, boss, mf)
+    if (roll.gold > 0) {
+      this.store.addGold(roll.gold)
+      this._floatText(e.view.x, e.view.y + e._hpY - 16, `+${roll.gold}`, '#e6c85a')
     }
-    // Ítems: caen a veces (jefes casi seguro), de la tabla del nivel, limitados a 1-3.
-    const itemChance = boss ? 0.85 : Math.min(0.4, 0.12 + lvl * 0.02)
-    if (Math.random() < itemChance) {
-      const roll = rollLoot('chest_level_' + lvl)
-      const drops = roll.drops.slice(0, boss ? 3 : 1)
-      this._dropItems(Math.round(e.tx), Math.round(e.ty), drops)
-    }
+    if (roll.drops.length) this._dropItems(Math.round(e.tx), Math.round(e.ty), roll.drops)
     if (this._target === e) this._target = null
   }
 

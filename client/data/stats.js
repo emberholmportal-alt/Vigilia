@@ -137,6 +137,7 @@ export function computeStats(raceId, level = 1, equipment = null) {
     defense: e.absorb + aff.absorb, // reduce el daño recibido (+ afinidad)
     hpRegen: e.hpRegen, mpRegen: e.mpRegen,
     crit: e.crit, accuracy: e.accuracy, avoidance: e.avoidance,
+    itemFind: e.itemFind,           // +% de hallazgo (magic find) para el loot
     fireResist: e.fireResist, iceResist: e.iceResist,
     dmgMin: wd.min, dmgMax: wd.max, // daño del arma
     weaponKind: weaponKind(equipment), // melee / ranged / mental (define ataque a distancia)
