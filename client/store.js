@@ -13,6 +13,7 @@ import { rollLoot } from '../shared/loot.js'
 
 const FORGE_MAX = 5        // nivel máximo de mejora por pieza
 const SEAL_CHEST_COST = 6  // sellos por cofre de sellos (loot box premium)
+const GRAVE_GOLD_FRACTION = 0.25 // fracción del oro que dejás en la tumba al morir
 import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
 import { tt, setLangGlobal, itemName, raceName, questName } from './i18n.js'
@@ -462,7 +463,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined, graves = null }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -482,6 +483,7 @@ export const useGameStore = create((set, get) => ({
     set({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
       attrAlloc: alloc, skillRanks: ranks, questFlags: questFlags || {}, specialAbility: special,
+      graves: graves || [], _graveId: (graves || []).reduce((m, g) => Math.max(m, g.id || 0), 0),
       inventory: inv, equipment: equip, belt: b, equippedBelt,
       discovered: discovered || {},
       missions: missions || [], missionsDate: missionsDate || '', seals: seals || 0,
@@ -760,6 +762,63 @@ export const useGameStore = create((set, get) => ({
     return !!(f.q3_init && f.q3_ice && f.q3_fire && f.q3_wind && !f.q3_finish)
   },
 
+  // --- tumbas (riesgo al morir): tu carga queda donde caíste ---
+  graves: [],               // [{id, zone, tx, ty, items:[{id,count,dur}], gold}] (persistido)
+  _graveId: 0,
+  getGravesInZone: (zone) => (get().graves || []).filter((g) => g.zone === zone),
+  // Al morir: vuelca el inventario + una fracción del oro a una tumba en (zone,tx,ty). El
+  // equipo y el cinturón NO se pierden. Devuelve true si dejó algo.
+  createGrave: (zone, tx, ty) => {
+    const s = get()
+    const inv = s.inventory.slice()
+    const items = []
+    for (let i = 0; i < inv.length; i++) {
+      const it = inv[i]
+      if (!it) continue
+      const rec = { id: it.id }
+      if (it.count && it.count > 1) rec.count = it.count
+      if (it.dur != null) rec.dur = it.dur
+      items.push(rec)
+      inv[i] = null
+    }
+    const goldDrop = Math.floor((s.gold || 0) * GRAVE_GOLD_FRACTION)
+    if (!items.length && goldDrop <= 0) return false
+    const id = (s._graveId || 0) + 1
+    const grave = { id, zone, tx, ty, items, gold: goldDrop }
+    set({ inventory: inv, gold: s.gold - goldDrop, graves: [...(s.graves || []), grave], _graveId: id })
+    saveGame(get())
+    return true
+  },
+  // Recupera una tumba: devuelve el oro y mete los ítems al inventario (respeta capacidad).
+  // Devuelve true si entró TODO (y borra la tumba); false si el inventario se llenó (queda
+  // la tumba con lo que no entró).
+  recoverGrave: (id) => {
+    const s = get()
+    const grave = (s.graves || []).find((g) => g.id === id)
+    if (!grave) return true
+    if (grave.gold) set({ gold: get().gold + grave.gold })
+    const leftover = []
+    for (const rec of grave.items) {
+      const base = itemById(rec.id)
+      if (!base) continue
+      const it = { ...base }
+      if (rec.count > 1) it.count = rec.count
+      if (rec.dur != null) it.dur = rec.dur
+      if (!get().addItem(it, rec.count || 1)) leftover.push(rec)
+    }
+    if (leftover.length) {
+      const graves = get().graves.map((g) => (g.id === id ? { ...g, items: leftover, gold: 0 } : g))
+      set({ graves })
+      get().showToast(tt('grave_full'))
+      saveGame(get())
+      return false
+    }
+    set({ graves: get().graves.filter((g) => g.id !== id) })
+    get().showToast(tt('grave_recovered'))
+    saveGame(get())
+    return true
+  },
+
   // Cuenta cuántas unidades de un ítem (por id) hay en el inventario (respeta stacks).
   countItem: (id) => get().inventory.reduce((n, it) => n + (it && it.id === id ? (it.count || 1) : 0), 0),
 
@@ -924,6 +983,9 @@ export const storeApi = {
   setActiveBuffs: (list) => useGameStore.getState().setActiveBuffs(list),
   getSpecialAbility: () => useGameStore.getState().specialAbility,
   reviveFull: () => useGameStore.getState().reviveFull(),
+  createGrave: (zone, tx, ty) => useGameStore.getState().createGrave(zone, tx, ty),
+  getGravesInZone: (zone) => useGameStore.getState().getGravesInZone(zone),
+  recoverGrave: (id) => useGameStore.getState().recoverGrave(id),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
   showToast: (t) => useGameStore.getState().showToast(t),

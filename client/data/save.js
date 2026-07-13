@@ -51,6 +51,7 @@ export function loadGame() {
       skillRanks: s.skillRanks || null,
       questFlags: s.questFlags || null,
       specialAbility: s.specialAbility ?? undefined,
+      graves: s.graves || null,
     }
   } catch { return null }
 }
@@ -75,6 +76,7 @@ export function saveGame(state) {
       skillRanks: state.skillRanks || {},
       questFlags: state.questFlags || {},
       specialAbility: state.specialAbility ?? null,
+      graves: state.graves || [],
     }
     localStorage.setItem(KEY, JSON.stringify(snap))
   } catch { /* almacenamiento lleno / bloqueado: ignorar */ }

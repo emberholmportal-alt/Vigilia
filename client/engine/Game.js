@@ -21,6 +21,7 @@ import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCous
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
 import { GroundItem, loadIcons, iconsTexture } from './GroundItem.js'
+import { Grave } from './Grave.js'
 import { rollLoot } from '../../shared/loot.js'
 import { rollMonsterDrop } from '../data/drops.js'
 import { itemById, RARITY_COLOR } from '../data/items.js'
@@ -193,6 +194,10 @@ export class Game {
     await this._spawnEnemies(renderer, world.map, grid, world.manifest, spawn)
     // Élite del día (misión Contrato): aparece SÓLO en su zona mientras el contrato siga activo.
     await this._spawnContractElite(renderer, grid, world.manifest, spawn, mapName)
+
+    // Tumbas: si moriste en esta zona, tu carga te espera acá para recuperarla.
+    this.graves = []
+    this._spawnGraves(renderer, mapName)
 
     // Nodos de recursos (hierbas + vetas de cristal) para juntar/minar.
     this.nodes = []
@@ -1114,6 +1119,30 @@ export class Game {
     this.player.playDie()
     playSfx('player_die.ogg')
     this.store.showToast(tt('fell_combat'))
+    // Riesgo estilo Kintara: tu carga (inventario + parte del oro) queda en una tumba acá.
+    const dropped = this.store.createGrave(this.mapName, Math.round(this.player.tx), Math.round(this.player.ty))
+    if (dropped) this.store.logMessage({ channel: 'sistema', text: tt('grave_left', { zone: zoneName(this.mapName, getLang()) }) })
+  }
+
+  // Coloca las tumbas del jugador que quedaron en esta zona (al entrar/volver).
+  _spawnGraves(renderer, mapName) {
+    const list = this.store.getGravesInZone ? this.store.getGravesInZone(mapName) : []
+    for (const gr of list) {
+      const m = new Grave(this.iso, gr)
+      m.view.scale.set(this._eScale)
+      m.onTap((mk) => this.player.walkTo(mk.tx, mk.ty))   // caminar hacia ella; se recupera al llegar
+      renderer.objectLayer.addChild(m.view)
+      this.graves.push(m)
+    }
+  }
+
+  // Recupera una tumba (vuelca su contenido al inventario). Si el inventario está lleno, la
+  // tumba queda con lo que no entró (reintenta con un pequeño cooldown, sin spamear avisos).
+  _recoverGrave(m) {
+    if (m._cd > 0) return
+    const ok = this.store.recoverGrave(m.grave.id)
+    if (ok) { m.taken = true; m.destroy() }
+    else { m._cd = 1.8 }   // inventario lleno: reintenta más tarde
   }
 
   _respawn() {
@@ -1438,6 +1467,17 @@ export class Game {
         if (Math.abs(px - gi.tx) <= 0.75 && Math.abs(py - gi.ty) <= 0.75) this._pickup(gi)
       }
       this.groundItems = this.groundItems.filter((g) => !g.picked)
+    }
+
+    // Tumbas: bob + recuperar la carga al caminarles encima.
+    if (this.graves && this.graves.length) {
+      const px = this.player.tx, py = this.player.ty
+      for (const m of this.graves) {
+        if (m.taken) continue
+        m.update(dt)
+        if (Math.abs(px - m.tx) <= 0.9 && Math.abs(py - m.ty) <= 0.9) this._recoverGrave(m)
+      }
+      this.graves = this.graves.filter((m) => !m.taken)
     }
 
     // Partículas ambientales.
