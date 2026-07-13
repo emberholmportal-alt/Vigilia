@@ -33,10 +33,6 @@ export default function HUD() {
   const requestInteract = useGameStore((s) => s.requestInteract)
   const nearbyPortal = useGameStore((s) => s.nearbyPortal)
   const requestPortal = useGameStore((s) => s.requestPortal)
-  const nearbyEnemy = useGameStore((s) => s.nearbyEnemy)
-  const requestAttack = useGameStore((s) => s.requestAttack)
-  const nearbyCorpse = useGameStore((s) => s.nearbyCorpse)
-  const requestInspect = useGameStore((s) => s.requestInspect)
   const togglePanel = useGameStore((s) => s.togglePanel)
   const useBelt = useGameStore((s) => s.useBelt)
   const equippedBelt = useGameStore((s) => s.equippedBelt)
@@ -68,20 +64,6 @@ export default function HUD() {
       <Toast />
 
       <div className="hud-bottom">
-        {nearbyEnemy && (
-          <div className="interact-wrap">
-            <button className="interact-btn attack-btn" onClick={requestAttack}>
-              ⚔️ Atacar a {nearbyEnemy.name} (Nv {nearbyEnemy.level})
-            </button>
-          </div>
-        )}
-        {!nearbyEnemy && nearbyCorpse && (
-          <div className="interact-wrap">
-            <button className="interact-btn" onClick={requestInspect}>
-              🔍 Inspeccionar cadáver
-            </button>
-          </div>
-        )}
         {nearbyPortal && (
           <div className="interact-wrap">
             <button className="interact-btn portal-btn" onClick={requestPortal}>

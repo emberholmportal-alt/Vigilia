@@ -79,9 +79,6 @@ export class Game {
     if (import.meta.env.DEV) window.__vigilia = this
     this._lastInteractSeq = this.store.getInteractSeq() // no interactuar en el primer tick
     this._lastPortalSeq = this.store.getPortalSeq()
-    this._lastCombatSeq = this.store.getCombatSeq()
-    this._lastInspectSeq = this.store.getInspectSeq()
-    this._power2Cd = 0
     this._fpsAccum = 0
     this._fpsFrames = 0
     app.ticker.add(this._tick)
@@ -299,25 +296,21 @@ export class Game {
     this.store.showToast('Cadáver vacío')
   }
 
-  // Ataque secundario (click derecho): un golpe poderoso con cooldown al enemigo cercano.
-  _secondaryAttack() {
-    if (this._dead || this._loading || this._changing) return
-    const p = this.player
-    const t = (this._target && !this._target.dead) ? this._target : this._nearbyEnemy
-    if (!t || t.dead) return
-    const d = Math.abs(t.tx - p.tx) + Math.abs(t.ty - p.ty)
-    if (d > 1.8) { this._targetEnemy(t); return } // acercarse primero
-    if (this._power2Cd > 0) return
-    this._power2Cd = 2.2
-    if (p.moving) { p.moving = false; p.path.length = 0 }
-    p.faceTile(t.tx, t.ty)
-    const ms = p.attack() || 400
-    playSfx('swing.ogg')
-    const st = this.store.getStats() || {}
-    const base = ((st.dmgMin || 2) + (st.dmgMax || 5)) / 2
-    const dmg = Math.max(2, Math.round(base * 1.9 * (st.dmgMul || 1) + (st.str || 10) * 0.4))
-    this._pendingHit = { at: (ms / 1000) * 0.5, dmg, crit: true, target: t }
-    this.store.showToast('¡Golpe poderoso!')
+  // Click derecho: busca la criatura bajo el cursor. Enemigo vivo -> atacar; cadáver ->
+  // inspeccionar. En el piso vacío no hace nada (no camina, para no moverse sin querer).
+  _rightClick(gx, gy) {
+    if (this._dead || this._loading || this._changing || !this.enemies) return
+    const w = this.camera.screenToWorld(gx, gy)
+    const t = this.iso.toTile(w.x, w.y)
+    const tx = Math.round(t.x), ty = Math.round(t.y)
+    let best = null, bd = 1.6
+    for (const e of this.enemies) {
+      const d = Math.abs(e.tx - tx) + Math.abs(e.ty - ty)
+      if (d < bd) { bd = d; best = e }
+    }
+    if (!best) return
+    if (best.dead) this._inspectCorpse(best)
+    else this._targetEnemy(best)
   }
 
   // Tocar un NPC: el jugador se acerca, el NPC te mira y se abre la caja de diálogo.
@@ -654,23 +647,6 @@ export class Game {
       return true
     })
 
-    // Enemigo vivo / cadáver cercano -> botones del HUD (atacar / inspeccionar).
-    if (this._power2Cd > 0) this._power2Cd -= dt
-    let ne = null, nd = 1e9, nc = null, cdst = 1e9
-    for (const e of this.enemies) {
-      const d = Math.abs(e.tx - p.tx) + Math.abs(e.ty - p.ty)
-      if (e.dead) { if (d < cdst) { cdst = d; nc = e } }
-      else if (d < nd) { nd = d; ne = e }
-    }
-    this._nearbyEnemy = (ne && nd <= 3.5) ? ne : null
-    this._nearbyCorpse = (nc && cdst <= 2) ? nc : null
-    this.store.setNearbyEnemy(this._nearbyEnemy ? { name: this._nearbyEnemy.def.name, level: this._nearbyEnemy.level } : null)
-    this.store.setNearbyCorpse(this._nearbyCorpse ? { name: this._nearbyCorpse.def.name, level: this._nearbyCorpse.level } : null)
-    const cs = this.store.getCombatSeq()
-    if (cs !== this._lastCombatSeq) { this._lastCombatSeq = cs; if (this._nearbyEnemy) this._targetEnemy(this._nearbyEnemy) }
-    const isq = this.store.getInspectSeq()
-    if (isq !== this._lastInspectSeq) { this._lastInspectSeq = isq; if (this._nearbyCorpse) this._inspectCorpse(this._nearbyCorpse) }
-
     if (dmgToPlayer > 0) {
       const hp = this.store.takeDamage(dmgToPlayer)
       this._floatText(p.view.x, p.view.y - 70, `-${dmgToPlayer}`, '#ff6a5a')
@@ -781,9 +757,11 @@ export class Game {
     app.stage.on('pointertap', onTap)
     this._onTap = onTap
 
-    // Click derecho = ataque secundario (bloqueamos el menú contextual del navegador).
-    this._onContext = (e) => { e.preventDefault(); this._secondaryAttack() }
+    // Click DERECHO (estilo Diablo): acción directa sobre lo que hay bajo el cursor
+    // (enemigo -> atacar, cadáver -> inspeccionar). Bloqueamos el menú del navegador.
+    this._onContext = (e) => e.preventDefault()
     app.canvas.addEventListener('contextmenu', this._onContext)
+    app.stage.on('pointerdown', (e) => { if (e.button === 2) this._rightClick(e.global.x, e.global.y) })
   }
 
   // Marca el destino con una X (estilo Diablo): queda mientras el personaje camina.

@@ -103,16 +103,6 @@ export const useGameStore = create((set, get) => ({
   setNearby: (nearby) => set((s) => (s.nearby?.name === nearby?.name ? {} : { nearby })),
   requestInteract: () => set((s) => ({ interactSeq: s.interactSeq + 1 })),
 
-  // --- combate: enemigo/cadáver cercano (botones del HUD) ---
-  nearbyEnemy: null,        // {name, level} — enemigo vivo cerca
-  nearbyCorpse: null,       // {name, level} — cadáver cerca (inspeccionable)
-  combatSeq: 0,             // botón "Atacar"
-  inspectSeq: 0,            // botón "Inspeccionar"
-  setNearbyEnemy: (e) => set((s) => (s.nearbyEnemy?.name === e?.name && s.nearbyEnemy?.level === e?.level ? {} : { nearbyEnemy: e })),
-  setNearbyCorpse: (c) => set((s) => (s.nearbyCorpse?.name === c?.name && s.nearbyCorpse?.level === c?.level ? {} : { nearbyCorpse: c })),
-  requestAttack: () => set((s) => ({ combatSeq: s.combatSeq + 1 })),
-  requestInspect: () => set((s) => ({ inspectSeq: s.inspectSeq + 1 })),
-
   // --- portales ---
   nearbyPortal: null,       // {label} — portal cercano (lo escribe el loop)
   portalSeq: 0,             // el botón "Viajar" del HUD lo incrementa; el loop lo lee
@@ -538,10 +528,6 @@ export const storeApi = {
   setNearbyPortal: (v) => useGameStore.getState().setNearbyPortal(v),
   getPortalSeq: () => useGameStore.getState().portalSeq,
   setPortals: (v) => useGameStore.getState().setPortals(v),
-  setNearbyEnemy: (v) => useGameStore.getState().setNearbyEnemy(v),
-  setNearbyCorpse: (v) => useGameStore.getState().setNearbyCorpse(v),
-  getCombatSeq: () => useGameStore.getState().combatSeq,
-  getInspectSeq: () => useGameStore.getState().inspectSeq,
   takeDamage: (n) => useGameStore.getState().takeDamage(n),
   reviveFull: () => useGameStore.getState().reviveFull(),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
