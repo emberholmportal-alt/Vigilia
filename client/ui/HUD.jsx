@@ -34,7 +34,7 @@ export default function HUD() {
   const nearby = useGameStore((s) => s.nearby)
   const requestInteract = useGameStore((s) => s.requestInteract)
   const nearbyPortal = useGameStore((s) => s.nearbyPortal)
-  const requestPortal = useGameStore((s) => s.requestPortal)
+  const openWaypoints = useGameStore((s) => s.openWaypoints)
   const togglePanel = useGameStore((s) => s.togglePanel)
   const useBelt = useGameStore((s) => s.useBelt)
   const equippedBelt = useGameStore((s) => s.equippedBelt)
@@ -69,8 +69,8 @@ export default function HUD() {
       <div className="hud-bottom">
         {nearbyPortal && (
           <div className="interact-wrap">
-            <button className="interact-btn portal-btn" onClick={requestPortal}>
-              🌀 {t('travel_label', { zone: nearbyPortal.label })}
+            <button className="interact-btn portal-btn" onClick={openWaypoints}>
+              🌀 {t('portal_use')}
             </button>
           </div>
         )}

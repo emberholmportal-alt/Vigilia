@@ -640,27 +640,22 @@ html, body, #root {
   color: #e8836a; text-align: center; font-size: 13px;
 }
 
-/* ---------- pantalla de carga entre zonas (ZoneLoader) ---------- */
-.zoneload {
-  position: fixed; inset: 0; z-index: 40; pointer-events: auto;
-  display: flex; align-items: center; justify-content: center;
+/* ---------- pantalla de carga entre zonas (modal del sistema) ---------- */
+.zoneload-backdrop {
+  z-index: 60;  /* sobre cualquier otro modal */
   background:
     radial-gradient(120% 80% at 50% 38%, rgba(60, 36, 96, 0.5), rgba(10, 9, 12, 0.98) 62%),
     var(--obsidian);
   animation: zl-in 140ms ease-out;
 }
 @keyframes zl-in { from { opacity: 0; } }
-.zoneload-inner {
-  width: min(88vw, 460px); padding: 26px 24px 30px;
-  text-align: center;
-  border: 1px solid #4a3a63;
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(34, 29, 43, 0.72), rgba(16, 12, 22, 0.86));
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(154, 107, 255, 0.12);
-}
+.zoneload-inner { width: min(90vw, 420px); text-align: center; }
+.zoneload-inner .settings-head { justify-content: center; }
+.zoneload-inner .settings-head b { color: var(--dim); font-weight: normal;
+  text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px; }
 /* runa giratoria (mismo violeta que el portal) */
 .zoneload-rune {
-  width: 48px; height: 48px; margin: 0 auto 16px;
+  width: 48px; height: 48px; margin: 6px auto 16px;
   border-radius: 50%;
   border: 2px solid rgba(154, 107, 255, 0.28);
   border-top-color: #b58bff; border-right-color: #8a5bff;
@@ -742,3 +737,22 @@ html, body, #root {
 }
 .lang-opt.on { color: var(--parch); border-color: var(--gold); box-shadow: inset 0 0 0 1px rgba(201,162,39,0.25); }
 .lang-opt:active { filter: brightness(1.15); }
+
+/* ---------- modal de red de portales ---------- */
+.wp-panel { min-width: min(90vw, 380px); }
+.wp-hint { color: var(--dim); font-family: Georgia, serif; font-size: 12px; font-style: italic; margin: 6px 0 10px; }
+.wp-empty { color: var(--dim); font-family: Georgia, serif; font-size: 13px; text-align: center; padding: 14px 6px; line-height: 1.5; }
+.wp-list { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow-y: auto; }
+.wp-row {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  font-family: Georgia, serif; font-size: 14px; color: var(--parch);
+  background: linear-gradient(180deg, rgba(34,29,43,0.6), rgba(16,12,22,0.75));
+  border: 1px solid #3b3145; border-radius: 6px; padding: 9px 12px; cursor: pointer;
+}
+.wp-row:hover:not(:disabled) { border-color: #7a52c0; box-shadow: inset 0 0 0 1px rgba(154,107,255,0.2); }
+.wp-row:active:not(:disabled) { filter: brightness(1.15); }
+.wp-row.current { opacity: 0.6; cursor: default; border-color: var(--gold); }
+.wp-rune { font-size: 15px; filter: saturate(1.2); }
+.wp-name { flex: 1 1 auto; }
+.wp-tag { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.wp-row.current .wp-tag { color: var(--gold); }

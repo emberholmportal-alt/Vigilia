@@ -82,8 +82,9 @@ export class Game {
 
     if (import.meta.env.DEV) window.__vigilia = this
     this._lastInteractSeq = this.store.getInteractSeq() // no interactuar en el primer tick
-    this._lastPortalSeq = this.store.getPortalSeq()
+    this._lastWaypointSeq = this.store.getWaypointSeq()
     this._lastRecallSeq = this.store.getRecallSeq()
+    this._lang = getLang()
     this._fpsAccum = 0
     this._fpsFrames = 0
     app.ticker.add(this._tick)
@@ -144,7 +145,7 @@ export class Game {
     this._playerScale = eScale * (PLAYER_SCALE[mapName] || 1)
     renderer.objectLayer.addChild(player.view)
     this.player = player
-    player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName())
+    player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'))
     this._nameLevel = this.store.getPlayerLevel()
     await player.setEquipment(equipToGfx(this.store.getEquipment()))
 
@@ -218,10 +219,45 @@ export class Game {
     camera.snap()
 
     const title = zoneTitle(mapName, world.map.title)
+    this.store.setMapName(mapName)
     this.store.setMapTitle(title)
     this.store.setMinimap(this._buildMinimap(world.map))
     this.store.logMessage({ channel: 'mundo', text: tt('arrived_at', { zone: title }) })
+    // Llegar a una zona la descubre como waypoint (llegás donde apareciste).
+    this.store.discoverZone(mapName, spawn.x, spawn.y, title)
+    this._refreshWaypoints()
     this._loading = false
+  }
+
+  // Arma la lista de destinos para el modal de waypoints: los descubiertos + los adyacentes
+  // (portales de este mapa), con etiqueta localizada y tile de llegada. La marca actual queda
+  // deshabilitada. Se rearma al construir el mundo, al descubrir algo y al cambiar idioma.
+  _refreshWaypoints() {
+    const discovered = this.store.getDiscovered() || {}
+    const map = new Map()
+    for (const [zone, d] of Object.entries(discovered)) {
+      map.set(zone, { zone, label: zoneTitle(zone), tx: d.tx, ty: d.ty, adjacent: false, current: zone === this.mapName })
+    }
+    for (const p of (this.portals || [])) {
+      if (p.to === this.mapName) continue
+      const prev = map.get(p.to)
+      map.set(p.to, { zone: p.to, label: zoneTitle(p.to), tx: p.tx, ty: p.ty, adjacent: true, current: false })
+      if (prev && !prev.adjacent) { /* mantener adyacente + tile del portal */ }
+    }
+    this.store.setWaypointList([...map.values()])
+  }
+
+  // Reetiqueta todo lo que dibuja el motor cuando cambia el idioma.
+  _onLangChange() {
+    if (this.player) this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'))
+    this.store.setMapTitle(zoneTitle(this.mapName))
+    for (const p of (this.portals || [])) {
+      const nl = zoneTitle(p.to, p.label)
+      p.label = nl
+      if (p.labelText) p.labelText.text = nl
+    }
+    this.store.setPortals((this.portals || []).map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label })))
+    this._refreshWaypoints()
   }
 
   // Destruye todo lo específico del mapa (para reconstruir en otro). La app, el input y
@@ -288,19 +324,22 @@ export class Game {
       const w = p.w || 1, h = p.h || 1
       const cx = p.x + w / 2 - 0.5, cy = p.y + h / 2 - 0.5
       const wx = iso.toWorldX(cx, cy), wy = iso.toWorldY(cx, cy)
-      // Pad de piedra de Flare (5 frames: apagado -> runas azules brillando). Va POR ENCIMA
-      // del pasto (si no, el propio tile de suelo lo tapa y parece enterrado), pero debajo
-      // de objetos y personajes (que están en objectLayer).
+      // Pad de piedra de Flare (5 frames: 0=apagado -> 4=runas azules brillando). Va POR
+      // ENCIMA del pasto pero debajo de objetos/personajes. SIN titilar: se queda fijo,
+      // encendido si el destino ya está descubierto, tenue si todavía no (se activa al pasar).
+      const discovered = !!(this.store.getDiscovered() || {})[p.to]
       let pad = null
       if (this._padTex) {
-        pad = new Sprite(new Texture({ source: this._padTex.source, frame: new Rectangle(0, 0, 256, 128) }))
+        const frameY = discovered ? 4 * 128 : 0
+        pad = new Sprite(new Texture({ source: this._padTex.source, frame: new Rectangle(0, frameY, 256, 128) }))
         pad.anchor.set(0.5, 0.5)
         pad.x = wx; pad.y = wy
         pad.scale.set((iso.wHalf * 2 * 1.7) / 256)
         pad.zIndex = 5e5
+        pad.alpha = discovered ? 1 : 0.55
         renderer.groundLayer.addChild(pad)
       }
-      // Halo suave sobre el pad (sin humo/partículas).
+      // Halo suave sobre el pad (más fuerte si está activo).
       const g = new Graphics()
       g.ellipse(0, 0, iso.wHalf * 0.6, iso.hHalf * 0.6).fill({ color: 0x8a5bff, alpha: 0.16 })
       g.x = wx; g.y = wy; g.zIndex = 5e5 + 1
@@ -311,15 +350,30 @@ export class Game {
       } })
       label.anchor.set(0.5, 1); label.x = wx; label.y = wy - 30; label.zIndex = 2e6
       renderer.objectLayer.addChild(label)
-      this.portals.push({ x: p.x, y: p.y, w, h, to: p.to, tx: p.tx, ty: p.ty, label: plabel, gfx: g, pad, _padFrame: 0, _padT: 0, _padDir: 1 })
+      this.portals.push({ x: p.x, y: p.y, w, h, to: p.to, tx: p.tx, ty: p.ty, label: plabel, gfx: g, pad, labelText: label, discovered })
     }
     // Al HUD: tiles de portal para marcarlos en el minimapa.
     this.store.setPortals(this.portals.map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label })))
   }
 
-  _enterPortal(p) {
-    this.store.showToast(tt('travel_label', { zone: p.label || p.to }))
-    this.changeMap(p.to, p.tx, p.ty)
+  // Enciende el pad de un portal descubierto (frame de runas + alpha lleno).
+  _litPad(p) {
+    if (!p.pad) return
+    p.pad.texture.frame.y = 4 * 128
+    p.pad.texture.updateUvs()
+    p.pad.alpha = 1
+  }
+
+  // Viaja a una zona elegida en el modal de waypoints. Si es adyacente (hay un portal a ella
+  // en este mapa) llega al tile del portal; si no, al tile guardado cuando la descubriste.
+  _travelToWaypoint(zone) {
+    if (!zone || zone === this.mapName || this._changing || this._loading) return
+    const adj = (this.portals || []).find((p) => p.to === zone)
+    const disc = (this.store.getDiscovered() || {})[zone]
+    const tx = adj ? adj.tx : disc ? disc.tx : undefined
+    const ty = adj ? adj.ty : disc ? disc.ty : undefined
+    this.store.showToast(tt('travel_label', { zone: zoneTitle(zone) }))
+    this.changeMap(zone, tx, ty)
   }
 
   // Usar una Piedra de Retorno (desde el cinturón): te ancla al punto actual y te recall al
@@ -1057,37 +1111,50 @@ export class Game {
     this._pt = (this._pt || 0) + dt
     this.particles.update(dt, this._pt)
 
-    // Portales: pulso del marcador + viaje al pisar la zona (tras haber salido de ella,
-    // así no se dispara el portal en el que aparecés).
+    // Portales (waypoints): halo con pulso suave, SIN titilar. Pisar un portal por primera
+    // vez descubre su destino (lo activa). El botón abre el menú de destinos.
     if (this.portals && this.portals.length) {
-      const pulse = 1 + 0.13 * Math.sin(this._pt * 4)
+      const pulse = 1 + 0.10 * Math.sin(this._pt * 3)
+      let near = null, nd = 1e9, onPortal = null
+      const px = this.player.tx, py = this.player.ty
       for (const p of this.portals) {
-        p.gfx.scale.set(pulse)
-        // pad: pingpong de frames (apagado <-> runas brillando)
-        if (p.pad) {
-          p._padT += dt
-          if (p._padT > 0.14) {
-            p._padT = 0
-            p._padFrame += p._padDir
-            if (p._padFrame >= 4) { p._padFrame = 4; p._padDir = -1 }
-            else if (p._padFrame <= 0) { p._padFrame = 0; p._padDir = 1 }
-            p.pad.texture.frame.y = p._padFrame * 128
-            p.pad.texture.updateUvs()
-          }
-        }
-      }
-      // Portal cercano: se viaja por BOTÓN (interacción), no al pasar por encima.
-      let near = null, nd = 1e9
-      for (const p of this.portals) {
-        const d = Math.abs((p.x + (p.w - 1) / 2) - this.player.tx) + Math.abs((p.y + (p.h - 1) / 2) - this.player.ty)
+        p.gfx.scale.set(p.discovered ? pulse : 0.9)
+        const cx = p.x + (p.w - 1) / 2, cy = p.y + (p.h - 1) / 2
+        const d = Math.abs(cx - px) + Math.abs(cy - py)
         if (d < nd) { nd = d; near = p }
+        // "encima": dentro del rectángulo del portal (cubre pads anchos), con medio tile de margen.
+        if (px >= p.x - 0.5 && px <= p.x + p.w - 0.5 && py >= p.y - 0.5 && py <= p.y + p.h - 0.5) onPortal = p
+      }
+      // Descubrir al pasar por encima (activa el pad y suma el destino a la red).
+      if (onPortal && !onPortal.discovered && !this._dead) {
+        onPortal.discovered = true
+        this._litPad(onPortal)
+        if (this.store.discoverZone(onPortal.to, onPortal.tx, onPortal.ty, onPortal.label)) {
+          this.store.showToast(tt('waypoint_found', { zone: onPortal.label }))
+          this._refreshWaypoints()
+        }
       }
       this._nearbyPortal = (near && nd <= 2.2 && !this._dead) ? near : null
       this.store.setNearbyPortal(this._nearbyPortal ? { label: this._nearbyPortal.label } : null)
-      const pseq = this.store.getPortalSeq()
-      if (pseq !== this._lastPortalSeq) {
-        this._lastPortalSeq = pseq
-        if (this._nearbyPortal) { this._enterPortal(this._nearbyPortal); return }
+      // Viaje elegido en el modal de waypoints.
+      const wseq = this.store.getWaypointSeq()
+      if (wseq !== this._lastWaypointSeq) {
+        this._lastWaypointSeq = wseq
+        this._travelToWaypoint(this.store.getWaypointTarget()); return
+      }
+    }
+
+    // Cambio de idioma: reetiquetar lo que dibuja el motor (nombre sobre la cabeza, título
+    // del mapa, etiquetas de portales, lista de waypoints).
+    if (this._lang !== getLang()) { this._lang = getLang(); this._onLangChange() }
+
+    // Regeneración de vida en el pueblo: de a poco, sin combate (Triston = refugio).
+    if (this.mapName === 'triston' && !this._dead) {
+      this._healAccum = (this._healAccum || 0) + dt
+      const hpMax = this.store.getStats()?.hpMax || 0
+      if (this._healAccum >= 0.5 && hpMax) {   // ~vida completa en ~10s
+        this.store.heal(Math.max(1, Math.round(hpMax * 0.05)))
+        this._healAccum = 0
       }
     }
 
@@ -1133,7 +1200,7 @@ export class Game {
       const fps = Math.round((this._fpsFrames * 1000) / this._fpsAccum)
       this.store.setFps(fps)
       const lvl = this.store.getPlayerLevel()
-      if (lvl !== this._nameLevel) { this._nameLevel = lvl; this.player.setName(this.store.getPlayerName(), lvl, this.store.getRaceName()) }
+      if (lvl !== this._nameLevel) { this._nameLevel = lvl; this.player.setName(this.store.getPlayerName(), lvl, this.store.getRaceName(), tt('lv')) }
       this.store.setDebug({
         tile: `${Math.round(this.player.tx)},${Math.round(this.player.ty)}`,
         visibleTiles: this.renderer.visibleTiles,

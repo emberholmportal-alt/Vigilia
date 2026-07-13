@@ -17,6 +17,18 @@ const RACE_RULES = {
 // Un ítem roto (durabilidad 0) no da stats hasta que lo reparen.
 const broken = (it) => it && it.dur != null && it.dur <= 0
 
+// Defensa base de una pieza de armadura por slot + tier. La mayoría de los ítems de Flare
+// vienen sin `absorb` explícito (viene de sus bases, que no extrajimos), así que la derivamos
+// para que TODA la armadura sume defensa que crece con el tier. El torso protege más; guantes
+// y botas, menos. El escudo (off) también aporta.
+const ARMOR_SLOT = { chest: [2, 1.7], legs: [1, 1.4], head: [1, 1.2], off: [1, 1.5], feet: [0, 1.0], hands: [0, 0.9] }
+export function armorDefense(item) {
+  if (!item || broken(item)) return 0
+  const w = ARMOR_SLOT[item.slot]
+  if (!w) return 0
+  return Math.round(w[0] + (item.tier || 1) * w[1])
+}
+
 // Suma los bonus de todos los ítems equipados.
 export function equipBonus(equipment) {
   const b = { hp: 0, mp: 0, absorb: 0, hpRegen: 0, mpRegen: 0, crit: 0, accuracy: 0, avoidance: 0, xpGain: 0, itemFind: 0, fireResist: 0, iceResist: 0 }
@@ -27,9 +39,11 @@ export function equipBonus(equipment) {
     if (!s || broken(it)) continue
     b.hp += s.hp || 0
     b.mp += s.mp || 0
-    // absorb: la mayoría trae sólo absorb_max; si hay min y max usamos el promedio.
+    // absorb: si el ítem trae valor explícito lo usamos; si no, la defensa derivada del
+    // slot+tier (así toda la armadura protege). Promedio de min/max si vienen los dos.
     const amin = s.absorb_min || 0, amax = s.absorb_max || 0
-    b.absorb += (amin && amax) ? (amin + amax) / 2 : (amax || amin)
+    const explicit = (amin && amax) ? (amin + amax) / 2 : (amax || amin)
+    b.absorb += explicit || armorDefense(it)
     b.hpRegen += s.hp_regen || 0
     b.mpRegen += s.mp_regen || 0
     b.crit += s.crit || 0

@@ -62,10 +62,10 @@ export class Player {
     this._bubbleText = ''
   }
 
-  setName(name, level, race) {
+  setName(name, level, race, lvLabel = 'Nv') {
     const parts = [name || '']
     if (race) parts.push(race)
-    if (level) parts.push('Nv ' + level)
+    if (level) parts.push(lvLabel + ' ' + level)
     this.nameText.text = parts.join(' · ')
   }
 

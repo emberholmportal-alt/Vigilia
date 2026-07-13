@@ -4,8 +4,11 @@
 import { useState } from 'react'
 import { useGameStore, equipSlotFor, sellValue } from '../store.js'
 import { RARITY_COLOR } from '../data/items.js'
+import { armorDefense } from '../data/stats.js'
 import ItemIcon from './ItemIcon.jsx'
 import { useT } from './useT.js'
+
+const hasAbsorb = (it) => !!(it.stats?.absorb_max || it.stats?.absorb_min)
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 const PW = 640, PH = 832, SLOT = 64
@@ -102,6 +105,9 @@ function Tooltip({ item, mode, gold, pos, onAction, t }) {
       <b style={{ color: RARITY_COLOR[item.rarity] }}>{t.item(item)}</b>
       <span className="tt-sub">{t.rarity(item.rarity)}{item.tier ? ` · ${t('level_n', { n: item.tier })}` : ''}</span>
       <span className="tt-sub">{t.slot(item.slot)}</span>
+      {armorDefense(item) > 0 && !hasAbsorb(item) && (
+        <div className="tt-stat"><span>{t('stat_def')}</span><span>{armorDefense(item)}</span></div>
+      )}
       {stats.map(([k, v]) => (
         <div className="tt-stat" key={k}><span>{t.stat(k)}</span><span>{v}</span></div>
       ))}

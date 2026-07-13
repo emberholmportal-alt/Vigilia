@@ -18,6 +18,7 @@ import ChatLog from './ui/ChatLog.jsx'
 import Minimap from './ui/Minimap.jsx'
 import DialogueBox from './ui/DialogueBox.jsx'
 import ZoneLoader from './ui/ZoneLoader.jsx'
+import Waypoints from './ui/Waypoints.jsx'
 import { useT } from './ui/useT.js'
 
 // Flujo: Inicio -> Elegir raza -> Juego (con inventario).
@@ -28,6 +29,7 @@ export default function App() {
   const canvasRef = useRef(null)
   const gameRef = useRef(null)
   const panel = useGameStore((s) => s.panel)
+  const waypointOpen = useGameStore((s) => s.waypointOpen)
   const initCharacter = useGameStore((s) => s.initCharacter)
   const t = useT()
 
@@ -52,7 +54,7 @@ export default function App() {
     useGameStore.getState().setPlayerName(s.playerName)
     const race = raceById(s.raceId) || RACES[0]
     initCharacter({ race, gold: s.gold, inventory: s.inventory, equipment: s.equipment,
-                    belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills })
+                    belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills, discovered: s.discovered })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
@@ -92,6 +94,7 @@ export default function App() {
       {phase === 'game' && panel === 'smith' && <Blacksmith />}
       {phase === 'game' && panel === 'alchemy' && <Alchemy />}
       {phase === 'game' && !loading && !error && <DialogueBox />}
+      {phase === 'game' && waypointOpen && <Waypoints />}
       {phase === 'game' && <ZoneLoader />}
       {error && <div className="error">Error: {error}</div>}
 

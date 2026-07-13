@@ -169,7 +169,7 @@ const TRISTON = [
     lines_en: ['The guilds are recruiting again.',
                'Five hundred gold and a three-letter tag.'] },
   // Herrero: repara el equipo por oro (zona de la fragua/yunque).
-  { sprite: 'peasant_man2', name: 'Herrero Dorn', name_en: 'Dorn the Smith', portrait: 'male16.png', x: 63, y: 54, dir: 3, smith: true,
+  { sprite: 'peasant_man2', name: 'Herrero Dorn', name_en: 'Dorn the Smith', portrait: 'male16.png', x: 70, y: 52, dir: 5, smith: true,
     lines: ['El acero se cansa como los hombres.',
             'Tráemelo antes de que se quiebre del todo.'],
     lines_en: ['Steel tires just like men do.',

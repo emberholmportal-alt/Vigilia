@@ -43,6 +43,7 @@ export function loadGame() {
       equipment: Object.fromEntries(Object.entries(s.equipment || {}).map(([k, v]) => [k, unpackItem(v)])),
       belt: (s.belt || []).map(unpackItem),
       equippedBelt: unpackItem(s.equippedBelt),
+      discovered: s.discovered || {},
     }
   } catch { return null }
 }
@@ -59,6 +60,7 @@ export function saveGame(state) {
       equipment: Object.fromEntries(Object.entries(state.equipment || {}).map(([k, v]) => [k, packItem(v)])),
       belt: (state.belt || []).map(packItem),
       equippedBelt: packItem(state.equippedBelt),
+      discovered: state.discovered || {},
     }
     localStorage.setItem(KEY, JSON.stringify(snap))
   } catch { /* almacenamiento lleno / bloqueado: ignorar */ }

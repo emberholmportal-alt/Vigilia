@@ -8,7 +8,7 @@ import { create } from 'zustand'
 import { computeStats } from './data/stats.js'
 import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
-import { tt, setLangGlobal, itemName } from './i18n.js'
+import { tt, setLangGlobal, itemName, raceName } from './i18n.js'
 import { dailyStock, todayStr } from './data/shop.js'
 import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryCapacity } from './data/progression.js'
 import { saveGame } from './data/save.js'
@@ -112,13 +112,31 @@ export const useGameStore = create((set, get) => ({
   setNearby: (nearby) => set((s) => (s.nearby?.name === nearby?.name ? {} : { nearby })),
   requestInteract: () => set((s) => ({ interactSeq: s.interactSeq + 1 })),
 
-  // --- portales ---
+  // --- portales / red de waypoints (estilo Diablo) ---
+  mapName: '',              // zona actual (para el menú de waypoints)
   nearbyPortal: null,       // {label} — portal cercano (lo escribe el loop)
-  portalSeq: 0,             // el botón "Viajar" del HUD lo incrementa; el loop lo lee
   portalTiles: [],          // [{x,y,label}] — para marcar en el minimapa
+  discovered: {},           // { zona: {tx,ty,label} } — waypoints que descubriste (persistido)
+  waypointList: [],         // [{zone,label,tx,ty,adjacent,current}] — lo arma el loop
+  waypointOpen: false,      // el modal de destinos está abierto
+  waypointSeq: 0,           // el loop lo lee para viajar
+  waypointTarget: null,     // zona elegida en el modal
+  setMapName: (m) => set({ mapName: m }),
   setNearbyPortal: (p) => set((s) => (s.nearbyPortal?.label === p?.label ? {} : { nearbyPortal: p })),
-  requestPortal: () => set((s) => ({ portalSeq: s.portalSeq + 1 })),
   setPortals: (portalTiles) => set({ portalTiles }),
+  setWaypointList: (waypointList) => set({ waypointList }),
+  // Descubre un waypoint (zona) con su tile de llegada. Devuelve true si es nuevo.
+  discoverZone: (zone, tx, ty, label) => {
+    const s = get()
+    if (s.discovered[zone]) return false
+    const discovered = { ...s.discovered, [zone]: { tx, ty, label } }
+    set({ discovered })
+    saveGame(get())
+    return true
+  },
+  openWaypoints: () => set({ waypointOpen: true }),
+  closeWaypoints: () => set({ waypointOpen: false }),
+  requestWaypoint: (zone) => set((s) => ({ waypointSeq: s.waypointSeq + 1, waypointTarget: zone, waypointOpen: false })),
 
   // --- Piedra de Retorno / recall ---
   recallSeq: 0,             // usar la piedra lo incrementa; el loop lo lee y ejecuta el recall
@@ -150,6 +168,14 @@ export const useGameStore = create((set, get) => ({
     const hp = Math.max(0, st.hp - Math.max(0, n | 0))
     set({ stats: { ...st, hp } })
     return hp
+  },
+
+  // Cura vida (regeneración en el pueblo). Acumula fracciones; no persiste cada tick.
+  heal: (n) => {
+    const s = get(); const st = s.stats
+    if (!st || st.hp >= st.hpMax) return
+    const hp = Math.min(st.hpMax, st.hp + n)
+    set({ stats: { ...st, hp } })
   },
   // Revive al jugador con vida/maná llenos (al reaparecer).
   reviveFull: () => {
@@ -343,7 +369,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -359,6 +385,7 @@ export const useGameStore = create((set, get) => ({
     set({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
       inventory: inv, equipment: equip, belt: b, equippedBelt,
+      discovered: discovered || {},
       staminaMax: st.staminaMax, stamina: st.staminaMax,
     })
     saveGame(get())
@@ -595,11 +622,10 @@ export const storeApi = {
   addXp: (n) => useGameStore.getState().addXp(n),
   addSkillXp: (skill, n) => useGameStore.getState().addSkillXp(skill, n),
   getPlayerLevel: () => useGameStore.getState().stats?.level || 1,
-  getRaceName: () => useGameStore.getState().race?.name || '',
+  getRaceName: () => raceName(useGameStore.getState().race) || '',
   setNearby: (v) => useGameStore.getState().setNearby(v),
   getInteractSeq: () => useGameStore.getState().interactSeq,
   setNearbyPortal: (v) => useGameStore.getState().setNearbyPortal(v),
-  getPortalSeq: () => useGameStore.getState().portalSeq,
   setPortals: (v) => useGameStore.getState().setPortals(v),
   getRecallSeq: () => useGameStore.getState().recallSeq,
   getRecallBeltIndex: () => useGameStore.getState().recallBeltIndex,
@@ -608,7 +634,14 @@ export const storeApi = {
   getRecallAnchor: () => useGameStore.getState().recallAnchor,
   clearRecallAnchor: () => useGameStore.getState().clearRecallAnchor(),
   setZoneLoad: (z) => useGameStore.getState().setZoneLoad(z),
+  setMapName: (m) => useGameStore.getState().setMapName(m),
+  getDiscovered: () => useGameStore.getState().discovered,
+  discoverZone: (zone, tx, ty, label) => useGameStore.getState().discoverZone(zone, tx, ty, label),
+  setWaypointList: (l) => useGameStore.getState().setWaypointList(l),
+  getWaypointSeq: () => useGameStore.getState().waypointSeq,
+  getWaypointTarget: () => useGameStore.getState().waypointTarget,
   takeDamage: (n) => useGameStore.getState().takeDamage(n),
+  heal: (n) => useGameStore.getState().heal(n),
   reviveFull: () => useGameStore.getState().reviveFull(),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,

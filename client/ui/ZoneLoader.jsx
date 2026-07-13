@@ -48,10 +48,10 @@ export default function ZoneLoader() {
   }, [!!zone, t.lang])
   if (!zone) return null
   return (
-    <div className="zoneload">
-      <div className="zoneload-inner">
+    <div className="modal-backdrop zoneload-backdrop">
+      <div className="settings-panel zoneload-inner">
+        <div className="settings-head"><b>{t('traveling_to')}</b></div>
         <div className="zoneload-rune" />
-        <div className="zoneload-title">{t('traveling_to')}</div>
         <div className="zoneload-zone">{zone.label}</div>
         <div className="zoneload-bar"><div className="zoneload-fill" /></div>
         <p className="zoneload-lore">“{phrase}”</p>

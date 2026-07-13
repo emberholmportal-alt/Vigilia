@@ -31,20 +31,26 @@ export class GroundItem {
     this.view.y = iso.toWorldY(tx, ty)
     this.view.zIndex = tx + ty
 
-    // brillo en el piso (elipse del color de rareza)
+    // sombra en el piso: el ítem parece apoyado, no flotando.
+    this.shadow = new Graphics()
+    this.shadow.ellipse(0, 1, iso.wHalf * 0.34, iso.hHalf * 0.34).fill({ color: 0x000000, alpha: 0.35 })
+    this.view.addChild(this.shadow)
+
+    // aura tenue del color de rareza (para que se note en el pasto sin parecer un token).
     this.glow = new Graphics()
-    this.glow.ellipse(0, 0, iso.wHalf * 0.5, iso.hHalf * 0.5)
-      .fill({ color: this.tint, alpha: 0.35 })
+    this.glow.ellipse(0, 0, iso.wHalf * 0.38, iso.hHalf * 0.34).fill({ color: this.tint, alpha: 0.18 })
     this.view.addChild(this.glow)
 
-    // ícono flotante
+    // ícono apoyado en el suelo (chico, casi sin flotar) con leve inclinación.
     const tex = _iconsTex
     const col = item.icon % COLS, row = (item.icon / COLS) | 0
     this.sprite = new Sprite(new Texture({
       source: tex.source, frame: new Rectangle(col * ICON, row * ICON, ICON, ICON),
     }))
-    this.sprite.anchor.set(0.5, 1)
-    this.sprite.y = -6
+    this.sprite.anchor.set(0.5, 0.9)
+    this.sprite.scale.set(0.82)
+    this.sprite.rotation = -0.18
+    this.sprite.y = -3
     this.view.addChild(this.sprite)
 
     if (this.qty > 1) {
@@ -67,8 +73,9 @@ export class GroundItem {
 
   update(dt) {
     this._t += dt
-    this.sprite.y = -6 + Math.sin(this._t * 3) * 3      // bob
-    this.glow.alpha = 0.28 + 0.12 * (0.5 + 0.5 * Math.sin(this._t * 3))
+    // apenas respira (apoyado en el piso), con un brillo suave de rareza.
+    this.sprite.y = -3 + Math.sin(this._t * 2) * 0.8
+    this.glow.alpha = 0.14 + 0.08 * (0.5 + 0.5 * Math.sin(this._t * 2))
   }
 
   destroy() { this.view.destroy({ children: true }) }

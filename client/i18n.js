@@ -77,6 +77,13 @@ const DICT = {
   // viaje
   traveling_to: { es: 'Viajando a', en: 'Traveling to' },
   travel_label: { es: 'Viajar: {zone}', en: 'Travel: {zone}' },
+  portal_use: { es: 'Usar portal', en: 'Use portal' },
+  waypoint_found: { es: 'Nuevo destino: {zone}', en: 'New destination: {zone}' },
+  waypoints_title: { es: 'Red de portales', en: 'Portal network' },
+  waypoints_hint: { es: 'Elegí un destino descubierto.', en: 'Pick a discovered destination.' },
+  wp_here: { es: 'Estás acá', en: 'You are here' },
+  wp_adjacent: { es: 'Adyacente', en: 'Adjacent' },
+  wp_none: { es: 'Todavía no descubriste otros destinos. Caminá sobre los portales para activarlos.', en: 'You have not discovered other destinations yet. Walk over portals to activate them.' },
   trade_with: { es: 'Comerciar con {name}', en: 'Trade with {name}' },
   talk_with: { es: 'Hablar con {name}', en: 'Talk with {name}' },
   // toasts / motor
