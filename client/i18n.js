@@ -239,6 +239,12 @@ const DICT = {
   abd_saeta: { es: 'Disparo crítico garantizado a tu objetivo.', en: 'A guaranteed critical shot at your target.' },
   ab_fuego: { es: 'Bola de fuego', en: 'Fireball' },
   abd_fuego: { es: 'Proyectil que estalla en fuego alrededor del objetivo.', en: 'A bolt that bursts into fire around the target.' },
+  ab_vigor: { es: 'Vigor', en: 'Vigor' },
+  abd_vigor: { es: 'Te potencia con +daño y +defensa por unos segundos.', en: 'Empowers you with +damage and +defense for a few seconds.' },
+  ab_lluvia: { es: 'Lluvia de flechas', en: 'Arrow Rain' },
+  abd_lluvia: { es: 'Volea que cae en área sobre el objetivo.', en: 'A volley that falls over the target area.' },
+  ab_restaurar: { es: 'Restaurar', en: 'Restore' },
+  abd_restaurar: { es: 'Recuperás vida escalada por tu INT.', en: 'Recover health scaled by your INT.' },
 }
 
 // Nombre de raza según idioma (los datos traen name + name_en).

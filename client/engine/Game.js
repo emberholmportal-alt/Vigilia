@@ -796,7 +796,8 @@ export class Game {
   _playerMeleeDamage() {
     const st = this.store.getStats() || {}
     const min = st.dmgMin || 2, max = st.dmgMax || 5
-    const raw = (min + Math.random() * (max - min)) * (st.dmgMul || 1) + (st.str || 10) * 0.2
+    const buff = 1 + this._buffDmgMul()   // potencia temporal (Vigor)
+    const raw = ((min + Math.random() * (max - min)) * (st.dmgMul || 1) + (st.str || 10) * 0.2) * buff
     // golpe crítico (crit% del equipo): x2
     const crit = (st.crit || 0) > 0 && Math.random() * 100 < st.crit
     return { dmg: Math.max(1, Math.round(raw * (crit ? 2 : 1))), crit }
@@ -806,7 +807,8 @@ export class Game {
   _abilityRoll() {
     const st = this.store.getStats() || {}
     const min = st.dmgMin || 2, max = st.dmgMax || 5
-    return (min + Math.random() * (max - min)) * (st.dmgMul || 1) + (st.str || 10) * 0.2
+    const buff = 1 + this._buffDmgMul()   // potencia temporal (Vigor)
+    return ((min + Math.random() * (max - min)) * (st.dmgMul || 1) + (st.str || 10) * 0.2) * buff
   }
 
   // Lanza una habilidad activa (pedida desde la barra). Valida desbloqueo, recarga, objetivo
@@ -818,8 +820,9 @@ export class Game {
     const st = this.store.getStats() || {}
     if ((st[ab.attr] || 0) < ab.req) { this.store.showToast(tt('ability_locked')); return }
     if ((this._abilityCd[id] || 0) > 0) return   // en recarga: no avisa (spam del botón)
-    const needsTarget = ab.kind === 'bolt' || ab.kind === 'fireball'
+    const needsTarget = ab.kind === 'bolt' || ab.kind === 'fireball' || ab.kind === 'area_phys'
     if (needsTarget && (!this._target || this._target.dead)) { this.store.showToast(tt('ability_no_target')); return }
+    if (ab.kind === 'heal' && (st.hp || 0) >= (st.hpMax || 0)) { this.store.showToast(tt('hp_full')); return }
     if (!this.store.spendMana(ab.mp)) { this.store.showToast(tt('ability_no_mana')); return }
     this._abilityCd[id] = ab.cd
     this.store.setAbilityCd(id, ab.cd * 1000)
@@ -861,8 +864,45 @@ export class Game {
         }
       })
       playSfx('swing.ogg', 0.5)
+    } else if (ab.kind === 'area_phys') {
+      const target = this._target
+      p.faceTile(target.tx, target.ty); p.attack('shoot')
+      this._spawnProjectile(p.view.x, p.view.y - 40, target.view.x, target.view.y + (target._hpY || -40) * 0.5, 'arrow', () => {
+        this._castRing(target.view.x, target.view.y + (target._hpY || -40) * 0.5, 0xffcf6a)
+        for (const e of this.enemies) {
+          if (e.dead) continue
+          if (Math.abs(e.tx - target.tx) + Math.abs(e.ty - target.ty) > ab.radius) continue
+          const dmg = Math.max(1, Math.round(this._abilityRoll() * ab.dmgMul))
+          this._floatText(e.view.x, e.view.y + e._hpY, `${dmg}`, '#ffd08a')
+          if (e.takeDamage(dmg)) this._enemyKilled(e)
+        }
+      })
+      playSfx('swing.ogg', 0.5)
+    } else if (ab.kind === 'buff') {
+      p.attack('cast'); playSfx('swing.ogg', 0.5)
+      this._castRing(p.view.x, p.view.y - 20, 0x8fd0ff)
+      const until = Date.now() + ab.dur * 1000
+      this._buffs = (this._buffs || []).filter((b) => b.id !== ab.id)
+      this._buffs.push({ id: ab.id, icon: ab.icon, dmgMul: ab.buff.dmgMul || 0, defense: ab.buff.defense || 0, until })
+      this._pushBuffs()
+      this._floatText(p.view.x, p.view.y - 60, '¡' + tt('ab_' + ab.id) + '!', '#8fd0ff')
+    } else if (ab.kind === 'heal') {
+      const amt = Math.round(ab.base + (st.int || 10) * ab.intMul)
+      this.store.heal(amt)
+      this._castRing(p.view.x, p.view.y - 20, 0x8fe0a0)
+      this._floatText(p.view.x, p.view.y - 60, `+${amt}`, '#9fe0a0')
+      playSfx('swing.ogg', 0.4)
     }
   }
+
+  // Empuja los buffs activos al store (para el indicador del HUD).
+  _pushBuffs() {
+    this.store.setActiveBuffs((this._buffs || []).map((b) => ({ id: b.id, icon: b.icon, until: b.until })))
+  }
+
+  // Suma de los buffs activos (multiplicador de daño y defensa plana).
+  _buffDmgMul() { let m = 0; if (this._buffs) for (const b of this._buffs) m += b.dmgMul; return m }
+  _buffDefense() { let d = 0; if (this._buffs) for (const b of this._buffs) d += b.defense; return d }
 
   // Anillo expansivo (efecto de golpe en área / estallido). Se desvanece solo.
   _castRing(x, y, color) {
@@ -922,7 +962,7 @@ export class Game {
       if (this._dead || !this.player) return
       const dd = Math.abs(this.player.tx - aimTx) + Math.abs(this.player.ty - aimTy)
       if (dd > 1.3) return   // el jugador se movió: esquivó la flecha
-      const defense = (this.store.getStats()?.defense) || 0
+      const defense = ((this.store.getStats()?.defense) || 0) + this._buffDefense()
       const dmg = Math.max(1, dmg0 - defense)
       const hp = this.store.takeDamage(dmg)
       this._floatText(this.player.view.x, this.player.view.y - 70, `-${dmg}`, '#ff6a5a')
@@ -989,12 +1029,18 @@ export class Game {
     if (this._retargetT > 0) this._retargetT -= dt
     // Recarga de habilidades activas.
     for (const id in this._abilityCd) { if ((this._abilityCd[id] -= dt) <= 0) delete this._abilityCd[id] }
+    // Vencimiento de buffs temporales (Vigor).
+    if (this._buffs && this._buffs.length) {
+      const before = this._buffs.length
+      this._buffs = this._buffs.filter((b) => b.until > Date.now())
+      if (this._buffs.length !== before) this._pushBuffs()
+    }
     // Habilidad pedida desde la barra de acción.
     const cseq = this.store.getCastSeq()
     if (cseq !== this._lastCastSeq) { this._lastCastSeq = cseq; this._castAbility(this.store.getCastAbility()) }
 
-    // Enemigos: IA + daño al jugador (la defensa del equipo reduce cada golpe).
-    const defense = (this.store.getStats()?.defense) || 0
+    // Enemigos: IA + daño al jugador (la defensa del equipo + buff reduce cada golpe).
+    const defense = ((this.store.getStats()?.defense) || 0) + this._buffDefense()
     let dmgToPlayer = 0
     for (const e of this.enemies) {
       e.update(dt, p)

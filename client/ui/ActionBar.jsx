@@ -10,6 +10,34 @@ import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 
+// Indicador de potencias temporales activas (Vigor): ícono + segundos restantes.
+export function BuffBar() {
+  const activeBuffs = useGameStore((s) => s.activeBuffs)
+  const t = useT()
+  const [, tick] = useState(0)
+  const timer = useRef()
+  useEffect(() => {
+    if (!activeBuffs || !activeBuffs.length) return
+    let alive = true
+    const loop = () => { if (!alive) return; tick((n) => n + 1); timer.current = setTimeout(loop, 200) }
+    loop()
+    return () => { alive = false; clearTimeout(timer.current) }
+  }, [activeBuffs])
+  const now = Date.now()
+  const live = (activeBuffs || []).filter((b) => b.until > now)
+  if (!live.length) return null
+  return (
+    <div className="buff-row">
+      {live.map((b) => (
+        <div key={b.id} className="buff-chip" title={t('ab_' + b.id)}>
+          <span className="buff-ic">{b.icon}</span>
+          <span className="buff-sec">{Math.ceil((b.until - now) / 1000)}s</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // Barra de habilidades activas: botones redondos con la habilidad desbloqueada (por atributo),
 // su costo de maná y el barrido de recarga. Tocar una pide al loop que la lance sobre el objetivo.
 export function AbilityBar() {

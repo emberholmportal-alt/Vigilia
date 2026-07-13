@@ -224,8 +224,10 @@ export const useGameStore = create((set, get) => ({
   castSeq: 0,               // el HUD lo incrementa al tocar una habilidad
   castAbility: null,        // id de la habilidad pedida; el loop la ejecuta sobre el objetivo
   abilityCd: {},            // { id: msFin } — timestamp de fin de recarga (para el barrido del HUD)
+  activeBuffs: [],          // [{id, icon, until}] — potencias temporales activas (las escribe el loop)
   requestCast: (id) => set((s) => ({ castSeq: s.castSeq + 1, castAbility: id })),
   setAbilityCd: (id, ms) => set((s) => ({ abilityCd: { ...s.abilityCd, [id]: Date.now() + ms } })),
+  setActiveBuffs: (list) => set({ activeBuffs: list }),
   // Revive al jugador con vida/maná llenos (al reaparecer).
   reviveFull: () => {
     const s = get(); const st = s.stats
@@ -864,6 +866,7 @@ export const storeApi = {
   getCastSeq: () => useGameStore.getState().castSeq,
   getCastAbility: () => useGameStore.getState().castAbility,
   setAbilityCd: (id, ms) => useGameStore.getState().setAbilityCd(id, ms),
+  setActiveBuffs: (list) => useGameStore.getState().setActiveBuffs(list),
   reviveFull: () => useGameStore.getState().reviveFull(),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
