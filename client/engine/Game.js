@@ -48,30 +48,63 @@ export class Game {
     })
     if (this.destroyed) { app.destroy(true); return }
     this.app = app
+    this.canvasParent = canvasParent
     canvasParent.appendChild(app.canvas)
     // Permitir dt grandes en caídas de fps sin recortar tanto el movimiento (el
     // camino ya está validado, así que pasos grandes no atraviesan paredes).
     app.ticker.minFPS = 4
 
-    const world = await loadWorld(mapName)
-    if (this.destroyed) { app.destroy(true); return }
-    this.world = world
+    // Cortina negra para el fundido al viajar entre mapas (queda por encima de todo).
+    this.fade = new Graphics()
+    this.fade.rect(0, 0, 8000, 8000).fill({ color: 0x000000 })
+    this.fade.zIndex = 1e7
+    this.fade.eventMode = 'none'
+    this.fade.alpha = 0
+    this.fade.visible = false
+    app.stage.sortableChildren = true
+    app.stage.addChild(this.fade)
+    this._fadeAlpha = 0
 
-    // Estampar edificios en el mapa abierto ANTES de crear grid y renderer.
+    await this._buildWorld(mapName)
+    if (this.destroyed) { app.destroy(true); return }
+
+    // Input + resize + suscripción de equipo: una sola vez (usan this.*, sobreviven al
+    // cambio de mapa).
+    this._setupInput(app)
+    window.addEventListener('resize', this._onResize)
+    this._unsub = this.store.onEquipmentChange((equip) => {
+      if (this.player) this.player.setEquipment(equipToGfx(equip))
+    })
+
+    if (import.meta.env.DEV) window.__vigilia = this
+    this._lastInteractSeq = this.store.getInteractSeq() // no interactuar en el primer tick
+    this._fpsAccum = 0
+    this._fpsFrames = 0
+    app.ticker.add(this._tick)
+  }
+
+  // Construye (o reconstruye) todo lo específico del mapa. `spawnOverride` = tile de
+  // llegada de un portal; `preWorld` = mundo ya cargado (para no cargar dos veces).
+  async _buildWorld(mapName, spawnOverride = null, preWorld = null) {
+    this._loading = true
+    const app = this.app
+    const world = preWorld || await loadWorld(mapName)
+    if (this.destroyed) return
+    this.world = world
+    this.mapName = mapName
+
     stampStructures(world.map, mapName)
 
     const iso = new Iso(world.map.tileW, world.map.tileH, world.tileset.scale)
     this.iso = iso
-
     const grid = new Grid(world.map.layers.collision, world.map.w, world.map.h)
     this.grid = grid
-
     const renderer = new MapRenderer(iso, world.map, world.tileset)
     this.renderer = renderer
 
-    // Atlas del tileset en un canvas para leer alpha por-pixel (oclusión precisa: sólo
-    // atenuamos un edificio cuando su pixel opaco realmente tapa al personaje).
+    // Atlas del tileset en un canvas para leer alpha por-pixel (oclusión precisa).
     this._masks = new Map()
+    this._occAlpha = new Map()
     this._atlasCtx = null
     this._loadOcclusionAtlas(world.tileset.atlasSrc)
 
@@ -80,26 +113,23 @@ export class Game {
     camera.resize(app.screen.width, app.screen.height)
     this.camera = camera
 
-    // Contenedor del mundo: lo desplaza la cámara y lo escala el zoom.
     const worldContainer = new Container()
     worldContainer.scale.set(zoom)
     worldContainer.addChild(renderer.root)
-    app.stage.addChild(worldContainer)
+    app.stage.addChildAt(worldContainer, 0) // debajo de la cortina de fundido
     this.worldContainer = worldContainer
 
-    // Marcador de destino (X sobre el suelo). zIndex alto para que quede por encima
-    // de los tiles de pasto (que ordenan por x+y) pero debajo de objetos y personaje.
     this.ping = new Graphics()
     this.ping.visible = false
     this.ping.zIndex = 1e6
     renderer.groundLayer.addChild(this.ping)
 
-    // Escala de nuestras entidades para este mapa (achica al héroe/NPCs en Triston).
     const eScale = ENTITY_SCALE[mapName] || 1
     this._eScale = eScale
 
-    // Jugador en el centro del pueblo (plaza con cabañas), no en la puerta de roble.
-    const spawn = hubOrCentralSpawn(mapName, grid, world.map)
+    const spawn = (spawnOverride && grid.isWalkable(spawnOverride.x, spawnOverride.y))
+      ? spawnOverride
+      : hubOrCentralSpawn(mapName, grid, world.map)
     this._spawn = spawn
     const player = new Player(iso, grid, world.manifest, spawn.x, spawn.y)
     player.view.scale.set(eScale * (PLAYER_SCALE[mapName] || 1))
@@ -110,8 +140,7 @@ export class Game {
     this._nameLevel = this.store.getPlayerLevel()
     await player.setEquipment(equipToGfx(this.store.getEquipment()))
 
-    // NPCs de la plaza (vida de la ciudad). Se quedan quietos en su tile, se bloquea ese
-    // tile para que el jugador los rodee, y al tocarlos hablan.
+    // NPCs de la plaza.
     this.npcs = []
     for (const def of NPCS_BY_MAP[mapName] || []) {
       let x = def.x, y = def.y
@@ -121,7 +150,7 @@ export class Game {
       }
       const npc = new Npc(world.manifest, { ...def, x, y }, iso)
       const ok = await npc.load()
-      if (this.destroyed) { app.destroy(true); return }
+      if (this.destroyed) return
       if (!ok) continue
       npc.view.scale.set(eScale)
       renderer.objectLayer.addChild(npc.view)
@@ -130,27 +159,25 @@ export class Game {
       this.npcs.push(npc)
     }
 
-    // Decoraciones del mapa (fuente, cerdos, aldeanos ambientales de HERESY).
     await this._buildDecorations(renderer, iso, world.map, grid)
 
-    // Cofres del mapa (loot). El tile del cofre ya está en la capa `object`; le sumamos
-    // un brillo dorado que pulsa (para que se note) y un hotspot para abrirlo.
     await loadIcons()
     this.groundItems = []
     this._pendingChest = null
     this._buildChests(renderer, iso, world.map, grid)
 
-    // Enemigos del mapa (bestiario de Flare). Combate: IA + daño + loot/XP.
+    // Enemigos + estado de combate.
     this.enemies = []
-    this._floaters = []          // números de daño flotantes
-    this._target = null          // enemigo apuntado por el jugador
+    this._floaters = []
+    this._target = null
     this._playerAtkCd = 0
+    this._pendingHit = null
     this._dead = false
     this._deadT = 0
     this._hurtCd = 0
     await this._spawnEnemies(renderer, world.map, grid, world.manifest, spawn)
 
-    // Partículas ambientales: luciérnagas sobre la plaza + brillo en los landmarks.
+    // Partículas ambientales.
     this.particles = new ParticleField(app.renderer)
     renderer.root.addChild(this.particles.container)
     const sc = iso.toWorld(spawn.x, spawn.y)
@@ -162,36 +189,89 @@ export class Game {
       if (!npc.def.landmark) continue
       const w = iso.toWorld(npc.tx, npc.ty)
       const tint = npc.def.glow || GLOW_TINT[npc.def.sprite] || 0xffcf5a
-      // Los portales brillan más fuerte y más alto (columna arcana).
       this.particles.addEmitter(npc.def.portal
         ? { x: w.x, y: w.y - 34, rx: 7, ry: 5, rate: 16, tint, vy: -30, spread: 6, life: 2.2, size: 1.1 }
         : { x: w.x, y: w.y - 30, rx: 9, ry: 6, rate: 9, tint, vy: -20, spread: 5, life: 1.8, size: 0.9 })
     }
 
-    camera.follow(player.tx, player.ty)
+    // Portales del mapa (viaje entre zonas).
+    this._buildPortals(renderer, iso, world.map, mapName)
+    this._portalArmed = false // no dispares el portal en el que aparecés
+
+    camera.follow(spawn.x, spawn.y)
     camera.snap()
 
-    this._setupInput(app, camera, player, iso)
-    window.addEventListener('resize', this._onResize)
-
-    // El equipo lo maneja la UI (React) como fuente de verdad; Pixi reacciona.
-    this._unsub = this.store.onEquipmentChange((equip) => {
-      player.setEquipment(equipToGfx(equip))
-    })
-
-    // Estado inicial al HUD.
     this.store.setMapTitle(world.map.title || mapName)
     this.store.setMinimap(this._buildMinimap(world.map))
+    this._loading = false
+  }
 
-    // Hook de inspección para tests/depuración (solo dev).
-    if (import.meta.env.DEV) window.__vigilia = this
+  // Destruye todo lo específico del mapa (para reconstruir en otro). La app, el input y
+  // la cortina de fundido sobreviven.
+  _teardownWorld() {
+    if (this.worldContainer) { this.worldContainer.destroy({ children: true, texture: false }); this.worldContainer = null }
+    this.npcs = []
+    this.enemies = []
+    this.groundItems = []
+    this.chests = []
+    this._floaters = []
+    this.portals = []
+    this._target = null
+    this._pendingChest = null
+    this._pendingHit = null
+    this.particles = null
+    this._masks?.clear()
+    this._occAlpha?.clear()
+    this._atlasCtx = null
+  }
 
-    // Loop. (StrictMode puede desmontar durante los awaits de arriba.)
-    if (this.destroyed) { app.destroy(true); return }
-    this._lastInteractSeq = this.store.getInteractSeq() // no interactuar en el primer tick
-    this._fpsAccum = 0
-    this._fpsFrames = 0
-    app.ticker.add(this._tick)
+  // Viaja a otro mapa (portal). Fundido a negro, reconstruye el mundo y vuelve.
+  async changeMap(to, tx, ty) {
+    if (this._loading || this._changing) return
+    this._changing = true
+    this._fadeAlpha = 1
+    this.fade.alpha = 1
+    this.fade.visible = true
+    let world
+    try { world = await loadWorld(to) }
+    catch { this._changing = false; this._fadeAlpha = 0; this.fade.visible = false; this.store.showToast('Esa zona todavía no está disponible'); return }
+    if (this.destroyed) return
+    this._teardownWorld()
+    const spawn = (Number.isFinite(tx) && Number.isFinite(ty)) ? { x: tx, y: ty } : null
+    await this._buildWorld(to, spawn, world)
+    this._changing = false
+    this._fadeOut = true // el tick baja el alpha
+  }
+
+  // Arma los marcadores de portal + guarda sus zonas para detectar la entrada.
+  _buildPortals(renderer, iso, map, mapName) {
+    this.portals = []
+    const list = PORTAL_OVERRIDE[mapName] || map.portals || []
+    for (const p of list) {
+      const w = p.w || 1, h = p.h || 1
+      const cx = p.x + w / 2 - 0.5, cy = p.y + h / 2 - 0.5
+      const wx = iso.toWorldX(cx, cy), wy = iso.toWorldY(cx, cy)
+      const g = new Graphics()
+      g.ellipse(0, 0, iso.wHalf * 0.95, iso.hHalf * 0.95).fill({ color: 0x7a3bff, alpha: 0.22 })
+      g.ellipse(0, 0, iso.wHalf * 0.6, iso.hHalf * 0.6).fill({ color: 0xc9a0ff, alpha: 0.32 })
+      g.x = wx; g.y = wy; g.zIndex = cx + cy - 0.5
+      renderer.groundLayer.addChild(g)
+      const label = new Text({ text: p.label || p.to, style: {
+        fontFamily: 'Georgia, serif', fontSize: 12, fill: '#d9b3ff',
+        stroke: { color: '#0a090c', width: 3 }, align: 'center',
+      } })
+      label.anchor.set(0.5, 1); label.x = wx; label.y = wy - 34; label.zIndex = 2e6
+      renderer.objectLayer.addChild(label)
+      if (this.particles) {
+        this.particles.addEmitter({ x: wx, y: wy - 10, rx: iso.wHalf * 0.5, ry: iso.hHalf * 0.4, rate: 18, tint: 0xb98bff, vy: -34, spread: 6, life: 2.0, size: 1.1 })
+      }
+      this.portals.push({ x: p.x, y: p.y, w, h, to: p.to, tx: p.tx, ty: p.ty, label: p.label, gfx: g })
+    }
+  }
+
+  _enterPortal(p) {
+    this.store.showToast('Viajás: ' + (p.label || p.to))
+    this.changeMap(p.to, p.tx, p.ty)
   }
 
   // Tocar un NPC: el jugador se acerca, el NPC te mira y se abre la caja de diálogo.
@@ -484,12 +564,16 @@ export class Game {
   _respawn() {
     this._dead = false
     this.store.reviveFull()
+    this.store.showToast('Despertás a salvo en Triston...')
+    if (this.mapName !== 'triston') {
+      this.changeMap('triston', 56, 52)   // el pueblo es el punto de retorno
+      return
+    }
     const s = this._spawn
     this.player.tx = s.x; this.player.ty = s.y
     this.player.moving = false; this.player.path.length = 0
     this.player.paperdoll._oneShot = null
     this.camera.follow(s.x, s.y); this.camera.snap()
-    this.store.showToast('Reapareces en el punto de entrada')
   }
 
   // Lógica de combate por frame (la llama el tick). dt en segundos.
@@ -607,17 +691,17 @@ export class Game {
     return { url: cv.toDataURL('image/png'), scale, minMx, pad, w: cw, h: ch }
   }
 
-  _setupInput(app, camera, player, iso) {
+  _setupInput(app) {
     app.stage.eventMode = 'static'
     app.stage.hitArea = app.screen
     const onTap = (e) => {
-      if (this._dead) return                 // congelado hasta reaparecer
+      if (this._dead || this._loading || this._changing) return // congelado
       this._target = null                    // tocar el suelo cancela el ataque
-      const w = camera.screenToWorld(e.global.x, e.global.y)
-      const t = iso.toTile(w.x, w.y)
+      const w = this.camera.screenToWorld(e.global.x, e.global.y)
+      const t = this.iso.toTile(w.x, w.y)
       const tx = Math.round(t.x)
       const ty = Math.round(t.y)
-      const path = player.walkTo(tx, ty)
+      const path = this.player.walkTo(tx, ty)
       if (path.length) {
         const dest = path[path.length - 1]
         this._showDestination(dest.x, dest.y)
@@ -648,6 +732,15 @@ export class Game {
   _tick = (ticker) => {
     const dtFrames = ticker.deltaTime            // ~1 a 60fps
     const dt = ticker.deltaMS / 1000             // segundos
+
+    // Fundido al viajar entre mapas.
+    if (this._fadeOut) {
+      this._fadeAlpha = Math.max(0, this._fadeAlpha - dt * 3)
+      this.fade.alpha = this._fadeAlpha
+      if (this._fadeAlpha <= 0) { this._fadeOut = false; this.fade.visible = false }
+    }
+    // Mientras reconstruye el mundo (cambio de mapa), no toques nada.
+    if (this._loading || this._changing || !this.player) return
 
     // Correr/caminar con stamina.
     const st = this.store.getRunState()
@@ -703,6 +796,17 @@ export class Game {
     // Partículas ambientales.
     this._pt = (this._pt || 0) + dt
     this.particles.update(dt, this._pt)
+
+    // Portales: pulso del marcador + viaje al pisar la zona (tras haber salido de ella,
+    // así no se dispara el portal en el que aparecés).
+    if (this.portals && this.portals.length) {
+      const pulse = 1 + 0.13 * Math.sin(this._pt * 4)
+      for (const p of this.portals) { p.gfx.scale.set(pulse) }
+      const px = Math.round(this.player.tx), py = Math.round(this.player.ty)
+      const on = this.portals.find((p) => px >= p.x && px < p.x + p.w && py >= p.y && py < p.y + p.h)
+      if (!on) this._portalArmed = true
+      else if (this._portalArmed && !this._dead) { this._portalArmed = false; this._enterPortal(on); return }
+    }
 
     // Empujar la stamina y la posición (minimapa) al HUD a ~12Hz (no cada frame).
     this._stamAccum = (this._stamAccum || 0) + dt
@@ -816,6 +920,15 @@ const PLAYER_SCALE = { triston: 0.9 }
 // Zoom de cámara por mapa: al achicar las entidades, acercamos la cámara para que el
 // pueblo no se vea diminuto en pantallas grandes (todo más grande, sin deformar escala).
 const MAP_ZOOM = { triston: 1.3 }
+
+// Portales curados por mapa (reemplazan los del mapa cuando existen). Los portales que
+// trae Triston de HERESY apuntan a mapas que no convertimos; acá conectamos el pueblo con
+// una zona de combate real y de vuelta, formando un loop jugable. El tile de llegada
+// coincide con el portal de vuelta (el "arm" evita que se dispare al aparecer).
+const PORTAL_OVERRIDE = {
+  triston: [{ x: 56, y: 52, w: 1, h: 1, to: 'goblin_camp', tx: 29, ty: 31, label: 'Campo de Duendes' }],
+  goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 56, ty: 52, label: 'Volver a Triston' }],
+}
 
 // Decoraciones ambientales de HERESY que sacamos a mano (por mapa). En Triston quitamos
 // al posadero rojo del carro: ese puesto es donde ponemos al mercader (parece un mercado).
