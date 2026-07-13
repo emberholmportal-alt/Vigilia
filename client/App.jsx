@@ -16,6 +16,7 @@ import Blacksmith from './ui/Blacksmith.jsx'
 import ChatLog from './ui/ChatLog.jsx'
 import Minimap from './ui/Minimap.jsx'
 import DialogueBox from './ui/DialogueBox.jsx'
+import ZoneLoader from './ui/ZoneLoader.jsx'
 
 // Flujo: Inicio -> Elegir raza -> Juego (con inventario).
 export default function App() {
@@ -87,6 +88,7 @@ export default function App() {
       {phase === 'game' && panel === 'shop' && <Vendor />}
       {phase === 'game' && panel === 'smith' && <Blacksmith />}
       {phase === 'game' && !loading && !error && <DialogueBox />}
+      {phase === 'game' && <ZoneLoader />}
       {error && <div className="error">Error: {error}</div>}
 
       {phase === 'start' && <StartScreen onEnter={startGame} onContinue={continueGame} canContinue={hasSave()} loading={false} />}

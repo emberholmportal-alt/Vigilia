@@ -57,7 +57,7 @@ export class Game {
 
     // Cortina negra para el fundido al viajar entre mapas (queda por encima de todo).
     this.fade = new Graphics()
-    this.fade.rect(0, 0, 8000, 8000).fill({ color: 0x000000 })
+    this.fade.rect(0, 0, 8000, 8000).fill({ color: 0x0d0713 }) // obsidiana violácea, no negro puro
     this.fade.zIndex = 1e7
     this.fade.eventMode = 'none'
     this.fade.alpha = 0
@@ -80,6 +80,7 @@ export class Game {
     if (import.meta.env.DEV) window.__vigilia = this
     this._lastInteractSeq = this.store.getInteractSeq() // no interactuar en el primer tick
     this._lastPortalSeq = this.store.getPortalSeq()
+    this._lastRecallSeq = this.store.getRecallSeq()
     this._fpsAccum = 0
     this._fpsFrames = 0
     app.ticker.add(this._tick)
@@ -235,22 +236,35 @@ export class Game {
     this._atlasCtx = null
   }
 
-  // Viaja a otro mapa (portal). Fundido a negro, reconstruye el mundo y vuelve.
+  // Viaja a otro mapa (portal). Pantalla de carga temática (con lore) mientras reconstruye
+  // el mundo; nunca queda en negro. Un mínimo en pantalla evita que la barra parpadee.
   async changeMap(to, tx, ty) {
     if (this._loading || this._changing) return
     this._changing = true
+    this.store.setZoneLoad({ label: zoneTitle(to) })
+    // dejar que React pinte la cortina antes del trabajo pesado (evita un frame del mundo viejo)
+    await new Promise((r) => setTimeout(r, 60))
+    const t0 = performance.now()
     this._fadeAlpha = 1
     this.fade.alpha = 1
     this.fade.visible = true
     let world
     try { world = await loadWorld(to) }
-    catch { this._changing = false; this._fadeAlpha = 0; this.fade.visible = false; this.store.showToast('Esa zona todavía no está disponible'); return }
+    catch {
+      this._changing = false; this._fadeAlpha = 0; this.fade.visible = false
+      this.store.setZoneLoad(null); this.store.showToast('Esa zona todavía no está disponible'); return
+    }
     if (this.destroyed) return
     this._teardownWorld()
     const spawn = (Number.isFinite(tx) && Number.isFinite(ty)) ? { x: tx, y: ty } : null
     await this._buildWorld(to, spawn, world)
+    // Mínimo en pantalla para que la barra de carga y la frase de lore se lean.
+    const elapsed = performance.now() - t0
+    if (elapsed < 1300) await new Promise((r) => setTimeout(r, 1300 - elapsed))
+    if (this.destroyed) return
     this._changing = false
-    this._fadeOut = true // el tick baja el alpha
+    this.store.setZoneLoad(null)
+    this._fadeOut = true // el tick baja el alpha del velo de Pixi por debajo de la cortina
   }
 
   // Arma los marcadores de portal + guarda sus zonas para detectar la entrada.
@@ -298,6 +312,36 @@ export class Game {
     this.changeMap(p.to, p.tx, p.ty)
   }
 
+  // Usar una Piedra de Retorno (desde el cinturón): te ancla al punto actual y te recall al
+  // pueblo. En Triston no hace nada (ya estás en casa) y no gasta la piedra.
+  _doRecall() {
+    if (this._loading || this._changing || this._dead || !this.player) return
+    if (this.mapName === 'triston') { this.store.showToast('Ya estás en el pueblo'); return }
+    const i = this.store.getRecallBeltIndex()
+    this.store.setRecallAnchor({
+      map: this.mapName, tx: Math.round(this.player.tx), ty: Math.round(this.player.ty),
+      label: zoneTitle(this.mapName),
+    })
+    this.store.consumeBelt(i)
+    this.store.showToast('La piedra te arranca del mundo...')
+    this.changeMap('triston', OBELISK_RETURN[0], OBELISK_RETURN[1])
+  }
+
+  // Tocar el Obelisco de Retorno del pueblo: si hay un ancla guardada, te devuelve ahí.
+  _useObelisk() {
+    const a = this.store.getRecallAnchor()
+    if (a) {
+      this.store.clearRecallAnchor()
+      this.store.showToast('El obelisco se abre hacia ' + a.label)
+      this.changeMap(a.map, a.tx, a.ty)
+    } else {
+      this.store.openDialogue({ name: 'Obelisco de Retorno', portrait: null, lines: [
+        'La piedra rúnica duerme, fría al tacto.',
+        'Usá una Piedra de Retorno allá afuera: su luz te traerá aquí, y este obelisco te devolverá al punto donde estabas.',
+      ] })
+    }
+  }
+
   _inspectCorpse(e) {
     this.store.logMessage({ channel: 'sistema', text: `Inspeccionás el cadáver de ${e.def.name} (Nv ${e.level}). No queda nada de valor.` })
     this.store.showToast('Cadáver vacío')
@@ -326,7 +370,8 @@ export class Game {
     const pv = this.iso.toWorld(this.player.tx, this.player.ty)
     const nv = this.iso.toWorld(npc.tx, npc.ty)
     npc.dir = screenVecToDir(pv.x - nv.x, pv.y - nv.y)
-    if (npc.def.shop) this.store.openShop(npc.def.name)
+    if (npc.def.obelisk) this._useObelisk()
+    else if (npc.def.shop) this.store.openShop(npc.def.name)
     else if (npc.def.smith) this.store.openSmith(npc.def.name)
     else this.store.openDialogue({ name: npc.def.name, portrait: npc.def.portrait, lines: npc.lines })
   }
@@ -903,6 +948,10 @@ export class Game {
     const seq = this.store.getInteractSeq()
     if (seq !== this._lastInteractSeq) { this._lastInteractSeq = seq; if (this._nearbyNpc) this._talkTo(this._nearbyNpc) }
 
+    // Piedra de Retorno usada desde el cinturón: recall al pueblo.
+    const rseq = this.store.getRecallSeq()
+    if (rseq !== this._lastRecallSeq) { this._lastRecallSeq = rseq; this._doRecall() }
+
     // Abrir el cofre pendiente al llegar cerca.
     if (this._pendingChest && !this.player.moving) {
       const c = this._pendingChest
@@ -1096,6 +1145,9 @@ const PORTAL_EXTRA = {
   // Puente racimo II (nivel 5-6) -> racimo III (nivel 9-10): de la brecha a Black Oak City.
   the_breach: [{ x: 46, y: 98, w: 1, h: 1, to: 'black_oak_city', tx: 98, ty: 50, label: 'Black Oak City' }],
 }
+
+// Tile de llegada al recall a Triston: al lado del Obelisco de Retorno (55,45) de la plaza.
+const OBELISK_RETURN = [55, 46]
 
 // Destinos que NO conectamos (nexos de fast-travel / mapas de sistema de Flare).
 const PORTAL_BLOCK = new Set(['hyperspace', 'World_map', 'spawn', 'arrival'])

@@ -9,7 +9,15 @@ export const BELTS = [
   { id: 90003, name: 'Cinturón de guerra', slot: 'belt', beltSlots: 4, price: 700, icon: 34, rarity: 'encantado', tier: 6, stats: {} },
 ]
 
-export const ITEMS = data.items.concat(BELTS)
+// Piedra de Retorno: consumible de "portal a pueblo" (misma mecánica que el Perdition Scroll
+// de Flare, que teletransporta a un hub). Se usa desde el cinturón en cualquier zona: te
+// recall a Triston y ancla tu punto; el Obelisco del pueblo te devuelve ahí. Icono 79 (el
+// pergamino real de Flare).
+export const RECALL_STONE = { id: 90010, name: 'Piedra de Retorno', slot: 'scroll', price: 45, icon: 79, rarity: 'fino', tier: 1, recall: true, stats: {},
+  desc: 'Te devuelve al pueblo y ancla tu regreso. El Obelisco de Triston te trae de vuelta.' }
+
+export const ITEMS = data.items.concat(BELTS, [RECALL_STONE])
+export const isRecall = (it) => !!it && it.recall
 
 const byId = new Map(ITEMS.map((i) => [i.id, i]))
 

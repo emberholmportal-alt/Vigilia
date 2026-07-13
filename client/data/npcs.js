@@ -165,6 +165,9 @@ const TRISTON = [
   { sprite: 'peasant_man2', name: 'Herrero Dorn', portrait: 'male16.png', x: 63, y: 54, dir: 3, smith: true,
     lines: ['El acero se cansa como los hombres.',
             'Tráemelo antes de que se quiebre del todo.'] },
+  // Obelisco de Retorno: al lado del portal del pueblo. Si usaste una Piedra de Retorno en
+  // el mundo, este obelisco te devuelve al punto anclado (mecánica de portal de Diablo).
+  { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', landmark: true, obelisk: true, x: 55, y: 45, dir: 7 },
 ]
 
 export const NPCS_BY_MAP = {

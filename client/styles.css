@@ -639,3 +639,57 @@ html, body, #root {
   position: absolute; left: 12px; right: 12px; top: 50%;
   color: #e8836a; text-align: center; font-size: 13px;
 }
+
+/* ---------- pantalla de carga entre zonas (ZoneLoader) ---------- */
+.zoneload {
+  position: fixed; inset: 0; z-index: 40; pointer-events: auto;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(120% 80% at 50% 38%, rgba(60, 36, 96, 0.5), rgba(10, 9, 12, 0.98) 62%),
+    var(--obsidian);
+  animation: zl-in 140ms ease-out;
+}
+@keyframes zl-in { from { opacity: 0; } }
+.zoneload-inner {
+  width: min(88vw, 460px); padding: 26px 24px 30px;
+  text-align: center;
+  border: 1px solid #4a3a63;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(34, 29, 43, 0.72), rgba(16, 12, 22, 0.86));
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(154, 107, 255, 0.12);
+}
+/* runa giratoria (mismo violeta que el portal) */
+.zoneload-rune {
+  width: 48px; height: 48px; margin: 0 auto 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(154, 107, 255, 0.28);
+  border-top-color: #b58bff; border-right-color: #8a5bff;
+  box-shadow: 0 0 18px rgba(138, 91, 255, 0.4), inset 0 0 10px rgba(138, 91, 255, 0.25);
+  animation: zl-spin 1s linear infinite;
+}
+@keyframes zl-spin { to { transform: rotate(360deg); } }
+.zoneload-title {
+  font-family: Georgia, serif; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px;
+}
+.zoneload-zone {
+  font-family: Georgia, serif; color: #e6d9ff; font-size: 25px;
+  margin: 4px 0 18px; text-shadow: 0 2px 10px rgba(138, 91, 255, 0.4);
+}
+.zoneload-bar {
+  height: 8px; border-radius: 5px; overflow: hidden;
+  background: rgba(10, 8, 14, 0.85);
+  border: 1px solid #3b3145; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+.zoneload-fill {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, #6a3fb0, #b58bff);
+  box-shadow: 0 0 10px rgba(138, 91, 255, 0.6);
+  animation: zl-fill 1.25s ease-in-out forwards;
+}
+@keyframes zl-fill { 0% { width: 6%; } 70% { width: 88%; } 100% { width: 100%; } }
+.zoneload-lore {
+  margin: 18px 4px 0; color: var(--parch); opacity: 0.82;
+  font-family: Georgia, serif; font-style: italic; font-size: 13px; line-height: 1.5;
+  min-height: 3.2em;
+}

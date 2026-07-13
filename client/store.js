@@ -6,7 +6,7 @@
 // pasará a pedirle al server y aplicar su respuesta.
 import { create } from 'zustand'
 import { computeStats } from './data/stats.js'
-import { isDurable, durabilityMax } from './data/items.js'
+import { isDurable, durabilityMax, isRecall } from './data/items.js'
 import { setMuted } from './engine/audio.js'
 import { dailyStock, todayStr } from './data/shop.js'
 import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryCapacity } from './data/progression.js'
@@ -111,6 +111,27 @@ export const useGameStore = create((set, get) => ({
   requestPortal: () => set((s) => ({ portalSeq: s.portalSeq + 1 })),
   setPortals: (portalTiles) => set({ portalTiles }),
 
+  // --- Piedra de Retorno / recall ---
+  recallSeq: 0,             // usar la piedra lo incrementa; el loop lo lee y ejecuta el recall
+  recallBeltIndex: -1,      // slot del cinturón desde el que se usó (para descontarla)
+  recallAnchor: null,       // {map,tx,ty,label} — a dónde te devuelve el Obelisco del pueblo
+  requestRecall: (beltIndex) => set((s) => ({ recallSeq: s.recallSeq + 1, recallBeltIndex: beltIndex })),
+  setRecallAnchor: (a) => set({ recallAnchor: a }),
+  clearRecallAnchor: () => set({ recallAnchor: null }),
+  // Descuenta un consumible del cinturón por índice (lo llama el loop tras un recall válido).
+  consumeBelt: (i) => set((s) => {
+    const it = s.belt[i]; if (!it) return {}
+    const belt = s.belt.slice()
+    const cnt = (it.count || 1) - 1
+    belt[i] = cnt > 0 ? { ...it, count: cnt } : null
+    saveGame({ ...s, belt })
+    return { belt }
+  }),
+
+  // --- pantalla de carga entre zonas ---
+  zoneLoad: null,           // {label} mientras se viaja; null cuando terminó
+  setZoneLoad: (z) => set({ zoneLoad: z }),
+
   // --- combate ---
   // Aplica daño al jugador (lo llama el loop cuando un enemigo pega). Devuelve la vida
   // resultante; el loop decide la muerte cuando llega a 0.
@@ -165,6 +186,8 @@ export const useGameStore = create((set, get) => ({
     const s = get()
     const it = s.belt[i]
     if (!it) return
+    // Piedra de Retorno: no cura; pide al loop el recall al pueblo (él la descuenta si es válido).
+    if (isRecall(it)) { get().requestRecall(i); return }
     const eff = potionEffect(it)
     if (!eff) { get().showToast('No podés usar esto todavía'); return }
     const st = s.stats || {}
@@ -528,6 +551,13 @@ export const storeApi = {
   setNearbyPortal: (v) => useGameStore.getState().setNearbyPortal(v),
   getPortalSeq: () => useGameStore.getState().portalSeq,
   setPortals: (v) => useGameStore.getState().setPortals(v),
+  getRecallSeq: () => useGameStore.getState().recallSeq,
+  getRecallBeltIndex: () => useGameStore.getState().recallBeltIndex,
+  consumeBelt: (i) => useGameStore.getState().consumeBelt(i),
+  setRecallAnchor: (a) => useGameStore.getState().setRecallAnchor(a),
+  getRecallAnchor: () => useGameStore.getState().recallAnchor,
+  clearRecallAnchor: () => useGameStore.getState().clearRecallAnchor(),
+  setZoneLoad: (z) => useGameStore.getState().setZoneLoad(z),
   takeDamage: (n) => useGameStore.getState().takeDamage(n),
   reviveFull: () => useGameStore.getState().reviveFull(),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
