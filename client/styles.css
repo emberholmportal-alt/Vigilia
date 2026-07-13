@@ -217,17 +217,23 @@ html, body, #root {
 
 /* botón para interactuar con el NPC cercano: fila propia arriba de todo el HUD inferior */
 .interact-wrap { display: flex; justify-content: center; padding-bottom: 8px; pointer-events: none; }
+/* piedra oscura + borde de latón + texto pergamino serif (estética Flare) */
 .interact-btn {
   pointer-events: auto; font-family: Georgia, serif; font-size: 14px; white-space: nowrap;
-  color: #14111a; background: linear-gradient(180deg, #e6c85a, #c9a227);
-  border: 1px solid #7a5f1a; border-radius: 7px; padding: 8px 18px; cursor: pointer;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55); animation: interact-pop 0.15s ease;
+  letter-spacing: 0.02em; color: var(--parch);
+  background: linear-gradient(180deg, #2a2320 0%, #17120e 60%, #0d0a08 100%);
+  border: 1px solid var(--gold); border-radius: 4px; padding: 8px 18px; cursor: pointer;
+  text-shadow: 0 1px 2px #000;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(201, 162, 39, 0.22);
+  animation: interact-pop 0.15s ease;
 }
-.interact-btn:active { filter: brightness(1.1); }
-/* botón de viajar por portal (violeta arcano) */
+.interact-btn:active { filter: brightness(1.2); }
+/* variante portal: mismo estilo con acento arcano (borde/letra violeta) */
 .portal-btn {
-  color: #f2e6ff; background: linear-gradient(180deg, #9a6bff, #6a30d6);
-  border-color: #4a2090;
+  color: #e6d9ff; border-color: #7a52c0;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(154, 107, 255, 0.28);
 }
 @keyframes interact-pop { from { transform: scale(0.9); opacity: 0; } }
 

@@ -256,20 +256,22 @@ export class Game {
       const w = p.w || 1, h = p.h || 1
       const cx = p.x + w / 2 - 0.5, cy = p.y + h / 2 - 0.5
       const wx = iso.toWorldX(cx, cy), wy = iso.toWorldY(cx, cy)
-      // Pad de piedra de Flare (5 frames: apagado -> runas azules brillando).
+      // Pad de piedra de Flare (5 frames: apagado -> runas azules brillando). Va POR ENCIMA
+      // del pasto (si no, el propio tile de suelo lo tapa y parece enterrado), pero debajo
+      // de objetos y personajes (que están en objectLayer).
       let pad = null
       if (this._padTex) {
         pad = new Sprite(new Texture({ source: this._padTex.source, frame: new Rectangle(0, 0, 256, 128) }))
         pad.anchor.set(0.5, 0.5)
         pad.x = wx; pad.y = wy
         pad.scale.set((iso.wHalf * 2 * 1.7) / 256)
-        pad.zIndex = cx + cy - 0.6
+        pad.zIndex = 5e5
         renderer.groundLayer.addChild(pad)
       }
       // Halo suave sobre el pad (sin humo/partículas).
       const g = new Graphics()
       g.ellipse(0, 0, iso.wHalf * 0.6, iso.hHalf * 0.6).fill({ color: 0x8a5bff, alpha: 0.16 })
-      g.x = wx; g.y = wy; g.zIndex = cx + cy - 0.5
+      g.x = wx; g.y = wy; g.zIndex = 5e5 + 1
       renderer.groundLayer.addChild(g)
       const label = new Text({ text: p.label || p.to, style: {
         fontFamily: 'Georgia, serif', fontSize: 12, fill: '#d9b3ff',
