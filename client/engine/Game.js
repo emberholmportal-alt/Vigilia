@@ -17,7 +17,7 @@ import { ABILITY_BY_ID } from '../data/abilities.js'
 import { tt, zoneName, getLang, itemName, npcName, npcLines } from '../i18n.js'
 import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
-import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCousin } from '../data/bestiary.js'
+import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCousin, enemyAbility } from '../data/bestiary.js'
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
 import { GroundItem, loadIcons, iconsTexture } from './GroundItem.js'
@@ -689,6 +689,9 @@ export class Game {
   // --- Combate ---------------------------------------------------------------
 
   async _spawnEnemies(renderer, map, grid, manifest, spawn) {
+    // Guardados para invocaciones en vivo (los nigromantes crean esbirros durante el combate).
+    this._manifest = manifest
+    this._grid = grid
     const spawners = map.spawners || []
     if (!spawners.length || !manifest.enemies) return
     const MAX = 40
@@ -710,7 +713,7 @@ export class Game {
         const e = new Enemy(manifest, {
           sprite, x: tile.x, y: tile.y, level,
           hpMax: st.hpMax, damage: st.damage, xp: st.xp, gold: st.gold, name: enemyName(sprite),
-          ranged, projKind: projectileKind(sprite), boss: st.boss,
+          ranged, projKind: projectileKind(sprite), boss: st.boss, ability: enemyAbility(sprite),
         }, this.iso, grid)
         const ok = await e.load()
         if (this.destroyed) return
@@ -718,6 +721,7 @@ export class Game {
         e.view.scale.set(this._eScale)
         e.onTap((en) => this._targetEnemy(en))
         if (ranged) e.onShoot((en) => this._enemyShoot(en))
+        this._wireAbilities(e)
         renderer.objectLayer.addChild(e.view)
         this.enemies.push(e)
       }
@@ -741,13 +745,14 @@ export class Game {
       sprite, x: tile.x, y: tile.y, level: lvl,
       hpMax: Math.round(st.hpMax * 1.6), damage: Math.round(st.damage * 1.3),
       xp: st.xp + 40, gold: st.gold + 30, name: enemyName(sprite), boss: true,
-      ranged: isRanged(sprite), projKind: projectileKind(sprite), contract: c.id,
+      ranged: isRanged(sprite), projKind: projectileKind(sprite), contract: c.id, ability: enemyAbility(sprite),
     }, this.iso, grid)
     const ok = await e.load()
     if (this.destroyed || !ok) return
     e.view.scale.set(this._eScale * 1.35)   // más grande = élite
     e.onTap((en) => this._targetEnemy(en))
     if (e.def.ranged) e.onShoot((en) => this._enemyShoot(en))
+    this._wireAbilities(e)
     renderer.objectLayer.addChild(e.view)
     this.enemies.push(e)
     this.store.showToast(tt('contract_appeared'))
@@ -982,6 +987,65 @@ export class Game {
 
   // Un arquero/mago suelta el disparo: viaja hacia donde estaba el jugador. Si al impacto el
   // jugador sigue cerca, recibe daño; si se movió a tiempo, lo esquivó.
+  // Engancha las habilidades especiales de un enemigo (telegrafiado + invocación).
+  _wireAbilities(e) {
+    if (!e.ability) return
+    if (e.ability.type === 'smash') e.onTelegraph((en, ab) => this._enemyTelegraph(en, ab))
+    if (e.ability.type === 'summon') e.onSummon((en) => this._enemySummon(en))
+  }
+
+  // Dibuja el círculo del golpe telegrafiado: crece e intensifica durante la carga y desaparece
+  // al impactar (el jugador tiene ese tiempo para salir del radio).
+  _enemyTelegraph(en, ab) {
+    const r = 12 + (ab.radius || 2.2) * 16
+    const g = new Graphics()
+    g.circle(0, 0, r).fill({ color: 0xff4a3a, alpha: 0.14 })
+    g.circle(0, 0, r).stroke({ color: 0xff4a3a, width: 3, alpha: 0.9 })
+    g.x = en.view.x; g.y = en.view.y; g.zIndex = en.view.zIndex - 0.5
+    g.scale.set(0.25)
+    this.renderer.objectLayer.addChild(g)
+    ;(this._effects ||= []).push({ g, life: ab.windup || 0.75, max: ab.windup || 0.75, telegraph: true })
+    this._floatText(en.view.x, en.view.y + (en._hpY || -40), '⚠', '#ff5a3a')
+  }
+
+  // Un nigromante invoca un esbirro débil en un tile caminable cercano.
+  async _enemySummon(boss) {
+    if (this._dead || !this._manifest || !this._grid || this.enemies.length >= 60) return
+    const sprite = boss.ability?.minion || 'skeleton_weak'
+    if (!this._manifest.enemies[sprite]) return
+    const tile = this._walkableNear(boss.tx, boss.ty)
+    if (!tile) return
+    const lvl = Math.max(1, (boss.level || 1) - 1)
+    const st = enemyStats(sprite, lvl)
+    const e = new Enemy(this._manifest, {
+      sprite, x: tile.x, y: tile.y, level: lvl,
+      hpMax: Math.round(st.hpMax * 0.7), damage: st.damage, xp: Math.round(st.xp * 0.5),
+      gold: st.gold, name: enemyName(sprite), ability: enemyAbility(sprite),
+    }, this.iso, this._grid)
+    const ok = await e.load()
+    if (this.destroyed || !ok) return
+    e.view.scale.set(this._eScale)
+    e.onTap((en) => this._targetEnemy(en))
+    this._wireAbilities(e)
+    this.renderer.objectLayer.addChild(e.view)
+    this.enemies.push(e)
+    this._castRing(e.view.x, e.view.y - 10, 0x9a6ad0)   // fogonazo de invocación
+    this.store.logMessage({ channel: 'sistema', text: tt('enemy_summons', { name: enemyName(boss.def.sprite, getLang()) }) })
+  }
+
+  // Tile caminable cerca de (cx,cy) para colocar un esbirro invocado (anillos crecientes).
+  _walkableNear(cx, cy) {
+    for (let ring = 1; ring <= 3; ring++) {
+      for (let i = 0; i < 8; i++) {
+        const ang = (i / 8) * Math.PI * 2
+        const x = Math.round(cx + Math.cos(ang) * ring)
+        const y = Math.round(cy + Math.sin(ang) * ring)
+        if (this._grid.isWalkable(x, y)) return { x, y }
+      }
+    }
+    return null
+  }
+
   _enemyShoot(en) {
     if (this._dead || !this.player) return
     const p = this.player
@@ -1154,13 +1218,14 @@ export class Game {
       })
     }
 
-    // Efectos de habilidad (anillos que se expanden y desvanecen).
+    // Efectos: anillos de habilidad que se expanden y desvanecen; telegrafiados que crecen
+    // e intensifican durante la carga y estallan al final.
     if (this._effects && this._effects.length) {
       for (const fx of this._effects) {
         fx.life -= dt
-        const k = 1 - fx.life / fx.max
-        fx.g.scale.set(1 + k * 4)
-        fx.g.alpha = Math.max(0, fx.life / fx.max)
+        const k = 1 - Math.max(0, fx.life) / fx.max   // 0 → 1
+        if (fx.telegraph) { fx.g.scale.set(0.25 + k * 0.75); fx.g.alpha = 0.4 + 0.55 * k }
+        else { fx.g.scale.set(1 + k * 4); fx.g.alpha = Math.max(0, fx.life / fx.max) }
       }
       this._effects = this._effects.filter((fx) => {
         if (fx.life <= 0) { fx.g.destroy(); return false }
