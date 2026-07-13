@@ -1,18 +1,21 @@
 // Pantalla de inicio. La atribución a Flare (CC-BY-SA 3.0) es OBLIGATORIA acá
 // además del CREDITS.md (ver CLAUDE.md).
+import { useT } from './useT.js'
+
 export default function StartScreen({ onEnter, onContinue, canContinue, loading }) {
+  const t = useT()
   return (
     <div className="start">
       <div className="start-inner">
         <h1>Vigilia</h1>
-        <p className="tagline">Black Oak City es lo último que queda en pie.</p>
+        <p className="tagline">{t('start_tag')}</p>
         {canContinue && (
           <button className="enter" onClick={onContinue} disabled={loading}>
-            {loading ? 'Cargando…' : 'Continuar'}
+            {loading ? t('loading') : t('start_continue')}
           </button>
         )}
         <button className={canContinue ? 'enter secondary' : 'enter'} onClick={onEnter} disabled={loading}>
-          {canContinue ? 'Nueva partida' : (loading ? 'Cargando…' : 'Comenzar')}
+          {canContinue ? t('start_new') : (loading ? t('loading') : t('start_begin'))}
         </button>
         <p className="attribution">
           Arte, sprites, tilesets y mapas: <b>Flare — Empyrean Campaign</b>,

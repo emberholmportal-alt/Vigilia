@@ -3,16 +3,18 @@
 // "hablar": lo que escribís aparece como globo sobre la cabeza del personaje + acá.
 import { useState, useRef, useEffect } from 'react'
 import { useGameStore } from '../store.js'
+import { useT } from './useT.js'
 
 const CHANNEL = {
-  sistema: { label: 'Sistema', color: '#c9a227' },
-  mundo: { label: 'Mundo', color: '#b98bff' },
+  sistema: { key: 'chan_sistema', color: '#c9a227' },
+  mundo: { key: 'chan_mundo', color: '#b98bff' },
   yo: { color: '#7fd0e6' },
 }
 
 export default function ChatLog() {
   const log = useGameStore((s) => s.chatLog)
   const sayChat = useGameStore((s) => s.sayChat)
+  const t = useT()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const endRef = useRef(null)
@@ -35,7 +37,7 @@ export default function ChatLog() {
               <><span className="chat-name">{m.name}:</span> {m.text}</>
             ) : (
               <><span className="chat-tag" style={{ color: CHANNEL[m.channel]?.color }}>
-                ({CHANNEL[m.channel]?.label || m.channel})
+                ({CHANNEL[m.channel]?.key ? t(CHANNEL[m.channel].key) : m.channel})
               </span> {m.text}</>
             )}
           </div>
@@ -48,10 +50,10 @@ export default function ChatLog() {
           <input autoFocus value={text} maxLength={120}
                  onChange={(e) => setText(e.target.value)}
                  onBlur={() => { if (!text.trim()) setOpen(false) }}
-                 placeholder="Decir algo…" />
+                 placeholder={t('say_something')} />
         </form>
       ) : (
-        <button className="chat-say" onClick={() => setOpen(true)}>💬 Hablar</button>
+        <button className="chat-say" onClick={() => setOpen(true)}>💬 {t('talk')}</button>
       )}
     </div>
   )

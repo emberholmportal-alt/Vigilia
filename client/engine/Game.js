@@ -13,6 +13,7 @@ import { Enemy } from './Enemy.js'
 import { Projectile } from './Projectile.js'
 import { ResourceNode } from './ResourceNode.js'
 import { GATHER } from '../data/alchemy.js'
+import { tt, zoneName, getLang, itemName, npcName, npcLines } from '../i18n.js'
 import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
 import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCousin } from '../data/bestiary.js'
@@ -219,7 +220,7 @@ export class Game {
     const title = zoneTitle(mapName, world.map.title)
     this.store.setMapTitle(title)
     this.store.setMinimap(this._buildMinimap(world.map))
-    this.store.logMessage({ channel: 'mundo', text: 'Llegaste a ' + title })
+    this.store.logMessage({ channel: 'mundo', text: tt('arrived_at', { zone: title }) })
     this._loading = false
   }
 
@@ -261,7 +262,7 @@ export class Game {
     try { world = await loadWorld(to) }
     catch {
       this._changing = false; this._fadeAlpha = 0; this.fade.visible = false
-      this.store.setZoneLoad(null); this.store.showToast('Esa zona todavía no está disponible'); return
+      this.store.setZoneLoad(null); this.store.showToast(tt('zone_unavailable')); return
     }
     if (this.destroyed) return
     this._teardownWorld()
@@ -317,7 +318,7 @@ export class Game {
   }
 
   _enterPortal(p) {
-    this.store.showToast('Viajás: ' + (p.label || p.to))
+    this.store.showToast(tt('travel_label', { zone: p.label || p.to }))
     this.changeMap(p.to, p.tx, p.ty)
   }
 
@@ -325,14 +326,14 @@ export class Game {
   // pueblo. En Triston no hace nada (ya estás en casa) y no gasta la piedra.
   _doRecall() {
     if (this._loading || this._changing || this._dead || !this.player) return
-    if (this.mapName === 'triston') { this.store.showToast('Ya estás en el pueblo'); return }
+    if (this.mapName === 'triston') { this.store.showToast(tt('already_in_town')); return }
     const i = this.store.getRecallBeltIndex()
     this.store.setRecallAnchor({
       map: this.mapName, tx: Math.round(this.player.tx), ty: Math.round(this.player.ty),
       label: zoneTitle(this.mapName),
     })
     this.store.consumeBelt(i)
-    this.store.showToast('La piedra te arranca del mundo...')
+    this.store.showToast(tt('stone_pulls'))
     this.changeMap('triston', OBELISK_RETURN[0], OBELISK_RETURN[1])
   }
 
@@ -341,19 +342,17 @@ export class Game {
     const a = this.store.getRecallAnchor()
     if (a) {
       this.store.clearRecallAnchor()
-      this.store.showToast('El obelisco se abre hacia ' + a.label)
+      this.store.showToast(tt('obelisk_opens', { zone: a.label }))
       this.changeMap(a.map, a.tx, a.ty)
     } else {
-      this.store.openDialogue({ name: 'Obelisco de Retorno', portrait: null, lines: [
-        'La piedra rúnica duerme, fría al tacto.',
-        'Usá una Piedra de Retorno allá afuera: su luz te traerá aquí, y este obelisco te devolverá al punto donde estabas.',
-      ] })
+      this.store.openDialogue({ name: tt('obelisk_name'), portrait: null, lines: [tt('obelisk_l1'), tt('obelisk_l2')] })
     }
   }
 
   _inspectCorpse(e) {
-    this.store.logMessage({ channel: 'sistema', text: `Inspeccionás el cadáver de ${e.def.name} (Nv ${e.level}). No queda nada de valor.` })
-    this.store.showToast('Cadáver vacío')
+    const name = enemyName(e.def.sprite, getLang())
+    this.store.logMessage({ channel: 'sistema', text: tt('inspect_corpse', { name, lv: e.level }) })
+    this.store.showToast(tt('corpse_empty'))
   }
 
   // Click derecho: busca la criatura bajo el cursor. Enemigo vivo -> atacar; cadáver ->
@@ -379,11 +378,12 @@ export class Game {
     const pv = this.iso.toWorld(this.player.tx, this.player.ty)
     const nv = this.iso.toWorld(npc.tx, npc.ty)
     npc.dir = screenVecToDir(pv.x - nv.x, pv.y - nv.y)
+    const nm = npcName(npc.def, getLang())
     if (npc.def.obelisk) this._useObelisk()
-    else if (npc.def.shop) this.store.openShop(npc.def.name)
-    else if (npc.def.smith) this.store.openSmith(npc.def.name)
-    else if (npc.def.alchemy) this.store.openAlchemy(npc.def.name)
-    else this.store.openDialogue({ name: npc.def.name, portrait: npc.def.portrait, lines: npc.lines })
+    else if (npc.def.shop) this.store.openShop(nm)
+    else if (npc.def.smith) this.store.openSmith(nm)
+    else if (npc.def.alchemy) this.store.openAlchemy(nm)
+    else this.store.openDialogue({ name: nm, portrait: npc.def.portrait, lines: npcLines(npc.def, getLang()) })
   }
 
   // Decoraciones estáticas del mapa (secciones [npc] de Flare: fuente, cerdos, aldeanos
@@ -505,7 +505,7 @@ export class Game {
   _pickup(gi) {
     if (!this.store.addItem(gi.item, gi.qty)) return false // inventario lleno: queda en el piso
     playSfx('flying_loot.ogg')
-    this.store.logMessage({ channel: 'sistema', text: `Recogiste ${gi.item.name}${gi.qty > 1 ? ' ×' + gi.qty : ''}` })
+    this.store.logMessage({ channel: 'sistema', text: tt('picked_up', { name: itemName(gi.item, getLang()), qty: gi.qty > 1 ? ' ×' + gi.qty : '' }) })
     gi.picked = true
     gi.destroy()
     return true
@@ -683,11 +683,12 @@ export class Game {
     const item = itemById(node.def.id)
     if (!item) return
     const qty = 1 + (Math.random() < 0.25 ? 1 : 0)      // a veces sale doble
-    if (!this.store.addItem(item, qty)) { this.store.showToast('Inventario lleno'); return }
+    if (!this.store.addItem(item, qty)) { this.store.showToast(tt('inv_full')); return }
     this.store.addSkillXp(node.def.skill, 6)
     node.deplete()
-    this._floatText(node.view.x, node.view.y - 30, `+${qty} ${node.def.name}`, '#bfe9a0')
-    this.store.logMessage({ channel: 'sistema', text: `Juntaste ${node.def.name} ×${qty}` })
+    const mat = itemName(item, getLang())
+    this._floatText(node.view.x, node.view.y - 30, `+${qty} ${mat}`, '#bfe9a0')
+    this.store.logMessage({ channel: 'sistema', text: tt('gathered', { name: mat, n: qty }) })
     playSfx('step2.ogg', 0.5)
   }
 
@@ -705,7 +706,7 @@ export class Game {
     this.store.addXp(e.def.xp)
     this.store.addGold(e.def.gold)
     this._floatText(e.view.x, e.view.y + e._hpY, `+${e.def.xp} XP`, '#9fe0ff')
-    this.store.logMessage({ channel: 'sistema', text: `Derrotaste a ${e.def.name} (+${e.def.xp} XP, +${e.def.gold} oro)` })
+    this.store.logMessage({ channel: 'sistema', text: tt('defeated', { name: enemyName(e.def.sprite, getLang()), xp: e.def.xp, gold: e.def.gold }) })
     if (this._target === e) this._target = null
   }
 
@@ -769,13 +770,13 @@ export class Game {
     this.player.path.length = 0
     this.player.playDie()
     playSfx('player_die.ogg')
-    this.store.showToast('Caíste en combate...')
+    this.store.showToast(tt('fell_combat'))
   }
 
   _respawn() {
     this._dead = false
     this.store.reviveFull()
-    this.store.showToast('Despertás a salvo en Triston...')
+    this.store.showToast(tt('revive_town'))
     if (this.mapName !== 'triston') {
       this.changeMap('triston', 56, 52)   // el pueblo es el punto de retorno
       return
@@ -1096,7 +1097,7 @@ export class Game {
       this.store.setStamina(Math.round(stamina))
       this.store.setPlayerTile({ x: this.player.tx, y: this.player.ty })
       const n = this._nearbyNpc
-      this.store.setNearby(n ? { name: n.def.name, shop: !!n.def.shop } : null)
+      this.store.setNearby(n ? { name: npcName(n.def, getLang()), shop: !!n.def.shop } : null)
       this._stamAccum = 0
     }
     this.camera.follow(this.player.tx, this.player.ty)
@@ -1234,27 +1235,8 @@ const OBELISK_RETURN = [55, 46]
 const PORTAL_BLOCK = new Set(['hyperspace', 'World_map', 'spawn', 'arrival'])
 const portalAllowed = (to) => !!to && !PORTAL_BLOCK.has(to) && !/^Act\d|^World/i.test(to)
 
-// Nombres de zona en español (título del mapa en el HUD + etiqueta del portal).
-const ZONE_ES = {
-  triston: 'Triston', goblin_camp: 'Campo de Duendes', goblin_cave: 'Cueva de Duendes',
-  stonewood: 'Bosque Pétreo', salted_field: 'Campo Salado', merrimead_swamp: 'Ciénaga de Merrimead',
-  lochport_cemetery: 'Cementerio de Lochport', family_crypt: 'Cripta Familiar', lochport: 'Lochport',
-  st_maria_1: 'Sta. María: Mausoleo', st_maria_2: 'Sta. María: Catacumbas', st_maria_3: 'Sta. María: Osario',
-  perdition_mines: 'Minas de Perdición', river_trail: 'Sendero del Río', book_of_the_dead: 'Libro de los Muertos',
-  perdition_harbor: 'Puerto de Perdición', perdition_harbor_cave: 'Cueva del Puerto',
-  abandoned_mines: 'Minas Abandonadas', blackmire_mines: 'Minas de Ciénaga Negra', the_breach: 'La Brecha',
-  grot_lagoon: 'Laguna Grot', lake_kuuma: 'Lago Kuuma', stormrock_pass: 'Paso Roca-Tormenta',
-  stormrock_ruins: 'Ruinas de Roca-Tormenta', antlion_nest: 'Nido de Hormigas León', fort_amir: 'Fuerte Amir',
-  temple_of_mez_1: 'Templo de Mez: Sótano', temple_of_mez_2: 'Templo de Mez: Gran Salón', temple_of_mez_3: 'Templo de Mez: Entrada',
-  black_oak_city: 'Black Oak City', black_oak_farm: 'Granja de Black Oak', southern_ridge: 'Cresta del Sur',
-  dilapidated_sewers: 'Cloacas Ruinosas', nazia_highlands: 'Tierras Altas de Nazia', nazia_mines: 'Minas de Nazia',
-  nazia_underground: 'Subsuelo de Nazia', oasis: 'Oasis', mog_caverns: 'Cavernas de Mog', fort_nasu: 'Fuerte Nasu',
-  the_pit: 'La Fosa', torture_chambers: 'Cámaras de Tortura', underworld: 'Inframundo',
-  underworld_catacombs: 'Inframundo: Catacumbas', underworld_mines: 'Inframundo: Minas',
-  underworld_stronghold_1: 'Inframundo: Fortaleza I', underworld_stronghold_2: 'Inframundo: Fortaleza II',
-  wizards_tower_1: 'Torre del Mago: Entrada', wizards_tower_2: 'Torre del Mago: Estudio', wizards_tower_3: 'Torre del Mago: Laboratorio',
-}
-const zoneTitle = (mapName, fallback) => ZONE_ES[mapName] || fallback || mapName
+// Nombre de zona según el idioma actual (definiciones ES/EN en i18n.js).
+const zoneTitle = (mapName, fallback) => zoneName(mapName, getLang(), fallback)
 
 // Decoraciones ambientales de HERESY que sacamos a mano (por mapa). En Triston quitamos
 // al posadero rojo del carro: ese puesto es donde ponemos al mercader (parece un mercado).

@@ -3,10 +3,12 @@
 // consumibles (con la textura real de Flare) y el oro. Cada slot es un elemento real.
 // Los botones de menú van aparte (MenuRow), para que en móvil no los tapen los globos.
 import ItemIcon from './ItemIcon.jsx'
+import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 
 export default function ActionBar({ belt, gold, onUseBelt, beltCap = 4 }) {
+  const t = useT()
   return (
     <div className="actionbar">
       <div className="ab-belt">
@@ -15,7 +17,7 @@ export default function ActionBar({ belt, gold, onUseBelt, beltCap = 4 }) {
           return (
             <div key={i} className={'ab-cell' + (it && !locked ? ' usable' : '') + (locked ? ' locked' : '')}
                  style={{ backgroundImage: `url(${UI}slot_empty.png)` }}
-                 title={locked ? 'Comprá un cinturón más grande' : undefined}
+                 title={locked ? t('bigger_belt') : undefined}
                  onClick={it && !locked ? () => onUseBelt?.(i) : undefined}>
               {it && !locked && <ItemIcon icon={it.icon} fill count={it.count} />}
               {locked && <span className="ab-lock">🔒</span>}
@@ -23,7 +25,7 @@ export default function ActionBar({ belt, gold, onUseBelt, beltCap = 4 }) {
           )
         })}
       </div>
-      <div className="ab-gold" title="Oro">
+      <div className="ab-gold" title={t('gold_word')}>
         <span className="ab-coin" />
         <b>{gold}</b>
       </div>
@@ -34,17 +36,18 @@ export default function ActionBar({ belt, gold, onUseBelt, beltCap = 4 }) {
 // Fila de botones de menú (personaje / inventario / acciones / ajustes) con los íconos
 // grabados de la action bar de Flare. Va arriba de la barra, centrada.
 const MENU = [
-  { icon: 'btn_char', panel: 'character', title: 'Personaje' },
-  { icon: 'btn_inv', panel: 'inventory', title: 'Inventario' },
-  { icon: 'btn_pow', panel: 'powers', title: 'Acciones' },
-  { icon: 'btn_log', panel: 'settings', title: 'Ajustes' },
+  { icon: 'btn_char', panel: 'character' },
+  { icon: 'btn_inv', panel: 'inventory' },
+  { icon: 'btn_pow', panel: 'powers' },
+  { icon: 'btn_log', panel: 'settings' },
 ]
 
 export function MenuRow({ onPanel }) {
+  const t = useT()
   return (
     <div className="menu-row">
       {MENU.map((m) => (
-        <button key={m.panel} className="ab-btn" title={m.title}
+        <button key={m.panel} className="ab-btn" title={t(m.panel)}
                 style={{ backgroundImage: `url(${UI}${m.icon}.png)` }}
                 onClick={() => onPanel(m.panel)} />
       ))}
@@ -62,13 +65,14 @@ const pc = (x) => (x / AW * 100) + '%'
 const HOT_CX = [96, 160, 224, 288, 352, 416, 480, 544, 608, 672] // 10 slots de acción
 const M_CX = [800, 864]                                           // M1 / M2 (mano/mano sec.)
 const MENU_CX = [
-  { cx: 992, panel: 'character', title: 'Personaje' },
-  { cx: 1056, panel: 'inventory', title: 'Inventario' },
-  { cx: 1120, panel: 'powers', title: 'Acciones' },
-  { cx: 1184, panel: 'settings', title: 'Ajustes' },
+  { cx: 992, panel: 'character' },
+  { cx: 1056, panel: 'inventory' },
+  { cx: 1120, panel: 'powers' },
+  { cx: 1184, panel: 'settings' },
 ]
 
 export function DesktopBar({ belt, onPanel, onUseBelt, beltCap = 4 }) {
+  const t = useT()
   return (
     <div className="desktop-bar" style={{ backgroundImage: `url(${UI}actionbar_trim.png)` }}>
       {HOT_CX.map((cx, i) => {
@@ -80,7 +84,7 @@ export function DesktopBar({ belt, onPanel, onUseBelt, beltCap = 4 }) {
         return (
           <div key={'h' + i} className={'db-slot' + (it && !locked ? ' usable' : '') + (locked ? ' locked' : '')}
                style={{ left: pc(cx), backgroundImage: `url(${UI}slot_empty.png)` }}
-               title={locked ? 'Comprá un cinturón más grande' : undefined}
+               title={locked ? t('bigger_belt') : undefined}
                onClick={it && !locked ? () => onUseBelt?.(i) : undefined}>
             {it && !locked && <ItemIcon icon={it.icon} fill count={it.count} />}
             {locked && <span className="ab-lock">🔒</span>}
@@ -92,7 +96,7 @@ export function DesktopBar({ belt, onPanel, onUseBelt, beltCap = 4 }) {
       ))}
       {MENU_CX.map((m) => (
         <button key={m.panel} className="db-menu" style={{ left: pc(m.cx) }}
-                title={m.title} onClick={() => onPanel(m.panel)} />
+                title={t(m.panel)} onClick={() => onPanel(m.panel)} />
       ))}
     </div>
   )

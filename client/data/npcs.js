@@ -151,27 +151,38 @@ const GREENWOOD = [
 const TRISTON = [
   // El mercader arma su puesto en el claro frente al carro y los barriles (parece un
   // mercado). Tile caminable, adelante del carro para que no lo tape.
-  { sprite: 'wandering_trader', name: 'Mercader Oswin', portrait: 'male10.png', x: 61, y: 51, dir: 3, shop: true,
+  { sprite: 'wandering_trader', name: 'Mercader Oswin', name_en: 'Oswin the Trader', portrait: 'male10.png', x: 61, y: 51, dir: 3, shop: true,
     lines: ['Traje acero del sur y algo de cuero.',
             'El precio sube con la luna, no conmigo.',
-            'Vendé lo que no uses. El hierro oxidado no abriga.'] },
-  { sprite: 'knight', name: 'Guardia Bram', portrait: 'male07.png', x: 64, y: 57, dir: 1,
+            'Vendé lo que no uses. El hierro oxidado no abriga.'],
+    lines_en: ['I brought steel from the south and some leather.',
+               'The price rises with the moon, not with me.',
+               "Sell what you don't use. Rusted iron won't keep you warm."] },
+  { sprite: 'knight', name: 'Guardia Bram', name_en: 'Guard Bram', portrait: 'male07.png', x: 64, y: 57, dir: 1,
     lines: ['Ojos duros, vigilante. Afuera no perdona.',
-            'Anoche hubo tambores del lado de las minas.'] },
-  { sprite: 'guild_man', name: 'Halvard', portrait: 'male01.png', x: 56, y: 58, dir: 5,
+            'Anoche hubo tambores del lado de las minas.'],
+    lines_en: ['Hard eyes, watcher. The wilds do not forgive.',
+               'There were drums by the mines last night.'] },
+  { sprite: 'guild_man', name: 'Halvard', name_en: 'Halvard', portrait: 'male01.png', x: 56, y: 58, dir: 5,
     lines: ['Los gremios reclutan de nuevo.',
-            'Quinientos de oro y una sigla de tres letras.'] },
+            'Quinientos de oro y una sigla de tres letras.'],
+    lines_en: ['The guilds are recruiting again.',
+               'Five hundred gold and a three-letter tag.'] },
   // Herrero: repara el equipo por oro (zona de la fragua/yunque).
-  { sprite: 'peasant_man2', name: 'Herrero Dorn', portrait: 'male16.png', x: 63, y: 54, dir: 3, smith: true,
+  { sprite: 'peasant_man2', name: 'Herrero Dorn', name_en: 'Dorn the Smith', portrait: 'male16.png', x: 63, y: 54, dir: 3, smith: true,
     lines: ['El acero se cansa como los hombres.',
-            'Tráemelo antes de que se quiebre del todo.'] },
+            'Tráemelo antes de que se quiebre del todo.'],
+    lines_en: ['Steel tires just like men do.',
+               'Bring it to me before it breaks for good.'] },
   // Obelisco de Retorno: al lado del portal del pueblo. Si usaste una Piedra de Retorno en
   // el mundo, este obelisco te devuelve al punto anclado (mecánica de portal de Diablo).
-  { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', landmark: true, obelisk: true, x: 55, y: 45, dir: 7 },
+  { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', name_en: 'Obelisk of Return', landmark: true, obelisk: true, x: 55, y: 45, dir: 7 },
   // Alquimista: prepara pociones reales con lo que juntás afuera (recetas de Flare).
-  { sprite: 'peasant_woman2', name: 'Alquimista Yara', portrait: 'female04.png', x: 59, y: 53, dir: 5, alchemy: true,
+  { sprite: 'peasant_woman2', name: 'Alquimista Yara', name_en: 'Yara the Alchemist', portrait: 'female04.png', x: 59, y: 53, dir: 5, alchemy: true,
     lines: ['Tráeme hierbas y cristales; yo les saco el jugo.',
-            'Una botella vacía y aloe, y tenés vida embotellada.'] },
+            'Una botella vacía y aloe, y tenés vida embotellada.'],
+    lines_en: ['Bring me herbs and crystals; I wring the juice from them.',
+               'An empty bottle and aloe, and you have life in a flask.'] },
 ]
 
 export const NPCS_BY_MAP = {

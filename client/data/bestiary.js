@@ -44,7 +44,20 @@ const NAMES = {
   minotaur: 'Minotauro', wyvern: 'Wyvern', wyvern_air: 'Wyvern del viento',
   wyvern_fire: 'Wyvern de fuego', wyvern_water: 'Wyvern de agua',
 }
-export const enemyName = (sprite) => NAMES[sprite] || 'Bestia'
+const NAMES_EN = {
+  goblin: 'Goblin', goblin_runner: 'Goblin runner', goblin_elite: 'Elite goblin',
+  goblin_elite_runner: 'Feral goblin', hobgoblin: 'Hobgoblin', hobgoblin_archer: 'Hobgoblin archer',
+  skeleton: 'Skeleton', skeleton_weak: 'Frail skeleton', skeleton_archer: 'Skeletal archer',
+  skeleton_mage: 'Skeletal mage', skeleton_knight_boss: 'Bone knight',
+  skeleton_mage_boss: 'Bone necromancer', zombie: 'Zombie', zombie_dark: 'Unholy zombie',
+  cursed_grave: 'Cursed grave', antlion: 'Antlion', antlion_small: 'Antlion hatchling',
+  antlion_armored: 'Armored antlion', fire_ant: 'Fire ant', ice_ant: 'Ice ant',
+  minotaur: 'Minotaur', wyvern: 'Wyvern', wyvern_air: 'Wind wyvern',
+  wyvern_fire: 'Fire wyvern', wyvern_water: 'Water wyvern',
+}
+// Nombre del enemigo según idioma ('es' por defecto).
+export const enemyName = (sprite, lang = 'es') =>
+  (lang === 'en' ? (NAMES_EN[sprite] || 'Beast') : (NAMES[sprite] || 'Bestia'))
 
 // Enemigos que atacan a distancia (arqueros y magos): dispararan en vez de golpear.
 const RANGED = new Set(['hobgoblin_archer', 'skeleton_archer', 'skeleton_mage', 'skeleton_mage_boss'])

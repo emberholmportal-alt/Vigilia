@@ -3,6 +3,8 @@
 // (con los íconos ya dibujados: espada/vara/flechas/escudo) y una lista de derivados.
 import { useGameStore } from '../store.js'
 import { playerProgress } from '../data/progression.js'
+import { useT } from './useT.js'
+import { raceName } from '../i18n.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 const PW = 640, PH = 832
@@ -11,12 +13,8 @@ const PW = 640, PH = 832
 const at = (x, y) => ({ left: (x / PW * 100) + '%', top: (y / PH * 100) + '%' })
 
 // Atributos primarios sobre las 4 casillas con ícono (físico/mental/ofensiva/defensa).
-// Mapeamos nuestras FUE/INT/DES/VIT a esas casillas (mismo orden de íconos).
 const PRIMARIES = [
-  { key: 'str', label: 'Fuerza', abbr: 'FUE', y: 110 },
-  { key: 'int', label: 'Inteligencia', abbr: 'INT', y: 154 },
-  { key: 'dex', label: 'Destreza', abbr: 'DES', y: 198 },
-  { key: 'vit', label: 'Vitalidad', abbr: 'VIT', y: 242 },
+  { key: 'str', y: 110 }, { key: 'int', y: 154 }, { key: 'dex', y: 198 }, { key: 'vit', y: 242 },
 ]
 
 export default function Character() {
@@ -25,20 +23,20 @@ export default function Character() {
   const stats = useGameStore((s) => s.stats)
   const xp = useGameStore((s) => s.xp)
   const setPanel = useGameStore((s) => s.setPanel)
+  const t = useT()
   const s = stats || {}
   const prog = playerProgress(xp || 0)
 
-  // Derivados que mostramos en la lista. Ahora reflejan el EQUIPO (daño del arma, defensa,
-  // crítico, regeneración) además de la raza/nivel.
+  // Derivados que mostramos en la lista (reflejan raza/nivel + equipo).
   const derived = [
-    ['Vida', `${s.hp}/${s.hpMax}`],
-    ['Maná', `${s.mp}/${s.mpMax}`],
-    ['Daño', s.dmgMin != null ? `${s.dmgMin}–${s.dmgMax}` : '—'],
-    ['Defensa', s.defense || 0],
-    ...(s.crit ? [['Crítico', `${s.crit}%`]] : []),
-    ...(s.hpRegen ? [['Regen. vida', `${s.hpRegen}/s`]] : []),
-    ['Velocidad', s.speedMul ? `×${s.speedMul}` : '×1'],
-    ['Bonus XP', s.xpMul ? `×${s.xpMul.toFixed(2)}` : '×1'],
+    [t('stat_hp'), `${s.hp}/${s.hpMax}`],
+    [t('stat_mp'), `${s.mp}/${s.mpMax}`],
+    [t('stat_dmg'), s.dmgMin != null ? `${s.dmgMin}–${s.dmgMax}` : '—'],
+    [t('stat_def'), s.defense || 0],
+    ...(s.crit ? [[t('stat_crit'), `${s.crit}%`]] : []),
+    ...(s.hpRegen ? [[t('stat_hpregen'), `${s.hpRegen}/s`]] : []),
+    [t('stat_speed'), s.speedMul ? `×${s.speedMul}` : '×1'],
+    [t('stat_xpbonus'), s.xpMul ? `×${s.xpMul.toFixed(2)}` : '×1'],
   ]
 
   return (
@@ -49,17 +47,17 @@ export default function Character() {
                 style={{ left: (571 / PW * 100) + '%', top: (5 / PH * 100) + '%', width: '6.4%', backgroundImage: `url(${UI}button_x.png)` }}
                 onClick={() => setPanel(null)} />
 
-        <div className="char-title" style={at(320, 24)}>Personaje</div>
+        <div className="char-title" style={at(320, 24)}>{t('char_title')}</div>
 
         {/* nombre y nivel en sus casillas */}
-        <div className="char-name" style={at(288, 80)}>{playerName}{race ? ` · ${race.name}` : ''}</div>
+        <div className="char-name" style={at(288, 80)}>{playerName}{race ? ` · ${raceName(race, t.lang)}` : ''}</div>
         <div className="char-level" style={at(592, 80)}>{s.level ?? 1}</div>
 
         {/* atributos primarios: valor en la casilla + nombre a la derecha del ícono */}
         {PRIMARIES.map((p) => (
           <div key={p.key}>
             <div className="char-primary-val" style={at(192, p.y + 14)}>{s[p.key] ?? 0}</div>
-            <div className="char-primary-lbl" style={at(300, p.y + 14)}>{p.label} <em>{p.abbr}</em></div>
+            <div className="char-primary-lbl" style={at(300, p.y + 14)}>{t('attr_' + p.key)} <em>{t('abbr_' + p.key)}</em></div>
           </div>
         ))}
 

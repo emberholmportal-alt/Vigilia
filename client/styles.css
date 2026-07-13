@@ -732,3 +732,13 @@ html, body, #root {
 }
 .alch-craft:active { filter: brightness(1.2); }
 .alch-craft:disabled { opacity: 0.45; cursor: default; border-color: var(--edge); }
+
+/* ---------- selector de idioma (Configuración) ---------- */
+.lang-switch { display: flex; gap: 6px; }
+.lang-opt {
+  font-family: Georgia, serif; font-size: 13px; color: var(--dim);
+  background: linear-gradient(180deg, #201b28, #14111a);
+  border: 1px solid var(--edge); border-radius: 5px; padding: 6px 12px; cursor: pointer;
+}
+.lang-opt.on { color: var(--parch); border-color: var(--gold); box-shadow: inset 0 0 0 1px rgba(201,162,39,0.25); }
+.lang-opt:active { filter: brightness(1.15); }

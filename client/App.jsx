@@ -18,6 +18,7 @@ import ChatLog from './ui/ChatLog.jsx'
 import Minimap from './ui/Minimap.jsx'
 import DialogueBox from './ui/DialogueBox.jsx'
 import ZoneLoader from './ui/ZoneLoader.jsx'
+import { useT } from './ui/useT.js'
 
 // Flujo: Inicio -> Elegir raza -> Juego (con inventario).
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
   const gameRef = useRef(null)
   const panel = useGameStore((s) => s.panel)
   const initCharacter = useGameStore((s) => s.initCharacter)
+  const t = useT()
 
   function startGame() {
     playMusic('title_theme.ogg') // gesto del usuario: arranca la música
@@ -95,7 +97,7 @@ export default function App() {
 
       {phase === 'start' && <StartScreen onEnter={startGame} onContinue={continueGame} canContinue={hasSave()} loading={false} />}
       {phase === 'race' && <RaceScreen onChoose={chooseRace} />}
-      {phase === 'game' && loading && <div className="loading">Cargando Black Oak City…</div>}
+      {phase === 'game' && loading && <div className="loading">{t('loading_city')}</div>}
     </div>
   )
 }

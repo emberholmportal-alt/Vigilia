@@ -8,9 +8,18 @@ import { create } from 'zustand'
 import { computeStats } from './data/stats.js'
 import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
+import { tt, setLangGlobal, itemName } from './i18n.js'
 import { dailyStock, todayStr } from './data/shop.js'
 import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryCapacity } from './data/progression.js'
 import { saveGame } from './data/save.js'
+
+// Idioma persistido (aparte del save: es una preferencia del dispositivo, no de la partida).
+const LANG_KEY = 'vigilia:lang'
+function loadLang() {
+  try { const l = localStorage.getItem(LANG_KEY); return l === 'en' ? 'en' : 'es' } catch { return 'es' }
+}
+function saveLang(l) { try { localStorage.setItem(LANG_KEY, l) } catch {} }
+setLangGlobal(loadLang()) // sincroniza el idioma del módulo i18n al arrancar
 
 // El mercader compra a fracción del precio (Flare: vendor_ratio_sell = 0.25).
 const SELL_RATIO = 0.25
@@ -189,20 +198,20 @@ export const useGameStore = create((set, get) => ({
     // Piedra de Retorno: no cura; pide al loop el recall al pueblo (él la descuenta si es válido).
     if (isRecall(it)) { get().requestRecall(i); return }
     const eff = potionEffect(it)
-    if (!eff) { get().showToast('No podés usar esto todavía'); return }
+    if (!eff) { get().showToast(tt('cant_use')); return }
     const st = s.stats || {}
     if (eff.hp) {
-      if ((st.hp ?? 0) >= (st.hpMax ?? 0)) { get().showToast('Tu vida ya está al máximo'); return }
+      if ((st.hp ?? 0) >= (st.hpMax ?? 0)) { get().showToast(tt('hp_full')); return }
       set({ stats: { ...st, hp: Math.min(st.hpMax, st.hp + eff.hp) } })
     } else if (eff.mp) {
-      if ((st.mp ?? 0) >= (st.mpMax ?? 0)) { get().showToast('Tu maná ya está al máximo'); return }
+      if ((st.mp ?? 0) >= (st.mpMax ?? 0)) { get().showToast(tt('mp_full')); return }
       set({ stats: { ...st, mp: Math.min(st.mpMax, st.mp + eff.mp) } })
     }
     const belt = s.belt.slice()
     const cnt = (it.count || 1) - 1
     belt[i] = cnt > 0 ? { ...it, count: cnt } : null
     set({ belt })
-    get().showToast(eff.hp ? `+${eff.hp} de vida` : `+${eff.mp} de maná`)
+    get().showToast(eff.hp ? tt('hp_gain', { n: eff.hp }) : tt('mp_gain', { n: eff.mp }))
     saveGame(get())
   },
 
@@ -211,18 +220,18 @@ export const useGameStore = create((set, get) => ({
   assignBelt: (invIndex) => {
     const s = get()
     const it = s.inventory[invIndex]
-    if (!beltEligible(it)) { get().showToast('Sólo consumibles van al cinturón'); return }
+    if (!beltEligible(it)) { get().showToast(tt('belt_only')); return }
     const cap = beltCapacityOf(s.equippedBelt)
     const qty = it.count || 1
     const belt = s.belt.slice()
     let bi = belt.findIndex((b, i) => i < cap && b && b.id === it.id)
     if (bi < 0) { for (let i = 0; i < cap; i++) { if (belt[i] == null) { bi = i; break } } }
-    if (bi < 0) { get().showToast('El cinturón está lleno'); return }
+    if (bi < 0) { get().showToast(tt('belt_full')); return }
     belt[bi] = belt[bi] ? { ...belt[bi], count: (belt[bi].count || 1) + qty } : { ...it, count: qty }
     const inv = s.inventory.slice()
     inv[invIndex] = null
     set({ belt, inventory: inv })
-    get().showToast('Al cinturón')
+    get().showToast(tt('to_belt'))
     saveGame(get())
   },
 
@@ -242,7 +251,7 @@ export const useGameStore = create((set, get) => ({
       if (belt[i]) { const f = inv.findIndex((x) => x == null); if (f >= 0) inv[f] = belt[i]; belt[i] = null }
     }
     set({ equippedBelt: { ...it }, inventory: inv, belt })
-    get().showToast('Cinturón equipado: ' + it.beltSlots + ' espacios')
+    get().showToast(tt('belt_equipped', { n: it.beltSlots }))
     saveGame(get())
   },
 
@@ -266,7 +275,7 @@ export const useGameStore = create((set, get) => ({
         eq[target] = null
         set({ equipment: eq })
         get().recomputeStats()
-        get().showToast('¡Tu ' + (it.name || 'equipo') + ' se destruyó!')
+        get().showToast(tt('gear_destroyed', { name: itemName(it) || tt('gear_word') }))
         saveGame(get())
       }
       return
@@ -276,7 +285,7 @@ export const useGameStore = create((set, get) => ({
     set({ equipment: eq })
     if (dur <= 0) {
       get().recomputeStats()
-      get().showToast('¡Se rompió tu ' + (it.name || 'equipo') + '! Llevalo al herrero.')
+      get().showToast(tt('gear_broke', { name: itemName(it) || tt('gear_word') }))
       saveGame(get())
     }
   },
@@ -298,15 +307,15 @@ export const useGameStore = create((set, get) => ({
   repairAll: () => {
     const s = get()
     const cost = get().repairCost()
-    if (cost <= 0) { get().showToast('Tu equipo está impecable'); return { ok: false } }
-    if (s.gold < cost) { get().showToast('No te alcanza el oro para reparar'); return { ok: false } }
+    if (cost <= 0) { get().showToast(tt('gear_impeccable')); return { ok: false } }
+    if (s.gold < cost) { get().showToast(tt('no_gold_repair')); return { ok: false } }
     const eq = { ...s.equipment }
     for (const sl of Object.keys(eq)) {
       if (isDurable(eq[sl])) eq[sl] = { ...eq[sl], dur: durabilityMax(eq[sl]) }
     }
     set({ equipment: eq, gold: s.gold - cost })
     get().recomputeStats()
-    get().showToast('Equipo reparado (-' + cost + ' oro)')
+    get().showToast(tt('gear_repaired', { n: cost }))
     saveGame(get())
     return { ok: true }
   },
@@ -314,6 +323,11 @@ export const useGameStore = create((set, get) => ({
   // --- audio ---
   muted: false,
   toggleMute: () => set((s) => { const m = !s.muted; setMuted(m); return { muted: m } }),
+
+  // --- idioma (ES por defecto; se guarda aparte del save) ---
+  lang: loadLang(),
+  setLang: (l) => { const lang = l === 'en' ? 'en' : 'es'; setLangGlobal(lang); saveLang(lang); set({ lang }) },
+  toggleLang: () => get().setLang(get().lang === 'en' ? 'es' : 'en'),
 
   // --- correr / stamina ---
   running: false,
@@ -368,7 +382,7 @@ export const useGameStore = create((set, get) => ({
     if (s.stats && level !== s.stats.level) {
       const fresh = computeStats(s.race?.id, level, s.equipment) // subir de nivel cura
       set({ xp, stats: fresh })
-      get().showToast('¡Subiste a nivel ' + level + '!')
+      get().showToast(tt('levelup_toast', { n: level }))
     } else {
       set({ xp, stats: s.stats ? { ...s.stats, level } : s.stats })
     }
@@ -482,8 +496,8 @@ export const useGameStore = create((set, get) => ({
     const out = itemById(recipe.out)
     if (!get().addItem(out, 1)) { set({ inventory: s.inventory }); return { ok: false, reason: 'lleno' } }
     get().addSkillXp('alquimia', 10)
-    get().showToast('Preparaste: ' + (out?.name || 'poción'))
-    get().logMessage({ channel: 'sistema', text: 'Alquimia: preparaste ' + (out?.name || 'una poción') })
+    get().showToast(tt('brewed', { name: itemName(out) }))
+    get().logMessage({ channel: 'sistema', text: tt('alchemy_log', { name: itemName(out) }) })
     saveGame(get())
     return { ok: true }
   },

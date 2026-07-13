@@ -1,0 +1,230 @@
+// i18n: español (por defecto) / inglés. El idioma vive en el store (reactivo en React) y
+// también en un módulo local `_lang` para que el motor y el store lean sin ciclo de imports.
+// Los componentes usan el hook useT (ui/useT.js); el motor/store usan tt().
+
+let _lang = 'es'
+export const getLang = () => _lang
+export function setLangGlobal(l) { _lang = l === 'en' ? 'en' : 'es' }
+
+// Diccionario de strings de UI. clave -> { es, en }. Interpolación con {var}.
+const DICT = {
+  // menús / barra
+  character: { es: 'Personaje', en: 'Character' },
+  inventory: { es: 'Inventario', en: 'Inventory' },
+  powers: { es: 'Acciones', en: 'Actions' },
+  settings: { es: 'Ajustes', en: 'Settings' },
+  gold: { es: 'oro', en: 'gold' },
+  gold_word: { es: 'Oro', en: 'Gold' },
+  buy: { es: 'Comprar', en: 'Buy' },
+  sell: { es: 'Vender', en: 'Sell' },
+  sold_out: { es: 'Agotado', en: 'Sold out' },
+  sold_today: { es: 'Agotado hoy', en: 'Sold out today' },
+  in_stock: { es: 'En stock: {n}', en: 'In stock: {n}' },
+  no_gold: { es: 'Sin oro', en: 'No gold' },
+  equip: { es: 'Equipar', en: 'Equip' },
+  unequip: { es: 'Sacar', en: 'Unequip' },
+  to_belt: { es: 'Al cinturón', en: 'To belt' },
+  equip_belt: { es: 'Equipar cinturón', en: 'Equip belt' },
+  bigger_belt: { es: 'Comprá un cinturón más grande', en: 'Buy a bigger belt' },
+  view_character: { es: 'Ver personaje', en: 'View character' },
+  talk: { es: 'Hablar', en: 'Talk' },
+  say_something: { es: 'Decir algo…', en: 'Say something…' },
+  // configuración
+  config: { es: 'Configuración', en: 'Settings' },
+  sound: { es: 'Sonido', en: 'Sound' },
+  language: { es: 'Idioma', en: 'Language' },
+  sound_on: { es: '🔊 Activado', en: '🔊 On' },
+  sound_off: { es: '🔇 Silenciado', en: '🔇 Muted' },
+  // inventario / tooltip
+  level_n: { es: 'Nivel {n}', en: 'Level {n}' },
+  spaces: { es: 'Espacios', en: 'Slots' },
+  durability: { es: 'Durabilidad', en: 'Durability' },
+  broken: { es: 'ROTO', en: 'BROKEN' },
+  locked_hint: { es: 'Se desbloquea al subir de nivel', en: 'Unlocks as you level up' },
+  // personaje
+  char_title: { es: 'Personaje', en: 'Character' },
+  stat_hp: { es: 'Vida', en: 'Health' },
+  stat_mp: { es: 'Maná', en: 'Mana' },
+  stat_dmg: { es: 'Daño', en: 'Damage' },
+  stat_def: { es: 'Defensa', en: 'Defense' },
+  stat_crit: { es: 'Crítico', en: 'Crit' },
+  stat_hpregen: { es: 'Regen. vida', en: 'HP regen' },
+  stat_speed: { es: 'Velocidad', en: 'Speed' },
+  stat_xpbonus: { es: 'Bonus XP', en: 'XP bonus' },
+  // herrero
+  smith_empty: { es: 'No tenés equipo que reparar.', en: 'Nothing to repair.' },
+  smith_perfect: { es: 'Equipo impecable', en: 'Gear is pristine' },
+  smith_nogold: { es: 'Sin oro ({n})', en: 'Not enough gold ({n})' },
+  smith_repair: { es: 'Reparar todo — {n} oro', en: 'Repair all — {n} gold' },
+  // alquimia
+  alch_hint: { es: 'Juntá hierbas y cristales en el mundo; acá los volvés pociones.', en: 'Gather herbs and crystals out in the world; here you turn them into potions.' },
+  alch_craft: { es: 'Preparar', en: 'Brew' },
+  alch_lack: { es: 'Faltan', en: 'Missing' },
+  // chat
+  chan_sistema: { es: 'Sistema', en: 'System' },
+  chan_mundo: { es: 'Mundo', en: 'World' },
+  // inicio
+  start_tag: { es: 'Black Oak City es lo último que queda en pie.', en: 'Black Oak City is the last thing left standing.' },
+  start_new: { es: 'Nueva partida', en: 'New game' },
+  start_begin: { es: 'Comenzar', en: 'Begin' },
+  start_continue: { es: 'Continuar', en: 'Continue' },
+  loading: { es: 'Cargando…', en: 'Loading…' },
+  credits: { es: 'Flare — Empyrean Campaign', en: 'Flare — Empyrean Campaign' },
+  race_title: { es: 'Elegí tu sangre', en: 'Choose your blood' },
+  your_name: { es: 'Tu nombre', en: 'Your name' },
+  incarnate: { es: 'Encarnar {race}', en: 'Incarnate {race}' },
+  loading_city: { es: 'Cargando Black Oak City…', en: 'Loading Black Oak City…' },
+  // viaje
+  traveling_to: { es: 'Viajando a', en: 'Traveling to' },
+  travel_label: { es: 'Viajar: {zone}', en: 'Travel: {zone}' },
+  trade_with: { es: 'Comerciar con {name}', en: 'Trade with {name}' },
+  talk_with: { es: 'Hablar con {name}', en: 'Talk with {name}' },
+  // toasts / motor
+  zone_unavailable: { es: 'Esa zona todavía no está disponible', en: "That zone isn't available yet" },
+  already_in_town: { es: 'Ya estás en el pueblo', en: "You're already in town" },
+  stone_pulls: { es: 'La piedra te arranca del mundo...', en: 'The stone tears you from the world...' },
+  obelisk_opens: { es: 'El obelisco se abre hacia {zone}', en: 'The obelisk opens toward {zone}' },
+  revive_town: { es: 'Despertás a salvo en Triston...', en: 'You wake up safe in Triston...' },
+  fell_combat: { es: 'Caíste en combate...', en: 'You fell in battle...' },
+  inv_full: { es: 'Inventario lleno', en: 'Inventory full' },
+  gathered: { es: 'Juntaste {name} ×{n}', en: 'Gathered {name} ×{n}' },
+  arrived_at: { es: 'Llegaste a {zone}', en: 'You reached {zone}' },
+  defeated: { es: 'Derrotaste a {name} (+{xp} XP, +{gold} oro)', en: 'You defeated {name} (+{xp} XP, +{gold} gold)' },
+  brewed: { es: 'Preparaste: {name}', en: 'Brewed: {name}' },
+  alchemy_log: { es: 'Alquimia: preparaste {name}', en: 'Alchemy: you brewed {name}' },
+  need_materials: { es: 'Te faltan materiales', en: 'You lack materials' },
+  corpse_empty: { es: 'Cadáver vacío', en: 'Empty corpse' },
+  inspect_corpse: { es: 'Inspeccionás el cadáver de {name} (Nv {lv}). No queda nada de valor.', en: 'You inspect the corpse of {name} (Lv {lv}). Nothing of value remains.' },
+  belt_full: { es: 'El cinturón está lleno', en: 'The belt is full' },
+  belt_only: { es: 'Sólo consumibles van al cinturón', en: 'Only consumables go in the belt' },
+  hp_full: { es: 'Tu vida ya está al máximo', en: 'Your health is already full' },
+  mp_full: { es: 'Tu maná ya está al máximo', en: 'Your mana is already full' },
+  hp_gain: { es: '+{n} de vida', en: '+{n} health' },
+  mp_gain: { es: '+{n} de maná', en: '+{n} mana' },
+  cant_use: { es: 'No podés usar esto todavía', en: "You can't use this yet" },
+  level_up: { es: '¡Nivel {n}!', en: 'Level {n}!' },
+  levelup_toast: { es: '¡Subiste a nivel {n}!', en: 'You reached level {n}!' },
+  dodge_hint: { es: 'esquivá', en: 'dodge' },
+  belt_equipped: { es: 'Cinturón equipado: {n} espacios', en: 'Belt equipped: {n} slots' },
+  gear_destroyed: { es: '¡Tu {name} se destruyó!', en: 'Your {name} was destroyed!' },
+  gear_broke: { es: '¡Se rompió tu {name}! Llevalo al herrero.', en: 'Your {name} broke! Take it to the smith.' },
+  gear_impeccable: { es: 'Tu equipo está impecable', en: 'Your gear is pristine' },
+  no_gold_repair: { es: 'No te alcanza el oro para reparar', en: "You can't afford the repair" },
+  gear_repaired: { es: 'Equipo reparado (-{n} oro)', en: 'Gear repaired (-{n} gold)' },
+  gear_word: { es: 'equipo', en: 'gear' },
+  obelisk_name: { es: 'Obelisco de Retorno', en: 'Obelisk of Return' },
+  obelisk_l1: { es: 'La piedra rúnica duerme, fría al tacto.', en: 'The runestone sleeps, cold to the touch.' },
+  obelisk_l2: { es: 'Usá una Piedra de Retorno allá afuera: su luz te traerá aquí, y este obelisco te devolverá al punto donde estabas.', en: 'Use a Return Stone out there: its light brings you here, and this obelisk sends you back to where you stood.' },
+  picked_up: { es: 'Recogiste {name}{qty}', en: 'Picked up {name}{qty}' },
+  attr_str: { es: 'Fuerza', en: 'Strength' }, abbr_str: { es: 'FUE', en: 'STR' },
+  attr_int: { es: 'Inteligencia', en: 'Intelligence' }, abbr_int: { es: 'INT', en: 'INT' },
+  attr_dex: { es: 'Destreza', en: 'Dexterity' }, abbr_dex: { es: 'DES', en: 'DEX' },
+  attr_vit: { es: 'Vitalidad', en: 'Vitality' }, abbr_vit: { es: 'VIT', en: 'VIT' },
+  lv: { es: 'Nv', en: 'Lv' },
+  xp_of: { es: 'Nv {lv} · {into}/{need} XP', en: 'Lv {lv} · {into}/{need} XP' },
+  powers_title: { es: 'Acciones', en: 'Actions' },
+  skill_combate: { es: 'Combate', en: 'Combat' },
+  skill_excavacion: { es: 'Excavación', en: 'Mining' },
+  skill_herboristeria: { es: 'Herboristería', en: 'Herbalism' },
+  skill_alquimia: { es: 'Alquimia', en: 'Alchemy' },
+  skill_forja: { es: 'Forja', en: 'Smithing' },
+  skill_saqueo: { es: 'Saqueo', en: 'Looting' },
+  skilld_combate: { es: 'Matar enemigos afuera de la ciudad.', en: 'Slay enemies out beyond the town.' },
+  skilld_excavacion: { es: 'Picar vetas de cristal en cuevas y minas.', en: 'Mine crystal veins in caves and mines.' },
+  skilld_herboristeria: { es: 'Juntar hierbas y reactivos en el campo.', en: 'Gather herbs and reagents in the field.' },
+  skilld_alquimia: { es: 'Preparar pociones con lo que juntás.', en: 'Brew potions from what you gather.' },
+  skilld_forja: { es: 'Forjar y mejorar equipo con mastite.', en: 'Forge and upgrade gear with ore.' },
+  skilld_saqueo: { es: 'Abrir cofres y desenterrar reliquias.', en: 'Open chests and unearth relics.' },
+}
+
+// Nombre de raza según idioma (los datos traen name + name_en).
+export const raceName = (race, lang = _lang) => (!race ? '' : lang === 'en' ? (race.name_en || race.name) : race.name)
+
+export function translate(lang, key, vars) {
+  const e = DICT[key]
+  let s = e ? (e[lang] ?? e.es) : key
+  if (vars) for (const k in vars) s = s.replaceAll('{' + k + '}', vars[k])
+  return s
+}
+// versión no reactiva (motor / store): usa el idioma del módulo.
+export const tt = (key, vars) => translate(_lang, key, vars)
+
+// --- etiquetas compartidas (slot / stat / rareza) ---
+const SLOT = {
+  head: ['Cabeza', 'Head'], chest: ['Torso', 'Chest'], legs: ['Piernas', 'Legs'],
+  hands: ['Manos', 'Hands'], feet: ['Pies', 'Feet'], main: ['Arma', 'Weapon'],
+  off: ['Escudo', 'Shield'], ring: ['Anillo', 'Ring'], artifact: ['Reliquia', 'Relic'],
+  potion: ['Poción', 'Potion'], scroll: ['Pergamino', 'Scroll'], belt: ['Cinturón', 'Belt'],
+  crafting: ['Material', 'Material'], gem: ['Gema', 'Gem'],
+}
+const STAT = {
+  absorb_min: ['Defensa mín', 'Defense min'], absorb_max: ['Defensa máx', 'Defense max'],
+  dmg_melee_min: ['Daño c.c. mín', 'Melee dmg min'], dmg_melee_max: ['Daño c.c. máx', 'Melee dmg max'],
+  dmg_ranged_min: ['Daño dist. mín', 'Ranged dmg min'], dmg_ranged_max: ['Daño dist. máx', 'Ranged dmg max'],
+  dmg_ment_min: ['Daño mental mín', 'Mental dmg min'], dmg_ment_max: ['Daño mental máx', 'Mental dmg max'],
+  hp: ['Vida', 'Health'], mp: ['Maná', 'Mana'], hp_regen: ['Regen. vida', 'HP regen'], mp_regen: ['Regen. maná', 'MP regen'],
+  fire_resist: ['Res. fuego', 'Fire res'], ice_resist: ['Res. hielo', 'Ice res'],
+  accuracy: ['Precisión', 'Accuracy'], crit: ['Crítico', 'Crit'], avoidance: ['Evasión', 'Avoidance'],
+  xp_gain: ['Bonus XP', 'XP bonus'], item_find: ['+Botín', '+Loot'],
+  poise: ['Aplomo', 'Poise'], currency_find: ['+Oro', '+Gold'],
+}
+const RARITY = {
+  comun: ['Común', 'Common'], fino: ['Fino', 'Fine'], encantado: ['Encantado', 'Enchanted'],
+  legendario: ['Legendario', 'Legendary'], unico: ['Único', 'Unique'],
+}
+const idx = (lang) => (lang === 'en' ? 1 : 0)
+export const slotLabel = (slot, lang = _lang) => (SLOT[slot] ? SLOT[slot][idx(lang)] : slot)
+export const statLabel = (k, lang = _lang) => (STAT[k] ? STAT[k][idx(lang)] : k)
+export const rarityLabel = (r, lang = _lang) => (RARITY[r] ? RARITY[r][idx(lang)] : r)
+
+// Nombre del ítem según idioma (los datos de Flare traen name + name_en).
+export const itemName = (item, lang = _lang) =>
+  (!item ? '' : lang === 'en' ? (item.name_en || item.name) : (item.name || item.name_en || ''))
+
+// NPC: nombre y líneas de diálogo según idioma (los datos traen name_en / lines_en opcionales).
+export const npcName = (def, lang = _lang) => (!def ? '' : lang === 'en' ? (def.name_en || def.name) : def.name)
+export const npcLines = (def, lang = _lang) => (!def ? [] : lang === 'en' ? (def.lines_en || def.lines || []) : (def.lines || []))
+
+// Nombre de zona (mapa). ES curado; EN usa el título original de Flare (inglés).
+const ZONE_EN = {
+  triston: 'Triston', goblin_camp: 'Goblin Camp', goblin_cave: 'Goblin Cave',
+  stonewood: 'Stonewood', salted_field: 'Salted Field', merrimead_swamp: 'Merrimead Swamp',
+  lochport_cemetery: 'Lochport Cemetery', family_crypt: 'Family Crypt', lochport: 'Lochport',
+  st_maria_1: 'St. Maria: Mausoleum', st_maria_2: 'St. Maria: Catacombs', st_maria_3: 'St. Maria: Crypt',
+  perdition_mines: 'Perdition Mines', river_trail: 'River Trail', book_of_the_dead: 'Book of the Dead',
+  perdition_harbor: 'Perdition Harbor', perdition_harbor_cave: 'Perdition Harbor Cave',
+  abandoned_mines: 'Abandoned Mines', blackmire_mines: 'Blackmire Mines', the_breach: 'The Breach',
+  grot_lagoon: 'Grot Lagoon', lake_kuuma: 'Lake Kuuma', stormrock_pass: 'Stormrock Pass',
+  stormrock_ruins: 'Stormrock Ruins', antlion_nest: 'Antlion Nest', fort_amir: 'Fort Amir',
+  temple_of_mez_1: 'Temple of Mez: Basement', temple_of_mez_2: 'Temple of Mez: Main Hall', temple_of_mez_3: 'Temple of Mez: Entrance',
+  black_oak_city: 'Black Oak City', black_oak_farm: 'Black Oak Farm', southern_ridge: 'Southern Ridge',
+  dilapidated_sewers: 'Dilapidated Sewers', nazia_highlands: 'Nazia Highlands', nazia_mines: 'Nazia Mines',
+  nazia_underground: 'Nazia Underground', oasis: 'Oasis', mog_caverns: 'Mog Caverns', fort_nasu: 'Fort Nasu',
+  the_pit: 'The Pit', torture_chambers: 'Torture Chambers', underworld: 'Underworld',
+  underworld_catacombs: 'Underworld Catacombs', underworld_mines: 'Underworld Mines',
+  underworld_stronghold_1: 'Underworld Stronghold I', underworld_stronghold_2: 'Underworld Stronghold II',
+  wizards_tower_1: "Wizard's Tower: Entrance", wizards_tower_2: "Wizard's Tower: Study", wizards_tower_3: "Wizard's Tower: Laboratory",
+}
+const ZONE_ES = {
+  triston: 'Triston', goblin_camp: 'Campo de Duendes', goblin_cave: 'Cueva de Duendes',
+  stonewood: 'Bosque Pétreo', salted_field: 'Campo Salado', merrimead_swamp: 'Ciénaga de Merrimead',
+  lochport_cemetery: 'Cementerio de Lochport', family_crypt: 'Cripta Familiar', lochport: 'Lochport',
+  st_maria_1: 'Sta. María: Mausoleo', st_maria_2: 'Sta. María: Catacumbas', st_maria_3: 'Sta. María: Osario',
+  perdition_mines: 'Minas de Perdición', river_trail: 'Sendero del Río', book_of_the_dead: 'Libro de los Muertos',
+  perdition_harbor: 'Puerto de Perdición', perdition_harbor_cave: 'Cueva del Puerto',
+  abandoned_mines: 'Minas Abandonadas', blackmire_mines: 'Minas de Ciénaga Negra', the_breach: 'La Brecha',
+  grot_lagoon: 'Laguna Grot', lake_kuuma: 'Lago Kuuma', stormrock_pass: 'Paso Roca-Tormenta',
+  stormrock_ruins: 'Ruinas de Roca-Tormenta', antlion_nest: 'Nido de Hormigas León', fort_amir: 'Fuerte Amir',
+  temple_of_mez_1: 'Templo de Mez: Sótano', temple_of_mez_2: 'Templo de Mez: Gran Salón', temple_of_mez_3: 'Templo de Mez: Entrada',
+  black_oak_city: 'Black Oak City', black_oak_farm: 'Granja de Black Oak', southern_ridge: 'Cresta del Sur',
+  dilapidated_sewers: 'Cloacas Ruinosas', nazia_highlands: 'Tierras Altas de Nazia', nazia_mines: 'Minas de Nazia',
+  nazia_underground: 'Subsuelo de Nazia', oasis: 'Oasis', mog_caverns: 'Cavernas de Mog', fort_nasu: 'Fuerte Nasu',
+  the_pit: 'La Fosa', torture_chambers: 'Cámaras de Tortura', underworld: 'Inframundo',
+  underworld_catacombs: 'Inframundo: Catacumbas', underworld_mines: 'Inframundo: Minas',
+  underworld_stronghold_1: 'Inframundo: Fortaleza I', underworld_stronghold_2: 'Inframundo: Fortaleza II',
+  wizards_tower_1: 'Torre del Mago: Entrada', wizards_tower_2: 'Torre del Mago: Estudio', wizards_tower_3: 'Torre del Mago: Laboratorio',
+}
+export const zoneNameEN = (mapName, fallback) => ZONE_EN[mapName] || fallback || mapName
+export function zoneName(mapName, lang = _lang, fallback) {
+  return lang === 'en' ? (ZONE_EN[mapName] || fallback || mapName) : (ZONE_ES[mapName] || fallback || mapName)
+}

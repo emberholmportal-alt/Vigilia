@@ -6,6 +6,8 @@ import { useGameStore, beltCapacityOf } from '../store.js'
 import { playerProgress } from '../data/progression.js'
 import Globe from './Globe.jsx'
 import ActionBar, { MenuRow, DesktopBar } from './ActionBar.jsx'
+import { useT } from './useT.js'
+import { raceName } from '../i18n.js'
 
 // Aviso breve que aparece arriba de la barra y se va solo.
 function Toast() {
@@ -37,6 +39,7 @@ export default function HUD() {
   const useBelt = useGameStore((s) => s.useBelt)
   const equippedBelt = useGameStore((s) => s.equippedBelt)
   const beltCap = beltCapacityOf(equippedBelt)
+  const t = useT()
 
   const s = stats || { level: 1, str: 0, dex: 0, int: 0, vit: 0, hp: 0, hpMax: 1, mp: 0, mpMax: 1 }
   const prog = playerProgress(xp || 0)
@@ -44,14 +47,14 @@ export default function HUD() {
   return (
     <>
       <div className="hud">
-        <button className="who" onClick={() => togglePanel('character')} title="Ver personaje">
-          <b>{playerName} {race ? '· ' + race.name : ''}</b>
+        <button className="who" onClick={() => togglePanel('character')} title={t('view_character')}>
+          <b>{playerName} {race ? '· ' + raceName(race, t.lang) : ''}</b>
           <div className="attrs">
-            <span>Nv {s.level}</span>
-            <span>FUE {s.str}</span>
-            <span>DES {s.dex}</span>
-            <span>INT {s.int}</span>
-            <span>VIT {s.vit}</span>
+            <span>{t('lv')} {s.level}</span>
+            <span>{t('abbr_str')} {s.str}</span>
+            <span>{t('abbr_dex')} {s.dex}</span>
+            <span>{t('abbr_int')} {s.int}</span>
+            <span>{t('abbr_vit')} {s.vit}</span>
           </div>
         </button>
         <div className="telemetry">
@@ -67,14 +70,14 @@ export default function HUD() {
         {nearbyPortal && (
           <div className="interact-wrap">
             <button className="interact-btn portal-btn" onClick={requestPortal}>
-              🌀 Viajar: {nearbyPortal.label}
+              🌀 {t('travel_label', { zone: nearbyPortal.label })}
             </button>
           </div>
         )}
         {nearby && (
           <div className="interact-wrap">
             <button className="interact-btn" onClick={requestInteract}>
-              {nearby.shop ? '🛒 Comerciar con ' : '💬 Hablar con '}{nearby.name}
+              {nearby.shop ? '🛒 ' + t('trade_with', { name: nearby.name }) : '💬 ' + t('talk_with', { name: nearby.name })}
             </button>
           </div>
         )}
@@ -88,7 +91,7 @@ export default function HUD() {
 
         <div className="xp-strip" title={`XP ${prog.into}/${prog.need}`}>
           <div className="xp-strip-fill" style={{ width: `${Math.round(prog.pct * 100)}%` }} />
-          <span className="xp-strip-label">Nv {s.level} · {prog.into}/{prog.need} XP</span>
+          <span className="xp-strip-label">{t('xp_of', { lv: s.level, into: prog.into, need: prog.need })}</span>
         </div>
       </div>
     </>

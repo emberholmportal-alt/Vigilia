@@ -3,9 +3,10 @@
 // tooltip al tocar (nombre/nivel/slot/stats/precio) y oro. Look idéntico a Flare.
 import { useState } from 'react'
 import { useGameStore, equipSlotFor, beltEligible } from '../store.js'
-import { RARITY_COLOR, RARITY_LABEL, isDurable, durabilityMax } from '../data/items.js'
+import { RARITY_COLOR, isDurable, durabilityMax } from '../data/items.js'
 import { inventoryCapacity } from '../data/progression.js'
 import ItemIcon from './ItemIcon.jsx'
+import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 
@@ -17,20 +18,6 @@ const EQUIP_POS = {
 }
 const CARRIED = { x: 32, y: 64, cols: 5 }
 const EQUIP_ORDER = ['head', 'chest', 'legs', 'feet', 'hands', 'artifact', 'ring', 'main', 'off']
-
-const SLOT_LABEL = {
-  head: 'Cabeza', chest: 'Torso', legs: 'Piernas', hands: 'Manos', feet: 'Pies',
-  main: 'Arma', off: 'Escudo', ring: 'Anillo', artifact: 'Reliquia',
-}
-const STAT_LABEL = {
-  absorb_min: 'Defensa mín', absorb_max: 'Defensa máx',
-  dmg_melee_min: 'Daño c.c. mín', dmg_melee_max: 'Daño c.c. máx',
-  dmg_ranged_min: 'Daño dist. mín', dmg_ranged_max: 'Daño dist. máx',
-  dmg_ment_min: 'Daño mental mín', dmg_ment_max: 'Daño mental máx',
-  hp: 'Vida', mp: 'Maná', hp_regen: 'Regen. vida', mp_regen: 'Regen. maná',
-  fire_resist: 'Res. fuego', ice_resist: 'Res. hielo',
-}
-const statLabel = (k) => STAT_LABEL[k] || k
 
 // Estilo para centrar algo en un slot (coords de Flare, en % del panel).
 function slotStyle(x, y) {
@@ -51,6 +38,7 @@ export default function Inventory() {
   const assignBelt = useGameStore((s) => s.assignBelt)
   const equipBelt = useGameStore((s) => s.equipBelt)
   const setPanel = useGameStore((s) => s.setPanel)
+  const t = useT()
 
   const level = useGameStore((s) => s.stats?.level || 1)
   const cap = inventoryCapacity(level)
@@ -103,7 +91,7 @@ export default function Inventory() {
             <button key={i} disabled={locked}
                     className={'inv-cell' + (sel?.src === 'inv' && sel.i === i ? ' on' : '') + (locked ? ' locked' : '')}
                     style={slotStyle(x, y)}
-                    title={locked ? 'Se desbloquea al subir de nivel' : undefined}
+                    title={locked ? t('locked_hint') : undefined}
                     onClick={() => !locked && it && setSel({ src: 'inv', i, pos: [x, y] })}>
               {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
               {locked && <span className="inv-lock">🔒</span>}
@@ -112,12 +100,12 @@ export default function Inventory() {
         })}
 
         {/* oro */}
-        <div className="inv-gold" style={{ top: (823 / PH * 100) + '%' }}>{gold} oro</div>
+        <div className="inv-gold" style={{ top: (823 / PH * 100) + '%' }}>{gold} {t('gold')}</div>
 
         {selItem && (
-          <Tooltip item={selItem} pos={sel.pos}
+          <Tooltip item={selItem} pos={sel.pos} t={t}
                    compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selItem)] : null}
-                   actionLabel={sel.src === 'inv' ? 'Equipar' : 'Sacar'} onAction={act}
+                   actionLabel={sel.src === 'inv' ? t('equip') : t('unequip')} onAction={act}
                    onBelt={sel.src === 'inv' && beltEligible(selItem) ? toBelt : null}
                    onEquipBelt={sel.src === 'inv' && selItem.slot === 'belt' ? doEquipBelt : null} />
         )}
@@ -126,7 +114,7 @@ export default function Inventory() {
   )
 }
 
-function Tooltip({ item, pos, compareTo, actionLabel, onAction, onBelt, onEquipBelt }) {
+function Tooltip({ item, pos, compareTo, actionLabel, onAction, onBelt, onEquipBelt, t }) {
   const keys = [...new Set([...Object.keys(item.stats || {}), ...Object.keys(compareTo?.stats || {})])]
   // ancla arriba o abajo del ítem según dónde esté en el panel
   const [x, y] = pos
@@ -142,31 +130,31 @@ function Tooltip({ item, pos, compareTo, actionLabel, onAction, onBelt, onEquipB
   else { style.left = (cx * 100) + '%'; style.transform = 'translateX(-50%)' }
   return (
     <div className="inv-tooltip" style={style} onClick={(e) => e.stopPropagation()}>
-      <b style={{ color: RARITY_COLOR[item.rarity] }}>{item.name}</b>
-      <span className="tt-sub">{RARITY_LABEL[item.rarity]}{item.tier ? ` · Nivel ${item.tier}` : ''}</span>
-      <span className="tt-sub">{SLOT_LABEL[item.slot] || item.slot}</span>
+      <b style={{ color: RARITY_COLOR[item.rarity] }}>{t.item(item)}</b>
+      <span className="tt-sub">{t.rarity(item.rarity)}{item.tier ? ` · ${t('level_n', { n: item.tier })}` : ''}</span>
+      <span className="tt-sub">{t.slot(item.slot)}</span>
       {keys.map((k) => {
         const cur = item.stats?.[k] || 0, prev = compareTo?.stats?.[k] || 0, d = cur - prev
         return (
           <div className="tt-stat" key={k}>
-            <span>{statLabel(k)}</span>
+            <span>{t.stat(k)}</span>
             <span>{cur}{compareTo && d !== 0 && <b className={d > 0 ? 'up' : 'down'}> {d > 0 ? '+' : ''}{d}</b>}</span>
           </div>
         )
       })}
       {item.slot === 'belt' && item.beltSlots != null && (
-        <div className="tt-stat"><span>Espacios</span><span>{item.beltSlots}</span></div>
+        <div className="tt-stat"><span>{t('spaces')}</span><span>{item.beltSlots}</span></div>
       )}
       {isDurable(item) && item.dur != null && (
         <div className={'tt-stat' + (item.dur <= 0 ? ' broken' : '')}>
-          <span>Durabilidad</span><span>{item.dur <= 0 ? 'ROTO' : `${item.dur}/${durabilityMax(item)}`}</span>
+          <span>{t('durability')}</span><span>{item.dur <= 0 ? t('broken') : `${item.dur}/${durabilityMax(item)}`}</span>
         </div>
       )}
-      {item.price ? <div className="tt-price">{item.price} oro</div> : null}
+      {item.price ? <div className="tt-price">{item.price} {t('gold')}</div> : null}
       {onEquipBelt
-        ? <button className="tt-do" onClick={onEquipBelt}>Equipar cinturón</button>
+        ? <button className="tt-do" onClick={onEquipBelt}>{t('equip_belt')}</button>
         : onBelt
-          ? <button className="tt-do" onClick={onBelt}>Al cinturón</button>
+          ? <button className="tt-do" onClick={onBelt}>{t('to_belt')}</button>
           : <button className="tt-do" onClick={onAction} disabled={!equipSlotFor(item)}>{actionLabel}</button>}
     </div>
   )
