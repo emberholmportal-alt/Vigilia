@@ -57,7 +57,7 @@ export default function App() {
     initCharacter({ race, gold: s.gold, inventory: s.inventory, equipment: s.equipment,
                     belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills, discovered: s.discovered,
                     missions: s.missions, missionsDate: s.missionsDate, seals: s.seals,
-                    attrAlloc: s.attrAlloc, skillRanks: s.skillRanks })
+                    attrAlloc: s.attrAlloc, skillRanks: s.skillRanks, questFlags: s.questFlags })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')

@@ -73,6 +73,22 @@ const RANGED_COUSIN = {
 }
 export const rangedCousin = (sprite) => RANGED_COUSIN[sprite] || null
 
+// Habilidades de enemigo (las ejecuta Enemy.js; el visual/spawn lo pone Game.js):
+//  · smash    — carga un golpe fuerte en área, telegrafiado (esquivable saliendo del círculo).
+//  · skittish — huye del jugador cuando le baja la vida, y después vuelve a la carga.
+//  · summon   — invoca esbirros débiles cada cierto tiempo (nigromantes).
+const ABILITIES = {
+  minotaur: { type: 'smash', mult: 2.4, radius: 2.4, windup: 0.8, cd: 5, chance: 0.5 },
+  skeleton_knight_boss: { type: 'smash', mult: 2.2, radius: 2.2, windup: 0.75, cd: 5, chance: 0.45 },
+  goblin_elite: { type: 'smash', mult: 2.0, radius: 2.0, windup: 0.7, cd: 4.5, chance: 0.4 },
+  goblin_elite_runner: { type: 'smash', mult: 2.0, radius: 2.0, windup: 0.65, cd: 4.5, chance: 0.4 },
+  goblin_runner: { type: 'skittish', threshold: 0.28, flee: 3 },
+  skeleton_weak: { type: 'skittish', threshold: 0.25, flee: 2.5 },
+  antlion_small: { type: 'skittish', threshold: 0.3, flee: 2.5 },
+  skeleton_mage_boss: { type: 'summon', minion: 'skeleton_weak', cd: 7, cap: 4 },
+}
+export const enemyAbility = (sprite) => ABILITIES[sprite] || null
+
 const BOSS = /boss|minotaur|elite$/
 export function enemyStats(sprite, level = 1) {
   level = Math.max(1, level | 0)

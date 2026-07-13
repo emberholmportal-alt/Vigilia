@@ -58,6 +58,14 @@ export class Enemy {
     this._shootAnim = this.projKind === 'magic' ? 'cast' : 'shoot'
     this._atkAnim = 'swing'
 
+    // Habilidad especial (smash / skittish / summon) — ver data/bestiary.js.
+    this.ability = def.ability || null
+    this._windT = 0            // temporizador de carga del golpe telegrafiado (smash)
+    this._panic = false        // huyendo por vida baja (skittish)
+    this._panicT = 0
+    this._summonCd = this.ability?.type === 'summon' ? 2 + Math.random() * 3 : 0
+    this._summons = 0          // esbirros invocados (tope en ability.cap)
+
     this._sfx = enemySfxType(def.sprite)
     this.state = 'idle'
     this.dead = false
@@ -100,6 +108,9 @@ export class Enemy {
 
   // El Game engancha acá para lanzar el proyectil cuando el arquero suelta el disparo.
   onShoot(cb) { this._onShoot = cb }
+  // El Game dibuja el telegrafiado del golpe fuerte y spawnea los esbirros invocados.
+  onTelegraph(cb) { this._onTelegraph = cb }
+  onSummon(cb) { this._onSummon = cb }
 
   _syncWorld() {
     this.view.x = this.iso.toWorldX(this.tx, this.ty)
@@ -143,6 +154,7 @@ export class Enemy {
   update(dt, player) {
     this.pendingHit = 0
     if (this._attackCd > 0) this._attackCd -= dt
+    if (this._summonCd > 0) this._summonCd -= dt
 
     if (this.state === 'dead') {
       this._deathT -= dt
@@ -153,6 +165,39 @@ export class Enemy {
 
     const d = this.dist(player.tx, player.ty)
     const engaged = this._updateAggro(d, dt)   // persigue con "correa", no abandona enseguida
+
+    // Golpe telegrafiado (smash): mientras carga, queda quieto y mostrando el círculo; al
+    // terminar, pega fuerte a todo lo que quede dentro del radio (esquivable saliendo).
+    if (this.state === 'windup') {
+      this._facePlayer(player)
+      this._windT -= dt
+      this._advanceAnim(dt)
+      if (this._windT <= 0) {
+        const ab = this.ability
+        if (d <= (ab.radius || 2.2)) this.pendingHit = Math.round(this.damage * (ab.mult || 2.2))
+        this._startAnim('swing'); this._dealt = true   // muestra el golpe sin re-aplicar daño
+        this._atkAnim = 'swing'; this.state = 'attack'; this._animT = this._animS('swing')
+        this._attackCd = ab.cd || 5
+      }
+      return
+    }
+
+    // Huida por vida baja (skittish): al bajar del umbral, huye un rato; después vuelve a atacar.
+    if (this.ability?.type === 'skittish') {
+      const low = this.hp / this.hpMax < (this.ability.threshold || 0.25)
+      if (low && !this._panic && engaged) { this._panic = true; this._panicT = this.ability.flee || 3 }
+      if (this._panic) {
+        this._panicT -= dt
+        if (this._panicT <= 0) this._panic = false
+        else if (engaged) {
+          this._facePlayer(player)
+          this._moveAway(player.tx, player.ty, dt)
+          if (this._anim !== 'run') this._startAnim('run', true)
+          this._advanceAnim(dt)
+          return
+        }
+      }
+    }
 
     if (this._anim === 'hit') {
       this._animT -= dt
@@ -173,6 +218,19 @@ export class Enemy {
       this._advanceAnim(dt)
       if (this._animT <= 0) { this.state = engaged ? 'chase' : 'idle'; this._startAnim('stance', true) }
       this._facePlayer(player)
+      return
+    }
+
+    // Invocador (nigromante): cada tanto llama esbirros en vez de disparar, hasta un tope.
+    if (this.ability?.type === 'summon' && engaged && this._summonCd <= 0 &&
+        this._summons < (this.ability.cap || 4) && d <= RANGED_RANGE) {
+      this._facePlayer(player)
+      this._startAnim(this._atkAnim = this._shootAnim)   // anim de conjuro
+      this._summonCd = this.ability.cd || 7
+      this._summons++
+      if (this._onSummon) this._onSummon(this)
+      this.state = 'chase'
+      this._advanceAnim(dt)
       return
     }
 
@@ -206,8 +264,16 @@ export class Enemy {
 
     if (d <= ATTACK_RANGE) {
       this._facePlayer(player)
-      if (this._attackCd <= 0) { this.state = 'attack'; this._startAnim(this._atkAnim = 'swing'); this._attackCd = ATTACK_CD }
-      else { this.state = 'chase'; if (this._anim !== 'stance') this._startAnim('stance', true); this._advanceAnim(dt) }
+      if (this._attackCd <= 0) {
+        // Bruto/jefe con smash: a veces carga un golpe fuerte telegrafiado en vez del normal.
+        if (this.ability?.type === 'smash' && Math.random() < (this.ability.chance || 0.4)) {
+          this.state = 'windup'; this._windT = this.ability.windup || 0.75
+          this._startAnim('stance', true)
+          if (this._onTelegraph) this._onTelegraph(this, this.ability)
+          return
+        }
+        this.state = 'attack'; this._startAnim(this._atkAnim = 'swing'); this._attackCd = ATTACK_CD
+      } else { this.state = 'chase'; if (this._anim !== 'stance') this._startAnim('stance', true); this._advanceAnim(dt) }
       return
     }
 

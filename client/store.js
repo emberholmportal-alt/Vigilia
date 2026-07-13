@@ -7,13 +7,14 @@
 import { create } from 'zustand'
 import { computeStats, upgradeLevel } from './data/stats.js'
 import { NODE_BY_ID, attrEarned, skillEarned, attrSpent, skillSpent } from './data/skilltree.js'
+import { QUESTS, ZONE_REVEALS } from './data/quests.js'
 import { rollLoot } from '../shared/loot.js'
 
 const FORGE_MAX = 5        // nivel máximo de mejora por pieza
 const SEAL_CHEST_COST = 6  // sellos por cofre de sellos (loot box premium)
 import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
-import { tt, setLangGlobal, itemName, raceName } from './i18n.js'
+import { tt, setLangGlobal, itemName, raceName, questName } from './i18n.js'
 import { dailyStock, todayStr } from './data/shop.js'
 import { dailyMissions } from './data/missions.js'
 import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryCapacity } from './data/progression.js'
@@ -454,7 +455,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -471,7 +472,7 @@ export const useGameStore = create((set, get) => ({
     while (b.length < 4) b.push(null)
     set({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
-      attrAlloc: alloc, skillRanks: ranks,
+      attrAlloc: alloc, skillRanks: ranks, questFlags: questFlags || {},
       inventory: inv, equipment: equip, belt: b, equippedBelt,
       discovered: discovered || {},
       missions: missions || [], missionsDate: missionsDate || '', seals: seals || 0,
@@ -711,6 +712,45 @@ export const useGameStore = create((set, get) => ({
     return { ok: true, gold: roll.gold, items: got }
   },
 
+  // --- quests narrativas (banderas de estado, estilo Flare) ---
+  questFlags: {},           // { flag: true } — estado del mundo para las quests (persistido)
+  hasQuestFlag: (f) => !!get().questFlags[f],
+  // Pone una bandera de quest. Si con eso se completa una quest, entrega su recompensa una vez.
+  setQuestFlag: (flag) => {
+    const s = get()
+    if (!flag || s.questFlags[flag]) return false
+    const questFlags = { ...s.questFlags, [flag]: true }
+    set({ questFlags })
+    const done = QUESTS.find((q) => q.complete === flag)
+    if (done) {
+      const r = done.reward || {}
+      if (r.xp) get().addXp(r.xp)
+      if (r.gold) get().addGold(r.gold)
+      if (r.seals) get().addSeals(r.seals)
+      get().showToast(tt('quest_done', { name: questName(done) }))
+      get().logMessage({ channel: 'sistema', text: tt('quest_reward', { xp: r.xp || 0, gold: r.gold || 0, seals: r.seals || 0 }) })
+    } else {
+      get().showToast(tt('quest_updated'))
+    }
+    saveGame(get())
+    return true
+  },
+  // Al entrar a una zona con la quest de los Guardianes activa, revela un nombre olvidado.
+  // Devuelve el nombre revelado (para que el loop lo anuncie) o null.
+  revealForZone: (zone) => {
+    const s = get()
+    if (!s.questFlags.q3_init || s.questFlags.q3_finish) return null
+    const r = ZONE_REVEALS[zone]
+    if (!r || s.questFlags[r.flag]) return null
+    get().setQuestFlag(r.flag)
+    return r.name
+  },
+  // ¿Se puede despertar a los Guardianes? (los tres nombres, quest sin cerrar)
+  canAwakenGuardians: () => {
+    const f = get().questFlags
+    return !!(f.q3_init && f.q3_ice && f.q3_fire && f.q3_wind && !f.q3_finish)
+  },
+
   // Cuenta cuántas unidades de un ítem (por id) hay en el inventario (respeta stacks).
   countItem: (id) => get().inventory.reduce((n, it) => n + (it && it.id === id ? (it.count || 1) : 0), 0),
 
@@ -859,6 +899,10 @@ export const storeApi = {
   missionProgress: (type, n) => useGameStore.getState().missionProgress(type, n),
   getMissions: () => useGameStore.getState().missions,
   deliverOffering: () => useGameStore.getState().deliverOffering(),
+  setQuestFlag: (f) => useGameStore.getState().setQuestFlag(f),
+  hasQuestFlag: (f) => useGameStore.getState().hasQuestFlag(f),
+  revealForZone: (z) => useGameStore.getState().revealForZone(z),
+  canAwakenGuardians: () => useGameStore.getState().canAwakenGuardians(),
   takeDamage: (n) => useGameStore.getState().takeDamage(n),
   heal: (n) => useGameStore.getState().heal(n),
   restoreMana: (n) => useGameStore.getState().restoreMana(n),
