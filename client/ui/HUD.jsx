@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import { useGameStore, beltCapacityOf } from '../store.js'
 import { playerProgress } from '../data/progression.js'
 import Globe from './Globe.jsx'
-import ActionBar, { MenuRow, DesktopBar, AbilityBar, BuffBar } from './ActionBar.jsx'
+import ActionBar, { MenuRow, DesktopBar, BuffBar } from './ActionBar.jsx'
 import { useT } from './useT.js'
 import { raceName } from '../i18n.js'
 
@@ -106,7 +106,6 @@ export default function HUD() {
         )}
         <MenuRow onPanel={togglePanel} />
         <BuffBar />
-        <AbilityBar />
         <div className="globe-row">
           <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
           <ActionBar belt={belt} gold={gold} onUseBelt={useBelt} beltCap={beltCap} />

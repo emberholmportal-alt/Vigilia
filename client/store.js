@@ -8,6 +8,7 @@ import { create } from 'zustand'
 import { computeStats, upgradeLevel } from './data/stats.js'
 import { NODE_BY_ID, attrEarned, skillEarned, attrSpent, skillSpent } from './data/skilltree.js'
 import { QUESTS, ZONE_REVEALS } from './data/quests.js'
+import { unlockedAbilities } from './data/abilities.js'
 import { rollLoot } from '../shared/loot.js'
 
 const FORGE_MAX = 5        // nivel máximo de mejora por pieza
@@ -128,6 +129,8 @@ export const useGameStore = create((set, get) => ({
 
   // --- portales / red de waypoints (estilo Diablo) ---
   mapName: '',              // zona actual (para el menú de waypoints)
+  safeZone: false,          // pueblo/hub sin enemigos: sin combate ni habilidades (lo setea el loop)
+  setSafeZone: (v) => set({ safeZone: !!v }),
   nearbyPortal: null,       // {label} — portal cercano (lo escribe el loop)
   portalTiles: [],          // [{x,y,label}] — para marcar en el minimapa
   discovered: {},           // { zona: {tx,ty,label} } — waypoints que descubriste (persistido)
@@ -226,9 +229,13 @@ export const useGameStore = create((set, get) => ({
   castAbility: null,        // id de la habilidad pedida; el loop la ejecuta sobre el objetivo
   abilityCd: {},            // { id: msFin } — timestamp de fin de recarga (para el barrido del HUD)
   activeBuffs: [],          // [{id, icon, until}] — potencias temporales activas (las escribe el loop)
+  specialAbility: null,     // id de la habilidad ligada al botón derecho / slot M2 (persistido)
   requestCast: (id) => set((s) => ({ castSeq: s.castSeq + 1, castAbility: id })),
   setAbilityCd: (id, ms) => set((s) => ({ abilityCd: { ...s.abilityCd, [id]: Date.now() + ms } })),
   setActiveBuffs: (list) => set({ activeBuffs: list }),
+  // Liga una habilidad al botón derecho (slot M2). null la desliga.
+  setSpecial: (id) => { set({ specialAbility: id, panel: null }); saveGame(get()) },
+  openMouseBind: () => set({ panel: 'mousebind' }),
   // Revive al jugador con vida/maná llenos (al reaparecer).
   reviveFull: () => {
     const s = get(); const st = s.stats
@@ -455,7 +462,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -470,9 +477,11 @@ export const useGameStore = create((set, get) => ({
     const st = computeStats(race.id, level, equip, alloc, ranks)   // stats incluyen equipo + atributos + árbol
     const b = (belt || []).slice(0, 4)
     while (b.length < 4) b.push(null)
+    // Botón derecho: si no viene del save, se liga por defecto a la 1ª habilidad desbloqueada.
+    const special = specialAbility !== undefined ? specialAbility : (unlockedAbilities(st)[0]?.id || null)
     set({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
-      attrAlloc: alloc, skillRanks: ranks, questFlags: questFlags || {},
+      attrAlloc: alloc, skillRanks: ranks, questFlags: questFlags || {}, specialAbility: special,
       inventory: inv, equipment: equip, belt: b, equippedBelt,
       discovered: discovered || {},
       missions: missions || [], missionsDate: missionsDate || '', seals: seals || 0,
@@ -865,6 +874,8 @@ export const storeApi = {
   openDialogue: (d) => useGameStore.getState().openDialogue(d),
   openShop: (vendor) => useGameStore.getState().openShop(vendor),
   openSmith: (name) => useGameStore.getState().openSmith(name),
+  openAlchemy: (name) => useGameStore.getState().openAlchemy(name),
+  setSafeZone: (v) => useGameStore.getState().setSafeZone(v),
   getRunState: () => {
     const s = useGameStore.getState()
     return { running: s.running, stamina: s.stamina, staminaMax: s.staminaMax }
@@ -911,6 +922,7 @@ export const storeApi = {
   getCastAbility: () => useGameStore.getState().castAbility,
   setAbilityCd: (id, ms) => useGameStore.getState().setAbilityCd(id, ms),
   setActiveBuffs: (list) => useGameStore.getState().setActiveBuffs(list),
+  getSpecialAbility: () => useGameStore.getState().specialAbility,
   reviveFull: () => useGameStore.getState().reviveFull(),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,

@@ -15,6 +15,8 @@ import Vendor from './ui/Vendor.jsx'
 import Blacksmith from './ui/Blacksmith.jsx'
 import Alchemy from './ui/Alchemy.jsx'
 import Missions from './ui/Missions.jsx'
+import MouseBind from './ui/MouseBind.jsx'
+import BootSplash from './ui/BootSplash.jsx'
 import ChatLog from './ui/ChatLog.jsx'
 import Minimap from './ui/Minimap.jsx'
 import DialogueBox from './ui/DialogueBox.jsx'
@@ -24,7 +26,7 @@ import { useT } from './ui/useT.js'
 
 // Flujo: Inicio -> Elegir raza -> Juego (con inventario).
 export default function App() {
-  const [phase, setPhase] = useState('start') // 'start' | 'race' | 'game'
+  const [phase, setPhase] = useState('boot') // 'boot' | 'start' | 'race' | 'game'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const canvasRef = useRef(null)
@@ -57,7 +59,8 @@ export default function App() {
     initCharacter({ race, gold: s.gold, inventory: s.inventory, equipment: s.equipment,
                     belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills, discovered: s.discovered,
                     missions: s.missions, missionsDate: s.missionsDate, seals: s.seals,
-                    attrAlloc: s.attrAlloc, skillRanks: s.skillRanks, questFlags: s.questFlags })
+                    attrAlloc: s.attrAlloc, skillRanks: s.skillRanks, questFlags: s.questFlags,
+                    specialAbility: s.specialAbility })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
@@ -97,11 +100,13 @@ export default function App() {
       {phase === 'game' && panel === 'smith' && <Blacksmith />}
       {phase === 'game' && panel === 'alchemy' && <Alchemy />}
       {phase === 'game' && panel === 'missions' && <Missions />}
+      {phase === 'game' && panel === 'mousebind' && <MouseBind />}
       {phase === 'game' && !loading && !error && <DialogueBox />}
       {phase === 'game' && waypointOpen && <Waypoints />}
       {phase === 'game' && <ZoneLoader />}
       {error && <div className="error">Error: {error}</div>}
 
+      {phase === 'boot' && <BootSplash onDone={() => setPhase('start')} />}
       {phase === 'start' && <StartScreen onEnter={startGame} onContinue={continueGame} canContinue={hasSave()} loading={false} />}
       {phase === 'race' && <RaceScreen onChoose={chooseRace} />}
       {phase === 'game' && loading && <div className="loading">{t('loading_city')}</div>}

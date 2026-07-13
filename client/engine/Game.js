@@ -228,6 +228,9 @@ export class Game {
     const title = zoneTitle(mapName, world.map.title)
     this.store.setMapName(mapName)
     this.store.setMapTitle(title)
+    // Zona segura (pueblo/hub): sin spawners de enemigos = sin combate ni habilidades.
+    this._safeZone = !(world.map.spawners && world.map.spawners.length)
+    this.store.setSafeZone(this._safeZone)
     this.store.setMinimap(this._buildMinimap(world.map))
     this.store.logMessage({ channel: 'mundo', text: tt('arrived_at', { zone: title }) })
     // Llegar a una zona la descubre como waypoint (llegás donde apareciste).
@@ -431,6 +434,17 @@ export class Game {
     this.store.showToast(tt('corpse_empty'))
   }
 
+  // Enemigo (vivo por defecto) más cercano a un tile, dentro de un radio manhattan.
+  _enemyNear(tx, ty, r = 1.6, includeDead = false) {
+    let best = null, bd = r
+    for (const e of this.enemies || []) {
+      if (e.dead && !includeDead) continue
+      const d = Math.abs(e.tx - tx) + Math.abs(e.ty - ty)
+      if (d < bd) { bd = d; best = e }
+    }
+    return best
+  }
+
   // Click derecho: busca la criatura bajo el cursor. Enemigo vivo -> atacar; cadáver ->
   // inspeccionar. En el piso vacío no hace nada (no camina, para no moverse sin querer).
   _rightClick(gx, gy) {
@@ -438,10 +452,14 @@ export class Game {
     const w = this.camera.screenToWorld(gx, gy)
     const t = this.iso.toTile(w.x, w.y)
     const tx = Math.round(t.x), ty = Math.round(t.y)
-    let best = null, bd = 1.6
-    for (const e of this.enemies) {
-      const d = Math.abs(e.tx - tx) + Math.abs(e.ty - ty)
-      if (d < bd) { bd = d; best = e }
+    const best = this._enemyNear(tx, ty, 1.6, true)
+    // Botón derecho = habilidad especial (slot M2), como Flare, si hay una ligada y estás en
+    // zona de combate. Apunta al enemigo bajo el cursor para las habilidades con objetivo.
+    const special = this.store.getSpecialAbility ? this.store.getSpecialAbility() : null
+    if (special && !this._safeZone) {
+      if (best && !best.dead) this._targetEnemy(best)
+      this._castAbility(special)
+      return
     }
     if (!best) return
     if (best.dead) this._inspectCorpse(best)
@@ -849,6 +867,7 @@ export class Game {
   // y maná; si pasa, ejecuta su efecto y arranca la recarga.
   _castAbility(id) {
     if (this._dead || !this.player) return
+    if (this._safeZone) { this.store.showToast(tt('no_combat_town')); return }
     const ab = ABILITY_BY_ID[id]
     if (!ab) return
     const st = this.store.getStats() || {}
@@ -1270,11 +1289,16 @@ export class Game {
     app.stage.hitArea = app.screen
     const onTap = (e) => {
       if (this._dead || this._loading || this._changing) return // congelado
-      this._target = null                    // tocar el suelo cancela el ataque
       const w = this.camera.screenToWorld(e.global.x, e.global.y)
       const t = this.iso.toTile(w.x, w.y)
       const tx = Math.round(t.x)
       const ty = Math.round(t.y)
+      // Clic izquierdo sobre (o CERCA de) un enemigo vivo = atacarlo. El tap directo al sprite ya
+      // lo maneja Enemy.onTap; esto rescata el caso común de errarle a un enemigo en movimiento
+      // (antes caía al piso y caminaba en vez de atacar).
+      const foe = this._enemyNear(tx, ty, 1.1)
+      if (foe && !this._safeZone) { this._targetEnemy(foe); return }
+      this._target = null                    // tocar el suelo cancela el ataque
       const path = this.player.walkTo(tx, ty)
       if (path.length) {
         const dest = path[path.length - 1]

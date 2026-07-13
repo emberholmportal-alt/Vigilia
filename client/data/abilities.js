@@ -11,27 +11,29 @@
 //   'buff'       — potencia temporal a uno mismo (no necesita objetivo).
 //   'heal'       — restaura vida (por INT, no necesita objetivo).
 
+// `icon` es el índice del ícono real de Flare (public/assets/icons.png), no hay íconos de
+// hechizo en el sheet así que usamos armas/pociones como proxy (arte real, no emojis).
 export const ABILITIES = [
   // --- vía 1 (req 12): abridor de cada rama ---
   // Guerrero — Embate: molinete que golpea a todos los enemigos cerca por 1.6× el arma.
-  { id: 'embate', branch: 'guerrero', attr: 'str', req: 12, mp: 12, cd: 4.5, icon: '🌀',
+  { id: 'embate', branch: 'guerrero', attr: 'str', req: 12, mp: 12, cd: 4.5, icon: 99,
     kind: 'melee_aoe', radius: 2.6, dmgMul: 1.6 },
   // Cazador — Saeta certera: disparo que siempre es crítico y pega 2.2× el arma.
-  { id: 'saeta', branch: 'cazador', attr: 'dex', req: 12, mp: 10, cd: 3, icon: '🎯',
+  { id: 'saeta', branch: 'cazador', attr: 'dex', req: 12, mp: 10, cd: 3, icon: 96,
     kind: 'bolt', dmgMul: 2.2 },
   // Mago — Bola de fuego: proyectil que estalla; daño base + INT, en área.
-  { id: 'fuego', branch: 'mago', attr: 'int', req: 12, mp: 16, cd: 5.5, icon: '🔥',
+  { id: 'fuego', branch: 'mago', attr: 'int', req: 12, mp: 16, cd: 5.5, icon: 104,
     kind: 'fireball', radius: 2.2, base: 14, intMul: 1.1 },
 
   // --- vía 2 (req 16): firma de cada rama, con un estilo propio ---
   // Guerrero — Vigor: potencia temporal (+daño y +defensa) por unos segundos.
-  { id: 'vigor', branch: 'guerrero', attr: 'str', req: 16, mp: 14, cd: 14, icon: '🛡️',
+  { id: 'vigor', branch: 'guerrero', attr: 'str', req: 16, mp: 14, cd: 14, icon: 120,
     kind: 'buff', dur: 8, buff: { dmgMul: 0.3, defense: 8 } },
   // Cazador — Lluvia de flechas: volea que cae en área sobre el objetivo (daño físico).
-  { id: 'lluvia', branch: 'cazador', attr: 'dex', req: 16, mp: 16, cd: 7, icon: '☄️',
+  { id: 'lluvia', branch: 'cazador', attr: 'dex', req: 16, mp: 16, cd: 7, icon: 118,
     kind: 'area_phys', radius: 2.4, dmgMul: 1.3 },
   // Mago — Restaurar: recupera vida escalada por INT (utilidad de la vía arcana).
-  { id: 'restaurar', branch: 'mago', attr: 'int', req: 16, mp: 20, cd: 10, icon: '💚',
+  { id: 'restaurar', branch: 'mago', attr: 'int', req: 16, mp: 20, cd: 10, icon: 64,
     kind: 'heal', base: 30, intMul: 1.4 },
 ]
 

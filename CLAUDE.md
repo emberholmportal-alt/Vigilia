@@ -1,4 +1,4 @@
-# CLAUDE.md — Vigilia
+# CLAUDE.md — Velgrim
 
 MMORPG 2D isométrico de navegador, dark fantasy. Un solo dev (noches y fines de semana),
 deploy en Render desde GitHub. Se prueba en Samsung: **mobile-first, siempre.**
@@ -90,7 +90,7 @@ al jugador — implementalo cuando toque, no al principio.)
 ## Estructura
 
 ```
-vigilia/
+velgrim/
 ├── vendor/flare-game/        # gitignored (2,2 GB)
 ├── tools/
 │   ├── extract_flare.py      # sprites -> spritesheets uniformes

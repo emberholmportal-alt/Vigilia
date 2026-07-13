@@ -1,4 +1,4 @@
-// Registro/chat estilo Valorant abajo a la izquierda, con la estética de Vigilia (piedra
+// Registro/chat estilo Valorant abajo a la izquierda, con la estética de Velgrim (piedra
 // oscura + tags de canal). Muestra los últimos eventos (loot, combate, nivel) y deja
 // "hablar": lo que escribís aparece como globo sobre la cabeza del personaje + acá.
 import { useState, useRef, useEffect } from 'react'

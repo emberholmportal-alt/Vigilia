@@ -2,12 +2,14 @@
 // además del CREDITS.md (ver CLAUDE.md).
 import { useT } from './useT.js'
 
+const LOGO = (import.meta.env.BASE_URL || '/') + 'velgrinlogo.png'
+
 export default function StartScreen({ onEnter, onContinue, canContinue, loading }) {
   const t = useT()
   return (
     <div className="start">
       <div className="start-inner">
-        <h1>Vigilia</h1>
+        <img className="start-logo" src={LOGO} alt="Velgrim" />
         <p className="tagline">{t('start_tag')}</p>
         {canContinue && (
           <button className="enter" onClick={onContinue} disabled={loading}>
