@@ -1,6 +1,7 @@
 // Ítem en el suelo (loot). Ícono real de icons.png flotando sobre un brillo del color
 // de su rareza, con un bob suave. Se toca o se recoge al caminarle encima.
 import { Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js'
+import { itemName, getLang } from '../i18n.js'
 
 const BASE = import.meta.env.BASE_URL || '/'
 const ICON = 32, COLS = 8
@@ -53,17 +54,17 @@ export class GroundItem {
     this.sprite.y = -3
     this.view.addChild(this.sprite)
 
-    if (this.qty > 1) {
-      this.count = new Text({
-        text: 'x' + this.qty, style: {
-          fontFamily: 'Georgia, serif', fontSize: 11, fill: '#f2ead6',
-          stroke: { color: '#0a090c', width: 3 },
-        },
-      })
-      this.count.anchor.set(0.5, 0)
-      this.count.y = -4
-      this.view.addChild(this.count)
-    }
+    // etiqueta con el nombre del ítem (color de rareza), como el loot de Diablo. Incluye ×qty.
+    const label = itemName(item, getLang()) + (this.qty > 1 ? ' ×' + this.qty : '')
+    this.label = new Text({
+      text: label, style: {
+        fontFamily: 'Georgia, serif', fontSize: 11, fill: '#' + this.tint.toString(16).padStart(6, '0'),
+        stroke: { color: '#0a090c', width: 3 }, align: 'center',
+      },
+    })
+    this.label.anchor.set(0.5, 1)
+    this.label.y = -22
+    this.view.addChild(this.label)
 
     this.view.eventMode = 'static'
     this.view.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"

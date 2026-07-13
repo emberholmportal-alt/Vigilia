@@ -44,8 +44,9 @@ export function AbilityBar() {
   const stats = useGameStore((s) => s.stats)
   const abilityCd = useGameStore((s) => s.abilityCd)
   const requestCast = useGameStore((s) => s.requestCast)
+  const safeZone = useGameStore((s) => s.safeZone)
   const t = useT()
-  const abils = unlockedAbilities(stats)
+  const abils = safeZone ? [] : unlockedAbilities(stats)
   const [, tick] = useState(0)
   const timer = useRef()
 

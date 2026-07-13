@@ -257,6 +257,7 @@ const DICT = {
   guardians_wake: { es: 'Pronunciás los tres nombres. Los Guardianes despiertan.', en: 'You speak the three names. The Guardians awaken.' },
   guardian_asleep: { es: 'La estatua duerme. Le falta oír los nombres que la sellaron.', en: 'The statue sleeps. It must hear the names that sealed it.' },
   enemy_summons: { es: '{name} invoca a los muertos', en: '{name} summons the dead' },
+  no_combat_town: { es: 'En el pueblo no se combate', en: 'No fighting in town' },
 }
 
 // Nombre de raza según idioma (los datos traen name + name_en).

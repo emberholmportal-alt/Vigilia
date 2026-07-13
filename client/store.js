@@ -128,6 +128,8 @@ export const useGameStore = create((set, get) => ({
 
   // --- portales / red de waypoints (estilo Diablo) ---
   mapName: '',              // zona actual (para el menú de waypoints)
+  safeZone: false,          // pueblo/hub sin enemigos: sin combate ni habilidades (lo setea el loop)
+  setSafeZone: (v) => set({ safeZone: !!v }),
   nearbyPortal: null,       // {label} — portal cercano (lo escribe el loop)
   portalTiles: [],          // [{x,y,label}] — para marcar en el minimapa
   discovered: {},           // { zona: {tx,ty,label} } — waypoints que descubriste (persistido)
@@ -865,6 +867,8 @@ export const storeApi = {
   openDialogue: (d) => useGameStore.getState().openDialogue(d),
   openShop: (vendor) => useGameStore.getState().openShop(vendor),
   openSmith: (name) => useGameStore.getState().openSmith(name),
+  openAlchemy: (name) => useGameStore.getState().openAlchemy(name),
+  setSafeZone: (v) => useGameStore.getState().setSafeZone(v),
   getRunState: () => {
     const s = useGameStore.getState()
     return { running: s.running, stamina: s.stamina, staminaMax: s.staminaMax }

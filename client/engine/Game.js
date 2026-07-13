@@ -228,6 +228,9 @@ export class Game {
     const title = zoneTitle(mapName, world.map.title)
     this.store.setMapName(mapName)
     this.store.setMapTitle(title)
+    // Zona segura (pueblo/hub): sin spawners de enemigos = sin combate ni habilidades.
+    this._safeZone = !(world.map.spawners && world.map.spawners.length)
+    this.store.setSafeZone(this._safeZone)
     this.store.setMinimap(this._buildMinimap(world.map))
     this.store.logMessage({ channel: 'mundo', text: tt('arrived_at', { zone: title }) })
     // Llegar a una zona la descubre como waypoint (llegás donde apareciste).
@@ -849,6 +852,7 @@ export class Game {
   // y maná; si pasa, ejecuta su efecto y arranca la recarga.
   _castAbility(id) {
     if (this._dead || !this.player) return
+    if (this._safeZone) { this.store.showToast(tt('no_combat_town')); return }
     const ab = ABILITY_BY_ID[id]
     if (!ab) return
     const st = this.store.getStats() || {}
