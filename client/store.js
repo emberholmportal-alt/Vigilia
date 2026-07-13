@@ -116,6 +116,11 @@ export const useGameStore = create((set, get) => ({
   interactSeq: 0,           // el botón "interactuar" del HUD lo incrementa; el loop lo lee
   setNearby: (nearby) => set((s) => (s.nearby?.name === nearby?.name ? {} : { nearby })),
   requestInteract: () => set((s) => ({ interactSeq: s.interactSeq + 1 })),
+  // Nodo de recurso cercano (hierba/cristal) + botón para recolectarlo.
+  nearbyNode: null,         // {name, skill}
+  gatherSeq: 0,
+  setNearbyNode: (n) => set((s) => (s.nearbyNode?.name === n?.name ? {} : { nearbyNode: n })),
+  requestGather: () => set((s) => ({ gatherSeq: s.gatherSeq + 1 })),
 
   // --- portales / red de waypoints (estilo Diablo) ---
   mapName: '',              // zona actual (para el menú de waypoints)
@@ -143,11 +148,11 @@ export const useGameStore = create((set, get) => ({
   closeWaypoints: () => set({ waypointOpen: false }),
   requestWaypoint: (zone) => set((s) => ({ waypointSeq: s.waypointSeq + 1, waypointTarget: zone, waypointOpen: false })),
 
-  // --- Piedra de Retorno / recall ---
-  recallSeq: 0,             // usar la piedra lo incrementa; el loop lo lee y ejecuta el recall
-  recallBeltIndex: -1,      // slot del cinturón desde el que se usó (para descontarla)
+  // --- Pergamino de Retorno / recall ---
+  recallSeq: 0,             // usar el pergamino lo incrementa; el loop lo lee y ejecuta el recall
+  recallSource: null,       // {from:'belt'|'inv', index} — de dónde descontarlo si el recall es válido
   recallAnchor: null,       // {map,tx,ty,label} — a dónde te devuelve el Obelisco del pueblo
-  requestRecall: (beltIndex) => set((s) => ({ recallSeq: s.recallSeq + 1, recallBeltIndex: beltIndex })),
+  requestRecall: (source) => set((s) => ({ recallSeq: s.recallSeq + 1, recallSource: source })),
   setRecallAnchor: (a) => set({ recallAnchor: a }),
   clearRecallAnchor: () => set({ recallAnchor: null }),
   // Descuenta un consumible del cinturón por índice (lo llama el loop tras un recall válido).
@@ -159,6 +164,22 @@ export const useGameStore = create((set, get) => ({
     saveGame({ ...s, belt })
     return { belt }
   }),
+  // Descuenta un consumible del inventario por índice.
+  consumeInventory: (i) => set((s) => {
+    const it = s.inventory[i]; if (!it) return {}
+    const inv = s.inventory.slice()
+    const cnt = (it.count || 1) - 1
+    inv[i] = cnt > 0 ? { ...it, count: cnt } : null
+    saveGame({ ...s, inventory: inv })
+    return { inventory: inv }
+  }),
+  // Usar un ítem del inventario (por ahora: Pergamino de Retorno; el resto avisa).
+  useInventory: (i) => {
+    const it = get().inventory[i]
+    if (!it) return
+    if (isRecall(it)) { get().requestRecall({ from: 'inv', index: i }); return }
+    get().showToast(tt('cant_use'))
+  },
 
   // --- pantalla de carga entre zonas ---
   zoneLoad: null,           // {label} mientras se viaja; null cuando terminó
@@ -227,7 +248,7 @@ export const useGameStore = create((set, get) => ({
     const it = s.belt[i]
     if (!it) return
     // Piedra de Retorno: no cura; pide al loop el recall al pueblo (él la descuenta si es válido).
-    if (isRecall(it)) { get().requestRecall(i); return }
+    if (isRecall(it)) { get().requestRecall({ from: 'belt', index: i }); return }
     const eff = potionEffect(it)
     if (!eff) { get().showToast(tt('cant_use')); return }
     const st = s.stats || {}
@@ -745,11 +766,14 @@ export const storeApi = {
   getRaceName: () => raceName(useGameStore.getState().race) || '',
   setNearby: (v) => useGameStore.getState().setNearby(v),
   getInteractSeq: () => useGameStore.getState().interactSeq,
+  setNearbyNode: (v) => useGameStore.getState().setNearbyNode(v),
+  getGatherSeq: () => useGameStore.getState().gatherSeq,
   setNearbyPortal: (v) => useGameStore.getState().setNearbyPortal(v),
   setPortals: (v) => useGameStore.getState().setPortals(v),
   getRecallSeq: () => useGameStore.getState().recallSeq,
-  getRecallBeltIndex: () => useGameStore.getState().recallBeltIndex,
+  getRecallSource: () => useGameStore.getState().recallSource,
   consumeBelt: (i) => useGameStore.getState().consumeBelt(i),
+  consumeInventory: (i) => useGameStore.getState().consumeInventory(i),
   setRecallAnchor: (a) => useGameStore.getState().setRecallAnchor(a),
   getRecallAnchor: () => useGameStore.getState().recallAnchor,
   clearRecallAnchor: () => useGameStore.getState().clearRecallAnchor(),

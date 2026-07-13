@@ -844,3 +844,7 @@ html, body, #root {
 }
 .ms-sealchest:active { filter: brightness(1.2); }
 .ms-sealchest:disabled { opacity: 0.4; cursor: default; border-color: var(--edge); }
+
+/* variante recolectar: acento verde */
+.gather-btn { color: #cde6b0; border-color: #4f7d3b;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.45), inset 0 1px 0 rgba(120,200,90,0.28); }

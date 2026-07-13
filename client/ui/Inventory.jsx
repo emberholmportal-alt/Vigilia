@@ -40,6 +40,7 @@ export default function Inventory() {
   const unequip = useGameStore((s) => s.unequip)
   const assignBelt = useGameStore((s) => s.assignBelt)
   const equipBelt = useGameStore((s) => s.equipBelt)
+  const useInventory = useGameStore((s) => s.useInventory)
   const setPanel = useGameStore((s) => s.setPanel)
   const t = useT()
 
@@ -62,6 +63,10 @@ export default function Inventory() {
 
   function doEquipBelt() {
     if (sel?.src === 'inv') { equipBelt(sel.i); setSel(null) }
+  }
+
+  function doUse() {
+    if (sel?.src === 'inv') { useInventory(sel.i); setSel(null); setPanel(null) }
   }
 
   return (
@@ -109,6 +114,7 @@ export default function Inventory() {
           <Tooltip item={selItem} pos={sel.pos} t={t}
                    compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selItem)] : null}
                    actionLabel={sel.src === 'inv' ? t('equip') : t('unequip')} onAction={act}
+                   onUse={sel.src === 'inv' && selItem.recall ? doUse : null}
                    onBelt={sel.src === 'inv' && beltEligible(selItem) ? toBelt : null}
                    onEquipBelt={sel.src === 'inv' && selItem.slot === 'belt' ? doEquipBelt : null} />
         )}
@@ -117,7 +123,7 @@ export default function Inventory() {
   )
 }
 
-function Tooltip({ item, pos, compareTo, actionLabel, onAction, onBelt, onEquipBelt, t }) {
+function Tooltip({ item, pos, compareTo, actionLabel, onAction, onUse, onBelt, onEquipBelt, t }) {
   const keys = [...new Set([...Object.keys(item.stats || {}), ...Object.keys(compareTo?.stats || {})])]
   // ancla arriba o abajo del ítem según dónde esté en el panel
   const [x, y] = pos
@@ -158,11 +164,12 @@ function Tooltip({ item, pos, compareTo, actionLabel, onAction, onBelt, onEquipB
         </div>
       )}
       {item.price ? <div className="tt-price">{item.price} {t('gold')}</div> : null}
+      {onUse && <button className="tt-do" onClick={onUse}>{t('use_item')}</button>}
       {onEquipBelt
         ? <button className="tt-do" onClick={onEquipBelt}>{t('equip_belt')}</button>
         : onBelt
           ? <button className="tt-do" onClick={onBelt}>{t('to_belt')}</button>
-          : <button className="tt-do" onClick={onAction} disabled={!equipSlotFor(item)}>{actionLabel}</button>}
+          : !onUse && <button className="tt-do" onClick={onAction} disabled={!equipSlotFor(item)}>{actionLabel}</button>}
     </div>
   )
 }

@@ -43,6 +43,15 @@ export class Enemy {
     this.hp = def.hpMax
     this.damage = def.damage
 
+    // Persecución con "correa": una vez que te ve, te sigue MÁS ALLÁ del rango de aggro hasta
+    // una distancia de correa, y sólo se rinde tras un rato lejos. Variado por enemigo (algunos
+    // insisten, otros abandonan enseguida). Los jefes/élites son más tercos.
+    this._aggroed = false
+    this._giveupT = 0
+    const stubborn = def.boss ? 1.6 : 1
+    this.leash = (AGGRO + 2 + Math.random() * 8) * stubborn      // ~8.5–16.5 tiles
+    this.patience = (1.5 + Math.random() * 4) * stubborn         // ~1.5–5.5 s lejos antes de rendirse
+
     // Combate a distancia: arqueros/magos disparan en vez de golpear (lo marca el spawner).
     this.ranged = !!def.ranged
     this.projKind = def.projKind || 'arrow'
@@ -143,6 +152,7 @@ export class Enemy {
     }
 
     const d = this.dist(player.tx, player.ty)
+    const engaged = this._updateAggro(d, dt)   // persigue con "correa", no abandona enseguida
 
     if (this._anim === 'hit') {
       this._animT -= dt
@@ -161,7 +171,7 @@ export class Enemy {
         else if (d <= ATTACK_RANGE + 0.6) this.pendingHit = this.damage
       }
       this._advanceAnim(dt)
-      if (this._animT <= 0) { this.state = d <= AGGRO ? 'chase' : 'idle'; this._startAnim('stance', true) }
+      if (this._animT <= 0) { this.state = engaged ? 'chase' : 'idle'; this._startAnim('stance', true) }
       this._facePlayer(player)
       return
     }
@@ -181,7 +191,7 @@ export class Enemy {
         else { this.state = 'chase'; if (this._anim !== 'stance') this._startAnim('stance', true); this._advanceAnim(dt) }
         return
       }
-      if (d <= AGGRO) {
+      if (engaged) {
         this.state = 'chase'
         this._moveToward(player.tx, player.ty, dt)
         if (this._anim !== 'run') this._startAnim('run', true)
@@ -201,7 +211,7 @@ export class Enemy {
       return
     }
 
-    if (d <= AGGRO) {
+    if (engaged) {
       this.state = 'chase'
       this._moveToward(player.tx, player.ty, dt)
       if (this._anim !== 'run') this._startAnim('run', true)
@@ -209,10 +219,23 @@ export class Enemy {
       return
     }
 
-    // fuera de rango: quieto (o volviendo a casa)
+    // fuera de rango / se rindió: quieto.
     this.state = 'idle'
     if (this._anim !== 'stance') this._startAnim('stance', true)
     this._advanceAnim(dt)
+  }
+
+  // Correa de persecución: te ve dentro de AGGRO y te sigue hasta `leash`; sólo se rinde tras
+  // `patience` segundos lejos. Variado por enemigo (algunos insisten, otros no).
+  _updateAggro(d, dt) {
+    if (d <= AGGRO) { this._aggroed = true; this._giveupT = 0; return true }
+    if (this._aggroed) {
+      if (d <= this.leash) { this._giveupT = 0; return true }
+      this._giveupT += dt
+      if (this._giveupT >= this.patience) { this._aggroed = false; return false }
+      return true
+    }
+    return false
   }
 
   _facePlayer(player) {

@@ -35,6 +35,8 @@ export default function HUD() {
   const requestInteract = useGameStore((s) => s.requestInteract)
   const nearbyPortal = useGameStore((s) => s.nearbyPortal)
   const openWaypoints = useGameStore((s) => s.openWaypoints)
+  const nearbyNode = useGameStore((s) => s.nearbyNode)
+  const requestGather = useGameStore((s) => s.requestGather)
   const togglePanel = useGameStore((s) => s.togglePanel)
   const openMissions = useGameStore((s) => s.openMissions)
   const missions = useGameStore((s) => s.missions)
@@ -92,6 +94,13 @@ export default function HUD() {
           <div className="interact-wrap">
             <button className="interact-btn" onClick={requestInteract}>
               {nearby.shop ? '🛒 ' + t('trade_with', { name: nearby.name }) : '💬 ' + t('talk_with', { name: nearby.name })}
+            </button>
+          </div>
+        )}
+        {nearbyNode && !nearby && (
+          <div className="interact-wrap">
+            <button className="interact-btn gather-btn" onClick={requestGather}>
+              {nearbyNode.skill === 'excavacion' ? '⛏️ ' : '🌿 '}{t('gather_action', { name: nearbyNode.name })}
             </button>
           </div>
         )}

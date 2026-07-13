@@ -8,29 +8,25 @@ export const RACES = [
     id: 'humano', name: 'Humano', name_en: 'Human', archetype: 'Vigilante', archetype_en: 'Watcher',
     fantasy: 'Aprende rápido, muere igual.', fantasy_en: 'Learns fast, dies all the same.',
     mods: { xp: 0.1 }, modText: '+10% XP', modText_en: '+10% XP',
-    kit: { chest: 'leather_chest', legs: 'leather_pants', feet: 'leather_boots',
-           hands: 'leather_gloves', head: 'leather_hood', main: 'longsword', off: 'buckler' },
+    kit: { chest: 'leather_chest', main: 'longsword', off: 'buckler' },
   },
   {
     id: 'elfo', name: 'Elfo', name_en: 'Elf', archetype: 'Hechicero', archetype_en: 'Sorcerer',
     fantasy: 'Sangre arcana, huesos finos.', fantasy_en: 'Arcane blood, fine bones.',
     mods: { mana: 30, int: 3, hp: -10 }, modText: '+30 maná · +3 INT · −10 vida', modText_en: '+30 mana · +3 INT · −10 health',
-    kit: { chest: 'mage_vest', legs: 'mage_skirt', feet: 'mage_boots',
-           hands: 'mage_sleeves', head: 'mage_hood', main: 'wand' },
+    kit: { chest: 'mage_vest', main: 'wand' },
   },
   {
     id: 'enano', name: 'Enano', name_en: 'Dwarf', archetype: 'Guardián', archetype_en: 'Guardian',
     fantasy: 'Piel de piedra, paso corto.', fantasy_en: 'Stone skin, short stride.',
     mods: { hp: 40, vit: 3, speed: -0.1 }, modText: '+40 vida · +3 VIT · −10% velocidad', modText_en: '+40 health · +3 VIT · −10% speed',
-    kit: { chest: 'chain_cuirass', legs: 'chain_greaves', feet: 'chain_boots',
-           hands: 'chain_gloves', head: 'chain_coif', main: 'smith_hammer', off: 'shield' },
+    kit: { chest: 'chain_cuirass', main: 'smith_hammer', off: 'shield' },
   },
   {
     id: 'orco', name: 'Orco', name_en: 'Orc', archetype: 'Bruto', archetype_en: 'Brute',
     fantasy: 'Furia. No mucho más.', fantasy_en: 'Fury. Not much else.',
     mods: { dmg: 0.25, str: 4, mana: -0.15 }, modText: '+25% daño · +4 FUE · −15% maná', modText_en: '+25% damage · +4 STR · −15% mana',
-    kit: { chest: 'leather_chest', legs: 'leather_pants', feet: 'leather_boots',
-           hands: 'leather_gloves', main: 'infantry_axe' },
+    kit: { chest: 'leather_chest', main: 'infantry_axe' },
   },
 ]
 

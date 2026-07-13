@@ -84,6 +84,7 @@ export class Game {
     this._lastInteractSeq = this.store.getInteractSeq() // no interactuar en el primer tick
     this._lastWaypointSeq = this.store.getWaypointSeq()
     this._lastRecallSeq = this.store.getRecallSeq()
+    this._lastGatherSeq = this.store.getGatherSeq()
     this._lang = getLang()
     this._fpsAccum = 0
     this._fpsFrames = 0
@@ -376,12 +377,13 @@ export class Game {
   _doRecall() {
     if (this._loading || this._changing || this._dead || !this.player) return
     if (this.mapName === 'triston') { this.store.showToast(tt('already_in_town')); return }
-    const i = this.store.getRecallBeltIndex()
+    const src = this.store.getRecallSource() || {}
     this.store.setRecallAnchor({
       map: this.mapName, tx: Math.round(this.player.tx), ty: Math.round(this.player.ty),
       label: zoneTitle(this.mapName),
     })
-    this.store.consumeBelt(i)
+    if (src.from === 'inv') this.store.consumeInventory(src.index)
+    else this.store.consumeBelt(src.index)
     this.store.showToast(tt('stone_pulls'))
     this.changeMap('triston', OBELISK_RETURN[0], OBELISK_RETURN[1])
   }
@@ -1152,6 +1154,19 @@ export class Game {
         if (near && !n.depleted) this._doGather(n)
         this._pendingNode = null
       }
+      // Nodo cercano recolectable (para el botón del HUD): el más próximo no agotado.
+      let nn = null, nd0 = 1e9
+      for (const nd of this.nodes) {
+        if (nd.depleted) continue
+        const d = Math.abs(nd.tx - this.player.tx) + Math.abs(nd.ty - this.player.ty)
+        if (d < nd0) { nd0 = d; nn = nd }
+      }
+      this._nearbyNode = (nn && nd0 <= 2.5 && !this._dead) ? nn : null
+      this.store.setNearbyNode(this._nearbyNode ? { name: itemName(itemById(this._nearbyNode.def.id), getLang()), skill: this._nearbyNode.def.skill } : null)
+      const gseq = this.store.getGatherSeq()
+      if (gseq !== this._lastGatherSeq) { this._lastGatherSeq = gseq; if (this._nearbyNode) this._gatherNode(this._nearbyNode) }
+    } else if (this._nearbyNode) {
+      this._nearbyNode = null; this.store.setNearbyNode(null)
     }
 
     // Loot en el suelo: bob + recoger al caminarle encima.
