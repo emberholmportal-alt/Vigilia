@@ -43,7 +43,7 @@ const LOCHPORT = [
             'No eran duendes. Los duendes no marcan el paso.'],
   },
   {
-    sprite: 'guild_man', name: 'Halvard', portrait: 'male12.png', x: 33, y: 27, dir: 5,
+    sprite: 'guild_man', name: 'Halvard', portrait: 'male01.png', x: 33, y: 27, dir: 5,
     lines: ['Los gremios reclutan de nuevo.',
             'Quinientos de oro y una sigla de tres letras.',
             'Un buen estandarte vale más que cien espadas.'],
@@ -125,7 +125,7 @@ const GREENWOOD = [
     lines: ['Traje acero del sur y algo de cuero.',
             'El precio sube con la luna, no conmigo.',
             'Vendé lo que no uses. El hierro oxidado no abriga.'] },
-  { sprite: 'guild_man', name: 'Halvard', portrait: 'male12.png', x: 59, y: 50, dir: 1,
+  { sprite: 'guild_man', name: 'Halvard', portrait: 'male01.png', x: 59, y: 50, dir: 1,
     lines: ['Los gremios reclutan de nuevo.',
             'Quinientos de oro y una sigla de tres letras.',
             'Un buen estandarte vale más que cien espadas.'] },
@@ -158,7 +158,7 @@ const TRISTON = [
   { sprite: 'knight', name: 'Guardia Bram', portrait: 'male07.png', x: 64, y: 57, dir: 1,
     lines: ['Ojos duros, vigilante. Afuera no perdona.',
             'Anoche hubo tambores del lado de las minas.'] },
-  { sprite: 'guild_man', name: 'Halvard', portrait: 'male12.png', x: 56, y: 58, dir: 5,
+  { sprite: 'guild_man', name: 'Halvard', portrait: 'male01.png', x: 56, y: 58, dir: 5,
     lines: ['Los gremios reclutan de nuevo.',
             'Quinientos de oro y una sigla de tres letras.'] },
 ]

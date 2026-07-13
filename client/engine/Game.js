@@ -1,7 +1,7 @@
 // Orquestador del juego (Fase 1): Pixi Application + loop.
 // React NO entra acá: solo lee el store que este loop actualiza.
 
-import { Application, Assets, Container, Graphics, Sprite, Text } from 'pixi.js'
+import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js'
 import { Iso } from './iso.js'
 import { loadWorld } from './assets.js'
 import { Grid } from './Pathfinding.js'
@@ -108,7 +108,9 @@ export class Game {
     this._atlasCtx = null
     this._loadOcclusionAtlas(world.tileset.atlasSrc)
 
-    const zoom = MAP_ZOOM[mapName] || 1
+    // Zoom consistente entre mapas: apuntamos a un ancho de tile en pantalla parejo
+    // (~83px, el de Triston) sin importar si el tileset trae tiles de 64 o 96px.
+    const zoom = MAP_ZOOM[mapName] || Math.max(0.7, Math.min(1.6, 83 / iso.tileW))
     const camera = new Camera(iso, world.map.w, world.map.h, zoom)
     camera.resize(app.screen.width, app.screen.height)
     this.camera = camera
@@ -136,7 +138,7 @@ export class Game {
     this._playerScale = eScale * (PLAYER_SCALE[mapName] || 1)
     renderer.objectLayer.addChild(player.view)
     this.player = player
-    player.setName(this.store.getPlayerName(), this.store.getPlayerLevel())
+    player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName())
     this._nameLevel = this.store.getPlayerLevel()
     await player.setEquipment(equipToGfx(this.store.getEquipment()))
 
@@ -194,7 +196,10 @@ export class Game {
         : { x: w.x, y: w.y - 30, rx: 9, ry: 6, rate: 9, tint, vy: -20, spread: 5, life: 1.8, size: 0.9 })
     }
 
-    // Portales del mapa (viaje entre zonas).
+    // Portales del mapa (viaje entre zonas). Precargamos el pad de teletransporte.
+    const BASE = import.meta.env.BASE_URL || '/'
+    this._padTex = await Assets.load(BASE + 'assets/ui/teleport_pad.png').catch(() => null)
+    if (this.destroyed) return
     this._buildPortals(renderer, iso, world.map, mapName)
     this._portalArmed = false // no dispares el portal en el que aparecés
 
@@ -251,9 +256,19 @@ export class Game {
       const w = p.w || 1, h = p.h || 1
       const cx = p.x + w / 2 - 0.5, cy = p.y + h / 2 - 0.5
       const wx = iso.toWorldX(cx, cy), wy = iso.toWorldY(cx, cy)
+      // Pad de piedra de Flare (5 frames: apagado -> runas azules brillando).
+      let pad = null
+      if (this._padTex) {
+        pad = new Sprite(new Texture({ source: this._padTex.source, frame: new Rectangle(0, 0, 256, 128) }))
+        pad.anchor.set(0.5, 0.5)
+        pad.x = wx; pad.y = wy
+        pad.scale.set((iso.wHalf * 2 * 1.7) / 256)
+        pad.zIndex = cx + cy - 0.6
+        renderer.groundLayer.addChild(pad)
+      }
+      // Halo mágico por encima del pad.
       const g = new Graphics()
-      g.ellipse(0, 0, iso.wHalf * 0.95, iso.hHalf * 0.95).fill({ color: 0x7a3bff, alpha: 0.22 })
-      g.ellipse(0, 0, iso.wHalf * 0.6, iso.hHalf * 0.6).fill({ color: 0xc9a0ff, alpha: 0.32 })
+      g.ellipse(0, 0, iso.wHalf * 0.7, iso.hHalf * 0.7).fill({ color: 0x9a6bff, alpha: 0.18 })
       g.x = wx; g.y = wy; g.zIndex = cx + cy - 0.5
       renderer.groundLayer.addChild(g)
       const label = new Text({ text: p.label || p.to, style: {
@@ -265,7 +280,7 @@ export class Game {
       if (this.particles) {
         this.particles.addEmitter({ x: wx, y: wy - 10, rx: iso.wHalf * 0.5, ry: iso.hHalf * 0.4, rate: 18, tint: 0xb98bff, vy: -34, spread: 6, life: 2.0, size: 1.1 })
       }
-      this.portals.push({ x: p.x, y: p.y, w, h, to: p.to, tx: p.tx, ty: p.ty, label: p.label, gfx: g })
+      this.portals.push({ x: p.x, y: p.y, w, h, to: p.to, tx: p.tx, ty: p.ty, label: p.label, gfx: g, pad, _padFrame: 0, _padT: 0, _padDir: 1 })
     }
   }
 
@@ -801,7 +816,21 @@ export class Game {
     // así no se dispara el portal en el que aparecés).
     if (this.portals && this.portals.length) {
       const pulse = 1 + 0.13 * Math.sin(this._pt * 4)
-      for (const p of this.portals) { p.gfx.scale.set(pulse) }
+      for (const p of this.portals) {
+        p.gfx.scale.set(pulse)
+        // pad: pingpong de frames (apagado <-> runas brillando)
+        if (p.pad) {
+          p._padT += dt
+          if (p._padT > 0.14) {
+            p._padT = 0
+            p._padFrame += p._padDir
+            if (p._padFrame >= 4) { p._padFrame = 4; p._padDir = -1 }
+            else if (p._padFrame <= 0) { p._padFrame = 0; p._padDir = 1 }
+            p.pad.texture.frame.y = p._padFrame * 128
+            p.pad.texture.updateUvs()
+          }
+        }
+      }
       const px = Math.round(this.player.tx), py = Math.round(this.player.ty)
       const on = this.portals.find((p) => px >= p.x && px < p.x + p.w && py >= p.y && py < p.y + p.h)
       if (!on) this._portalArmed = true
@@ -850,7 +879,7 @@ export class Game {
       const fps = Math.round((this._fpsFrames * 1000) / this._fpsAccum)
       this.store.setFps(fps)
       const lvl = this.store.getPlayerLevel()
-      if (lvl !== this._nameLevel) { this._nameLevel = lvl; this.player.setName(this.store.getPlayerName(), lvl) }
+      if (lvl !== this._nameLevel) { this._nameLevel = lvl; this.player.setName(this.store.getPlayerName(), lvl, this.store.getRaceName()) }
       this.store.setDebug({
         tile: `${Math.round(this.player.tx)},${Math.round(this.player.ty)}`,
         visibleTiles: this.renderer.visibleTiles,

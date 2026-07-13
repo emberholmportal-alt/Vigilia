@@ -81,20 +81,27 @@ export class Enemy {
     if (this.dead) return false
     this.hp = Math.max(0, this.hp - n)
     this._drawHpBar()
-    if (this.hp <= 0) { this._startAnim('die'); this.state = 'dead'; this.dead = true; this._deathT = this._animMs('die'); return true }
+    if (this.hp <= 0) {
+      this._startAnim('die'); this.state = 'dead'; this.dead = true; this._deathT = this._animS('die')
+      this.view.eventMode = 'none'; this.view.cursor = 'default'  // el cadáver no intercepta clicks al suelo
+      this.hpBar.visible = false
+      return true
+    }
     // reacción de dolor (no interrumpe si ya está muriendo)
     if (this.state !== 'attack') this._startAnim('hit')
     return false
   }
 
-  _animMs(name) { const a = this.d.anims[name]; return a ? a.ms : 300 }
+  // duración de una anim en SEGUNDOS (los .ms de Flare vienen en milisegundos).
+  _animS(name) { const a = this.d.anims[name]; return a ? a.ms / 1000 : 0.3 }
 
   _startAnim(name, loop = false) {
     if (!this.d.anims[name]) name = 'stance'
     this._anim = name
     this._frame = 0
     this._elapsed = 0
-    this._animT = this.d.anims[name].loop ? 0 : this.d.anims[name].ms
+    // _animT en SEGUNDOS (se resta con dt, que también está en segundos).
+    this._animT = this.d.anims[name].loop ? 0 : this._animS(name)
     this._dealt = false
   }
 

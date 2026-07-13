@@ -24,8 +24,8 @@ function potionEffect(it) {
   let mult = 1
   if (/super/.test(name)) mult = 2
   if (/ultra/.test(name)) mult = 3
-  if (/vida|health/.test(name)) return { hp: 50 * mult }
-  if (/mana|maná/.test(name)) return { mp: 35 * mult }
+  if (/vida|health/.test(name)) return { hp: 25 * mult }
+  if (/mana|maná/.test(name)) return { mp: 20 * mult }
   if (it.stats?.hp_regen) return { hp: it.stats.hp_regen }
   if (it.stats?.mp_regen) return { mp: it.stats.mp_regen }
   return null
@@ -347,6 +347,7 @@ export const storeApi = {
   addXp: (n) => useGameStore.getState().addXp(n),
   addSkillXp: (skill, n) => useGameStore.getState().addSkillXp(skill, n),
   getPlayerLevel: () => useGameStore.getState().stats?.level || 1,
+  getRaceName: () => useGameStore.getState().race?.name || '',
   setNearby: (v) => useGameStore.getState().setNearby(v),
   getInteractSeq: () => useGameStore.getState().interactSeq,
   takeDamage: (n) => useGameStore.getState().takeDamage(n),
