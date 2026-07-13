@@ -1,4 +1,4 @@
-// Matemática isométrica de Vigilia.
+// Matemática isométrica de Velgrim.
 //
 // Flare dibuja diamantes de tileW × tileH (192×96 originales). El cliente aplica
 // `scale` (0.5 en móvil). Convención de map_to_screen de Flare:
