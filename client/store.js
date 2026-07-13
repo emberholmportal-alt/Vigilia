@@ -98,6 +98,14 @@ export const useGameStore = create((set, get) => ({
   setNearby: (nearby) => set((s) => (s.nearby?.name === nearby?.name ? {} : { nearby })),
   requestInteract: () => set((s) => ({ interactSeq: s.interactSeq + 1 })),
 
+  // --- portales ---
+  nearbyPortal: null,       // {label} — portal cercano (lo escribe el loop)
+  portalSeq: 0,             // el botón "Viajar" del HUD lo incrementa; el loop lo lee
+  portalTiles: [],          // [{x,y,label}] — para marcar en el minimapa
+  setNearbyPortal: (p) => set((s) => (s.nearbyPortal?.label === p?.label ? {} : { nearbyPortal: p })),
+  requestPortal: () => set((s) => ({ portalSeq: s.portalSeq + 1 })),
+  setPortals: (portalTiles) => set({ portalTiles }),
+
   // --- combate ---
   // Aplica daño al jugador (lo llama el loop cuando un enemigo pega). Devuelve la vida
   // resultante; el loop decide la muerte cuando llega a 0.
@@ -350,6 +358,9 @@ export const storeApi = {
   getRaceName: () => useGameStore.getState().race?.name || '',
   setNearby: (v) => useGameStore.getState().setNearby(v),
   getInteractSeq: () => useGameStore.getState().interactSeq,
+  setNearbyPortal: (v) => useGameStore.getState().setNearbyPortal(v),
+  getPortalSeq: () => useGameStore.getState().portalSeq,
+  setPortals: (v) => useGameStore.getState().setPortals(v),
   takeDamage: (n) => useGameStore.getState().takeDamage(n),
   reviveFull: () => useGameStore.getState().reviveFull(),
   getStats: () => useGameStore.getState().stats,

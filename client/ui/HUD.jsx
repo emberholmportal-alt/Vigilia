@@ -31,6 +31,8 @@ export default function HUD() {
   const xp = useGameStore((s) => s.xp)
   const nearby = useGameStore((s) => s.nearby)
   const requestInteract = useGameStore((s) => s.requestInteract)
+  const nearbyPortal = useGameStore((s) => s.nearbyPortal)
+  const requestPortal = useGameStore((s) => s.requestPortal)
   const togglePanel = useGameStore((s) => s.togglePanel)
   const useBelt = useGameStore((s) => s.useBelt)
 
@@ -60,6 +62,13 @@ export default function HUD() {
       <Toast />
 
       <div className="hud-bottom">
+        {nearbyPortal && (
+          <div className="interact-wrap">
+            <button className="interact-btn portal-btn" onClick={requestPortal}>
+              🌀 Viajar: {nearbyPortal.label}
+            </button>
+          </div>
+        )}
         {nearby && (
           <div className="interact-wrap">
             <button className="interact-btn" onClick={requestInteract}>

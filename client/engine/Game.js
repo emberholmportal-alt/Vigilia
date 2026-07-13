@@ -78,6 +78,7 @@ export class Game {
 
     if (import.meta.env.DEV) window.__vigilia = this
     this._lastInteractSeq = this.store.getInteractSeq() // no interactuar en el primer tick
+    this._lastPortalSeq = this.store.getPortalSeq()
     this._fpsAccum = 0
     this._fpsFrames = 0
     app.ticker.add(this._tick)
@@ -201,7 +202,6 @@ export class Game {
     this._padTex = await Assets.load(BASE + 'assets/ui/teleport_pad.png').catch(() => null)
     if (this.destroyed) return
     this._buildPortals(renderer, iso, world.map, mapName)
-    this._portalArmed = false // no dispares el portal en el que aparecés
 
     camera.follow(spawn.x, spawn.y)
     camera.snap()
@@ -266,22 +266,21 @@ export class Game {
         pad.zIndex = cx + cy - 0.6
         renderer.groundLayer.addChild(pad)
       }
-      // Halo mágico por encima del pad.
+      // Halo suave sobre el pad (sin humo/partículas).
       const g = new Graphics()
-      g.ellipse(0, 0, iso.wHalf * 0.7, iso.hHalf * 0.7).fill({ color: 0x9a6bff, alpha: 0.18 })
+      g.ellipse(0, 0, iso.wHalf * 0.6, iso.hHalf * 0.6).fill({ color: 0x8a5bff, alpha: 0.16 })
       g.x = wx; g.y = wy; g.zIndex = cx + cy - 0.5
       renderer.groundLayer.addChild(g)
       const label = new Text({ text: p.label || p.to, style: {
         fontFamily: 'Georgia, serif', fontSize: 12, fill: '#d9b3ff',
         stroke: { color: '#0a090c', width: 3 }, align: 'center',
       } })
-      label.anchor.set(0.5, 1); label.x = wx; label.y = wy - 34; label.zIndex = 2e6
+      label.anchor.set(0.5, 1); label.x = wx; label.y = wy - 30; label.zIndex = 2e6
       renderer.objectLayer.addChild(label)
-      if (this.particles) {
-        this.particles.addEmitter({ x: wx, y: wy - 10, rx: iso.wHalf * 0.5, ry: iso.hHalf * 0.4, rate: 18, tint: 0xb98bff, vy: -34, spread: 6, life: 2.0, size: 1.1 })
-      }
       this.portals.push({ x: p.x, y: p.y, w, h, to: p.to, tx: p.tx, ty: p.ty, label: p.label, gfx: g, pad, _padFrame: 0, _padT: 0, _padDir: 1 })
     }
+    // Al HUD: tiles de portal para marcarlos en el minimapa.
+    this.store.setPortals(this.portals.map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label })))
   }
 
   _enterPortal(p) {
@@ -831,10 +830,19 @@ export class Game {
           }
         }
       }
-      const px = Math.round(this.player.tx), py = Math.round(this.player.ty)
-      const on = this.portals.find((p) => px >= p.x && px < p.x + p.w && py >= p.y && py < p.y + p.h)
-      if (!on) this._portalArmed = true
-      else if (this._portalArmed && !this._dead) { this._portalArmed = false; this._enterPortal(on); return }
+      // Portal cercano: se viaja por BOTÓN (interacción), no al pasar por encima.
+      let near = null, nd = 1e9
+      for (const p of this.portals) {
+        const d = Math.abs((p.x + (p.w - 1) / 2) - this.player.tx) + Math.abs((p.y + (p.h - 1) / 2) - this.player.ty)
+        if (d < nd) { nd = d; near = p }
+      }
+      this._nearbyPortal = (near && nd <= 2.2 && !this._dead) ? near : null
+      this.store.setNearbyPortal(this._nearbyPortal ? { label: this._nearbyPortal.label } : null)
+      const pseq = this.store.getPortalSeq()
+      if (pseq !== this._lastPortalSeq) {
+        this._lastPortalSeq = pseq
+        if (this._nearbyPortal) { this._enterPortal(this._nearbyPortal); return }
+      }
     }
 
     // Empujar la stamina y la posición (minimapa) al HUD a ~12Hz (no cada frame).
@@ -955,8 +963,9 @@ const MAP_ZOOM = { triston: 1.3 }
 // una zona de combate real y de vuelta, formando un loop jugable. El tile de llegada
 // coincide con el portal de vuelta (el "arm" evita que se dispare al aparecer).
 const PORTAL_OVERRIDE = {
-  triston: [{ x: 56, y: 52, w: 1, h: 1, to: 'goblin_camp', tx: 29, ty: 31, label: 'Campo de Duendes' }],
-  goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 56, ty: 52, label: 'Volver a Triston' }],
+  // El portal del pueblo va en las afueras (al norte de la plaza), no en el centro.
+  triston: [{ x: 57, y: 41, w: 1, h: 1, to: 'goblin_camp', tx: 29, ty: 31, label: 'Campo de Duendes' }],
+  goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],
 }
 
 // Decoraciones ambientales de HERESY que sacamos a mano (por mapa). En Triston quitamos

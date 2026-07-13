@@ -224,6 +224,11 @@ html, body, #root {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55); animation: interact-pop 0.15s ease;
 }
 .interact-btn:active { filter: brightness(1.1); }
+/* botón de viajar por portal (violeta arcano) */
+.portal-btn {
+  color: #f2e6ff; background: linear-gradient(180deg, #9a6bff, #6a30d6);
+  border-color: #4a2090;
+}
 @keyframes interact-pop { from { transform: scale(0.9); opacity: 0; } }
 
 /* barra de XP: canal siempre visible (aunque esté en 0) con relleno + etiqueta de nivel */
@@ -315,6 +320,13 @@ html, body, #root {
   position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
   background: #ffcf5a; box-shadow: 0 0 4px #ffcf5a, 0 0 0 1px #000;
 }
+/* marcador de portal en el minimapa (violeta pulsante) */
+.mm-portal {
+  position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%;
+  background: #b98bff; box-shadow: 0 0 5px #9a6bff, 0 0 0 1px #000;
+  animation: mm-pulse 1.4s ease-in-out infinite;
+}
+@keyframes mm-pulse { 50% { transform: scale(1.5); opacity: 0.7; } }
 
 /* ---------- caja de diálogo (RPG con retrato) ---------- */
 .dialogue {
