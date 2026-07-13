@@ -148,4 +148,16 @@ export class Player {
     this.view.y = this.iso.toWorldY(this.tx, this.ty)
     this.view.zIndex = this.tx + this.ty + 0.5
   }
+
+  // Mira hacia un tile (para encarar al enemigo antes de pegar).
+  faceTile(tx, ty) {
+    const w = this.iso.toWorld(this.tx, this.ty)
+    const t = this.iso.toWorld(tx, ty)
+    this.dir = screenVecToDir(t.x - w.x, t.y - w.y)
+    this.paperdoll.setDirection(this.dir)
+  }
+
+  attack() { return this.paperdoll.playOnce('swing') }   // devuelve ms de la anim
+  hurt() { this.paperdoll.playOnce('hit') }
+  playDie() { this.paperdoll.playOnce('die', true) }
 }

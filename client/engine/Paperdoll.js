@@ -94,6 +94,8 @@ export class Paperdoll {
     this._anim = 'stance'
     this._frame = 0
     this._elapsed = 0
+    this._oneShot = null   // anim no-loop en curso (swing/hit/die); bloquea stance/run
+    this._oneShotT = 0
     this._lastKey = ''
   }
 
@@ -129,12 +131,27 @@ export class Paperdoll {
   }
 
   setMoving(moving) {
+    if (this._oneShot) return          // no interrumpir swing/hit/die
     const anim = moving ? 'run' : 'stance'
     if (anim !== this._anim) {
       this._anim = anim
       this._frame = 0
       this._elapsed = 0
     }
+  }
+
+  // Reproduce una anim no-loop una vez (swing/hit/die) y vuelve sola a stance/run.
+  // `hold`: si es true (muerte), se queda en el último frame.
+  playOnce(anim, hold = false) {
+    const t = this._timing(anim)
+    if (!t) return 0
+    this._anim = anim
+    this._frame = 0
+    this._elapsed = 0
+    this._oneShot = anim
+    this._oneShotHold = hold
+    this._oneShotT = t.ms
+    return t.ms
   }
 
   // Reordena los sprites por hero_layers según la dirección actual.
@@ -149,6 +166,11 @@ export class Paperdoll {
   // Avanza la animación. dt en segundos. factor escala la cadencia (para sincronizar
   // correr con la velocidad real y que los pies no patinen).
   update(dt, factor = 1) {
+    // Anim de un solo tiro (swing/hit/die): al terminar vuelve a stance/run.
+    if (this._oneShot) {
+      this._oneShotT -= dt * 1000
+      if (this._oneShotT <= 0 && !this._oneShotHold) this._oneShot = null
+    }
     // duración del frame: la tomamos de la capa chest (o la primera que tenga la anim).
     const timing = this._timing(this._anim)
     if (timing) {

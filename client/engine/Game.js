@@ -1,7 +1,7 @@
 // Orquestador del juego (Fase 1): Pixi Application + loop.
 // React NO entra acá: solo lee el store que este loop actualiza.
 
-import { Application, Assets, Container, Graphics, Sprite } from 'pixi.js'
+import { Application, Assets, Container, Graphics, Sprite, Text } from 'pixi.js'
 import { Iso } from './iso.js'
 import { loadWorld } from './assets.js'
 import { Grid } from './Pathfinding.js'
@@ -9,8 +9,10 @@ import { MapRenderer } from './MapRenderer.js'
 import { Camera } from './Camera.js'
 import { Player, WALK_PX, RUN_PX } from './Player.js'
 import { Npc } from './Npc.js'
+import { Enemy } from './Enemy.js'
 import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
+import { pickSprite, enemyStats, enemyName } from '../data/bestiary.js'
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
 import { GroundItem, loadIcons } from './GroundItem.js'
@@ -98,8 +100,10 @@ export class Game {
 
     // Jugador en el centro del pueblo (plaza con cabañas), no en la puerta de roble.
     const spawn = hubOrCentralSpawn(mapName, grid, world.map)
+    this._spawn = spawn
     const player = new Player(iso, grid, world.manifest, spawn.x, spawn.y)
     player.view.scale.set(eScale * (PLAYER_SCALE[mapName] || 1))
+    this._playerScale = eScale * (PLAYER_SCALE[mapName] || 1)
     renderer.objectLayer.addChild(player.view)
     this.player = player
     player.setName(this.store.getPlayerName(), this.store.getPlayerLevel())
@@ -135,6 +139,16 @@ export class Game {
     this.groundItems = []
     this._pendingChest = null
     this._buildChests(renderer, iso, world.map, grid)
+
+    // Enemigos del mapa (bestiario de Flare). Combate: IA + daño + loot/XP.
+    this.enemies = []
+    this._floaters = []          // números de daño flotantes
+    this._target = null          // enemigo apuntado por el jugador
+    this._playerAtkCd = 0
+    this._dead = false
+    this._deadT = 0
+    this._hurtCd = 0
+    await this._spawnEnemies(renderer, world.map, grid, world.manifest, spawn)
 
     // Partículas ambientales: luciérnagas sobre la plaza + brillo en los landmarks.
     this.particles = new ParticleField(app.renderer)
@@ -389,6 +403,179 @@ export class Game {
     })
   }
 
+  // --- Combate ---------------------------------------------------------------
+
+  async _spawnEnemies(renderer, map, grid, manifest, spawn) {
+    const spawners = map.spawners || []
+    if (!spawners.length || !manifest.enemies) return
+    const MAX = 40
+    for (const sp of spawners) {
+      if (this.enemies.length >= MAX) break
+      const n = randInt(sp.n || [1, 1])
+      for (let k = 0; k < n && this.enemies.length < MAX; k++) {
+        const tile = randTileIn(sp, grid)
+        if (!tile) continue
+        if (Math.abs(tile.x - spawn.x) + Math.abs(tile.y - spawn.y) < 8) continue // no encima del jugador
+        const level = randInt(sp.level || [1, 1])
+        const sprite = pickSprite(sp.category || 'goblin')
+        if (!manifest.enemies[sprite]) continue
+        const st = enemyStats(sprite, level)
+        const e = new Enemy(manifest, {
+          sprite, x: tile.x, y: tile.y, level,
+          hpMax: st.hpMax, damage: st.damage, xp: st.xp, gold: st.gold, name: enemyName(sprite),
+        }, this.iso, grid)
+        const ok = await e.load()
+        if (this.destroyed) return
+        if (!ok) continue
+        e.view.scale.set(this._eScale)
+        e.onTap((en) => this._targetEnemy(en))
+        renderer.objectLayer.addChild(e.view)
+        this.enemies.push(e)
+      }
+    }
+  }
+
+  _targetEnemy(e) {
+    if (this._dead || e.dead) return
+    this._target = e
+    this.player.walkTo(Math.round(e.tx), Math.round(e.ty))
+    this._retargetT = 0.3
+  }
+
+  _playerMeleeDamage() {
+    const eq = this.store.getEquipment()
+    const w = eq && eq.main && eq.main.stats
+    const min = (w && w.dmg_melee_min) || 2
+    const max = (w && w.dmg_melee_max) || 5
+    const st = this.store.getStats() || {}
+    const raw = (min + Math.random() * (max - min)) * (st.dmgMul || 1) + (st.str || 10) * 0.2
+    return Math.max(1, Math.round(raw))
+  }
+
+  _enemyKilled(e) {
+    this.store.addSkillXp('combate', e.def.xp)
+    this.store.addXp(e.def.xp)
+    this.store.addGold(e.def.gold)
+    this._floatText(e.view.x, e.view.y + e._hpY, `+${e.def.xp} XP`, '#9fe0ff')
+    if (this._target === e) this._target = null
+  }
+
+  _floatText(x, y, text, color) {
+    const t = new Text({ text, style: {
+      fontFamily: 'Georgia, serif', fontSize: 15, fill: color,
+      stroke: { color: '#0a090c', width: 3 }, align: 'center',
+    } })
+    t.anchor.set(0.5, 1)
+    t.x = x; t.y = y; t.zIndex = 2e6
+    this.renderer.objectLayer.addChild(t)
+    this._floaters.push({ t, life: 0.9 })
+  }
+
+  _playerDeath() {
+    this._dead = true
+    this._deadT = 1.8
+    this._target = null
+    this.player.moving = false
+    this.player.path.length = 0
+    this.player.playDie()
+    this.store.showToast('Caíste en combate...')
+  }
+
+  _respawn() {
+    this._dead = false
+    this.store.reviveFull()
+    const s = this._spawn
+    this.player.tx = s.x; this.player.ty = s.y
+    this.player.moving = false; this.player.path.length = 0
+    this.player.paperdoll._oneShot = null
+    this.camera.follow(s.x, s.y); this.camera.snap()
+    this.store.showToast('Reapareces en el punto de entrada')
+  }
+
+  // Lógica de combate por frame (la llama el tick). dt en segundos.
+  _combatTick(dt) {
+    if (!this.enemies) return
+    const p = this.player
+
+    // Muerte del jugador: congelado hasta reaparecer.
+    if (this._dead) {
+      this._deadT -= dt
+      for (const e of this.enemies) e.update(dt, p)
+      if (this._deadT <= 0) this._respawn()
+      return
+    }
+
+    if (this._playerAtkCd > 0) this._playerAtkCd -= dt
+    if (this._hurtCd > 0) this._hurtCd -= dt
+    if (this._retargetT > 0) this._retargetT -= dt
+
+    // Enemigos: IA + daño al jugador.
+    let dmgToPlayer = 0
+    for (const e of this.enemies) {
+      e.update(dt, p)
+      if (e.pendingHit > 0) dmgToPlayer += e.pendingHit
+    }
+    this.enemies = this.enemies.filter((e) => {
+      if (e.remove) { e.view.destroy({ children: true }); return false }
+      return true
+    })
+
+    if (dmgToPlayer > 0) {
+      const hp = this.store.takeDamage(dmgToPlayer)
+      this._floatText(p.view.x, p.view.y - 70, `-${dmgToPlayer}`, '#ff6a5a')
+      if (this._hurtCd <= 0) { p.hurt(); this._hurtCd = 0.5 }
+      if (hp <= 0) { this._playerDeath(); return }
+    }
+
+    // Ataque del jugador al enemigo apuntado.
+    const t = this._target
+    if (t && !t.dead) {
+      const d = Math.abs(t.tx - p.tx) + Math.abs(t.ty - p.ty)
+      if (d > 1.6) {
+        if (this._retargetT <= 0) { p.walkTo(Math.round(t.tx), Math.round(t.ty)); this._retargetT = 0.3 }
+      } else {
+        if (p.moving) { p.moving = false; p.path.length = 0 }
+        p.faceTile(t.tx, t.ty)
+        if (this._playerAtkCd <= 0) {
+          const ms = p.attack() || 400
+          this._playerAtkCd = Math.max(0.65, ms / 1000)
+          this._pendingHit = { at: (ms / 1000) * 0.5, dmg: this._playerMeleeDamage(), target: t }
+        }
+      }
+    } else if (t && t.dead) {
+      this._target = null
+    }
+
+    // Golpe del jugador que estaba en cola (a mitad de la anim de swing).
+    if (this._pendingHit) {
+      this._pendingHit.at -= dt
+      if (this._pendingHit.at <= 0) {
+        const { dmg, target } = this._pendingHit
+        this._pendingHit = null
+        if (target && !target.dead) {
+          const d = Math.abs(target.tx - p.tx) + Math.abs(target.ty - p.ty)
+          if (d <= 2) {
+            this._floatText(target.view.x, target.view.y + target._hpY, `${dmg}`, '#ffe08a')
+            if (target.takeDamage(dmg)) this._enemyKilled(target)
+          }
+        }
+      }
+    }
+
+    // Números flotantes.
+    if (this._floaters.length) {
+      for (const f of this._floaters) {
+        f.life -= dt
+        f.t.y -= dt * 34
+        f.t.alpha = Math.max(0, f.life / 0.9)
+      }
+      this._floaters = this._floaters.filter((f) => {
+        if (f.life <= 0) { f.t.destroy(); return false }
+        return true
+      })
+    }
+  }
+
   _onResize = () => {
     if (!this.app) return
     this.camera.resize(this.app.screen.width, this.app.screen.height)
@@ -424,6 +611,8 @@ export class Game {
     app.stage.eventMode = 'static'
     app.stage.hitArea = app.screen
     const onTap = (e) => {
+      if (this._dead) return                 // congelado hasta reaparecer
+      this._target = null                    // tocar el suelo cancela el ataque
       const w = camera.screenToWorld(e.global.x, e.global.y)
       const t = iso.toTile(w.x, w.y)
       const tx = Math.round(t.x)
@@ -477,6 +666,9 @@ export class Game {
 
     // NPCs (anim idle + globos).
     for (const npc of this.npcs) npc.update(dt)
+
+    // Combate: IA de enemigos, ataque del jugador, daño y muerte/reaparición.
+    this._combatTick(dt)
 
     // NPC cercano interactuable (para el botón del HUD): el más próximo dentro de rango.
     let near = null, nd = 1e9
@@ -574,6 +766,23 @@ export class Game {
       this.app = null
     }
   }
+}
+
+// Entero al azar en un rango [min,max] (los spawners de Flare vienen así).
+function randInt(range) {
+  const a = Array.isArray(range) ? range[0] : range
+  const b = Array.isArray(range) ? range[1] : range
+  return a + Math.floor(Math.random() * (b - a + 1))
+}
+
+// Tile caminable al azar dentro del rectángulo de un spawner.
+function randTileIn(sp, grid) {
+  for (let i = 0; i < 12; i++) {
+    const x = sp.x + Math.floor(Math.random() * (sp.w || 1))
+    const y = sp.y + Math.floor(Math.random() * (sp.h || 1))
+    if (grid.isWalkable(x, y)) return { x, y }
+  }
+  return null
 }
 
 // Slots visibles del paperdoll (ring/artifact no se ven).

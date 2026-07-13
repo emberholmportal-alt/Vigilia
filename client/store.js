@@ -98,6 +98,24 @@ export const useGameStore = create((set, get) => ({
   setNearby: (nearby) => set((s) => (s.nearby?.name === nearby?.name ? {} : { nearby })),
   requestInteract: () => set((s) => ({ interactSeq: s.interactSeq + 1 })),
 
+  // --- combate ---
+  // Aplica daño al jugador (lo llama el loop cuando un enemigo pega). Devuelve la vida
+  // resultante; el loop decide la muerte cuando llega a 0.
+  takeDamage: (n) => {
+    const s = get(); const st = s.stats
+    if (!st) return 0
+    const hp = Math.max(0, st.hp - Math.max(0, n | 0))
+    set({ stats: { ...st, hp } })
+    return hp
+  },
+  // Revive al jugador con vida/maná llenos (al reaparecer).
+  reviveFull: () => {
+    const s = get(); const st = s.stats
+    if (!st) return
+    set({ stats: { ...st, hp: st.hpMax, mp: st.mpMax } })
+    saveGame(get())
+  },
+
   // --- avisos breves (toast) ---
   toast: null,              // {text, until}
   showToast: (text) => { const t = (text || '').trim(); if (t) set({ toast: { text: t, until: Date.now() + 2400 } }) },
@@ -331,4 +349,8 @@ export const storeApi = {
   getPlayerLevel: () => useGameStore.getState().stats?.level || 1,
   setNearby: (v) => useGameStore.getState().setNearby(v),
   getInteractSeq: () => useGameStore.getState().interactSeq,
+  takeDamage: (n) => useGameStore.getState().takeDamage(n),
+  reviveFull: () => useGameStore.getState().reviveFull(),
+  getStats: () => useGameStore.getState().stats,
+  showToast: (t) => useGameStore.getState().showToast(t),
 }
