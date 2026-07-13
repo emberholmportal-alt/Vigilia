@@ -50,6 +50,7 @@ export function loadGame() {
       attrAlloc: s.attrAlloc || null,
       skillRanks: s.skillRanks || null,
       questFlags: s.questFlags || null,
+      specialAbility: s.specialAbility ?? undefined,
     }
   } catch { return null }
 }
@@ -73,6 +74,7 @@ export function saveGame(state) {
       attrAlloc: state.attrAlloc || { str: 0, dex: 0, int: 0, vit: 0 },
       skillRanks: state.skillRanks || {},
       questFlags: state.questFlags || {},
+      specialAbility: state.specialAbility ?? null,
     }
     localStorage.setItem(KEY, JSON.stringify(snap))
   } catch { /* almacenamiento lleno / bloqueado: ignorar */ }

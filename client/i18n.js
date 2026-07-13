@@ -258,6 +258,13 @@ const DICT = {
   guardian_asleep: { es: 'La estatua duerme. Le falta oír los nombres que la sellaron.', en: 'The statue sleeps. It must hear the names that sealed it.' },
   enemy_summons: { es: '{name} invoca a los muertos', en: '{name} summons the dead' },
   no_combat_town: { es: 'En el pueblo no se combate', en: 'No fighting in town' },
+  // slots del mouse (M1 / M2) + configuración del especial
+  m1_normal: { es: 'Ataque normal (clic izquierdo)', en: 'Normal attack (left click)' },
+  bind_special: { es: 'Elegir especial (clic derecho)', en: 'Set special (right click)' },
+  mousebind_title: { es: 'Botón derecho', en: 'Right click' },
+  mousebind_hint: { es: 'Elegí la habilidad que se lanza con el clic derecho (o el slot M2).', en: 'Pick the ability cast with right click (or the M2 slot).' },
+  mousebind_none_unlocked: { es: 'Todavía no desbloqueaste habilidades. Subí atributos en el árbol.', en: "You haven't unlocked abilities yet. Raise attributes in the tree." },
+  bind_none: { es: 'Ninguna', en: 'None' },
 }
 
 // Nombre de raza según idioma (los datos traen name + name_en).

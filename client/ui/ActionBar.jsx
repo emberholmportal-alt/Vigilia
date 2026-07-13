@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from 'react'
 import ItemIcon from './ItemIcon.jsx'
 import { useGameStore } from '../store.js'
-import { unlockedAbilities } from '../data/abilities.js'
+import { ABILITY_BY_ID } from '../data/abilities.js'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
@@ -38,50 +38,58 @@ export function BuffBar() {
   )
 }
 
-// Barra de habilidades activas: botones redondos con la habilidad desbloqueada (por atributo),
-// su costo de maná y el barrido de recarga. Tocar una pide al loop que la lance sobre el objetivo.
-export function AbilityBar() {
+// Slot del mouse (estilo Flare): M1 = ataque normal (clic izq., muestra el arma equipada) y
+// M2 = habilidad especial (clic der., configurable). El M2 se puede tocar para lanzarlo (móvil)
+// y tiene un engranaje para elegir qué habilidad va ahí. Muestra el barrido de recarga.
+export function MouseSlot({ which, className = '', style }) {
+  const equipment = useGameStore((s) => s.equipment)
   const stats = useGameStore((s) => s.stats)
+  const special = useGameStore((s) => s.specialAbility)
   const abilityCd = useGameStore((s) => s.abilityCd)
   const requestCast = useGameStore((s) => s.requestCast)
-  const safeZone = useGameStore((s) => s.safeZone)
+  const openMouseBind = useGameStore((s) => s.openMouseBind)
   const t = useT()
-  const abils = safeZone ? [] : unlockedAbilities(stats)
   const [, tick] = useState(0)
   const timer = useRef()
+  const isM2 = which === 'm2'
+  const ab = isM2 && special ? ABILITY_BY_ID[special] : null
 
-  // Barrido de recarga: re-render ~10fps mientras alguna habilidad esté en recarga.
+  // Barrido de recarga del M2 mientras su habilidad esté en recarga.
   useEffect(() => {
-    const anyCd = Object.values(abilityCd || {}).some((end) => end > Date.now())
-    if (!anyCd) return
+    if (!ab) return
+    if ((abilityCd?.[ab.id] || 0) <= Date.now()) return
     let alive = true
     const loop = () => { if (!alive) return; tick((n) => n + 1); timer.current = setTimeout(loop, 100) }
     loop()
     return () => { alive = false; clearTimeout(timer.current) }
-  }, [abilityCd])
+  }, [ab, abilityCd])
 
-  if (!abils.length) return null
-  const mp = stats?.mp || 0
-  const now = Date.now()
+  const bg = { backgroundImage: `url(${UI}slot_empty.png)`, ...style }
+
+  if (!isM2) {
+    const wIcon = equipment?.main?.icon
+    return (
+      <button className={'mouse-slot m1 ' + className} style={bg} title={t('m1_normal')}>
+        {wIcon != null ? <ItemIcon icon={wIcon} fill /> : <span className="mouse-fist">✊</span>}
+        <span className="mouse-tag">M1</span>
+      </button>
+    )
+  }
+
+  const end = ab ? (abilityCd?.[ab.id] || 0) : 0
+  const remain = Math.max(0, end - Date.now())
+  const frac = ab && remain > 0 ? Math.min(1, remain / (ab.cd * 1000)) : 0
+  const noMana = ab && (stats?.mp || 0) < ab.mp
   return (
-    <div className="ability-row">
-      {abils.map((a) => {
-        const end = abilityCd?.[a.id] || 0
-        const remain = Math.max(0, end - now)
-        const frac = remain > 0 ? Math.min(1, remain / (a.cd * 1000)) : 0
-        const noMana = mp < a.mp
-        return (
-          <button key={a.id} className={'abil-btn' + (noMana ? ' nomana' : '')} disabled={remain > 0}
-                  onClick={() => requestCast(a.id)}
-                  title={`${t('ab_' + a.id)} · ${a.mp} ${t('stat_mp')}`}>
-            <span className="abil-ic">{a.icon}</span>
-            <span className="abil-mp">{a.mp}</span>
-            {remain > 0 && <span className="abil-cd" style={{ height: `${Math.round(frac * 100)}%` }} />}
-            {remain > 0 && <span className="abil-cd-txt">{Math.ceil(remain / 1000)}</span>}
-          </button>
-        )
-      })}
-    </div>
+    <button className={'mouse-slot m2 ' + className + (noMana ? ' nomana' : '')} style={bg}
+            title={ab ? t('ab_' + ab.id) : t('bind_special')}
+            onClick={() => (ab ? requestCast(ab.id) : openMouseBind())}>
+      {ab ? <ItemIcon icon={ab.icon} fill /> : <span className="mouse-plus">＋</span>}
+      <span className="mouse-tag">M2</span>
+      {ab && remain > 0 && <span className="mouse-cd" style={{ height: `${Math.round(frac * 100)}%` }} />}
+      {ab && remain > 0 && <span className="mouse-cd-txt">{Math.ceil(remain / 1000)}</span>}
+      <span className="mouse-gear" onClick={(e) => { e.stopPropagation(); openMouseBind() }} title={t('bind_special')}>⚙</span>
+    </button>
   )
 }
 
@@ -103,9 +111,9 @@ export default function ActionBar({ belt, gold, onUseBelt, beltCap = 4 }) {
           )
         })}
       </div>
-      <div className="ab-gold" title={t('gold_word')}>
-        <span className="ab-coin" />
-        <b>{gold}</b>
+      <div className="ab-mouse">
+        {/* En móvil, tocar la pantalla ya es el ataque normal (M1); acá va sólo el especial (M2). */}
+        <MouseSlot which="m2" className="mouse-mobile" />
       </div>
     </div>
   )
@@ -169,9 +177,8 @@ export function DesktopBar({ belt, onPanel, onUseBelt, beltCap = 4 }) {
           </div>
         )
       })}
-      {M_CX.map((cx, i) => (
-        <div key={'m' + i} className="db-slot" style={{ left: pc(cx), backgroundImage: `url(${UI}slot_empty.png)` }} />
-      ))}
+      <MouseSlot which="m1" className="mouse-desktop" style={{ left: pc(M_CX[0]) }} />
+      <MouseSlot which="m2" className="mouse-desktop" style={{ left: pc(M_CX[1]) }} />
       {MENU_CX.map((m) => (
         <button key={m.panel} className="db-menu" style={{ left: pc(m.cx) }}
                 title={t(m.panel)} onClick={() => onPanel(m.panel)} />

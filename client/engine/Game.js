@@ -446,6 +446,14 @@ export class Game {
       const d = Math.abs(e.tx - tx) + Math.abs(e.ty - ty)
       if (d < bd) { bd = d; best = e }
     }
+    // Botón derecho = habilidad especial (slot M2), como Flare, si hay una ligada y estás en
+    // zona de combate. Apunta al enemigo bajo el cursor para las habilidades con objetivo.
+    const special = this.store.getSpecialAbility ? this.store.getSpecialAbility() : null
+    if (special && !this._safeZone) {
+      if (best && !best.dead) this._targetEnemy(best)
+      this._castAbility(special)
+      return
+    }
     if (!best) return
     if (best.dead) this._inspectCorpse(best)
     else this._targetEnemy(best)

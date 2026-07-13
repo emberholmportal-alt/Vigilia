@@ -189,32 +189,62 @@ html, body, #root {
 }
 .ab-btn:active { filter: brightness(1.35); }
 
-/* barra de habilidades activas (botones redondos con recarga) */
-.ability-row {
-  display: flex; justify-content: center; gap: 8px;
-  padding: 2px 0 4px; pointer-events: auto;
+/* slots del mouse M1 (ataque normal) / M2 (especial), estilo Flare */
+.ab-mouse { display: flex; gap: 3px; margin-left: 4px; }
+.mouse-slot {
+  position: relative; overflow: hidden; padding: 0; cursor: pointer;
+  background-color: transparent; background-size: 100% 100%; background-repeat: no-repeat;
+  border: 0; -webkit-tap-highlight-color: transparent;
 }
-.abil-btn {
-  position: relative; width: 50px; height: 50px; flex: 0 0 auto; overflow: hidden;
-  border: 2px solid #8a6f1e; border-radius: 50%; padding: 0; cursor: pointer;
-  background: radial-gradient(circle at 42% 34%, #3a3346, #17141d 78%);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6), inset 0 0 6px rgba(0, 0, 0, 0.6);
-  -webkit-tap-highlight-color: transparent;
+.mouse-slot.mouse-mobile { width: 46px; height: 46px; flex: 0 0 auto; }
+.mouse-slot.mouse-desktop {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  height: 80%; aspect-ratio: 1; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
 }
-.abil-btn:not(:disabled):active { transform: scale(0.92); }
-.abil-btn:disabled { cursor: default; }
-.abil-btn.nomana { border-color: #4a4356; filter: grayscale(0.5) brightness(0.78); }
-.abil-ic { display: block; font-size: 22px; line-height: 50px; text-align: center; filter: drop-shadow(0 1px 2px #000); }
-.abil-mp {
-  position: absolute; bottom: -1px; right: 4px; font-family: Georgia, serif; font-size: 9px;
-  font-weight: bold; color: #7fd0ff; text-shadow: 0 1px 2px #000;
+.mouse-slot.m1 { box-shadow: inset 0 0 0 2px rgba(90, 140, 90, 0.4); }
+.mouse-slot.m2 { box-shadow: inset 0 0 0 2px rgba(180, 120, 40, 0.5); }
+.mouse-slot.m2.nomana { filter: grayscale(0.5) brightness(0.8); }
+.mouse-slot:active { filter: brightness(1.2); }
+.mouse-fist, .mouse-plus {
+  display: flex; align-items: center; justify-content: center; height: 100%;
+  font-size: 20px; color: #a89a86; text-shadow: 0 1px 2px #000;
 }
-.abil-cd { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(10, 8, 14, 0.66); pointer-events: none; }
-.abil-cd-txt {
+.mouse-tag {
+  position: absolute; top: 0; left: 2px; font-family: Georgia, serif; font-size: 8px;
+  font-weight: bold; color: #e6c85a; text-shadow: 0 1px 2px #000; letter-spacing: 0.03em;
+}
+.mouse-gear {
+  position: absolute; bottom: -1px; right: 0; font-size: 11px; line-height: 1;
+  filter: drop-shadow(0 1px 1px #000); opacity: 0.85;
+}
+.mouse-cd { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(10, 8, 14, 0.68); pointer-events: none; }
+.mouse-cd-txt {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-family: Georgia, serif; font-size: 17px; font-weight: bold; color: #f2ead6;
+  font-family: Georgia, serif; font-size: 16px; font-weight: bold; color: #f2ead6;
   text-shadow: 0 1px 3px #000; pointer-events: none;
 }
+
+/* modal para ligar el especial al botón derecho */
+.mb-body { position: absolute; left: 10%; right: 10%; top: 13%; bottom: 8%; display: flex; flex-direction: column; }
+.mb-hint { font-family: Georgia, serif; font-size: 11px; color: var(--dim); font-style: italic; text-align: center; margin-bottom: 10px; }
+.mb-list { display: flex; flex-direction: column; gap: 7px; overflow-y: auto; flex: 1 1 auto; }
+.mb-empty { color: var(--dim); font-family: Georgia, serif; font-size: 12px; text-align: center; margin-top: 24px; line-height: 1.4; }
+.mb-row {
+  display: flex; align-items: center; gap: 9px; text-align: left; cursor: pointer;
+  background: rgba(20, 17, 26, 0.45); border: 1px solid #322a3c; border-radius: 6px; padding: 6px 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+.mb-row.sel { border-color: var(--gold); background: rgba(60, 50, 20, 0.35); }
+.mb-ic { flex: 0 0 auto; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); border: 1px solid #3b3145; border-radius: 5px; }
+.mb-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.mb-info b { font-family: Georgia, serif; font-size: 13px; color: #f2ead6; text-shadow: 0 1px 2px #000; }
+.mb-info em { font-family: Georgia, serif; font-size: 10px; font-style: normal; color: var(--parch); text-shadow: 0 1px 2px #000; line-height: 1.2; }
+.mb-cost { flex: 0 0 auto; font-family: Georgia, serif; font-size: 10px; color: #7fd0ff; text-shadow: 0 1px 2px #000; }
+.mb-clear {
+  margin-top: 8px; align-self: center; font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  background: rgba(20, 17, 26, 0.6); border: 1px solid #3b3145; border-radius: 5px; padding: 4px 18px; cursor: pointer;
+}
+.mb-clear.sel { color: var(--gold); border-color: var(--gold); }
 
 /* potencias temporales activas (Vigor, etc.) */
 .buff-row { display: flex; justify-content: center; gap: 6px; padding: 2px 0; pointer-events: none; }
