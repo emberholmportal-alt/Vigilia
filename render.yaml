@@ -1,0 +1,40 @@
+# Blueprint de Render para Velgrim: PostgreSQL + servidor (web service) + cliente (static site).
+# Deploy: en Render -> New + -> Blueprint -> elegí este repo. Render crea las 3 cosas.
+# OJO con el orden del cliente: VITE_WS_URL se hornea en el build, así que debe apuntar a la
+# URL real del server (verificá el hostname que te da Render y actualizalo si difiere).
+databases:
+  - name: velgrim-db
+    databaseName: velgrim
+    plan: free
+
+services:
+  # --- Servidor autoritativo (WebSocket + HTTP) ---
+  - type: web
+    name: velgrim-server
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run server
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: velgrim-db
+          property: connectionString
+      - key: NODE_VERSION
+        value: "22"
+
+  # --- Cliente (sitio estático de Vite) ---
+  - type: web
+    name: velgrim-client
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Debe ser la URL WSS del server de arriba (verificá el hostname real en Render).
+      - key: VITE_WS_URL
+        value: wss://velgrim-server.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

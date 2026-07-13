@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "description": "MMORPG 2D isométrico de navegador, dark fantasy. Arte: Flare (CC-BY-SA 3.0).",
+  "engines": { "node": ">=18" },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
