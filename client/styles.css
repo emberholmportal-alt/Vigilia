@@ -274,6 +274,12 @@ html, body, #root {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.45),
               inset 0 1px 0 rgba(154, 107, 255, 0.28);
 }
+/* variante ataque: acento rojo/ember */
+.attack-btn {
+  color: #f2d6c6; border-color: #a23c22;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(194, 85, 31, 0.3);
+}
 @keyframes interact-pop { from { transform: scale(0.9); opacity: 0; } }
 
 /* barra de XP: canal siempre visible (aunque esté en 0) con relleno + etiqueta de nivel */
