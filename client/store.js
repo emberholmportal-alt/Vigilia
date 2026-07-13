@@ -8,7 +8,7 @@ import { create } from 'zustand'
 import { computeStats } from './data/stats.js'
 import { setMuted } from './engine/audio.js'
 import { dailyStock } from './data/shop.js'
-import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP } from './data/progression.js'
+import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryCapacity } from './data/progression.js'
 import { saveGame } from './data/save.js'
 
 // El mercader compra a fracción del precio (Flare: vendor_ratio_sell = 0.25).
@@ -193,24 +193,41 @@ export const useGameStore = create((set, get) => ({
   initCharacter: ({ race, gold, inventory, equipment, belt, xp = 0, skills = null }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
-    const st = computeStats(race.id)
-    st.level = playerLevelFromXp(xp)
+    const level = playerLevelFromXp(xp)
+    const equip = { ...emptyEquipment(), ...equipment }
+    const st = computeStats(race.id, level, equip)   // stats incluyen el equipo
     const b = (belt || []).slice(0, 4)
     while (b.length < 4) b.push(null)
     set({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
-      inventory: inv, equipment: { ...emptyEquipment(), ...equipment }, belt: b,
+      inventory: inv, equipment: equip, belt: b,
       staminaMax: st.staminaMax, stamina: st.staminaMax,
     })
     saveGame(get())
   },
 
-  // Suma XP de jugador; recalcula el nivel y persiste.
+  // Recalcula los stats derivados (base+nivel+equipo) preservando la vida/maná actuales.
+  recomputeStats: () => {
+    const s = get()
+    if (!s.race || !s.stats) return
+    const fresh = computeStats(s.race.id, s.stats.level, s.equipment)
+    const hp = Math.min(s.stats.hp, fresh.hpMax)
+    const mp = Math.min(s.stats.mp, fresh.mpMax)
+    set({ stats: { ...fresh, hp, mp } })
+  },
+
+  // Suma XP de jugador; al subir de nivel recalcula stats (con equipo) y cura al máximo.
   addXp: (n) => {
     const s = get()
     const xp = s.xp + Math.max(0, n | 0)
     const level = playerLevelFromXp(xp)
-    set({ xp, stats: s.stats ? { ...s.stats, level } : s.stats })
+    if (s.stats && level !== s.stats.level) {
+      const fresh = computeStats(s.race?.id, level, s.equipment) // subir de nivel cura
+      set({ xp, stats: fresh })
+      get().showToast('¡Subiste a nivel ' + level + '!')
+    } else {
+      set({ xp, stats: s.stats ? { ...s.stats, level } : s.stats })
+    }
     saveGame(get())
   },
 
@@ -238,6 +255,7 @@ export const useGameStore = create((set, get) => ({
     equipment[slot] = item
     inv[invIndex] = prev || null
     set({ inventory: inv, equipment })
+    get().recomputeStats()   // el equipo cambia -> recalcular defensa/HP/daño
     saveGame(get())
   },
 
@@ -259,7 +277,10 @@ export const useGameStore = create((set, get) => ({
         return true
       }
     }
-    const free = inv.findIndex((x) => x == null)
+    // Sólo hasta la capacidad actual (crece por nivel); el resto de las celdas está bloqueado.
+    const cap = inventoryCapacity(s.stats?.level || 1)
+    let free = -1
+    for (let i = 0; i < cap; i++) { if (inv[i] == null) { free = i; break } }
     if (free < 0) return false // inventario lleno
     inv[free] = stackable ? { ...item, count: qty } : { ...item }
     set({ inventory: inv })
@@ -297,17 +318,20 @@ export const useGameStore = create((set, get) => ({
     return { ok: true, gain }
   },
 
-  // Saca lo equipado en un slot y lo manda al primer hueco libre.
+  // Saca lo equipado en un slot y lo manda al primer hueco libre (dentro de la capacidad).
   unequip: (slot) => {
     const s = get()
     const item = s.equipment[slot]
     if (!item) return
     const inv = s.inventory.slice()
-    let idx = inv.findIndex((x) => x == null)
+    const cap = inventoryCapacity(s.stats?.level || 1)
+    let idx = -1
+    for (let i = 0; i < cap; i++) { if (inv[i] == null) { idx = i; break } }
     if (idx < 0) return // inventario lleno
     inv[idx] = item
     const equipment = { ...s.equipment, [slot]: null }
     set({ inventory: inv, equipment })
+    get().recomputeStats()
     saveGame(get())
   },
 

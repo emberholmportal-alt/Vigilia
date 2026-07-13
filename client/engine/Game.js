@@ -539,13 +539,12 @@ export class Game {
   }
 
   _playerMeleeDamage() {
-    const eq = this.store.getEquipment()
-    const w = eq && eq.main && eq.main.stats
-    const min = (w && w.dmg_melee_min) || 2
-    const max = (w && w.dmg_melee_max) || 5
     const st = this.store.getStats() || {}
+    const min = st.dmgMin || 2, max = st.dmgMax || 5
     const raw = (min + Math.random() * (max - min)) * (st.dmgMul || 1) + (st.str || 10) * 0.2
-    return Math.max(1, Math.round(raw))
+    // golpe crítico (crit% del equipo): x2
+    const crit = (st.crit || 0) > 0 && Math.random() * 100 < st.crit
+    return { dmg: Math.max(1, Math.round(raw * (crit ? 2 : 1))), crit }
   }
 
   _enemyKilled(e) {
@@ -609,11 +608,12 @@ export class Game {
     if (this._hurtCd > 0) this._hurtCd -= dt
     if (this._retargetT > 0) this._retargetT -= dt
 
-    // Enemigos: IA + daño al jugador.
+    // Enemigos: IA + daño al jugador (la defensa del equipo reduce cada golpe).
+    const defense = (this.store.getStats()?.defense) || 0
     let dmgToPlayer = 0
     for (const e of this.enemies) {
       e.update(dt, p)
-      if (e.pendingHit > 0) dmgToPlayer += e.pendingHit
+      if (e.pendingHit > 0) dmgToPlayer += Math.max(1, e.pendingHit - defense)
     }
     this.enemies = this.enemies.filter((e) => {
       if (e.remove) { e.view.destroy({ children: true }); return false }
@@ -639,7 +639,8 @@ export class Game {
         if (this._playerAtkCd <= 0) {
           const ms = p.attack() || 400
           this._playerAtkCd = Math.max(0.65, ms / 1000)
-          this._pendingHit = { at: (ms / 1000) * 0.5, dmg: this._playerMeleeDamage(), target: t }
+          const hit = this._playerMeleeDamage()
+          this._pendingHit = { at: (ms / 1000) * 0.5, dmg: hit.dmg, crit: hit.crit, target: t }
         }
       }
     } else if (t && t.dead) {
@@ -650,12 +651,12 @@ export class Game {
     if (this._pendingHit) {
       this._pendingHit.at -= dt
       if (this._pendingHit.at <= 0) {
-        const { dmg, target } = this._pendingHit
+        const { dmg, crit, target } = this._pendingHit
         this._pendingHit = null
         if (target && !target.dead) {
           const d = Math.abs(target.tx - p.tx) + Math.abs(target.ty - p.ty)
           if (d <= 2) {
-            this._floatText(target.view.x, target.view.y + target._hpY, `${dmg}`, '#ffe08a')
+            this._floatText(target.view.x, target.view.y + target._hpY, crit ? `¡${dmg}!` : `${dmg}`, crit ? '#ff9a3a' : '#ffe08a')
             if (target.takeDamage(dmg)) this._enemyKilled(target)
           }
         }

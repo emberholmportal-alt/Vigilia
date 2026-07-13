@@ -28,14 +28,17 @@ export default function Character() {
   const s = stats || {}
   const prog = playerProgress(xp || 0)
 
-  // Derivados que mostramos en la lista (statlist arranca en 16,296).
+  // Derivados que mostramos en la lista. Ahora reflejan el EQUIPO (daño del arma, defensa,
+  // crítico, regeneración) además de la raza/nivel.
   const derived = [
     ['Vida', `${s.hp}/${s.hpMax}`],
     ['Maná', `${s.mp}/${s.mpMax}`],
-    ['Aguante', s.staminaMax],
-    ['Daño', s.dmgMul ? `×${s.dmgMul}` : '×1'],
+    ['Daño', s.dmgMin != null ? `${s.dmgMin}–${s.dmgMax}` : '—'],
+    ['Defensa', s.defense || 0],
+    ...(s.crit ? [['Crítico', `${s.crit}%`]] : []),
+    ...(s.hpRegen ? [['Regen. vida', `${s.hpRegen}/s`]] : []),
     ['Velocidad', s.speedMul ? `×${s.speedMul}` : '×1'],
-    ['Bonus XP', s.xpMul ? `×${s.xpMul}` : '×1'],
+    ['Bonus XP', s.xpMul ? `×${s.xpMul.toFixed(2)}` : '×1'],
   ]
 
   return (

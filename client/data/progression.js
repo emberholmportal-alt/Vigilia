@@ -57,3 +57,11 @@ export function emptySkills() {
   for (const k of SKILLS) s[k] = { xp: 0, level: 1 }
   return s
 }
+
+// Capacidad del inventario: crece con el nivel. La grilla de Flare tiene 55 celdas; al
+// principio se usan 30 y se van desbloqueando 2 por nivel hasta el tope.
+export const INV_BASE = 30
+export const INV_MAX = 55
+export function inventoryCapacity(level = 1) {
+  return Math.min(INV_MAX, INV_BASE + Math.max(0, (level | 0) - 1) * 2)
+}

@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { useGameStore, equipSlotFor, beltEligible } from '../store.js'
 import { RARITY_COLOR, RARITY_LABEL } from '../data/items.js'
+import { inventoryCapacity } from '../data/progression.js'
 import ItemIcon from './ItemIcon.jsx'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
@@ -50,6 +51,9 @@ export default function Inventory() {
   const assignBelt = useGameStore((s) => s.assignBelt)
   const setPanel = useGameStore((s) => s.setPanel)
 
+  const level = useGameStore((s) => s.stats?.level || 1)
+  const cap = inventoryCapacity(level)
+
   const [sel, setSel] = useState(null) // {src, i|slot, pos:[x,y]}
   const selItem = sel?.src === 'inv' ? inventory[sel.i] : sel?.src === 'equip' ? equipment[sel.slot] : null
 
@@ -85,15 +89,19 @@ export default function Inventory() {
           )
         })}
 
-        {/* grilla */}
+        {/* grilla (las celdas por encima de la capacidad actual están bloqueadas) */}
         {inventory.map((it, i) => {
           const col = i % CARRIED.cols, row = (i / CARRIED.cols) | 0
           const x = CARRIED.x + col * SLOT, y = CARRIED.y + row * SLOT
+          const locked = i >= cap
           return (
-            <button key={i} className={'inv-cell' + (sel?.src === 'inv' && sel.i === i ? ' on' : '')}
+            <button key={i} disabled={locked}
+                    className={'inv-cell' + (sel?.src === 'inv' && sel.i === i ? ' on' : '') + (locked ? ' locked' : '')}
                     style={slotStyle(x, y)}
-                    onClick={() => it && setSel({ src: 'inv', i, pos: [x, y] })}>
+                    title={locked ? 'Se desbloquea al subir de nivel' : undefined}
+                    onClick={() => !locked && it && setSel({ src: 'inv', i, pos: [x, y] })}>
               {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
+              {locked && <span className="inv-lock">🔒</span>}
             </button>
           )
         })}
