@@ -245,10 +245,25 @@ const DICT = {
   abd_lluvia: { es: 'Volea que cae en área sobre el objetivo.', en: 'A volley that falls over the target area.' },
   ab_restaurar: { es: 'Restaurar', en: 'Restore' },
   abd_restaurar: { es: 'Recuperás vida escalada por tu INT.', en: 'Recover health scaled by your INT.' },
+  // quests narrativas / registro
+  tab_daily: { es: 'Diarias', en: 'Daily' },
+  tab_story: { es: 'Historia', en: 'Story' },
+  quests_none: { es: 'No tenés ninguna aventura en curso. Hablá con la gente del pueblo.', en: 'You have no quest underway. Talk to the townsfolk.' },
+  quests_completed: { es: 'Completadas', en: 'Completed' },
+  quest_updated: { es: 'Registro actualizado', en: 'Journal updated' },
+  quest_done: { es: '¡Aventura completa: {name}!', en: 'Quest complete: {name}!' },
+  quest_reward: { es: 'Recompensa: +{xp} XP, +{gold} oro, +{seals} sellos', en: 'Reward: +{xp} XP, +{gold} gold, +{seals} seals' },
+  name_found: { es: 'Un nombre olvidado resuena: {name}', en: 'A forgotten name echoes: {name}' },
+  guardians_wake: { es: 'Pronunciás los tres nombres. Los Guardianes despiertan.', en: 'You speak the three names. The Guardians awaken.' },
+  guardian_asleep: { es: 'La estatua duerme. Le falta oír los nombres que la sellaron.', en: 'The statue sleeps. It must hear the names that sealed it.' },
 }
 
 // Nombre de raza según idioma (los datos traen name + name_en).
 export const raceName = (race, lang = _lang) => (!race ? '' : lang === 'en' ? (race.name_en || race.name) : race.name)
+
+// Nombre / texto de etapa de una quest según idioma (los datos traen *_en).
+export const questName = (q, lang = _lang) => (!q ? '' : lang === 'en' ? (q.name_en || q.name) : q.name)
+export const stageText = (st, lang = _lang) => (!st ? '' : lang === 'en' ? (st.text_en || st.text) : st.text)
 
 export function translate(lang, key, vars) {
   const e = DICT[key]

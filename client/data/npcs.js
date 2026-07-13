@@ -183,8 +183,29 @@ const TRISTON = [
             'Una botella vacía y aloe, y tenés vida embotellada.'],
     lines_en: ['Bring me herbs and crystals; I wring the juice from them.',
                'An empty bottle and aloe, and you have life in a flask.'] },
-  // Guardián: estatua del monumento. Recibe la ofrenda de oro del día (misión Ofrenda).
+  // Guardián: estatua del monumento. Recibe la ofrenda de oro del día (misión Ofrenda) y,
+  // con los tres nombres, despierta (quest "Los Tres Nombres").
   { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, guardian: true, x: 57, y: 47, dir: 3 },
+  // Udana la Vidente: da y cierra la quest de los Guardianes. Diálogo condicional por banderas.
+  { sprite: 'peasant_woman1', name: 'Udana la Vidente', name_en: 'Udana the Seer', portrait: 'female01.png', x: 58, y: 50, dir: 1,
+    dialog: [
+      { req: ['q3_finish'],
+        lines: ['Los sellos cedieron. El pueblo respira distinto desde entonces.'],
+        lines_en: ['The seals gave way. The town has breathed differently since.'] },
+      { req: ['q3_init', 'q3_ice', 'q3_fire', 'q3_wind'], not: ['q3_finish'],
+        lines: ['Tenés los tres nombres en la boca. Andá al Guardián de Fuego y pronuncialos.'],
+        lines_en: ['You carry the three names on your tongue. Go to the Guardian of Fire and speak them.'] },
+      { req: ['q3_init'], not: ['q3_finish'],
+        lines: ['Los nombres duermen en las ruinas: uno en el hielo, uno en el fuego, uno en el viento.',
+                'Caminá sobre ellas y los oirás resonar.'],
+        lines_en: ['The names sleep in the ruins: one in ice, one in fire, one in wind.',
+                   'Walk upon them and you will hear them echo.'] },
+      { not: ['q3_init'], set: 'q3_init',
+        lines: ['Esas tres estatuas no son piedra: son magos que sellaron ellos mismos.',
+                'Buscá sus tres nombres en las ruinas y traelos de vuelta. Los Guardianes despertarán.'],
+        lines_en: ['Those three statues are not stone: they are mages who sealed themselves.',
+                   'Seek their three names in the ruins and bring them back. The Guardians will wake.'] },
+    ] },
 ]
 
 export const NPCS_BY_MAP = {

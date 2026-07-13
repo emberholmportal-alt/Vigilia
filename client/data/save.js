@@ -49,6 +49,7 @@ export function loadGame() {
       seals: s.seals || 0,
       attrAlloc: s.attrAlloc || null,
       skillRanks: s.skillRanks || null,
+      questFlags: s.questFlags || null,
     }
   } catch { return null }
 }
@@ -71,6 +72,7 @@ export function saveGame(state) {
       seals: state.seals || 0,
       attrAlloc: state.attrAlloc || { str: 0, dex: 0, int: 0, vit: 0 },
       skillRanks: state.skillRanks || {},
+      questFlags: state.questFlags || {},
     }
     localStorage.setItem(KEY, JSON.stringify(snap))
   } catch { /* almacenamiento lleno / bloqueado: ignorar */ }
