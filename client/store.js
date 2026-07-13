@@ -206,6 +206,26 @@ export const useGameStore = create((set, get) => ({
     const hp = Math.min(st.hpMax, st.hp + n)
     set({ stats: { ...st, hp } })
   },
+  // Restaura maná (regeneración pasiva; la escribe el loop). No persiste cada tick.
+  restoreMana: (n) => {
+    const s = get(); const st = s.stats
+    if (!st || st.mp >= st.mpMax) return
+    set({ stats: { ...st, mp: Math.min(st.mpMax, st.mp + n) } })
+  },
+  // Gasta maná si alcanza (para lanzar habilidades). Devuelve true si pudo.
+  spendMana: (n) => {
+    const s = get(); const st = s.stats
+    if (!st || st.mp < n) return false
+    set({ stats: { ...st, mp: st.mp - n } })
+    return true
+  },
+
+  // --- habilidades activas (barra de acción) ---
+  castSeq: 0,               // el HUD lo incrementa al tocar una habilidad
+  castAbility: null,        // id de la habilidad pedida; el loop la ejecuta sobre el objetivo
+  abilityCd: {},            // { id: msFin } — timestamp de fin de recarga (para el barrido del HUD)
+  requestCast: (id) => set((s) => ({ castSeq: s.castSeq + 1, castAbility: id })),
+  setAbilityCd: (id, ms) => set((s) => ({ abilityCd: { ...s.abilityCd, [id]: Date.now() + ms } })),
   // Revive al jugador con vida/maná llenos (al reaparecer).
   reviveFull: () => {
     const s = get(); const st = s.stats
@@ -839,6 +859,11 @@ export const storeApi = {
   deliverOffering: () => useGameStore.getState().deliverOffering(),
   takeDamage: (n) => useGameStore.getState().takeDamage(n),
   heal: (n) => useGameStore.getState().heal(n),
+  restoreMana: (n) => useGameStore.getState().restoreMana(n),
+  spendMana: (n) => useGameStore.getState().spendMana(n),
+  getCastSeq: () => useGameStore.getState().castSeq,
+  getCastAbility: () => useGameStore.getState().castAbility,
+  setAbilityCd: (id, ms) => useGameStore.getState().setAbilityCd(id, ms),
   reviveFull: () => useGameStore.getState().reviveFull(),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,

@@ -189,6 +189,33 @@ html, body, #root {
 }
 .ab-btn:active { filter: brightness(1.35); }
 
+/* barra de habilidades activas (botones redondos con recarga) */
+.ability-row {
+  display: flex; justify-content: center; gap: 8px;
+  padding: 2px 0 4px; pointer-events: auto;
+}
+.abil-btn {
+  position: relative; width: 50px; height: 50px; flex: 0 0 auto; overflow: hidden;
+  border: 2px solid #8a6f1e; border-radius: 50%; padding: 0; cursor: pointer;
+  background: radial-gradient(circle at 42% 34%, #3a3346, #17141d 78%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6), inset 0 0 6px rgba(0, 0, 0, 0.6);
+  -webkit-tap-highlight-color: transparent;
+}
+.abil-btn:not(:disabled):active { transform: scale(0.92); }
+.abil-btn:disabled { cursor: default; }
+.abil-btn.nomana { border-color: #4a4356; filter: grayscale(0.5) brightness(0.78); }
+.abil-ic { display: block; font-size: 22px; line-height: 50px; text-align: center; filter: drop-shadow(0 1px 2px #000); }
+.abil-mp {
+  position: absolute; bottom: -1px; right: 4px; font-family: Georgia, serif; font-size: 9px;
+  font-weight: bold; color: #7fd0ff; text-shadow: 0 1px 2px #000;
+}
+.abil-cd { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(10, 8, 14, 0.66); pointer-events: none; }
+.abil-cd-txt {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: Georgia, serif; font-size: 17px; font-weight: bold; color: #f2ead6;
+  text-shadow: 0 1px 3px #000; pointer-events: none;
+}
+
 /* barra COMPLETA de Flare (Demonic UI) para escritorio: sólo visible en pantallas anchas.
    El marco 1280×70 en una fila, con los slots texturizados y los botones grabados. */
 .desktop-bar { display: none; }

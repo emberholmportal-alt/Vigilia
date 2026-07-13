@@ -2,10 +2,59 @@
 // imagen con huecos negros inutilizables, mostramos sólo lo que SÍ existe: los 4 slots de
 // consumibles (con la textura real de Flare) y el oro. Cada slot es un elemento real.
 // Los botones de menú van aparte (MenuRow), para que en móvil no los tapen los globos.
+import { useState, useEffect, useRef } from 'react'
 import ItemIcon from './ItemIcon.jsx'
+import { useGameStore } from '../store.js'
+import { unlockedAbilities } from '../data/abilities.js'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
+
+// Barra de habilidades activas: botones redondos con la habilidad desbloqueada (por atributo),
+// su costo de maná y el barrido de recarga. Tocar una pide al loop que la lance sobre el objetivo.
+export function AbilityBar() {
+  const stats = useGameStore((s) => s.stats)
+  const abilityCd = useGameStore((s) => s.abilityCd)
+  const requestCast = useGameStore((s) => s.requestCast)
+  const t = useT()
+  const abils = unlockedAbilities(stats)
+  const [, tick] = useState(0)
+  const timer = useRef()
+
+  // Barrido de recarga: re-render ~10fps mientras alguna habilidad esté en recarga.
+  useEffect(() => {
+    const anyCd = Object.values(abilityCd || {}).some((end) => end > Date.now())
+    if (!anyCd) return
+    let alive = true
+    const loop = () => { if (!alive) return; tick((n) => n + 1); timer.current = setTimeout(loop, 100) }
+    loop()
+    return () => { alive = false; clearTimeout(timer.current) }
+  }, [abilityCd])
+
+  if (!abils.length) return null
+  const mp = stats?.mp || 0
+  const now = Date.now()
+  return (
+    <div className="ability-row">
+      {abils.map((a) => {
+        const end = abilityCd?.[a.id] || 0
+        const remain = Math.max(0, end - now)
+        const frac = remain > 0 ? Math.min(1, remain / (a.cd * 1000)) : 0
+        const noMana = mp < a.mp
+        return (
+          <button key={a.id} className={'abil-btn' + (noMana ? ' nomana' : '')} disabled={remain > 0}
+                  onClick={() => requestCast(a.id)}
+                  title={`${t('ab_' + a.id)} · ${a.mp} ${t('stat_mp')}`}>
+            <span className="abil-ic">{a.icon}</span>
+            <span className="abil-mp">{a.mp}</span>
+            {remain > 0 && <span className="abil-cd" style={{ height: `${Math.round(frac * 100)}%` }} />}
+            {remain > 0 && <span className="abil-cd-txt">{Math.ceil(remain / 1000)}</span>}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 export default function ActionBar({ belt, gold, onUseBelt, beltCap = 4 }) {
   const t = useT()

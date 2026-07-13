@@ -13,6 +13,7 @@ import { Enemy } from './Enemy.js'
 import { Projectile } from './Projectile.js'
 import { ResourceNode } from './ResourceNode.js'
 import { GATHER } from '../data/alchemy.js'
+import { ABILITY_BY_ID } from '../data/abilities.js'
 import { tt, zoneName, getLang, itemName, npcName, npcLines } from '../i18n.js'
 import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
@@ -86,6 +87,8 @@ export class Game {
     this._lastWaypointSeq = this.store.getWaypointSeq()
     this._lastRecallSeq = this.store.getRecallSeq()
     this._lastGatherSeq = this.store.getGatherSeq()
+    this._lastCastSeq = this.store.getCastSeq()
+    this._abilityCd = {}   // { id: segundos restantes } — recarga local de habilidades
     this._lang = getLang()
     this._fpsAccum = 0
     this._fpsFrames = 0
@@ -799,6 +802,77 @@ export class Game {
     return { dmg: Math.max(1, Math.round(raw * (crit ? 2 : 1))), crit }
   }
 
+  // Daño base de una habilidad (arma + FUE, sin la tirada de crítico normal).
+  _abilityRoll() {
+    const st = this.store.getStats() || {}
+    const min = st.dmgMin || 2, max = st.dmgMax || 5
+    return (min + Math.random() * (max - min)) * (st.dmgMul || 1) + (st.str || 10) * 0.2
+  }
+
+  // Lanza una habilidad activa (pedida desde la barra). Valida desbloqueo, recarga, objetivo
+  // y maná; si pasa, ejecuta su efecto y arranca la recarga.
+  _castAbility(id) {
+    if (this._dead || !this.player) return
+    const ab = ABILITY_BY_ID[id]
+    if (!ab) return
+    const st = this.store.getStats() || {}
+    if ((st[ab.attr] || 0) < ab.req) { this.store.showToast(tt('ability_locked')); return }
+    if ((this._abilityCd[id] || 0) > 0) return   // en recarga: no avisa (spam del botón)
+    const needsTarget = ab.kind === 'bolt' || ab.kind === 'fireball'
+    if (needsTarget && (!this._target || this._target.dead)) { this.store.showToast(tt('ability_no_target')); return }
+    if (!this.store.spendMana(ab.mp)) { this.store.showToast(tt('ability_no_mana')); return }
+    this._abilityCd[id] = ab.cd
+    this.store.setAbilityCd(id, ab.cd * 1000)
+    const p = this.player
+
+    if (ab.kind === 'melee_aoe') {
+      p.attack('swing'); playSfx('swing.ogg')
+      this._castRing(p.view.x, p.view.y - 20, 0xffcf6a)
+      for (const e of this.enemies) {
+        if (e.dead) continue
+        if (Math.abs(e.tx - p.tx) + Math.abs(e.ty - p.ty) > ab.radius) continue
+        const dmg = Math.max(1, Math.round(this._abilityRoll() * ab.dmgMul))
+        this._floatText(e.view.x, e.view.y + e._hpY, `¡${dmg}!`, '#ff9a3a')
+        if (e.takeDamage(dmg)) this._enemyKilled(e)
+      }
+      if (Math.random() < 0.5) this.store.degradeGear('weapon', 1)
+    } else if (ab.kind === 'bolt') {
+      const target = this._target
+      p.faceTile(target.tx, target.ty); p.attack('shoot')
+      const dmg = Math.max(1, Math.round(this._abilityRoll() * ab.dmgMul))
+      this._spawnProjectile(p.view.x, p.view.y - 40, target.view.x, target.view.y + (target._hpY || -40) * 0.5, 'arrow', () => {
+        if (!target || target.dead) return
+        this._floatText(target.view.x, target.view.y + target._hpY, `¡${dmg}!`, '#ff9a3a')
+        if (target.takeDamage(dmg)) this._enemyKilled(target)
+      })
+      playSfx('swing.ogg', 0.5)
+    } else if (ab.kind === 'fireball') {
+      const target = this._target
+      p.faceTile(target.tx, target.ty); p.attack('cast')
+      const dmg = Math.round((ab.base + (st.int || 10) * ab.intMul) * (st.dmgMul || 1))
+      this._spawnProjectile(p.view.x, p.view.y - 40, target.view.x, target.view.y + (target._hpY || -40) * 0.5, 'magic', () => {
+        this._castRing(target.view.x, target.view.y + (target._hpY || -40) * 0.5, 0xff7a3a)
+        for (const e of this.enemies) {
+          if (e.dead) continue
+          if (Math.abs(e.tx - target.tx) + Math.abs(e.ty - target.ty) > ab.radius) continue
+          const dd = Math.max(1, Math.round(dmg * (0.85 + Math.random() * 0.3)))
+          this._floatText(e.view.x, e.view.y + e._hpY, `${dd}`, '#ff9a3a')
+          if (e.takeDamage(dd)) this._enemyKilled(e)
+        }
+      })
+      playSfx('swing.ogg', 0.5)
+    }
+  }
+
+  // Anillo expansivo (efecto de golpe en área / estallido). Se desvanece solo.
+  _castRing(x, y, color) {
+    const g = new Graphics()
+    g.circle(0, 0, 12).stroke({ color, width: 3, alpha: 0.9 })
+    g.x = x; g.y = y; g.zIndex = 1.9e6
+    this.renderer.objectLayer.addChild(g)
+    ;(this._effects ||= []).push({ g, life: 0.45, max: 0.45 })
+  }
+
   _enemyKilled(e) {
     this.store.addSkillXp('combate', e.def.xp)
     this.store.addXp(e.def.xp)
@@ -913,6 +987,11 @@ export class Game {
     if (this._playerAtkCd > 0) this._playerAtkCd -= dt
     if (this._hurtCd > 0) this._hurtCd -= dt
     if (this._retargetT > 0) this._retargetT -= dt
+    // Recarga de habilidades activas.
+    for (const id in this._abilityCd) { if ((this._abilityCd[id] -= dt) <= 0) delete this._abilityCd[id] }
+    // Habilidad pedida desde la barra de acción.
+    const cseq = this.store.getCastSeq()
+    if (cseq !== this._lastCastSeq) { this._lastCastSeq = cseq; this._castAbility(this.store.getCastAbility()) }
 
     // Enemigos: IA + daño al jugador (la defensa del equipo reduce cada golpe).
     const defense = (this.store.getStats()?.defense) || 0
@@ -996,6 +1075,20 @@ export class Game {
       }
       this._floaters = this._floaters.filter((f) => {
         if (f.life <= 0) { f.t.destroy(); return false }
+        return true
+      })
+    }
+
+    // Efectos de habilidad (anillos que se expanden y desvanecen).
+    if (this._effects && this._effects.length) {
+      for (const fx of this._effects) {
+        fx.life -= dt
+        const k = 1 - fx.life / fx.max
+        fx.g.scale.set(1 + k * 4)
+        fx.g.alpha = Math.max(0, fx.life / fx.max)
+      }
+      this._effects = this._effects.filter((fx) => {
+        if (fx.life <= 0) { fx.g.destroy(); return false }
         return true
       })
     }
@@ -1223,6 +1316,17 @@ export class Game {
       if (this._healAccum >= 0.5 && hpMax) {   // ~vida completa en ~10s
         this.store.heal(Math.max(1, Math.round(hpMax * 0.05)))
         this._healAccum = 0
+      }
+    }
+
+    // Regeneración de maná: pasiva en todos lados (recuperás para lanzar habilidades). El
+    // ritmo sube con mp_regen (equipo + nodo Meditación del árbol).
+    if (!this._dead) {
+      this._manaAccum = (this._manaAccum || 0) + dt
+      if (this._manaAccum >= 0.5) {
+        const rate = 2 + (this.store.getStats()?.mpRegen || 0)  // por segundo
+        this.store.restoreMana(Math.max(1, Math.round(rate * this._manaAccum)))
+        this._manaAccum = 0
       }
     }
 

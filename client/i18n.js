@@ -228,6 +228,17 @@ const DICT = {
   noded_m_medit: { es: '+1 regen. de maná por rango.', en: '+1 mana regen per rank.' },
   node_m_sage: { es: 'Sabiduría', en: 'Sage' },
   noded_m_sage: { es: '+4% XP y +8 maná por rango.', en: '+4% XP and +8 mana per rank.' },
+  // habilidades activas (barra de acción)
+  ability_locked: { es: 'Todavía no desbloqueaste esa habilidad', en: "You haven't unlocked that ability" },
+  ability_no_target: { es: 'Necesitás un objetivo', en: 'You need a target' },
+  ability_no_mana: { es: 'No te alcanza el maná', en: 'Not enough mana' },
+  ability_locked_req: { es: 'Se desbloquea con {attr} {n}', en: 'Unlocks at {attr} {n}' },
+  ab_embate: { es: 'Embate', en: 'Cleave' },
+  abd_embate: { es: 'Molinete que golpea a todos los enemigos cercanos.', en: 'A spinning blow that hits every nearby enemy.' },
+  ab_saeta: { es: 'Saeta certera', en: 'Keen Shot' },
+  abd_saeta: { es: 'Disparo crítico garantizado a tu objetivo.', en: 'A guaranteed critical shot at your target.' },
+  ab_fuego: { es: 'Bola de fuego', en: 'Fireball' },
+  abd_fuego: { es: 'Proyectil que estalla en fuego alrededor del objetivo.', en: 'A bolt that bursts into fire around the target.' },
 }
 
 // Nombre de raza según idioma (los datos traen name + name_en).
