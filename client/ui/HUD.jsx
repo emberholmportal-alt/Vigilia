@@ -2,7 +2,7 @@
 // real de Flare al centro (cinturón + botones de menú) y la barra de XP abajo. Los stats
 // arriba a la izquierda (tocables abren el panel de personaje). Sin stamina ni chat.
 import { useEffect } from 'react'
-import { useGameStore } from '../store.js'
+import { useGameStore, beltCapacityOf } from '../store.js'
 import { playerProgress } from '../data/progression.js'
 import Globe from './Globe.jsx'
 import ActionBar, { MenuRow, DesktopBar } from './ActionBar.jsx'
@@ -35,6 +35,8 @@ export default function HUD() {
   const requestPortal = useGameStore((s) => s.requestPortal)
   const togglePanel = useGameStore((s) => s.togglePanel)
   const useBelt = useGameStore((s) => s.useBelt)
+  const equippedBelt = useGameStore((s) => s.equippedBelt)
+  const beltCap = beltCapacityOf(equippedBelt)
 
   const s = stats || { level: 1, str: 0, dex: 0, int: 0, vit: 0, hp: 0, hpMax: 1, mp: 0, mpMax: 1 }
   const prog = playerProgress(xp || 0)
@@ -79,8 +81,8 @@ export default function HUD() {
         <MenuRow onPanel={togglePanel} />
         <div className="globe-row">
           <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
-          <ActionBar belt={belt} gold={gold} onUseBelt={useBelt} />
-          <DesktopBar belt={belt} onPanel={togglePanel} onUseBelt={useBelt} />
+          <ActionBar belt={belt} gold={gold} onUseBelt={useBelt} beltCap={beltCap} />
+          <DesktopBar belt={belt} onPanel={togglePanel} onUseBelt={useBelt} beltCap={beltCap} />
           <Globe type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} />
         </div>
 

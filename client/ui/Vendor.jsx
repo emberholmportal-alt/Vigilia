@@ -73,10 +73,11 @@ export default function Vendor() {
         {list.map((it, i) => {
           const col = i % GRID.cols, row = (i / GRID.cols) | 0
           const x = GRID.x + col * SLOT, y = GRID.y + row * SLOT
+          const soldOut = tab === 'buy' && it && (it.stock | 0) <= 0
           return (
-            <button key={i} className={'inv-cell' + (sel === i ? ' on' : '')} style={slotStyle(x, y)}
-                    onClick={() => it && setSel(i)}>
-              {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
+            <button key={i} className={'inv-cell' + (sel === i ? ' on' : '') + (soldOut ? ' locked' : '')}
+                    style={slotStyle(x, y)} onClick={() => it && setSel(i)}>
+              {it && <ItemIcon icon={it.icon} size={34} count={tab === 'buy' ? it.stock : it.count} />}
             </button>
           )
         })}
@@ -104,7 +105,8 @@ function Tooltip({ item, mode, gold, pos, onAction }) {
   else { style.left = (cx * 100) + '%'; style.transform = 'translateX(-50%)' }
   const price = item.price || 0
   const gain = sellValue(item)
-  const canBuy = mode === 'buy' ? gold >= price : true
+  const soldOut = mode === 'buy' && (item.stock | 0) <= 0
+  const canBuy = mode === 'buy' ? (gold >= price && !soldOut) : true
   const stats = Object.entries(item.stats || {})
   return (
     <div className="inv-tooltip" style={style} onClick={(e) => e.stopPropagation()}>
@@ -114,9 +116,10 @@ function Tooltip({ item, mode, gold, pos, onAction }) {
       {stats.map(([k, v]) => (
         <div className="tt-stat" key={k}><span>{statLabel(k)}</span><span>{v}</span></div>
       ))}
+      {mode === 'buy' && <div className="tt-sub">{soldOut ? 'Agotado hoy' : `En stock: ${item.stock}`}</div>}
       <div className="tt-price">{mode === 'buy' ? `${price} oro` : `+${gain} oro`}</div>
       <button className="tt-do" onClick={onAction} disabled={!canBuy}>
-        {mode === 'buy' ? (canBuy ? 'Comprar' : 'Sin oro') : 'Vender'}
+        {mode === 'buy' ? (soldOut ? 'Agotado' : canBuy ? 'Comprar' : 'Sin oro') : 'Vender'}
       </button>
     </div>
   )

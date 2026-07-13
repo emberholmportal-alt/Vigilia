@@ -297,6 +297,7 @@ export class Game {
     const nv = this.iso.toWorld(npc.tx, npc.ty)
     npc.dir = screenVecToDir(pv.x - nv.x, pv.y - nv.y)
     if (npc.def.shop) this.store.openShop(npc.def.name)
+    else if (npc.def.smith) this.store.openSmith(npc.def.name)
     else this.store.openDialogue({ name: npc.def.name, portrait: npc.def.portrait, lines: npc.lines })
   }
 
@@ -623,6 +624,7 @@ export class Game {
     if (dmgToPlayer > 0) {
       const hp = this.store.takeDamage(dmgToPlayer)
       this._floatText(p.view.x, p.view.y - 70, `-${dmgToPlayer}`, '#ff6a5a')
+      this.store.degradeGear('armor', 1)   // recibir golpes gasta la armadura
       if (this._hurtCd <= 0) { p.hurt(); this._hurtCd = 0.5 }
       if (hp <= 0) { this._playerDeath(); return }
     }
@@ -657,6 +659,7 @@ export class Game {
           const d = Math.abs(target.tx - p.tx) + Math.abs(target.ty - p.ty)
           if (d <= 2) {
             this._floatText(target.view.x, target.view.y + target._hpY, crit ? `¡${dmg}!` : `${dmg}`, crit ? '#ff9a3a' : '#ffe08a')
+            if (Math.random() < 0.34) this.store.degradeGear('weapon', 1) // atacar gasta el arma
             if (target.takeDamage(dmg)) this._enemyKilled(target)
           }
         }

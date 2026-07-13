@@ -62,12 +62,16 @@ export function startingCharacter(raceId) {
     if (it && !usedIds.has(it.id)) { inventory.push(it); usedIds.add(it.id) }
   }
 
-  // Cinturón: 4 consumibles reales (pociones de vida/maná si las hay).
+  // Cinturón inicial: 2 slots (sin cinturón equipado). Una poción de vida y una de maná;
+  // se compran cinturones más grandes al mercader para tener más espacio.
   const potions = itemsBySlot('potion')
   const health = potions.find((p) => /health|vida/i.test(p.name_en + p.name))
   const mana = potions.find((p) => /mana|maná/i.test(p.name_en + p.name))
-  const belt = [health || potions[0] || null, health || potions[0] || null,
-                mana || potions[1] || null, mana || potions[1] || null]
+  const belt = [
+    health ? { ...health, count: 3 } : null,
+    mana ? { ...mana, count: 3 } : null,
+    null, null,
+  ]
 
   return { race, gold: 250, equipment, inventory, belt }
 }

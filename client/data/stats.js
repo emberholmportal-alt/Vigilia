@@ -14,6 +14,9 @@ const RACE_RULES = {
   orco: { str: 4, dmgMul: 1.25, mpMul: 0.85 },
 }
 
+// Un ítem roto (durabilidad 0) no da stats hasta que lo reparen.
+const broken = (it) => it && it.dur != null && it.dur <= 0
+
 // Suma los bonus de todos los ítems equipados.
 export function equipBonus(equipment) {
   const b = { hp: 0, mp: 0, absorb: 0, hpRegen: 0, mpRegen: 0, crit: 0, accuracy: 0, avoidance: 0, xpGain: 0, itemFind: 0, fireResist: 0, iceResist: 0 }
@@ -21,7 +24,7 @@ export function equipBonus(equipment) {
   for (const slot of Object.keys(equipment)) {
     const it = equipment[slot]
     const s = it && it.stats
-    if (!s) continue
+    if (!s || broken(it)) continue
     b.hp += s.hp || 0
     b.mp += s.mp || 0
     // absorb: la mayoría trae sólo absorb_max; si hay min y max usamos el promedio.
@@ -41,9 +44,10 @@ export function equipBonus(equipment) {
   return b
 }
 
-// Daño cuerpo a cuerpo del arma equipada (min/max), o puños si no hay arma.
+// Daño cuerpo a cuerpo del arma equipada (min/max), o puños si no hay arma o está rota.
 export function weaponDamage(equipment) {
-  const w = equipment && equipment.main && equipment.main.stats
+  const main = equipment && equipment.main
+  const w = main && !broken(main) && main.stats
   return { min: (w && w.dmg_melee_min) || 2, max: (w && w.dmg_melee_max) || 5 }
 }
 

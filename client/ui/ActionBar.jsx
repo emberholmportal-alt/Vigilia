@@ -6,17 +6,22 @@ import ItemIcon from './ItemIcon.jsx'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 
-export default function ActionBar({ belt, gold, onUseBelt }) {
+export default function ActionBar({ belt, gold, onUseBelt, beltCap = 4 }) {
   return (
     <div className="actionbar">
       <div className="ab-belt">
-        {belt.map((it, i) => (
-          <div key={i} className={'ab-cell' + (it ? ' usable' : '')}
-               style={{ backgroundImage: `url(${UI}slot_empty.png)` }}
-               onClick={it ? () => onUseBelt?.(i) : undefined}>
-            {it && <ItemIcon icon={it.icon} fill count={it.count} />}
-          </div>
-        ))}
+        {belt.map((it, i) => {
+          const locked = i >= beltCap
+          return (
+            <div key={i} className={'ab-cell' + (it && !locked ? ' usable' : '') + (locked ? ' locked' : '')}
+                 style={{ backgroundImage: `url(${UI}slot_empty.png)` }}
+                 title={locked ? 'Comprá un cinturón más grande' : undefined}
+                 onClick={it && !locked ? () => onUseBelt?.(i) : undefined}>
+              {it && !locked && <ItemIcon icon={it.icon} fill count={it.count} />}
+              {locked && <span className="ab-lock">🔒</span>}
+            </div>
+          )
+        })}
       </div>
       <div className="ab-gold" title="Oro">
         <span className="ab-coin" />
@@ -63,16 +68,22 @@ const MENU_CX = [
   { cx: 1184, panel: 'settings', title: 'Ajustes' },
 ]
 
-export function DesktopBar({ belt, onPanel, onUseBelt }) {
+export function DesktopBar({ belt, onPanel, onUseBelt, beltCap = 4 }) {
   return (
     <div className="desktop-bar" style={{ backgroundImage: `url(${UI}actionbar_trim.png)` }}>
       {HOT_CX.map((cx, i) => {
         const it = belt[i]
+        // sólo los primeros `beltCap` slots del hotbar son del cinturón; el resto quedan
+        // como slots vacíos de la barra (futuros poderes), no bloqueados con candado.
+        const isBelt = i < 4
+        const locked = isBelt && i >= beltCap
         return (
-          <div key={'h' + i} className={'db-slot' + (it ? ' usable' : '')}
+          <div key={'h' + i} className={'db-slot' + (it && !locked ? ' usable' : '') + (locked ? ' locked' : '')}
                style={{ left: pc(cx), backgroundImage: `url(${UI}slot_empty.png)` }}
-               onClick={it ? () => onUseBelt?.(i) : undefined}>
-            {it && <ItemIcon icon={it.icon} fill count={it.count} />}
+               title={locked ? 'Comprá un cinturón más grande' : undefined}
+               onClick={it && !locked ? () => onUseBelt?.(i) : undefined}>
+            {it && !locked && <ItemIcon icon={it.icon} fill count={it.count} />}
+            {locked && <span className="ab-lock">🔒</span>}
           </div>
         )
       })}

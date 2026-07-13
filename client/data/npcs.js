@@ -161,6 +161,10 @@ const TRISTON = [
   { sprite: 'guild_man', name: 'Halvard', portrait: 'male01.png', x: 56, y: 58, dir: 5,
     lines: ['Los gremios reclutan de nuevo.',
             'Quinientos de oro y una sigla de tres letras.'] },
+  // Herrero: repara el equipo por oro (zona de la fragua/yunque).
+  { sprite: 'peasant_man2', name: 'Herrero Dorn', portrait: 'male16.png', x: 63, y: 54, dir: 3, smith: true,
+    lines: ['El acero se cansa como los hombres.',
+            'Tráemelo antes de que se quiebre del todo.'] },
 ]
 
 export const NPCS_BY_MAP = {

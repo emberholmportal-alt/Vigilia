@@ -7,12 +7,21 @@ import { itemById } from './items.js'
 
 const KEY = 'vigilia:save:v1'
 
-const packItem = (it) => (it ? { id: it.id, count: it.count || 1 } : null)
+const packItem = (it) => {
+  if (!it) return null
+  const rec = { id: it.id }
+  if (it.count && it.count > 1) rec.count = it.count
+  if (it.dur != null) rec.dur = it.dur   // durabilidad del equipo
+  return rec
+}
 function unpackItem(rec) {
   if (!rec) return null
   const base = itemById(rec.id)
   if (!base) return null
-  return rec.count > 1 ? { ...base, count: rec.count } : { ...base }
+  const it = { ...base }
+  if (rec.count > 1) it.count = rec.count
+  if (rec.dur != null) it.dur = rec.dur
+  return it
 }
 
 export function hasSave() {
@@ -33,6 +42,7 @@ export function loadGame() {
       inventory: (s.inventory || []).map(unpackItem),
       equipment: Object.fromEntries(Object.entries(s.equipment || {}).map(([k, v]) => [k, unpackItem(v)])),
       belt: (s.belt || []).map(unpackItem),
+      equippedBelt: unpackItem(s.equippedBelt),
     }
   } catch { return null }
 }
@@ -48,6 +58,7 @@ export function saveGame(state) {
       inventory: (state.inventory || []).map(packItem),
       equipment: Object.fromEntries(Object.entries(state.equipment || {}).map(([k, v]) => [k, packItem(v)])),
       belt: (state.belt || []).map(packItem),
+      equippedBelt: packItem(state.equippedBelt),
     }
     localStorage.setItem(KEY, JSON.stringify(snap))
   } catch { /* almacenamiento lleno / bloqueado: ignorar */ }

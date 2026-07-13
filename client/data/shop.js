@@ -1,9 +1,9 @@
 // Stock del Mercader. Ítems REALES de Flare, con una rotación diaria determinística
 // (mismo día -> mismo stock, como el mercader de Kintara). Nada inventado.
-import { ITEMS } from './items.js'
+import { ITEMS, BELTS } from './items.js'
 
-// Slots que el mercader ofrece/compra (equipo + consumibles).
-const SELLABLE = new Set(['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact', 'potion', 'scroll'])
+// Slots que el mercader ofrece/compra (equipo + consumibles + cinturones).
+const SELLABLE = new Set(['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact', 'potion', 'scroll', 'belt'])
 
 function mulberry32(a) {
   return function () {
@@ -38,5 +38,12 @@ export function dailyStock(dateStr = todayStr()) {
   }
 
   const seen = new Set()
-  return [...potions, ...gear.slice(0, 21)].filter((it) => !seen.has(it.id) && seen.add(it.id)).slice(0, 24)
+  // Los cinturones siempre están disponibles (progresión de capacidad del cinturón).
+  const list = [...potions, ...BELTS, ...gear.slice(0, 21)].filter((it) => !seen.has(it.id) && seen.add(it.id)).slice(0, 26)
+  // Stock limitado por día (determinístico por fecha+ítem). Las pociones traen más.
+  return list.map((it) => {
+    const base = it.slot === 'potion' ? 5 : 1
+    const extra = hashStr(dateStr + ':' + it.id) % 4 // 0..3
+    return { ...it, stock: base + extra }
+  })
 }

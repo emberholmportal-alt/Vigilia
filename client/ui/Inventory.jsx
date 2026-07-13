@@ -3,7 +3,7 @@
 // tooltip al tocar (nombre/nivel/slot/stats/precio) y oro. Look idéntico a Flare.
 import { useState } from 'react'
 import { useGameStore, equipSlotFor, beltEligible } from '../store.js'
-import { RARITY_COLOR, RARITY_LABEL } from '../data/items.js'
+import { RARITY_COLOR, RARITY_LABEL, isDurable, durabilityMax } from '../data/items.js'
 import { inventoryCapacity } from '../data/progression.js'
 import ItemIcon from './ItemIcon.jsx'
 
@@ -49,6 +49,7 @@ export default function Inventory() {
   const equipFromInventory = useGameStore((s) => s.equipFromInventory)
   const unequip = useGameStore((s) => s.unequip)
   const assignBelt = useGameStore((s) => s.assignBelt)
+  const equipBelt = useGameStore((s) => s.equipBelt)
   const setPanel = useGameStore((s) => s.setPanel)
 
   const level = useGameStore((s) => s.stats?.level || 1)
@@ -66,6 +67,10 @@ export default function Inventory() {
 
   function toBelt() {
     if (sel?.src === 'inv') { assignBelt(sel.i); setSel(null) }
+  }
+
+  function doEquipBelt() {
+    if (sel?.src === 'inv') { equipBelt(sel.i); setSel(null) }
   }
 
   return (
@@ -113,14 +118,15 @@ export default function Inventory() {
           <Tooltip item={selItem} pos={sel.pos}
                    compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selItem)] : null}
                    actionLabel={sel.src === 'inv' ? 'Equipar' : 'Sacar'} onAction={act}
-                   onBelt={sel.src === 'inv' && beltEligible(selItem) ? toBelt : null} />
+                   onBelt={sel.src === 'inv' && beltEligible(selItem) ? toBelt : null}
+                   onEquipBelt={sel.src === 'inv' && selItem.slot === 'belt' ? doEquipBelt : null} />
         )}
       </div>
     </div>
   )
 }
 
-function Tooltip({ item, pos, compareTo, actionLabel, onAction, onBelt }) {
+function Tooltip({ item, pos, compareTo, actionLabel, onAction, onBelt, onEquipBelt }) {
   const keys = [...new Set([...Object.keys(item.stats || {}), ...Object.keys(compareTo?.stats || {})])]
   // ancla arriba o abajo del ítem según dónde esté en el panel
   const [x, y] = pos
@@ -148,10 +154,20 @@ function Tooltip({ item, pos, compareTo, actionLabel, onAction, onBelt }) {
           </div>
         )
       })}
+      {item.slot === 'belt' && item.beltSlots != null && (
+        <div className="tt-stat"><span>Espacios</span><span>{item.beltSlots}</span></div>
+      )}
+      {isDurable(item) && item.dur != null && (
+        <div className={'tt-stat' + (item.dur <= 0 ? ' broken' : '')}>
+          <span>Durabilidad</span><span>{item.dur <= 0 ? 'ROTO' : `${item.dur}/${durabilityMax(item)}`}</span>
+        </div>
+      )}
       {item.price ? <div className="tt-price">{item.price} oro</div> : null}
-      {onBelt
-        ? <button className="tt-do" onClick={onBelt}>Al cinturón</button>
-        : <button className="tt-do" onClick={onAction} disabled={!equipSlotFor(item)}>{actionLabel}</button>}
+      {onEquipBelt
+        ? <button className="tt-do" onClick={onEquipBelt}>Equipar cinturón</button>
+        : onBelt
+          ? <button className="tt-do" onClick={onBelt}>Al cinturón</button>
+          : <button className="tt-do" onClick={onAction} disabled={!equipSlotFor(item)}>{actionLabel}</button>}
     </div>
   )
 }

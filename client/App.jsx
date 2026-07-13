@@ -12,6 +12,7 @@ import Character from './ui/Character.jsx'
 import Powers from './ui/Powers.jsx'
 import Settings from './ui/Settings.jsx'
 import Vendor from './ui/Vendor.jsx'
+import Blacksmith from './ui/Blacksmith.jsx'
 import Minimap from './ui/Minimap.jsx'
 import DialogueBox from './ui/DialogueBox.jsx'
 
@@ -46,7 +47,7 @@ export default function App() {
     useGameStore.getState().setPlayerName(s.playerName)
     const race = raceById(s.raceId) || RACES[0]
     initCharacter({ race, gold: s.gold, inventory: s.inventory, equipment: s.equipment,
-                    belt: s.belt, xp: s.xp, skills: s.skills })
+                    belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
@@ -82,6 +83,7 @@ export default function App() {
       {phase === 'game' && panel === 'powers' && <Powers />}
       {phase === 'game' && panel === 'settings' && <Settings />}
       {phase === 'game' && panel === 'shop' && <Vendor />}
+      {phase === 'game' && panel === 'smith' && <Blacksmith />}
       {phase === 'game' && !loading && !error && <DialogueBox />}
       {error && <div className="error">Error: {error}</div>}
 

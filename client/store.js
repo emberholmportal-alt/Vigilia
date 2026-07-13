@@ -6,8 +6,9 @@
 // pasará a pedirle al server y aplicar su respuesta.
 import { create } from 'zustand'
 import { computeStats } from './data/stats.js'
+import { isDurable, durabilityMax } from './data/items.js'
 import { setMuted } from './engine/audio.js'
-import { dailyStock } from './data/shop.js'
+import { dailyStock, todayStr } from './data/shop.js'
 import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryCapacity } from './data/progression.js'
 import { saveGame } from './data/save.js'
 
@@ -41,6 +42,9 @@ const STACK_SLOTS = new Set(['potion', 'consumable', 'crafting', 'crafting_tool'
 // Ítems que pueden ir al cinturón (consumibles usables en combate).
 const BELT_SLOTS = new Set(['potion', 'consumable', 'scroll'])
 export const beltEligible = (item) => !!item && BELT_SLOTS.has(item.slot)
+
+// Capacidad del cinturón según el ítem de cinturón equipado (sin cinturón = 2 slots).
+export const beltCapacityOf = (belt) => (belt && belt.beltSlots) || 2
 
 function emptyEquipment() {
   const e = {}
@@ -89,7 +93,8 @@ export const useGameStore = create((set, get) => ({
   skills: emptySkills(),    // las 6 acciones: { skill: {xp, level} }
   inventory: [],            // array de ítems (huecos = null), largo INVENTORY_SIZE
   equipment: emptyEquipment(),
-  belt: [null, null, null, null], // cinturón de 4 (consumibles)
+  belt: [null, null, null, null], // cinturón (slots usables = capacidad del cinturón equipado)
+  equippedBelt: null,             // ítem de cinturón equipado (define cuántos slots hay)
   panel: null,              // 'inventory' | 'character' | 'shop' | null
   shopStock: [],            // stock del mercader (rota por día)
   shopVendor: '',           // nombre del mercader abierto
@@ -159,10 +164,11 @@ export const useGameStore = create((set, get) => ({
     const s = get()
     const it = s.inventory[invIndex]
     if (!beltEligible(it)) { get().showToast('Sólo consumibles van al cinturón'); return }
+    const cap = beltCapacityOf(s.equippedBelt)
     const qty = it.count || 1
     const belt = s.belt.slice()
-    let bi = belt.findIndex((b) => b && b.id === it.id)
-    if (bi < 0) bi = belt.findIndex((b) => b == null)
+    let bi = belt.findIndex((b, i) => i < cap && b && b.id === it.id)
+    if (bi < 0) { for (let i = 0; i < cap; i++) { if (belt[i] == null) { bi = i; break } } }
     if (bi < 0) { get().showToast('El cinturón está lleno'); return }
     belt[bi] = belt[bi] ? { ...belt[bi], count: (belt[bi].count || 1) + qty } : { ...it, count: qty }
     const inv = s.inventory.slice()
@@ -170,6 +176,78 @@ export const useGameStore = create((set, get) => ({
     set({ belt, inventory: inv })
     get().showToast('Al cinturón')
     saveGame(get())
+  },
+
+  // Equipa un cinturón (ítem slot 'belt') del inventario: define cuántos slots tiene el
+  // cinturón. El anterior vuelve al inventario; si achica la capacidad, los consumibles
+  // que sobran vuelven al inventario.
+  equipBelt: (invIndex) => {
+    const s = get()
+    const it = s.inventory[invIndex]
+    if (!it || it.slot !== 'belt') return
+    const inv = s.inventory.slice()
+    const prev = s.equippedBelt
+    inv[invIndex] = prev || null
+    const cap = beltCapacityOf(it)
+    const belt = s.belt.slice()
+    for (let i = cap; i < belt.length; i++) {   // consumibles que ya no entran -> inventario
+      if (belt[i]) { const f = inv.findIndex((x) => x == null); if (f >= 0) inv[f] = belt[i]; belt[i] = null }
+    }
+    set({ equippedBelt: { ...it }, inventory: inv, belt })
+    get().showToast('Cinturón equipado: ' + it.beltSlots + ' espacios')
+    saveGame(get())
+  },
+
+  // --- durabilidad / reparación ---
+  // Gasta durabilidad del equipo. kind 'armor' -> una pieza al azar; 'weapon' -> el arma.
+  degradeGear: (kind, amount = 1) => {
+    const s = get()
+    const eq = { ...s.equipment }
+    let target = null
+    if (kind === 'weapon') { if (isDurable(eq.main)) target = 'main' }
+    else {
+      const armor = ['head', 'chest', 'legs', 'hands', 'feet', 'off'].filter((sl) => isDurable(eq[sl]))
+      if (armor.length) target = armor[(Math.random() * armor.length) | 0]
+    }
+    if (!target) return
+    const it = eq[target]
+    const dur = Math.max(0, (it.dur != null ? it.dur : durabilityMax(it)) - amount)
+    const wasBroken = it.dur != null && it.dur <= 0
+    eq[target] = { ...it, dur }
+    set({ equipment: eq })
+    if (dur <= 0 && !wasBroken) { get().recomputeStats(); get().showToast('¡Se rompió tu ' + (it.name || 'equipo') + '!') }
+    // sólo guardamos de a ratos (el combate llama seguido); guardamos al romperse.
+    if (dur <= 0) saveGame(get())
+  },
+
+  // Costo de reparar todo el equipo (oro por punto de durabilidad faltante).
+  repairCost: () => {
+    const s = get()
+    let missing = 0
+    for (const sl of Object.keys(s.equipment)) {
+      const it = s.equipment[sl]
+      if (!isDurable(it)) continue
+      const max = durabilityMax(it)
+      missing += max - (it.dur != null ? it.dur : max)
+    }
+    return Math.ceil(missing * 1.5)
+  },
+
+  // Repara todo el equipo (el herrero cobra oro).
+  repairAll: () => {
+    const s = get()
+    const cost = get().repairCost()
+    if (cost <= 0) { get().showToast('Tu equipo está impecable'); return { ok: false } }
+    if (s.gold < cost) { get().showToast('No te alcanza el oro para reparar'); return { ok: false } }
+    const eq = { ...s.equipment }
+    for (const sl of Object.keys(eq)) {
+      if (isDurable(eq[sl])) eq[sl] = { ...eq[sl], dur: durabilityMax(eq[sl]) }
+    }
+    set({ equipment: eq, gold: s.gold - cost })
+    get().recomputeStats()
+    get().showToast('Equipo reparado (-' + cost + ' oro)')
+    saveGame(get())
+    return { ok: true }
   },
 
   // --- audio ---
@@ -190,17 +268,22 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, xp = 0, skills = null }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
     const equip = { ...emptyEquipment(), ...equipment }
+    // Inicializa durabilidad de las piezas durables que no la traigan (kit inicial).
+    for (const sl of Object.keys(equip)) {
+      const it = equip[sl]
+      if (isDurable(it) && it.dur == null) equip[sl] = { ...it, dur: durabilityMax(it) }
+    }
     const st = computeStats(race.id, level, equip)   // stats incluyen el equipo
     const b = (belt || []).slice(0, 4)
     while (b.length < 4) b.push(null)
     set({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
-      inventory: inv, equipment: equip, belt: b,
+      inventory: inv, equipment: equip, belt: b, equippedBelt,
       staminaMax: st.staminaMax, stamina: st.staminaMax,
     })
     saveGame(get())
@@ -252,7 +335,8 @@ export const useGameStore = create((set, get) => ({
     const inv = s.inventory.slice()
     const equipment = { ...s.equipment }
     const prev = equipment[slot]
-    equipment[slot] = item
+    // Inicializa durabilidad al equipar (si es gear durable y no la trae).
+    equipment[slot] = isDurable(item) && item.dur == null ? { ...item, dur: durabilityMax(item) } : item
     inv[invIndex] = prev || null
     set({ inventory: inv, equipment })
     get().recomputeStats()   // el equipo cambia -> recalcular defensa/HP/daño
@@ -289,17 +373,37 @@ export const useGameStore = create((set, get) => ({
   },
 
   // --- mercader ---
-  openShop: (vendor) => set({ shopStock: dailyStock(), shopVendor: vendor || 'Mercader', panel: 'shop' }),
+  shopStockDate: '',
+  // Stock del día: se genera una vez por día y se conserva (con lo ya comprado) hasta el
+  // día siguiente, que repone. Todos los jugadores ven el mismo stock (mercado compartido).
+  openShop: (vendor) => {
+    const s = get()
+    const today = todayStr()
+    let shopStock = s.shopStock, shopStockDate = s.shopStockDate
+    if (shopStockDate !== today || !shopStock || !shopStock.length) {
+      shopStock = dailyStock(today); shopStockDate = today
+    }
+    set({ shopStock, shopStockDate, shopVendor: vendor || 'Mercader', panel: 'shop' })
+    saveGame(get())
+  },
 
-  // Compra un ítem del stock (precio completo). El stock no se agota (el mercader repone).
+  // Abre al herrero (panel de reparación).
+  smithName: '',
+  openSmith: (name) => set({ smithName: name || 'Herrero', panel: 'smith' }),
+
+  // Compra un ítem del stock (precio completo). El stock del día se agota al comprar.
   buyItem: (stockIndex) => {
     const s = get()
     const item = s.shopStock[stockIndex]
     if (!item) return { ok: false, reason: 'no-item' }
+    if ((item.stock | 0) <= 0) return { ok: false, reason: 'sold-out' }
     const price = item.price || 0
     if (s.gold < price) return { ok: false, reason: 'no-gold' }
-    if (!get().addItem(item, 1)) return { ok: false, reason: 'full' }
-    set({ gold: get().gold - price })
+    const clean = { ...item }; delete clean.stock
+    if (!get().addItem(clean, 1)) return { ok: false, reason: 'full' }
+    const shopStock = s.shopStock.slice()
+    shopStock[stockIndex] = { ...item, stock: item.stock - 1 }
+    set({ gold: get().gold - price, shopStock })
     saveGame(get())
     return { ok: true }
   },
@@ -369,6 +473,7 @@ export const storeApi = {
   getSpeech: () => useGameStore.getState().speech,
   openDialogue: (d) => useGameStore.getState().openDialogue(d),
   openShop: (vendor) => useGameStore.getState().openShop(vendor),
+  openSmith: (name) => useGameStore.getState().openSmith(name),
   getRunState: () => {
     const s = useGameStore.getState()
     return { running: s.running, stamina: s.stamina, staminaMax: s.staminaMax }
@@ -387,6 +492,7 @@ export const storeApi = {
   setPortals: (v) => useGameStore.getState().setPortals(v),
   takeDamage: (n) => useGameStore.getState().takeDamage(n),
   reviveFull: () => useGameStore.getState().reviveFull(),
+  degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
   showToast: (t) => useGameStore.getState().showToast(t),
 }
