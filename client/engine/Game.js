@@ -208,9 +208,10 @@ export class Game {
     camera.follow(spawn.x, spawn.y)
     camera.snap()
 
-    this.store.setMapTitle(world.map.title || mapName)
+    const title = zoneTitle(mapName, world.map.title)
+    this.store.setMapTitle(title)
     this.store.setMinimap(this._buildMinimap(world.map))
-    this.store.logMessage({ channel: 'mundo', text: 'Llegaste a ' + (world.map.title || mapName) })
+    this.store.logMessage({ channel: 'mundo', text: 'Llegaste a ' + title })
     this._loading = false
   }
 
@@ -255,8 +256,11 @@ export class Game {
   // Arma los marcadores de portal + guarda sus zonas para detectar la entrada.
   _buildPortals(renderer, iso, map, mapName) {
     this.portals = []
-    const list = PORTAL_OVERRIDE[mapName] || map.portals || []
+    // Triston usa lista curada; el resto usa sus portales nativos (filtrados) + los extra.
+    const list = PORTAL_REPLACE[mapName]
+      || (map.portals || []).filter((p) => portalAllowed(p.to)).concat(PORTAL_EXTRA[mapName] || [])
     for (const p of list) {
+      const plabel = zoneTitle(p.to, p.label)
       const w = p.w || 1, h = p.h || 1
       const cx = p.x + w / 2 - 0.5, cy = p.y + h / 2 - 0.5
       const wx = iso.toWorldX(cx, cy), wy = iso.toWorldY(cx, cy)
@@ -277,13 +281,13 @@ export class Game {
       g.ellipse(0, 0, iso.wHalf * 0.6, iso.hHalf * 0.6).fill({ color: 0x8a5bff, alpha: 0.16 })
       g.x = wx; g.y = wy; g.zIndex = 5e5 + 1
       renderer.groundLayer.addChild(g)
-      const label = new Text({ text: p.label || p.to, style: {
+      const label = new Text({ text: plabel, style: {
         fontFamily: 'Georgia, serif', fontSize: 12, fill: '#d9b3ff',
         stroke: { color: '#0a090c', width: 3 }, align: 'center',
       } })
       label.anchor.set(0.5, 1); label.x = wx; label.y = wy - 30; label.zIndex = 2e6
       renderer.objectLayer.addChild(label)
-      this.portals.push({ x: p.x, y: p.y, w, h, to: p.to, tx: p.tx, ty: p.ty, label: p.label, gfx: g, pad, _padFrame: 0, _padT: 0, _padDir: 1 })
+      this.portals.push({ x: p.x, y: p.y, w, h, to: p.to, tx: p.tx, ty: p.ty, label: plabel, gfx: g, pad, _padFrame: 0, _padT: 0, _padDir: 1 })
     }
     // Al HUD: tiles de portal para marcarlos en el minimapa.
     this.store.setPortals(this.portals.map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label })))
@@ -1070,15 +1074,54 @@ const PLAYER_SCALE = { triston: 0.9 }
 // pueblo no se vea diminuto en pantallas grandes (todo más grande, sin deformar escala).
 const MAP_ZOOM = { triston: 1.3 }
 
-// Portales curados por mapa (reemplazan los del mapa cuando existen). Los portales que
-// trae Triston de HERESY apuntan a mapas que no convertimos; acá conectamos el pueblo con
-// una zona de combate real y de vuelta, formando un loop jugable. El tile de llegada
-// coincide con el portal de vuelta (el "arm" evita que se dispare al aparecer).
-const PORTAL_OVERRIDE = {
+// --- Red de zonas ---------------------------------------------------------------
+// Los mapas de Flare ya traen su propia grilla de portales (la campaña Empyrean está
+// conectada de fábrica). La usamos tal cual para que el mundo sea explorable de verdad,
+// y sólo curamos los bordes: Triston (arte HERESY) apunta a mapas que no convertimos, así
+// que lo REEMPLAZAMOS; y agregamos algunos portales EXTRA para cerrar el loop al pueblo y
+// puentear los tres racimos de dificultad en un único descenso (nivel 1 -> 10).
+
+// Mapas cuyos portales nativos no sirven: usamos SÓLO esta lista.
+const PORTAL_REPLACE = {
   // El portal del pueblo va en las afueras (al norte de la plaza), no en el centro.
   triston: [{ x: 57, y: 41, w: 1, h: 1, to: 'goblin_camp', tx: 29, ty: 31, label: 'Campo de Duendes' }],
-  goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],
 }
+
+// Portales que AGREGAMOS encima de los nativos del mapa (llegada = spawn walkable del destino).
+const PORTAL_EXTRA = {
+  // Vuelta al pueblo desde la zona de entrada.
+  goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],
+  // Puente racimo I (nivel 1-3) -> racimo II (nivel 5-6): del puerto a las minas.
+  lochport: [{ x: 43, y: 1, w: 1, h: 1, to: 'abandoned_mines', tx: 76, ty: 71, label: 'Minas Abandonadas' }],
+  // Puente racimo II (nivel 5-6) -> racimo III (nivel 9-10): de la brecha a Black Oak City.
+  the_breach: [{ x: 46, y: 98, w: 1, h: 1, to: 'black_oak_city', tx: 98, ty: 50, label: 'Black Oak City' }],
+}
+
+// Destinos que NO conectamos (nexos de fast-travel / mapas de sistema de Flare).
+const PORTAL_BLOCK = new Set(['hyperspace', 'World_map', 'spawn', 'arrival'])
+const portalAllowed = (to) => !!to && !PORTAL_BLOCK.has(to) && !/^Act\d|^World/i.test(to)
+
+// Nombres de zona en español (título del mapa en el HUD + etiqueta del portal).
+const ZONE_ES = {
+  triston: 'Triston', goblin_camp: 'Campo de Duendes', goblin_cave: 'Cueva de Duendes',
+  stonewood: 'Bosque Pétreo', salted_field: 'Campo Salado', merrimead_swamp: 'Ciénaga de Merrimead',
+  lochport_cemetery: 'Cementerio de Lochport', family_crypt: 'Cripta Familiar', lochport: 'Lochport',
+  st_maria_1: 'Sta. María: Mausoleo', st_maria_2: 'Sta. María: Catacumbas', st_maria_3: 'Sta. María: Osario',
+  perdition_mines: 'Minas de Perdición', river_trail: 'Sendero del Río', book_of_the_dead: 'Libro de los Muertos',
+  perdition_harbor: 'Puerto de Perdición', perdition_harbor_cave: 'Cueva del Puerto',
+  abandoned_mines: 'Minas Abandonadas', blackmire_mines: 'Minas de Ciénaga Negra', the_breach: 'La Brecha',
+  grot_lagoon: 'Laguna Grot', lake_kuuma: 'Lago Kuuma', stormrock_pass: 'Paso Roca-Tormenta',
+  stormrock_ruins: 'Ruinas de Roca-Tormenta', antlion_nest: 'Nido de Hormigas León', fort_amir: 'Fuerte Amir',
+  temple_of_mez_1: 'Templo de Mez: Sótano', temple_of_mez_2: 'Templo de Mez: Gran Salón', temple_of_mez_3: 'Templo de Mez: Entrada',
+  black_oak_city: 'Black Oak City', black_oak_farm: 'Granja de Black Oak', southern_ridge: 'Cresta del Sur',
+  dilapidated_sewers: 'Cloacas Ruinosas', nazia_highlands: 'Tierras Altas de Nazia', nazia_mines: 'Minas de Nazia',
+  nazia_underground: 'Subsuelo de Nazia', oasis: 'Oasis', mog_caverns: 'Cavernas de Mog', fort_nasu: 'Fuerte Nasu',
+  the_pit: 'La Fosa', torture_chambers: 'Cámaras de Tortura', underworld: 'Inframundo',
+  underworld_catacombs: 'Inframundo: Catacumbas', underworld_mines: 'Inframundo: Minas',
+  underworld_stronghold_1: 'Inframundo: Fortaleza I', underworld_stronghold_2: 'Inframundo: Fortaleza II',
+  wizards_tower_1: 'Torre del Mago: Entrada', wizards_tower_2: 'Torre del Mago: Estudio', wizards_tower_3: 'Torre del Mago: Laboratorio',
+}
+const zoneTitle = (mapName, fallback) => ZONE_ES[mapName] || fallback || mapName
 
 // Decoraciones ambientales de HERESY que sacamos a mano (por mapa). En Triston quitamos
 // al posadero rojo del carro: ese puesto es donde ponemos al mercader (parece un mercado).
