@@ -44,11 +44,26 @@ export function equipBonus(equipment) {
   return b
 }
 
-// Daño cuerpo a cuerpo del arma equipada (min/max), o puños si no hay arma o está rota.
+// Tipo de arma equipada (define cómo ataca el jugador): 'melee', 'ranged' (arcos/hondas)
+// o 'mental' (varitas/bastones). Sin arma o rota = puños (melee). Sale de equip_flags de Flare.
+export function weaponKind(equipment) {
+  const main = equipment && equipment.main
+  if (!main || broken(main)) return 'melee'
+  const f = main.equip_flags || ''
+  if (/mental/.test(f)) return 'mental'
+  if (/ranged/.test(f)) return 'ranged'
+  return 'melee'
+}
+
+// Daño del arma equipada (min/max) según su tipo, o puños (2-5) si no hay arma o está rota.
 export function weaponDamage(equipment) {
   const main = equipment && equipment.main
   const w = main && !broken(main) && main.stats
-  return { min: (w && w.dmg_melee_min) || 2, max: (w && w.dmg_melee_max) || 5 }
+  if (!w) return { min: 2, max: 5 }
+  if (w.dmg_ranged_max) return { min: w.dmg_ranged_min || w.dmg_ranged_max, max: w.dmg_ranged_max }
+  if (w.dmg_ment_max) return { min: w.dmg_ment_min || w.dmg_ment_max, max: w.dmg_ment_max }
+  if (w.dmg_melee_max) return { min: w.dmg_melee_min || w.dmg_melee_max, max: w.dmg_melee_max }
+  return { min: 2, max: 5 }
 }
 
 export function computeStats(raceId, level = 1, equipment = null) {
@@ -77,6 +92,7 @@ export function computeStats(raceId, level = 1, equipment = null) {
     crit: e.crit, accuracy: e.accuracy, avoidance: e.avoidance,
     fireResist: e.fireResist, iceResist: e.iceResist,
     dmgMin: wd.min, dmgMax: wd.max, // daño del arma
+    weaponKind: weaponKind(equipment), // melee / ranged / mental (define ataque a distancia)
     dmgMul: r.dmgMul || 1,
     speedMul: r.speedMul || 1,
     xpMul: (r.xpMul || 1) * (1 + e.xpGain / 100),

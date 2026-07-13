@@ -160,7 +160,8 @@ export class Player {
     this.paperdoll.setDirection(this.dir)
   }
 
-  attack() { return this.paperdoll.playOnce('swing') }   // devuelve ms de la anim
+  // anim de ataque: 'swing' (cuerpo a cuerpo), 'shoot' (arco) o 'cast' (magia). Devuelve ms.
+  attack(anim = 'swing') { return this.paperdoll.playOnce(anim) }
   hurt() { this.paperdoll.playOnce('hit') }
   playDie() { this.paperdoll.playOnce('die', true) }
 }

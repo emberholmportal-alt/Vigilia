@@ -10,9 +10,10 @@ import { Camera } from './Camera.js'
 import { Player, WALK_PX, RUN_PX } from './Player.js'
 import { Npc } from './Npc.js'
 import { Enemy } from './Enemy.js'
+import { Projectile } from './Projectile.js'
 import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
-import { pickSprite, enemyStats, enemyName } from '../data/bestiary.js'
+import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCousin } from '../data/bestiary.js'
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
 import { GroundItem, loadIcons } from './GroundItem.js'
@@ -172,6 +173,7 @@ export class Game {
     // Enemigos + estado de combate.
     this.enemies = []
     this._floaters = []
+    this._projectiles = []
     this._target = null
     this._playerAtkCd = 0
     this._pendingHit = null
@@ -221,6 +223,7 @@ export class Game {
     this.groundItems = []
     this.chests = []
     this._floaters = []
+    this._projectiles = []
     this.portals = []
     this._target = null
     this._pendingChest = null
@@ -538,18 +541,24 @@ export class Game {
         if (!tile) continue
         if (Math.abs(tile.x - spawn.x) + Math.abs(tile.y - spawn.y) < 8) continue // no encima del jugador
         const level = randInt(sp.level || [1, 1])
-        const sprite = pickSprite(sp.category || 'goblin')
+        let sprite = pickSprite(sp.category || 'goblin')
+        // ~30% de los enemigos de campo son de rango (arqueros/magos), si tienen primo a distancia.
+        const cousin = rangedCousin(sprite)
+        if (cousin && manifest.enemies[cousin] && Math.random() < 0.3) sprite = cousin
         if (!manifest.enemies[sprite]) continue
         const st = enemyStats(sprite, level)
+        const ranged = isRanged(sprite)
         const e = new Enemy(manifest, {
           sprite, x: tile.x, y: tile.y, level,
           hpMax: st.hpMax, damage: st.damage, xp: st.xp, gold: st.gold, name: enemyName(sprite),
+          ranged, projKind: projectileKind(sprite),
         }, this.iso, grid)
         const ok = await e.load()
         if (this.destroyed) return
         if (!ok) continue
         e.view.scale.set(this._eScale)
         e.onTap((en) => this._targetEnemy(en))
+        if (ranged) e.onShoot((en) => this._enemyShoot(en))
         renderer.objectLayer.addChild(e.view)
         this.enemies.push(e)
       }
@@ -590,6 +599,47 @@ export class Game {
     t.x = x; t.y = y; t.zIndex = 2e6
     this.renderer.objectLayer.addChild(t)
     this._floaters.push({ t, life: 0.9 })
+  }
+
+  // Lanza un proyectil (flecha/orbe) de un punto a otro en coordenadas de mundo. onHit corre al impacto.
+  _spawnProjectile(x0, y0, x1, y1, kind, onHit) {
+    const pr = new Projectile({ x0, y0, x1, y1, kind, onHit })
+    this.renderer.objectLayer.addChild(pr.view)
+    this._projectiles.push(pr)
+  }
+
+  // Un arquero/mago suelta el disparo: viaja hacia donde estaba el jugador. Si al impacto el
+  // jugador sigue cerca, recibe daño; si se movió a tiempo, lo esquivó.
+  _enemyShoot(en) {
+    if (this._dead || !this.player) return
+    const p = this.player
+    const aimTx = p.tx, aimTy = p.ty
+    const dmg0 = en.damage
+    this._spawnProjectile(en.view.x, en.view.y + (en._hpY || -40) * 0.5, p.view.x, p.view.y - 40, en.projKind, () => {
+      if (this._dead || !this.player) return
+      const dd = Math.abs(this.player.tx - aimTx) + Math.abs(this.player.ty - aimTy)
+      if (dd > 1.3) return   // el jugador se movió: esquivó la flecha
+      const defense = (this.store.getStats()?.defense) || 0
+      const dmg = Math.max(1, dmg0 - defense)
+      const hp = this.store.takeDamage(dmg)
+      this._floatText(this.player.view.x, this.player.view.y - 70, `-${dmg}`, '#ff6a5a')
+      this.store.degradeGear('armor', 1)
+      if (this._hurtCd <= 0) { this.player.hurt(); playSfx('player_hit.ogg'); this._hurtCd = 0.5 }
+      if (hp <= 0) this._playerDeath()
+    })
+    playSfx('swing.ogg', 0.45)
+  }
+
+  // El jugador dispara a un enemigo con arco/varita: el daño se aplica cuando el proyectil llega.
+  _playerShoot(target, hit, kind) {
+    const p = this.player
+    const proj = kind === 'mental' ? 'magic' : 'arrow'
+    this._spawnProjectile(p.view.x, p.view.y - 40, target.view.x, target.view.y + (target._hpY || -40) * 0.5, proj, () => {
+      if (!target || target.dead) return
+      this._floatText(target.view.x, target.view.y + target._hpY, hit.crit ? `¡${hit.dmg}!` : `${hit.dmg}`, hit.crit ? '#ff9a3a' : '#ffe08a')
+      if (Math.random() < 0.34) this.store.degradeGear('weapon', 1)
+      if (target.takeDamage(hit.dmg)) this._enemyKilled(target)
+    })
   }
 
   _playerDeath() {
@@ -655,21 +705,27 @@ export class Game {
       if (hp <= 0) { this._playerDeath(); return }
     }
 
-    // Ataque del jugador al enemigo apuntado.
+    // Ataque del jugador al enemigo apuntado. Con arma a distancia (arco/varita) dispara desde
+    // lejos; cuerpo a cuerpo se acerca a un tile. weaponKind sale del equipo.
     const t = this._target
     if (t && !t.dead) {
+      const kind = (this.store.getStats()?.weaponKind) || 'melee'
+      const ranged = kind !== 'melee'
+      const reach = ranged ? 6 : 1.6
       const d = Math.abs(t.tx - p.tx) + Math.abs(t.ty - p.ty)
-      if (d > 1.6) {
+      if (d > reach) {
         if (this._retargetT <= 0) { p.walkTo(Math.round(t.tx), Math.round(t.ty)); this._retargetT = 0.3 }
       } else {
         if (p.moving) { p.moving = false; p.path.length = 0 }
         p.faceTile(t.tx, t.ty)
         if (this._playerAtkCd <= 0) {
-          const ms = p.attack() || 400
+          const anim = kind === 'mental' ? 'cast' : kind === 'ranged' ? 'shoot' : 'swing'
+          const ms = p.attack(anim) || 400
           playSfx('swing.ogg')
           this._playerAtkCd = Math.max(0.65, ms / 1000)
           const hit = this._playerMeleeDamage()
-          this._pendingHit = { at: (ms / 1000) * 0.5, dmg: hit.dmg, crit: hit.crit, target: t }
+          if (ranged) this._playerShoot(t, hit, kind)
+          else this._pendingHit = { at: (ms / 1000) * 0.5, dmg: hit.dmg, crit: hit.crit, target: t }
         }
       }
     } else if (t && t.dead) {
@@ -691,6 +747,15 @@ export class Game {
           }
         }
       }
+    }
+
+    // Proyectiles en vuelo (flechas/orbes): avanzan y aplican su impacto al llegar.
+    if (this._projectiles.length) {
+      for (const pr of this._projectiles) pr.update(dt)
+      this._projectiles = this._projectiles.filter((pr) => {
+        if (pr.dead) { pr.view.destroy({ children: true }); return false }
+        return true
+      })
     }
 
     // Números flotantes.

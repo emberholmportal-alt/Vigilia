@@ -46,11 +46,26 @@ const NAMES = {
 }
 export const enemyName = (sprite) => NAMES[sprite] || 'Bestia'
 
+// Enemigos que atacan a distancia (arqueros y magos): dispararan en vez de golpear.
+const RANGED = new Set(['hobgoblin_archer', 'skeleton_archer', 'skeleton_mage', 'skeleton_mage_boss'])
+export const isRanged = (sprite) => RANGED.has(sprite)
+
+// Tipo de proyectil según el enemigo: los magos tiran orbes, los arqueros flechas.
+export const projectileKind = (sprite) => (/mage/.test(sprite) ? 'magic' : 'arrow')
+
+// Primo a distancia de un enemigo cuerpo a cuerpo (para mezclar arqueros en los spawns).
+const RANGED_COUSIN = {
+  goblin: 'hobgoblin_archer', goblin_runner: 'hobgoblin_archer',
+  skeleton: 'skeleton_archer', skeleton_weak: 'skeleton_archer',
+}
+export const rangedCousin = (sprite) => RANGED_COUSIN[sprite] || null
+
 const BOSS = /boss|minotaur|elite$/
 export function enemyStats(sprite, level = 1) {
   level = Math.max(1, level | 0)
   const boss = BOSS.test(sprite)
-  const hpMax = Math.round((boss ? 70 : 20) + level * 14 + (boss ? level * 22 : 0))
+  const frail = isRanged(sprite) && !boss    // arqueros/magos: pegan de lejos pero aguantan menos
+  const hpMax = Math.round(((boss ? 70 : 20) + level * 14 + (boss ? level * 22 : 0)) * (frail ? 0.75 : 1))
   const damage = Math.round((boss ? 6 : 3) + level * 1.6)
   const xp = Math.round(8 + level * 6 + (boss ? 45 : 0))
   const gold = Math.round(2 + level * 3 + (boss ? 25 : 0))

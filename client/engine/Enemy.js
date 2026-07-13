@@ -21,7 +21,9 @@ function enemySfxType(sprite) {
 }
 
 const AGGRO = 6.5           // tiles: rango en que despierta y persigue
-const ATTACK_RANGE = 1.5    // tiles: alcance del golpe
+const ATTACK_RANGE = 1.5    // tiles: alcance del golpe cuerpo a cuerpo
+const RANGED_RANGE = 6      // tiles: alcance de disparo (arqueros/magos)
+const RANGED_MIN = 2.5      // tiles: si el jugador se acerca más, el arquero retrocede (kiting)
 const ATTACK_CD = 1.3       // s entre golpes
 const SPEED_PX = 78         // px de mundo por segundo persiguiendo
 
@@ -40,6 +42,12 @@ export class Enemy {
     this.hpMax = def.hpMax
     this.hp = def.hpMax
     this.damage = def.damage
+
+    // Combate a distancia: arqueros/magos disparan en vez de golpear (lo marca el spawner).
+    this.ranged = !!def.ranged
+    this.projKind = def.projKind || 'arrow'
+    this._shootAnim = this.projKind === 'magic' ? 'cast' : 'shoot'
+    this._atkAnim = 'swing'
 
     this._sfx = enemySfxType(def.sprite)
     this.state = 'idle'
@@ -80,6 +88,9 @@ export class Enemy {
   }
 
   onTap(cb) { this.view.on('pointertap', (e) => { e.stopPropagation(); cb(this) }) }
+
+  // El Game engancha acá para lanzar el proyectil cuando el arquero suelta el disparo.
+  onShoot(cb) { this._onShoot = cb }
 
   _syncWorld() {
     this.view.x = this.iso.toWorldX(this.tx, this.ty)
@@ -140,13 +151,14 @@ export class Enemy {
       return
     }
 
-    if (this.state === 'attack' || this._anim === 'swing') {
-      // en pleno golpe: aplicar daño a mitad de la anim, luego cooldown
+    if (this.state === 'attack' || this._anim === this._atkAnim) {
+      // en pleno ataque: al llegar a la mitad de la anim, pega (melee) o dispara (rango).
       this._animT -= dt
-      const a = this.d.anims.swing
+      const a = this.d.anims[this._atkAnim]
       if (!this._dealt && a && this._frame >= Math.floor(a.frames / 2)) {
         this._dealt = true
-        if (d <= ATTACK_RANGE + 0.6) this.pendingHit = this.damage
+        if (this.ranged) { if (this._onShoot) this._onShoot(this) }
+        else if (d <= ATTACK_RANGE + 0.6) this.pendingHit = this.damage
       }
       this._advanceAnim(dt)
       if (this._animT <= 0) { this.state = d <= AGGRO ? 'chase' : 'idle'; this._startAnim('stance', true) }
@@ -154,9 +166,37 @@ export class Enemy {
       return
     }
 
+    // Arquero/mago: mantiene distancia. Si el jugador lo alcanza, retrocede disparando.
+    if (this.ranged) {
+      if (d < RANGED_MIN) {
+        this._facePlayer(player)
+        this._moveAway(player.tx, player.ty, dt)
+        if (this._attackCd <= 0) { this.state = 'attack'; this._startAnim(this._atkAnim = this._shootAnim); this._attackCd = ATTACK_CD }
+        else { if (this._anim !== 'run') this._startAnim('run', true); this._advanceAnim(dt) }
+        return
+      }
+      if (d <= RANGED_RANGE) {
+        this._facePlayer(player)
+        if (this._attackCd <= 0) { this.state = 'attack'; this._startAnim(this._atkAnim = this._shootAnim); this._attackCd = ATTACK_CD }
+        else { this.state = 'chase'; if (this._anim !== 'stance') this._startAnim('stance', true); this._advanceAnim(dt) }
+        return
+      }
+      if (d <= AGGRO) {
+        this.state = 'chase'
+        this._moveToward(player.tx, player.ty, dt)
+        if (this._anim !== 'run') this._startAnim('run', true)
+        this._advanceAnim(dt)
+        return
+      }
+      this.state = 'idle'
+      if (this._anim !== 'stance') this._startAnim('stance', true)
+      this._advanceAnim(dt)
+      return
+    }
+
     if (d <= ATTACK_RANGE) {
       this._facePlayer(player)
-      if (this._attackCd <= 0) { this.state = 'attack'; this._startAnim('swing'); this._attackCd = ATTACK_CD }
+      if (this._attackCd <= 0) { this.state = 'attack'; this._startAnim(this._atkAnim = 'swing'); this._attackCd = ATTACK_CD }
       else { this.state = 'chase'; if (this._anim !== 'stance') this._startAnim('stance', true); this._advanceAnim(dt) }
       return
     }
@@ -189,6 +229,23 @@ export class Enemy {
     if (dist < 1) return
     this.dir = screenVecToDir(dx, dy)
     const step = SPEED_PX * dt
+    const nx = w.x + (dx / dist) * step
+    const ny = w.y + (dy / dist) * step
+    const nt = this.iso.toTile(nx, ny)
+    if (this.grid.isWalkable(Math.round(nt.x), Math.round(nt.y))) {
+      this.tx = nt.x; this.ty = nt.y
+    }
+    this._syncWorld()
+  }
+
+  // Retrocede alejándose del jugador (kiting del arquero). Sigue mirándolo (lo setea el caller).
+  _moveAway(px, py, dt) {
+    const w = this.iso.toWorld(this.tx, this.ty)
+    const t = this.iso.toWorld(px, py)
+    const dx = w.x - t.x, dy = w.y - t.y
+    const dist = Math.hypot(dx, dy)
+    if (dist < 1) return
+    const step = SPEED_PX * 0.8 * dt   // retrocede algo más lento que persiguiendo
     const nx = w.x + (dx / dist) * step
     const ny = w.y + (dy / dist) * step
     const nt = this.iso.toTile(nx, ny)
