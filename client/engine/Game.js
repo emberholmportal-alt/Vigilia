@@ -11,12 +11,14 @@ import { Player, WALK_PX, RUN_PX } from './Player.js'
 import { Npc } from './Npc.js'
 import { Enemy } from './Enemy.js'
 import { Projectile } from './Projectile.js'
+import { ResourceNode } from './ResourceNode.js'
+import { GATHER } from '../data/alchemy.js'
 import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
 import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCousin } from '../data/bestiary.js'
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
-import { GroundItem, loadIcons } from './GroundItem.js'
+import { GroundItem, loadIcons, iconsTexture } from './GroundItem.js'
 import { rollLoot } from '../../shared/loot.js'
 import { itemById, RARITY_COLOR } from '../data/items.js'
 import { playSfx } from './audio.js'
@@ -183,6 +185,11 @@ export class Game {
     this._hurtCd = 0
     await this._spawnEnemies(renderer, world.map, grid, world.manifest, spawn)
 
+    // Nodos de recursos (hierbas + vetas de cristal) para juntar/minar.
+    this.nodes = []
+    this._pendingNode = null
+    this._spawnNodes(renderer, iso, world.map, grid, spawn, mapName)
+
     // Partículas ambientales.
     this.particles = new ParticleField(app.renderer)
     renderer.root.addChild(this.particles.container)
@@ -226,6 +233,8 @@ export class Game {
     this.chests = []
     this._floaters = []
     this._projectiles = []
+    this.nodes = []
+    this._pendingNode = null
     this.portals = []
     this._target = null
     this._pendingChest = null
@@ -373,6 +382,7 @@ export class Game {
     if (npc.def.obelisk) this._useObelisk()
     else if (npc.def.shop) this.store.openShop(npc.def.name)
     else if (npc.def.smith) this.store.openSmith(npc.def.name)
+    else if (npc.def.alchemy) this.store.openAlchemy(npc.def.name)
     else this.store.openDialogue({ name: npc.def.name, portrait: npc.def.portrait, lines: npc.lines })
   }
 
@@ -619,6 +629,66 @@ export class Game {
     this._target = e
     this.player.walkTo(Math.round(e.tx), Math.round(e.ty))
     this._retargetT = 0.3
+  }
+
+  // --- Recursos: nodos de hierbas / vetas de cristal --------------------------
+  // Siembra unos nodos en tiles caminables lejos del spawn. Las minas/cuevas traen más
+  // vetas de cristal; el resto, más hierbas. Sólo en zonas de combate (las que tienen spawners).
+  _spawnNodes(renderer, iso, map, grid, spawn, mapName) {
+    if (mapName === 'triston') return                     // el pueblo no tiene recursos
+    if (!(map.spawners || []).length) return              // sólo zonas salvajes
+    const tex = iconsTexture()
+    if (!tex) return
+    const mine = /mine|cave|cavern|underground|labyrinth|pit/i.test(mapName)
+    const total = 5 + ((randInt([0, 3])) | 0)
+    const used = new Set()
+    for (let k = 0; k < total; k++) {
+      const skill = (mine ? Math.random() < 0.6 : Math.random() < 0.35) ? 'excavacion' : 'herboristeria'
+      const opts = GATHER[skill]
+      const mat = opts[(Math.random() * opts.length) | 0]
+      const tile = this._randomWalkable(grid, spawn, used)
+      if (!tile) continue
+      used.add(tile.y * grid.w + tile.x)
+      const item = itemById(mat.id)
+      const node = new ResourceNode(iso, tile.x, tile.y, {
+        id: mat.id, name: mat.name, glow: mat.glow, base: mat.base, icon: item.icon, skill,
+      }, tex)
+      node.onTap((n) => this._gatherNode(n))
+      renderer.objectLayer.addChild(node.view)
+      this.nodes.push(node)
+    }
+  }
+
+  _randomWalkable(grid, spawn, used) {
+    for (let tries = 0; tries < 40; tries++) {
+      const x = 1 + ((Math.random() * (grid.w - 2)) | 0)
+      const y = 1 + ((Math.random() * (grid.h - 2)) | 0)
+      if (!grid.isWalkable(x, y)) continue
+      if (used.has(y * grid.w + x)) continue
+      if (Math.abs(x - spawn.x) + Math.abs(y - spawn.y) < 6) continue // no encima del jugador
+      return { x, y }
+    }
+    return null
+  }
+
+  // Tocar un nodo: el jugador camina hasta él y junta al llegar.
+  _gatherNode(node) {
+    if (node.depleted || this._dead) return
+    this._pendingNode = node
+    this.player.walkTo(node.tx, node.ty)
+  }
+
+  _doGather(node) {
+    if (node.depleted) return
+    const item = itemById(node.def.id)
+    if (!item) return
+    const qty = 1 + (Math.random() < 0.25 ? 1 : 0)      // a veces sale doble
+    if (!this.store.addItem(item, qty)) { this.store.showToast('Inventario lleno'); return }
+    this.store.addSkillXp(node.def.skill, 6)
+    node.deplete()
+    this._floatText(node.view.x, node.view.y - 30, `+${qty} ${node.def.name}`, '#bfe9a0')
+    this.store.logMessage({ channel: 'sistema', text: `Juntaste ${node.def.name} ×${qty}` })
+    playSfx('step2.ogg', 0.5)
   }
 
   _playerMeleeDamage() {
@@ -958,6 +1028,17 @@ export class Game {
       const near = Math.abs(this.player.tx - c.x) <= 1.6 && Math.abs(this.player.ty - c.y) <= 1.6
       if (near && !c.opened) this._openChest(c)
       this._pendingChest = null
+    }
+
+    // Nodos de recursos: bob + juntar al llegar al nodo apuntado.
+    if (this.nodes && this.nodes.length) {
+      for (const nd of this.nodes) nd.update(dt)
+      if (this._pendingNode && !this.player.moving) {
+        const n = this._pendingNode
+        const near = Math.abs(this.player.tx - n.tx) <= 1.6 && Math.abs(this.player.ty - n.ty) <= 1.6
+        if (near && !n.depleted) this._doGather(n)
+        this._pendingNode = null
+      }
     }
 
     // Loot en el suelo: bob + recoger al caminarle encima.

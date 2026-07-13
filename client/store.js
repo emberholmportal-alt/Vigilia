@@ -6,7 +6,7 @@
 // pasará a pedirle al server y aplicar su respuesta.
 import { create } from 'zustand'
 import { computeStats } from './data/stats.js'
-import { isDurable, durabilityMax, isRecall } from './data/items.js'
+import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
 import { dailyStock, todayStr } from './data/shop.js'
 import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryCapacity } from './data/progression.js'
@@ -451,6 +451,42 @@ export const useGameStore = create((set, get) => ({
   // Abre al herrero (panel de reparación).
   smithName: '',
   openSmith: (name) => set({ smithName: name || 'Herrero', panel: 'smith' }),
+
+  // Abre a la alquimista (panel de recetas).
+  alchemyName: '',
+  openAlchemy: (name) => set({ alchemyName: name || 'Alquimista', panel: 'alchemy' }),
+
+  // Cuenta cuántas unidades de un ítem (por id) hay en el inventario (respeta stacks).
+  countItem: (id) => get().inventory.reduce((n, it) => n + (it && it.id === id ? (it.count || 1) : 0), 0),
+
+  // Prepara una receta de alquimia: descuenta los materiales y agrega la poción. Suma a la
+  // skill de alquimia. Devuelve {ok} o {ok:false, reason}.
+  craftAlchemy: (recipe) => {
+    const s = get()
+    const inv = s.inventory.slice()
+    const countOf = (id) => inv.reduce((n, it) => n + (it && it.id === id ? (it.count || 1) : 0), 0)
+    for (const [id, qty] of recipe.ins) { if (countOf(id) < qty) return { ok: false, reason: 'materiales' } }
+    // descontar cada material
+    for (const [id, qty] of recipe.ins) {
+      let left = qty
+      for (let i = 0; i < inv.length && left > 0; i++) {
+        const it = inv[i]
+        if (!it || it.id !== id) continue
+        const have = it.count || 1
+        const take = Math.min(have, left)
+        left -= take
+        inv[i] = have - take > 0 ? { ...it, count: have - take } : null
+      }
+    }
+    set({ inventory: inv })
+    const out = itemById(recipe.out)
+    if (!get().addItem(out, 1)) { set({ inventory: s.inventory }); return { ok: false, reason: 'lleno' } }
+    get().addSkillXp('alquimia', 10)
+    get().showToast('Preparaste: ' + (out?.name || 'poción'))
+    get().logMessage({ channel: 'sistema', text: 'Alquimia: preparaste ' + (out?.name || 'una poción') })
+    saveGame(get())
+    return { ok: true }
+  },
 
   // Compra un ítem del stock (precio completo). El stock del día se agota al comprar.
   buyItem: (stockIndex) => {

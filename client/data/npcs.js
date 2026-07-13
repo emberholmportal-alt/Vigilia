@@ -168,6 +168,10 @@ const TRISTON = [
   // Obelisco de Retorno: al lado del portal del pueblo. Si usaste una Piedra de Retorno en
   // el mundo, este obelisco te devuelve al punto anclado (mecánica de portal de Diablo).
   { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', landmark: true, obelisk: true, x: 55, y: 45, dir: 7 },
+  // Alquimista: prepara pociones reales con lo que juntás afuera (recetas de Flare).
+  { sprite: 'peasant_woman2', name: 'Alquimista Yara', portrait: 'female04.png', x: 59, y: 53, dir: 5, alchemy: true,
+    lines: ['Tráeme hierbas y cristales; yo les saco el jugo.',
+            'Una botella vacía y aloe, y tenés vida embotellada.'] },
 ]
 
 export const NPCS_BY_MAP = {

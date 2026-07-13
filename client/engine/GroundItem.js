@@ -10,6 +10,7 @@ export async function loadIcons() {
   if (!_iconsTex) _iconsTex = await Assets.load(BASE + 'assets/icons.png')
   return _iconsTex
 }
+export function iconsTexture() { return _iconsTex }
 
 // '#rrggbb' -> 0xrrggbb
 function hex(c) { return parseInt(String(c).replace('#', ''), 16) || 0xffffff }

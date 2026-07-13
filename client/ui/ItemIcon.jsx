@@ -4,7 +4,9 @@ const BASE = import.meta.env.BASE_URL || '/'
 const COLS = 8
 const CELL = 32
 
-const ROWS = 32 // el atlas es 8 columnas × 32 filas (256×1024)
+// Atlas combinado: 8 columnas × 65 filas (256×2080). Incluye el set base (0-255), el set
+// empyrean (256-263) y el de crafting/materiales (512-519) en sus índices reales de Flare.
+const ROWS = 65
 
 export default function ItemIcon({ icon, size = 34, count, fill = false }) {
   const col = icon % COLS

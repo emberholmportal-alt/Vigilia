@@ -1,6 +1,9 @@
 // Stock del Mercader. Ítems REALES de Flare, con una rotación diaria determinística
 // (mismo día -> mismo stock, como el mercader de Kintara). Nada inventado.
-import { ITEMS, BELTS, RECALL_STONE } from './items.js'
+import { ITEMS, BELTS, RECALL_STONE, itemById } from './items.js'
+
+// Botella Vacía: envase base de toda receta de alquimia. Siempre en stock (barata).
+const EMPTY_BOTTLE = itemById(750)
 
 // Slots que el mercader ofrece/compra (equipo + consumibles + cinturones).
 const SELLABLE = new Set(['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact', 'potion', 'scroll', 'belt'])
@@ -38,11 +41,12 @@ export function dailyStock(dateStr = todayStr()) {
   }
 
   const seen = new Set()
-  // Cinturones y Piedras de Retorno siempre disponibles (utilidad básica de viaje).
-  const list = [...potions, RECALL_STONE, ...BELTS, ...gear.slice(0, 20)].filter((it) => !seen.has(it.id) && seen.add(it.id)).slice(0, 26)
-  // Stock limitado por día (determinístico por fecha+ítem). Las pociones y piedras traen más.
+  // Cinturones, Piedras de Retorno y Botellas Vacías siempre disponibles (utilidad básica).
+  const staples = [RECALL_STONE, ...(EMPTY_BOTTLE ? [EMPTY_BOTTLE] : []), ...BELTS]
+  const list = [...potions, ...staples, ...gear.slice(0, 20)].filter((it) => !seen.has(it.id) && seen.add(it.id)).slice(0, 26)
+  // Stock limitado por día (determinístico por fecha+ítem). Consumibles básicos traen más.
   return list.map((it) => {
-    const base = it.slot === 'potion' ? 5 : it.recall ? 4 : 1
+    const base = it.slot === 'potion' ? 5 : it.id === 750 ? 8 : it.recall ? 4 : 1
     const extra = hashStr(dateStr + ':' + it.id) % 4 // 0..3
     return { ...it, stock: base + extra }
   })

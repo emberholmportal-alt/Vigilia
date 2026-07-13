@@ -13,6 +13,7 @@ import Powers from './ui/Powers.jsx'
 import Settings from './ui/Settings.jsx'
 import Vendor from './ui/Vendor.jsx'
 import Blacksmith from './ui/Blacksmith.jsx'
+import Alchemy from './ui/Alchemy.jsx'
 import ChatLog from './ui/ChatLog.jsx'
 import Minimap from './ui/Minimap.jsx'
 import DialogueBox from './ui/DialogueBox.jsx'
@@ -87,6 +88,7 @@ export default function App() {
       {phase === 'game' && panel === 'settings' && <Settings />}
       {phase === 'game' && panel === 'shop' && <Vendor />}
       {phase === 'game' && panel === 'smith' && <Blacksmith />}
+      {phase === 'game' && panel === 'alchemy' && <Alchemy />}
       {phase === 'game' && !loading && !error && <DialogueBox />}
       {phase === 'game' && <ZoneLoader />}
       {error && <div className="error">Error: {error}</div>}

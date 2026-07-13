@@ -10,9 +10,9 @@ export const SKILL_LABEL = {
 }
 export const SKILL_DESC = {
   combate: 'Matar enemigos afuera de la ciudad.',
-  excavacion: 'Picar vetas de mastite en cuevas y minas.',
+  excavacion: 'Picar vetas de cristal en cuevas y minas.',
   herboristeria: 'Juntar hierbas y reactivos en el campo.',
-  alquimia: 'Preparar pociones con reactivos.',
+  alquimia: 'Preparar pociones con lo que juntás.',
   forja: 'Forjar y mejorar equipo con mastite.',
   saqueo: 'Abrir cofres y desenterrar reliquias.',
 }
