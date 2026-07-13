@@ -186,6 +186,8 @@ export class Game {
     this._deadT = 0
     this._hurtCd = 0
     await this._spawnEnemies(renderer, world.map, grid, world.manifest, spawn)
+    // Élite del día (misión Contrato): aparece SÓLO en su zona mientras el contrato siga activo.
+    await this._spawnContractElite(renderer, grid, world.manifest, spawn, mapName)
 
     // Nodos de recursos (hierbas + vetas de cristal) para juntar/minar.
     this.nodes = []
@@ -396,6 +398,15 @@ export class Game {
     }
   }
 
+  // Hablar con un Guardián: si hay una ofrenda del día pendiente y tenés el oro, la recibe;
+  // si no, un diálogo lo explica.
+  _makeOffering() {
+    const res = this.store.deliverOffering()
+    if (!res.ok && res.reason === 'none') {
+      this.store.openDialogue({ name: tt('offering_sleep_name'), portrait: null, lines: [tt('offering_sleep_l1'), tt('offering_sleep_l2')] })
+    }
+  }
+
   _inspectCorpse(e) {
     const name = enemyName(e.def.sprite, getLang())
     this.store.logMessage({ channel: 'sistema', text: tt('inspect_corpse', { name, lv: e.level }) })
@@ -427,6 +438,7 @@ export class Game {
     npc.dir = screenVecToDir(pv.x - nv.x, pv.y - nv.y)
     const nm = npcName(npc.def, getLang())
     if (npc.def.obelisk) this._useObelisk()
+    else if (npc.def.guardian) this._makeOffering()
     else if (npc.def.shop) this.store.openShop(nm)
     else if (npc.def.smith) this.store.openSmith(nm)
     else if (npc.def.alchemy) this.store.openAlchemy(nm)
@@ -677,6 +689,35 @@ export class Game {
     }
   }
 
+  // Élite del día: si hay un contrato activo para esta zona, aparece su jefe (una vez), más
+  // fuerte y con nombre. Matarlo completa la misión Contrato.
+  async _spawnContractElite(renderer, grid, manifest, spawn, mapName) {
+    const missions = this.store.getMissions ? this.store.getMissions() : []
+    const c = (missions || []).find((m) => m.type === 'contract' && !m.claimed && m.progress < m.target && m.map === mapName)
+    if (!c) return
+    const sprite = manifest.enemies[c.elite] ? c.elite : 'goblin_elite'
+    if (!manifest.enemies[sprite]) return
+    const lvl = Math.max(3, (this.store.getPlayerLevel?.() || 1) + 2)
+    const st = enemyStats(sprite, lvl)
+    // Un poco lejos del spawn, en tile caminable.
+    const used = new Set()
+    const tile = this._randomWalkable(grid, spawn, used) || { x: spawn.x + 3, y: spawn.y }
+    const e = new Enemy(manifest, {
+      sprite, x: tile.x, y: tile.y, level: lvl,
+      hpMax: Math.round(st.hpMax * 1.6), damage: Math.round(st.damage * 1.3),
+      xp: st.xp + 40, gold: st.gold + 30, name: enemyName(sprite), boss: true,
+      ranged: isRanged(sprite), projKind: projectileKind(sprite), contract: c.id,
+    }, this.iso, grid)
+    const ok = await e.load()
+    if (this.destroyed || !ok) return
+    e.view.scale.set(this._eScale * 1.35)   // más grande = élite
+    e.onTap((en) => this._targetEnemy(en))
+    if (e.def.ranged) e.onShoot((en) => this._enemyShoot(en))
+    renderer.objectLayer.addChild(e.view)
+    this.enemies.push(e)
+    this.store.showToast(tt('contract_appeared'))
+  }
+
   _targetEnemy(e) {
     if (this._dead || e.dead) return
     this._target = e
@@ -759,6 +800,7 @@ export class Game {
     this.store.addSkillXp('combate', e.def.xp)
     this.store.addXp(e.def.xp)
     this.store.missionProgress('kill', 1)
+    if (e.def.contract) this.store.missionProgress('contract', 1)   // élite del día
     this._floatText(e.view.x, e.view.y + e._hpY, `+${e.def.xp} XP`, '#9fe0ff')
     this.store.logMessage({ channel: 'sistema', text: tt('defeated', { name: enemyName(e.def.sprite, getLang()) }) })
 

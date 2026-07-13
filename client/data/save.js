@@ -46,6 +46,7 @@ export function loadGame() {
       discovered: s.discovered || {},
       missions: s.missions || [],
       missionsDate: s.missionsDate || '',
+      seals: s.seals || 0,
     }
   } catch { return null }
 }
@@ -65,6 +66,7 @@ export function saveGame(state) {
       discovered: state.discovered || {},
       missions: state.missions || [],
       missionsDate: state.missionsDate || '',
+      seals: state.seals || 0,
     }
     localStorage.setItem(KEY, JSON.stringify(snap))
   } catch { /* almacenamiento lleno / bloqueado: ignorar */ }

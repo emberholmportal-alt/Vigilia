@@ -9,6 +9,9 @@ const PW = 640, PH = 832
 export default function Missions() {
   const missions = useGameStore((s) => s.missions)
   const claimMission = useGameStore((s) => s.claimMission)
+  const seals = useGameStore((s) => s.seals)
+  const sealCost = useGameStore((s) => s.sealChestCost())
+  const openSealChest = useGameStore((s) => s.openSealChest)
   const setPanel = useGameStore((s) => s.setPanel)
   const t = useT()
 
@@ -22,6 +25,7 @@ export default function Missions() {
         <div className="char-title" style={{ left: '50%', top: (24 / PH * 100) + '%', transform: 'translate(-50%,-50%)', position: 'absolute' }}>{t('missions_title')}</div>
 
         <div className="ms-body">
+          <div className="ms-seals">🔯 {t('seals_word')}: <b>{seals || 0}</b></div>
           <div className="ms-hint">{t('missions_hint')}</div>
           <div className="ms-list">
             {(missions || []).map((m, i) => {
@@ -36,7 +40,7 @@ export default function Missions() {
                   <div className="ms-bar"><i style={{ width: `${pct * 100}%` }} /></div>
                   <div className="ms-foot">
                     <span className="ms-count">{Math.min(m.progress, m.target)}/{m.target}</span>
-                    <span className="ms-reward">{t('mission_reward_line', { xp: m.xp, gold: m.gold })}</span>
+                    <span className="ms-reward">{t('mission_reward_line', { xp: m.xp, gold: m.gold || 0, seals: m.seals || 0 })}</span>
                     <button className="ms-claim" disabled={!done || m.claimed} onClick={() => claimMission(i)}>
                       {m.claimed ? t('mission_claimed') : t('mission_claim')}
                     </button>
@@ -45,6 +49,10 @@ export default function Missions() {
               )
             })}
           </div>
+
+          <button className="ms-sealchest" disabled={(seals || 0) < sealCost} onClick={() => openSealChest()}>
+            🎁 {t('seal_chest_open', { n: sealCost })}
+          </button>
         </div>
       </div>
     </div>

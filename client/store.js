@@ -6,8 +6,10 @@
 // pasará a pedirle al server y aplicar su respuesta.
 import { create } from 'zustand'
 import { computeStats, upgradeLevel } from './data/stats.js'
+import { rollLoot } from '../shared/loot.js'
 
-const FORGE_MAX = 5   // nivel máximo de mejora por pieza
+const FORGE_MAX = 5        // nivel máximo de mejora por pieza
+const SEAL_CHEST_COST = 6  // sellos por cofre de sellos (loot box premium)
 import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
 import { tt, setLangGlobal, itemName, raceName } from './i18n.js'
@@ -406,7 +408,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '' }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0 }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -423,7 +425,7 @@ export const useGameStore = create((set, get) => ({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
       inventory: inv, equipment: equip, belt: b, equippedBelt,
       discovered: discovered || {},
-      missions: missions || [], missionsDate: missionsDate || '',
+      missions: missions || [], missionsDate: missionsDate || '', seals: seals || 0,
       staminaMax: st.staminaMax, stamina: st.staminaMax,
     })
     get().ensureMissions()   // carga/renueva las misiones del día (conserva progreso si es hoy)
@@ -486,6 +488,10 @@ export const useGameStore = create((set, get) => ({
 
   // Agrega oro (loot).
   addGold: (n) => { set((s) => ({ gold: s.gold + (n | 0) })); saveGame(get()) },
+
+  // Fragmentos de sello: moneda premium de las misiones diarias (cofres de sello, ofrendas).
+  seals: 0,
+  addSeals: (n) => { set((s) => ({ seals: (s.seals || 0) + (n | 0) })); saveGame(get()) },
 
   // Mete un ítem al inventario. Los apilables (poción/crafting/scroll) se acumulan en
   // una celda con `count`; el resto va a un hueco libre. Devuelve true si entró.
@@ -564,15 +570,52 @@ export const useGameStore = create((set, get) => ({
     if (justDone) get().showToast(tt('mission_done'))
     saveGame(get())
   },
-  // Reclama la recompensa de una misión completada (XP + oro). Una sola vez.
+  // Reclama la recompensa de una misión completada (XP + oro + sellos). Una sola vez.
   claimMission: (i) => {
     const s = get(); const m = s.missions[i]
     if (!m || m.claimed || m.progress < m.target) return
     const missions = s.missions.slice(); missions[i] = { ...m, claimed: true }
     set({ missions })
-    get().addXp(m.xp); get().addGold(m.gold)
-    get().showToast(tt('mission_reward', { xp: m.xp, gold: m.gold }))
+    get().addXp(m.xp); if (m.gold) get().addGold(m.gold); if (m.seals) get().addSeals(m.seals)
+    get().showToast(tt('mission_reward', { xp: m.xp, gold: m.gold || 0, seals: m.seals || 0 }))
     saveGame(get())
+  },
+
+  // Progreso de una ofrenda: entregar oro a un Guardián (lo llama el loop al hablarle). Cobra
+  // el oro que falta y completa la misión de tipo 'offering'. Devuelve {ok} o motivo.
+  deliverOffering: () => {
+    const s = get()
+    const i = s.missions.findIndex((m) => m.type === 'offering' && !m.claimed && m.progress < m.target)
+    if (i < 0) return { ok: false, reason: 'none' }
+    const m = s.missions[i]
+    const need = m.target - m.progress
+    if (s.gold < need) { get().showToast(tt('offering_need', { n: need })); return { ok: false, reason: 'gold' } }
+    const missions = s.missions.slice(); missions[i] = { ...m, progress: m.target }
+    set({ missions, gold: s.gold - need })
+    get().showToast(tt('offering_done'))
+    saveGame(get())
+    return { ok: true }
+  },
+
+  // Cofre de sellos (sumidero premium): gasta sellos y abre un cofre con loot bueno. Devuelve
+  // los ítems que cayeron para que el loop los pinte, o {ok:false} con el motivo.
+  sealChestCost: () => SEAL_CHEST_COST,
+  openSealChest: () => {
+    const s = get()
+    if ((s.seals || 0) < SEAL_CHEST_COST) { get().showToast(tt('seal_need', { n: SEAL_CHEST_COST })); return { ok: false } }
+    const lvl = Math.max(4, Math.min(16, (s.stats?.level || 1) + 2))  // loot un pelín por encima del nivel
+    const roll = rollLoot('chest_level_' + lvl)
+    set({ seals: s.seals - SEAL_CHEST_COST })
+    if (roll.gold) get().addGold(roll.gold)
+    // Los ítems entran al inventario; si está lleno, se avisa.
+    const got = []
+    for (const d of roll.drops) {
+      const it = itemById(d.id); if (!it) continue
+      if (get().addItem(it, d.qty)) got.push(itemName(it) + (d.qty > 1 ? ' ×' + d.qty : ''))
+    }
+    get().showToast(got.length ? tt('seal_chest_got', { items: got.join(', ') }) : tt('seal_chest_empty'))
+    saveGame(get())
+    return { ok: true, gold: roll.gold, items: got }
   },
 
   // Cuenta cuántas unidades de un ítem (por id) hay en el inventario (respeta stacks).
@@ -670,6 +713,7 @@ export const useGameStore = create((set, get) => ({
 // Hooks de inspección para tests/depuración (solo dev).
 if (import.meta.env.DEV && typeof window !== 'undefined') {
   window.__vigiliaStoreState = () => useGameStore.getState()
+  window.__vigiliaSetState = (o) => useGameStore.setState(o)
   window.__vigiliaEquip = (i) => useGameStore.getState().equipFromInventory(i)
 }
 
@@ -717,6 +761,8 @@ export const storeApi = {
   getWaypointSeq: () => useGameStore.getState().waypointSeq,
   getWaypointTarget: () => useGameStore.getState().waypointTarget,
   missionProgress: (type, n) => useGameStore.getState().missionProgress(type, n),
+  getMissions: () => useGameStore.getState().missions,
+  deliverOffering: () => useGameStore.getState().deliverOffering(),
   takeDamage: (n) => useGameStore.getState().takeDamage(n),
   heal: (n) => useGameStore.getState().heal(n),
   reviveFull: () => useGameStore.getState().reviveFull(),

@@ -183,6 +183,8 @@ const TRISTON = [
             'Una botella vacía y aloe, y tenés vida embotellada.'],
     lines_en: ['Bring me herbs and crystals; I wring the juice from them.',
                'An empty bottle and aloe, and you have life in a flask.'] },
+  // Guardián: estatua del monumento. Recibe la ofrenda de oro del día (misión Ofrenda).
+  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, guardian: true, x: 57, y: 47, dir: 3 },
 ]
 
 export const NPCS_BY_MAP = {

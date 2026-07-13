@@ -56,7 +56,7 @@ export default function App() {
     const race = raceById(s.raceId) || RACES[0]
     initCharacter({ race, gold: s.gold, inventory: s.inventory, equipment: s.equipment,
                     belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills, discovered: s.discovered,
-                    missions: s.missions, missionsDate: s.missionsDate })
+                    missions: s.missions, missionsDate: s.missionsDate, seals: s.seals })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
