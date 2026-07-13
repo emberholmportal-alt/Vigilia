@@ -36,6 +36,8 @@ export default function HUD() {
   const nearbyPortal = useGameStore((s) => s.nearbyPortal)
   const openWaypoints = useGameStore((s) => s.openWaypoints)
   const togglePanel = useGameStore((s) => s.togglePanel)
+  const openMissions = useGameStore((s) => s.openMissions)
+  const missions = useGameStore((s) => s.missions)
   const useBelt = useGameStore((s) => s.useBelt)
   const equippedBelt = useGameStore((s) => s.equippedBelt)
   const beltCap = beltCapacityOf(equippedBelt)
@@ -61,7 +63,14 @@ export default function HUD() {
           <span className={fps >= 55 ? 'ok' : fps >= 40 ? 'warn' : 'bad'}>{fps} fps</span>
           <span className="dim2">{mapTitle}</span>
         </div>
-        <div className="hud-gold"><span className="ab-coin" /> {gold}</div>
+        <div className="hud-right">
+          <button className="hud-missions" onClick={openMissions} title={t('missions_menu')}>
+            📜
+            {(() => { const c = (missions || []).filter((m) => m.progress >= m.target && !m.claimed).length
+              return c > 0 ? <span className="hud-badge">{c}</span> : null })()}
+          </button>
+          <div className="hud-gold"><span className="ab-coin" /> {gold}</div>
+        </div>
       </div>
 
       <Toast />

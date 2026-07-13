@@ -14,6 +14,7 @@ import Settings from './ui/Settings.jsx'
 import Vendor from './ui/Vendor.jsx'
 import Blacksmith from './ui/Blacksmith.jsx'
 import Alchemy from './ui/Alchemy.jsx'
+import Missions from './ui/Missions.jsx'
 import ChatLog from './ui/ChatLog.jsx'
 import Minimap from './ui/Minimap.jsx'
 import DialogueBox from './ui/DialogueBox.jsx'
@@ -54,7 +55,8 @@ export default function App() {
     useGameStore.getState().setPlayerName(s.playerName)
     const race = raceById(s.raceId) || RACES[0]
     initCharacter({ race, gold: s.gold, inventory: s.inventory, equipment: s.equipment,
-                    belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills, discovered: s.discovered })
+                    belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills, discovered: s.discovered,
+                    missions: s.missions, missionsDate: s.missionsDate })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
@@ -93,6 +95,7 @@ export default function App() {
       {phase === 'game' && panel === 'shop' && <Vendor />}
       {phase === 'game' && panel === 'smith' && <Blacksmith />}
       {phase === 'game' && panel === 'alchemy' && <Alchemy />}
+      {phase === 'game' && panel === 'missions' && <Missions />}
       {phase === 'game' && !loading && !error && <DialogueBox />}
       {phase === 'game' && waypointOpen && <Waypoints />}
       {phase === 'game' && <ZoneLoader />}

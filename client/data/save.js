@@ -44,6 +44,8 @@ export function loadGame() {
       belt: (s.belt || []).map(unpackItem),
       equippedBelt: unpackItem(s.equippedBelt),
       discovered: s.discovered || {},
+      missions: s.missions || [],
+      missionsDate: s.missionsDate || '',
     }
   } catch { return null }
 }
@@ -61,6 +63,8 @@ export function saveGame(state) {
       belt: (state.belt || []).map(packItem),
       equippedBelt: packItem(state.equippedBelt),
       discovered: state.discovered || {},
+      missions: state.missions || [],
+      missionsDate: state.missionsDate || '',
     }
     localStorage.setItem(KEY, JSON.stringify(snap))
   } catch { /* almacenamiento lleno / bloqueado: ignorar */ }

@@ -649,10 +649,15 @@ html, body, #root {
   animation: zl-in 140ms ease-out;
 }
 @keyframes zl-in { from { opacity: 0; } }
-.zoneload-inner { width: min(90vw, 420px); text-align: center; }
-.zoneload-inner .settings-head { justify-content: center; }
-.zoneload-inner .settings-head b { color: var(--dim); font-weight: normal;
-  text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px; }
+/* contenido centrado dentro del marco de Flare */
+.zoneload-inner {
+  position: absolute; left: 12%; right: 12%; top: 50%; transform: translateY(-50%);
+  text-align: center;
+}
+.zoneload-title {
+  font-family: Georgia, serif; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px; margin-bottom: 6px;
+}
 /* runa giratoria (mismo violeta que el portal) */
 .zoneload-rune {
   width: 48px; height: 48px; margin: 6px auto 16px;
@@ -663,10 +668,6 @@ html, body, #root {
   animation: zl-spin 1s linear infinite;
 }
 @keyframes zl-spin { to { transform: rotate(360deg); } }
-.zoneload-title {
-  font-family: Georgia, serif; color: var(--dim);
-  text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px;
-}
 .zoneload-zone {
   font-family: Georgia, serif; color: #e6d9ff; font-size: 25px;
   margin: 4px 0 18px; text-shadow: 0 2px 10px rgba(138, 91, 255, 0.4);
@@ -738,11 +739,11 @@ html, body, #root {
 .lang-opt.on { color: var(--parch); border-color: var(--gold); box-shadow: inset 0 0 0 1px rgba(201,162,39,0.25); }
 .lang-opt:active { filter: brightness(1.15); }
 
-/* ---------- modal de red de portales ---------- */
-.wp-panel { min-width: min(90vw, 380px); }
-.wp-hint { color: var(--dim); font-family: Georgia, serif; font-size: 12px; font-style: italic; margin: 6px 0 10px; }
+/* ---------- modal de red de portales (dentro del panel de Flare) ---------- */
+.wp-body { position: absolute; left: 11%; right: 11%; top: 13%; bottom: 9%; display: flex; flex-direction: column; }
+.wp-hint { color: var(--dim); font-family: Georgia, serif; font-size: 12px; font-style: italic; text-align: center; margin-bottom: 10px; }
 .wp-empty { color: var(--dim); font-family: Georgia, serif; font-size: 13px; text-align: center; padding: 14px 6px; line-height: 1.5; }
-.wp-list { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow-y: auto; }
+.wp-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; padding-right: 4px; }
 .wp-row {
   display: flex; align-items: center; gap: 10px; text-align: left;
   font-family: Georgia, serif; font-size: 14px; color: var(--parch);
@@ -756,3 +757,44 @@ html, body, #root {
 .wp-name { flex: 1 1 auto; }
 .wp-tag { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
 .wp-row.current .wp-tag { color: var(--gold); }
+
+/* ---------- botón de misiones en el HUD ---------- */
+.hud-missions {
+  position: relative; background: rgba(20,17,26,0.7); border: 1px solid var(--edge);
+  border-radius: 6px; font-size: 16px; line-height: 1; padding: 5px 8px; cursor: pointer;
+  pointer-events: auto;
+}
+.hud-missions:active { filter: brightness(1.2); }
+.hud-badge {
+  position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px;
+  background: var(--ember); color: #fff; border-radius: 8px; font-family: Georgia, serif;
+  font-size: 10px; line-height: 16px; text-align: center; padding: 0 3px; box-shadow: 0 1px 3px #000;
+}
+
+/* ---------- panel de misiones (dentro del marco de Flare) ---------- */
+.ms-body { position: absolute; left: 10%; right: 10%; top: 13%; bottom: 9%; display: flex; flex-direction: column; }
+.ms-hint { color: var(--dim); font-family: Georgia, serif; font-size: 12px; font-style: italic; text-align: center; margin-bottom: 12px; }
+.ms-list { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px; }
+.ms-row {
+  padding: 10px 12px; border-radius: 7px;
+  background: rgba(20,17,26,0.55); border: 1px solid #332b3f;
+}
+.ms-row.done { border-color: #4f9d6b; box-shadow: inset 0 0 0 1px rgba(79,157,107,0.25); }
+.ms-row.claimed { opacity: 0.55; }
+.ms-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-family: Georgia, serif; }
+.ms-head b { color: #f2ead6; font-size: 14px; }
+.ms-where { color: var(--dim); font-size: 11px; font-style: italic; white-space: nowrap; }
+.ms-bar { height: 8px; margin: 8px 0 6px; border: 1px solid #3b3145; border-radius: 4px; overflow: hidden; background: rgba(10,8,14,0.7); }
+.ms-bar i { display: block; height: 100%; background: linear-gradient(90deg, #6a3fb0, #b58bff); }
+.ms-row.done .ms-bar i { background: linear-gradient(90deg, #3f8f5f, #6fce8f); }
+.ms-foot { display: flex; align-items: center; gap: 10px; font-family: Georgia, serif; }
+.ms-count { color: var(--parch); font-size: 12px; min-width: 44px; }
+.ms-reward { flex: 1 1 auto; color: var(--gold); font-size: 12px; }
+.ms-claim {
+  font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  background: linear-gradient(180deg, #2a2320, #17120e);
+  border: 1px solid var(--gold); border-radius: 5px; padding: 6px 14px; cursor: pointer;
+}
+.ms-claim:active { filter: brightness(1.2); }
+.ms-claim:disabled { opacity: 0.4; cursor: default; border-color: var(--edge); }
+.hud-right { display: flex; align-items: center; gap: 10px; }

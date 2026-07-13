@@ -10,6 +10,7 @@ import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
 import { tt, setLangGlobal, itemName, raceName } from './i18n.js'
 import { dailyStock, todayStr } from './data/shop.js'
+import { dailyMissions } from './data/missions.js'
 import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryCapacity } from './data/progression.js'
 import { saveGame } from './data/save.js'
 
@@ -369,7 +370,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '' }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -386,8 +387,10 @@ export const useGameStore = create((set, get) => ({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
       inventory: inv, equipment: equip, belt: b, equippedBelt,
       discovered: discovered || {},
+      missions: missions || [], missionsDate: missionsDate || '',
       staminaMax: st.staminaMax, stamina: st.staminaMax,
     })
+    get().ensureMissions()   // carga/renueva las misiones del día (conserva progreso si es hoy)
     saveGame(get())
   },
 
@@ -496,6 +499,45 @@ export const useGameStore = create((set, get) => ({
   // Abre a la alquimista (panel de recetas).
   alchemyName: '',
   openAlchemy: (name) => set({ alchemyName: name || 'Alquimista', panel: 'alchemy' }),
+
+  // --- misiones diarias ---
+  missions: [],
+  missionsDate: '',
+  // Asegura que estén las misiones de hoy (regenera si cambió el día; conserva el progreso).
+  ensureMissions: () => {
+    const s = get(); const today = todayStr()
+    if (s.missionsDate === today && s.missions.length) return
+    set({ missions: dailyMissions(today), missionsDate: today })
+    saveGame(get())
+  },
+  openMissions: () => { get().ensureMissions(); set({ panel: 'missions' }) },
+  // Suma progreso a las misiones activas del tipo dado (lo llama el loop en cada acción).
+  missionProgress: (type, n = 1) => {
+    const s = get()
+    if (!s.missions.length || s.missionsDate !== todayStr()) return
+    let changed = false, justDone = null
+    const missions = s.missions.map((m) => {
+      if (m.type !== type || m.claimed || m.progress >= m.target) return m
+      const progress = Math.min(m.target, m.progress + n)
+      changed = true
+      if (progress >= m.target) justDone = m
+      return { ...m, progress }
+    })
+    if (!changed) return
+    set({ missions })
+    if (justDone) get().showToast(tt('mission_done'))
+    saveGame(get())
+  },
+  // Reclama la recompensa de una misión completada (XP + oro). Una sola vez.
+  claimMission: (i) => {
+    const s = get(); const m = s.missions[i]
+    if (!m || m.claimed || m.progress < m.target) return
+    const missions = s.missions.slice(); missions[i] = { ...m, claimed: true }
+    set({ missions })
+    get().addXp(m.xp); get().addGold(m.gold)
+    get().showToast(tt('mission_reward', { xp: m.xp, gold: m.gold }))
+    saveGame(get())
+  },
 
   // Cuenta cuántas unidades de un ítem (por id) hay en el inventario (respeta stacks).
   countItem: (id) => get().inventory.reduce((n, it) => n + (it && it.id === id ? (it.count || 1) : 0), 0),
@@ -640,6 +682,7 @@ export const storeApi = {
   setWaypointList: (l) => useGameStore.getState().setWaypointList(l),
   getWaypointSeq: () => useGameStore.getState().waypointSeq,
   getWaypointTarget: () => useGameStore.getState().waypointTarget,
+  missionProgress: (type, n) => useGameStore.getState().missionProgress(type, n),
   takeDamage: (n) => useGameStore.getState().takeDamage(n),
   heal: (n) => useGameStore.getState().heal(n),
   reviveFull: () => useGameStore.getState().reviveFull(),

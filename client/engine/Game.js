@@ -229,22 +229,15 @@ export class Game {
     this._loading = false
   }
 
-  // Arma la lista de destinos para el modal de waypoints: los descubiertos + los adyacentes
-  // (portales de este mapa), con etiqueta localizada y tile de llegada. La marca actual queda
-  // deshabilitada. Se rearma al construir el mundo, al descubrir algo y al cambiar idioma.
+  // Arma la lista de destinos del modal de waypoints: SÓLO las zonas que el jugador
+  // descubrió (pisó su portal o estuvo ahí). La zona actual queda marcada/deshabilitada.
+  // Se rearma al construir el mundo, al descubrir algo y al cambiar idioma.
   _refreshWaypoints() {
     const discovered = this.store.getDiscovered() || {}
-    const map = new Map()
-    for (const [zone, d] of Object.entries(discovered)) {
-      map.set(zone, { zone, label: zoneTitle(zone), tx: d.tx, ty: d.ty, adjacent: false, current: zone === this.mapName })
-    }
-    for (const p of (this.portals || [])) {
-      if (p.to === this.mapName) continue
-      const prev = map.get(p.to)
-      map.set(p.to, { zone: p.to, label: zoneTitle(p.to), tx: p.tx, ty: p.ty, adjacent: true, current: false })
-      if (prev && !prev.adjacent) { /* mantener adyacente + tile del portal */ }
-    }
-    this.store.setWaypointList([...map.values()])
+    const list = Object.entries(discovered).map(([zone, d]) => ({
+      zone, label: zoneTitle(zone), tx: d.tx, ty: d.ty, current: zone === this.mapName,
+    }))
+    this.store.setWaypointList(list)
   }
 
   // Reetiqueta todo lo que dibuja el motor cuando cambia el idioma.
@@ -526,6 +519,7 @@ export class Game {
     // Abrir un cofre es la acción de Saqueo (+XP de skill y de jugador).
     this.store.addSkillXp('saqueo', 14)
     this.store.addXp(10)
+    this.store.missionProgress('chest', 1)
 
     const roll = rollLoot(chest.loot)
     if (roll.gold > 0) this.store.addGold(roll.gold)
@@ -739,6 +733,7 @@ export class Game {
     const qty = 1 + (Math.random() < 0.25 ? 1 : 0)      // a veces sale doble
     if (!this.store.addItem(item, qty)) { this.store.showToast(tt('inv_full')); return }
     this.store.addSkillXp(node.def.skill, 6)
+    this.store.missionProgress(node.def.skill === 'excavacion' ? 'mine' : 'herb', qty)
     node.deplete()
     const mat = itemName(item, getLang())
     this._floatText(node.view.x, node.view.y - 30, `+${qty} ${mat}`, '#bfe9a0')
@@ -759,6 +754,7 @@ export class Game {
     this.store.addSkillXp('combate', e.def.xp)
     this.store.addXp(e.def.xp)
     this.store.addGold(e.def.gold)
+    this.store.missionProgress('kill', 1)
     this._floatText(e.view.x, e.view.y + e._hpY, `+${e.def.xp} XP`, '#9fe0ff')
     this.store.logMessage({ channel: 'sistema', text: tt('defeated', { name: enemyName(e.def.sprite, getLang()), xp: e.def.xp, gold: e.def.gold }) })
     if (this._target === e) this._target = null

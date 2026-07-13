@@ -47,14 +47,17 @@ export default function ZoneLoader() {
     if (zone) { const p = LORE[t.lang] || LORE.es; setPhrase(p[Math.floor(Math.random() * p.length)]) }
   }, [!!zone, t.lang])
   if (!zone) return null
+  const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
   return (
     <div className="modal-backdrop zoneload-backdrop">
-      <div className="settings-panel zoneload-inner">
-        <div className="settings-head"><b>{t('traveling_to')}</b></div>
-        <div className="zoneload-rune" />
-        <div className="zoneload-zone">{zone.label}</div>
-        <div className="zoneload-bar"><div className="zoneload-fill" /></div>
-        <p className="zoneload-lore">“{phrase}”</p>
+      <div className="flare-panel" style={{ backgroundImage: `url(${UI}powers.png)` }}>
+        <div className="zoneload-inner">
+          <div className="zoneload-title">{t('traveling_to')}</div>
+          <div className="zoneload-rune" />
+          <div className="zoneload-zone">{zone.label}</div>
+          <div className="zoneload-bar"><div className="zoneload-fill" /></div>
+          <p className="zoneload-lore">“{phrase}”</p>
+        </div>
       </div>
     </div>
   )
