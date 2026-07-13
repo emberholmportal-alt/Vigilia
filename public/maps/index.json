@@ -390,5 +390,19 @@
   "w": 84,
   "h": 92,
   "tileset": "tileset_dungeon"
+ },
+ {
+  "name": "greenwood_point",
+  "title": "Greenwood Point",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_grassland"
+ },
+ {
+  "name": "triston",
+  "title": "Triston",
+  "w": 100,
+  "h": 100,
+  "tileset": "tileset_triston"
  }
 ]

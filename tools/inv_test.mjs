@@ -8,7 +8,7 @@ const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>{if(
 await p.goto('http://127.0.0.1:5173/',{waitUntil:'networkidle'})
 await p.click('.enter'); await p.waitForSelector('.race'); await p.click('.race-card:nth-child(3)'); await p.click('.race-inner .enter')
 await p.waitForFunction(()=>window.__vigilia?.player?.paperdoll); await sleep(1200)
-await p.click('.bag'); await p.waitForSelector('.flare-panel'); await sleep(300)
+await p.click('.ab-btn[title="Inventario"]'); await p.waitForSelector('.flare-panel'); await sleep(300)
 // click en la primera celda con ícono (un ítem de la grilla)
 const cells=await p.$$('.inv-cell')
 for (const c of cells){ if(await c.$('.item-icon')){ await c.click(); break } }

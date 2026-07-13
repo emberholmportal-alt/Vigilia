@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 //   SMOKE_URL    URL del dev server (default: http://127.0.0.1:5173/)
 //   SHOT_DIR     dónde dejar los screenshots (default: temp del SO)
 const EXE = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
-const URL = process.env.SMOKE_URL || 'http://127.0.0.1:5173/'
+const URL = process.env.SMOKE_URL || 'http://127.0.0.1:5173/?map=lochport'
 const OUT = process.env.SHOT_DIR || tmpdir()
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))

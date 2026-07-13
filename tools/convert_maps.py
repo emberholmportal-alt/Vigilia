@@ -35,9 +35,14 @@ import os, re, json, argparse, glob
 
 TXT_INT = re.compile(r"^(\w+)=(.*)$")
 
+# Override de tamaño de tile por mapa. Triston (HERESY) es nativo 64px y su tileset se
+# extrae a escala 1.0, así que el diamante debe ser 64px -> tileW=128 (128×0.5/2=32=wHalf,
+# diamante 64) para que coincida con el arte y quede al zoom de los demás mapas.
+TILE_OVERRIDE = {"triston": (128, 64)}
+
 
 def parse_map(path):
-    m = {"layers": {}, "portals": [], "chests": [], "npcs": [], "spawners": []}
+    m = {"layers": {}, "portals": [], "chests": [], "npcs": [], "spawners": [], "decorations": []}
     section, buf, layer_type, reading_data = None, {}, None, False
     rows = []
 
@@ -64,6 +69,13 @@ def parse_map(path):
             elif "npc" in ev:
                 m["npcs"].append({"x": loc[0], "y": loc[1],
                                   "id": os.path.splitext(os.path.basename(ev["npc"]))[0]})
+        elif section == "npc":
+            # Decoraciones/aldeanos/animales que el mapa coloca (fuente, cerdos, etc.).
+            loc = [int(x) for x in buf.get("location", "0,0,1,1").split(",")]
+            fn = buf.get("filename", "")
+            if fn:
+                m["decorations"].append({"x": loc[0], "y": loc[1], "w": loc[2], "h": loc[3],
+                                         "name": os.path.splitext(os.path.basename(fn))[0]})
         elif section == "enemy":
             loc = [int(x) for x in buf.get("location", "0,0,1,1").split(",")]
             # level y number pueden ser un valor ("10") o un rango ("2,3")
@@ -126,10 +138,23 @@ def main():
     a = ap.parse_args()
 
     src = os.path.join(a.flare, "mods", "empyrean_campaign", "maps")
+    # Mapas propios/importados (de otros mods, con licencia compatible) que no viven en
+    # vendor. Ej: greenwood_point (pueblo del mod noname, tileset grassland de fantasycore).
+    extra = os.path.join(os.path.dirname(__file__), "maps_extra")
     os.makedirs(a.out, exist_ok=True)
 
-    files = (sorted(glob.glob(os.path.join(src, "*.txt"))) if a.all
-             else [os.path.join(src, n + ".txt") for n in a.maps])
+    def find(name):
+        for d in (src, extra):
+            p = os.path.join(d, name + ".txt")
+            if os.path.exists(p):
+                return p
+        return os.path.join(src, name + ".txt")
+
+    if a.all:
+        files = sorted(glob.glob(os.path.join(src, "*.txt")))
+        files += sorted(glob.glob(os.path.join(extra, "*.txt")))
+    else:
+        files = [find(n) for n in a.maps]
 
     index = []
     for f in files:
@@ -141,6 +166,8 @@ def main():
         if not m.get("w"):
             continue
         m["name"] = name
+        if name in TILE_OVERRIDE:
+            m["tileW"], m["tileH"] = TILE_OVERRIDE[name]
         with open(os.path.join(a.out, name + ".json"), "w") as fh:
             json.dump(m, fh, separators=(",", ":"))
         index.append({"name": name, "title": m.get("title", name),

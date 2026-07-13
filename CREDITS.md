@@ -17,6 +17,14 @@ Lista completa de autores: https://github.com/flareteam/flare-game/wiki/Credits
 - Cualquier **modificación del arte** que publiquemos queda también bajo CC-BY-SA 3.0.
 - El código de Vigilia no está cubierto por esta licencia: es nuestro.
 
+## HUD estilo Diablo — Demonic UI (CC-BY-SA 3.0)
+
+Los **globos de vida/maná** y la barra de XP del HUD vienen del mod **Demonic UI** para
+Flare (CC-BY-SA 3.0), que a su vez parte del *Health Orb* de **itsmars** en OpenGameArt.
+
+- Demonic UI: https://gitlab.com/predator8bit/flare-demonic-ui
+- Health Orb (itsmars): https://opengameart.org/content/health-orb-11
+
 ## Motor de Flare
 
 El *engine* de Flare (GPLv3) **no se usa** en este proyecto. Vigilia tiene su propio motor

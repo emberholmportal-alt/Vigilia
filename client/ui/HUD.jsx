@@ -1,22 +1,28 @@
-// HUD permanente. Barras de vida/maná (arte de Flare), stats siempre visibles,
-// cinturón de 4 consumibles, correr/caminar con stamina y chat sobre la cabeza.
-import { useState } from 'react'
-import { useGameStore } from '../store.js'
-import Bar from './Bar.jsx'
-import Slot from './Slot.jsx'
+// HUD permanente estilo Diablo: globos de vida/maná en las esquinas, la barra de acción
+// real de Flare al centro (cinturón + botones de menú) y la barra de XP abajo. Los stats
+// arriba a la izquierda (tocables abren el panel de personaje). Sin stamina ni chat.
+import { useEffect } from 'react'
+import { useGameStore, beltCapacityOf } from '../store.js'
+import { playerProgress } from '../data/progression.js'
+import Globe from './Globe.jsx'
+import ActionBar, { MenuRow, DesktopBar, AbilityBar, BuffBar } from './ActionBar.jsx'
+import { useT } from './useT.js'
+import { raceName } from '../i18n.js'
+
+// Aviso breve que aparece arriba de la barra y se va solo.
+function Toast() {
+  const toast = useGameStore((s) => s.toast)
+  const clearToast = useGameStore((s) => s.clearToast)
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(clearToast, 2200)
+    return () => clearTimeout(t)
+  }, [toast, clearToast])
+  if (!toast) return null
+  return <div className="toast" key={toast.until}>{toast.text}</div>
+}
 
 export default function HUD() {
-  const [chatOpen, setChatOpen] = useState(false)
-  const [chatText, setChatText] = useState('')
-  const say = useGameStore((s) => s.say)
-
-  function sendChat(e) {
-    e.preventDefault()
-    say(chatText)
-    setChatText('')
-    setChatOpen(false)
-  }
-
   const mapTitle = useGameStore((s) => s.mapTitle)
   const playerName = useGameStore((s) => s.playerName)
   const fps = useGameStore((s) => s.fps)
@@ -24,72 +30,95 @@ export default function HUD() {
   const race = useGameStore((s) => s.race)
   const stats = useGameStore((s) => s.stats)
   const belt = useGameStore((s) => s.belt)
-  const running = useGameStore((s) => s.running)
-  const stamina = useGameStore((s) => s.stamina)
-  const staminaMax = useGameStore((s) => s.staminaMax)
-  const toggleRun = useGameStore((s) => s.toggleRun)
+  const xp = useGameStore((s) => s.xp)
+  const nearby = useGameStore((s) => s.nearby)
+  const requestInteract = useGameStore((s) => s.requestInteract)
+  const nearbyPortal = useGameStore((s) => s.nearbyPortal)
+  const openWaypoints = useGameStore((s) => s.openWaypoints)
+  const nearbyNode = useGameStore((s) => s.nearbyNode)
+  const requestGather = useGameStore((s) => s.requestGather)
   const togglePanel = useGameStore((s) => s.togglePanel)
-  const muted = useGameStore((s) => s.muted)
-  const toggleMute = useGameStore((s) => s.toggleMute)
+  const openMissions = useGameStore((s) => s.openMissions)
+  const missions = useGameStore((s) => s.missions)
+  const useBelt = useGameStore((s) => s.useBelt)
+  const equippedBelt = useGameStore((s) => s.equippedBelt)
+  const beltCap = beltCapacityOf(equippedBelt)
+  const t = useT()
 
   const s = stats || { level: 1, str: 0, dex: 0, int: 0, vit: 0, hp: 0, hpMax: 1, mp: 0, mpMax: 1 }
+  const prog = playerProgress(xp || 0)
 
   return (
     <>
       <div className="hud">
-        <button className="who" onClick={() => togglePanel('character')} title="Ver personaje">
-          <b>{playerName} {race ? '· ' + race.name : ''}</b>
+        <button className="who" onClick={() => togglePanel('character')} title={t('view_character')}>
+          <b>{playerName} {race ? '· ' + raceName(race, t.lang) : ''}</b>
           <div className="attrs">
-            <span>Nv {s.level}</span>
-            <span>FUE {s.str}</span>
-            <span>DES {s.dex}</span>
-            <span>INT {s.int}</span>
-            <span>VIT {s.vit}</span>
+            <span>{t('lv')} {s.level}</span>
+            <span>{t('abbr_str')} {s.str}</span>
+            <span>{t('abbr_dex')} {s.dex}</span>
+            <span>{t('abbr_int')} {s.int}</span>
+            <span>{t('abbr_vit')} {s.vit}</span>
           </div>
         </button>
         <div className="telemetry">
           <span className={fps >= 55 ? 'ok' : fps >= 40 ? 'warn' : 'bad'}>{fps} fps</span>
           <span className="dim2">{mapTitle}</span>
         </div>
+        <div className="hud-right">
+          {(() => {
+            const claimable = (missions || []).filter((m) => m.progress >= m.target && !m.claimed).length
+            return (
+              <button className={'hud-missions' + (claimable > 0 ? ' ready' : '')} onClick={openMissions} title={t('missions_menu')}>
+                <span className="hud-missions-ic">📜</span>
+                <span className="hud-missions-lbl">{t('missions_menu')}</span>
+                {claimable > 0 ? <span className="hud-badge">{claimable}</span> : null}
+              </button>
+            )
+          })()}
+          <div className="hud-gold"><span className="ab-coin" /> {gold}</div>
+        </div>
       </div>
+
+      <Toast />
 
       <div className="hud-bottom">
-        <div className="hud-belt-row">
-          <div className="belt">
-            {belt.map((it, i) => (
-              <Slot key={i} item={it} size={42} />
-            ))}
+        {nearbyPortal && (
+          <div className="interact-wrap">
+            <button className="interact-btn portal-btn" onClick={openWaypoints}>
+              🌀 {t('portal_use')}
+            </button>
           </div>
-          <button className={'run-btn' + (running ? ' on' : '')} onClick={toggleRun}>
-            {running ? '🏃' : '🚶'}
-            <Bar type="xp" value={stamina} max={staminaMax} width={70} />
-          </button>
-          <button className="icon-btn" onClick={() => setChatOpen((v) => !v)}>💬</button>
-          <button className="icon-btn" onClick={toggleMute}>{muted ? '🔇' : '🔊'}</button>
-          <button className="bag" onClick={() => togglePanel('inventory')}>
-            <i>🎒</i>
-            <u>{gold}</u>
-          </button>
+        )}
+        {nearby && (
+          <div className="interact-wrap">
+            <button className="interact-btn" onClick={requestInteract}>
+              {nearby.shop ? '🛒 ' + t('trade_with', { name: nearby.name }) : '💬 ' + t('talk_with', { name: nearby.name })}
+            </button>
+          </div>
+        )}
+        {nearbyNode && !nearby && (
+          <div className="interact-wrap">
+            <button className="interact-btn gather-btn" onClick={requestGather}>
+              {nearbyNode.skill === 'excavacion' ? '⛏️ ' : '🌿 '}{t('gather_action', { name: nearbyNode.name })}
+            </button>
+          </div>
+        )}
+        <MenuRow onPanel={togglePanel} />
+        <BuffBar />
+        <AbilityBar />
+        <div className="globe-row">
+          <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
+          <ActionBar belt={belt} gold={gold} onUseBelt={useBelt} beltCap={beltCap} />
+          <DesktopBar belt={belt} onPanel={togglePanel} onUseBelt={useBelt} beltCap={beltCap} />
+          <Globe type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} />
         </div>
-        <div className="hud-bars-row">
-          <Bar type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} width={165} />
-          <Bar type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} width={165} />
+
+        <div className="xp-strip" title={`XP ${prog.into}/${prog.need}`}>
+          <div className="xp-strip-fill" style={{ width: `${Math.round(prog.pct * 100)}%` }} />
+          <span className="xp-strip-label">{t('xp_of', { lv: s.level, into: prog.into, need: prog.need })}</span>
         </div>
       </div>
-
-      {chatOpen && (
-        <form className="chat-bar" onSubmit={sendChat}>
-          <input
-            autoFocus
-            value={chatText}
-            maxLength={120}
-            placeholder="Decí algo…"
-            onChange={(e) => setChatText(e.target.value)}
-            onBlur={() => !chatText && setChatOpen(false)}
-          />
-          <button type="submit">Decir</button>
-        </form>
-      )}
     </>
   )
 }

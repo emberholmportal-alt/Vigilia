@@ -3,7 +3,7 @@
 import { chromium } from 'playwright-core'
 import { tmpdir } from 'node:os'
 const EXE = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
-const URL = process.env.SMOKE_URL || 'http://127.0.0.1:5173/'
+const URL = process.env.SMOKE_URL || 'http://127.0.0.1:5173/?map=lochport'
 const OUT = process.env.SHOT_DIR || tmpdir()
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -46,7 +46,7 @@ const start = await page.evaluate(() => {
 await page.screenshot({ path: OUT + '/char_center.png' })
 
 // Abrir inventario
-await page.click('.bag')
+await page.click('.ab-btn[title="Inventario"]')
 await page.waitForSelector('.flare-panel', { timeout: 5000 })
 await sleep(300)
 await page.screenshot({ path: OUT + '/char_inventory.png' })

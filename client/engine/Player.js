@@ -62,8 +62,11 @@ export class Player {
     this._bubbleText = ''
   }
 
-  setName(name) {
-    this.nameText.text = name || ''
+  setName(name, level, race, lvLabel = 'Nv') {
+    const parts = [name || '']
+    if (race) parts.push(race)
+    if (level) parts.push(lvLabel + ' ' + level)
+    this.nameText.text = parts.join(' · ')
   }
 
   showBubble(text) {
@@ -148,4 +151,17 @@ export class Player {
     this.view.y = this.iso.toWorldY(this.tx, this.ty)
     this.view.zIndex = this.tx + this.ty + 0.5
   }
+
+  // Mira hacia un tile (para encarar al enemigo antes de pegar).
+  faceTile(tx, ty) {
+    const w = this.iso.toWorld(this.tx, this.ty)
+    const t = this.iso.toWorld(tx, ty)
+    this.dir = screenVecToDir(t.x - w.x, t.y - w.y)
+    this.paperdoll.setDirection(this.dir)
+  }
+
+  // anim de ataque: 'swing' (cuerpo a cuerpo), 'shoot' (arco) o 'cast' (magia). Devuelve ms.
+  attack(anim = 'swing') { return this.paperdoll.playOnce(anim) }
+  hurt() { this.paperdoll.playOnce('hit') }
+  playDie() { this.paperdoll.playOnce('die', true) }
 }

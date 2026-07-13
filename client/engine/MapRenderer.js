@@ -104,6 +104,16 @@ export class MapRenderer {
     this._rebuild(r)
   }
 
+  // Recorre los sprites de objeto visibles (los del último rebuild). El jugador/NPCs no
+  // están en el pool, así que esto sólo toca tiles del mapa (edificios, árboles, props).
+  eachVisibleObject(cb) {
+    const pool = this.objectPool
+    for (let i = 0; i < pool.cursor; i++) {
+      const s = pool.sprites[i]
+      if (s && s.visible) cb(s)
+    }
+  }
+
   _rebuild(r) {
     const { groundPool, objectPool, tiles, iso, w } = this
     groundPool.begin()
@@ -142,6 +152,7 @@ export class MapRenderer {
             s.y = wy - t.oy
             // El objeto se apoya en su tile base: mismo depth que una entidad ahí.
             s.zIndex = depth
+            s._ti = i           // índice de tile (para la atenuación por-tile del occlusion)
             s.visible = true
             count++
           }

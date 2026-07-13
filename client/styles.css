@@ -76,6 +76,7 @@ html, body, #root {
   clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
 }
 .enter:active { border-color: var(--ember); color: var(--gold); }
+.enter.secondary { font-size: 13px; padding: 9px 20px; opacity: 0.82; margin-top: 8px; }
 .enter:disabled { opacity: 0.6; cursor: default; }
 .attribution {
   margin-top: 32px; font-size: 11px; line-height: 1.6; color: var(--dim);
@@ -106,20 +107,259 @@ html, body, #root {
 .fslot-label { font-size: 8px; color: var(--dim); font-style: normal; text-align: center; line-height: 1.05; }
 
 /* ---------- HUD inferior (cinturón+correr arriba, barras HP/MP abajo) ---------- */
+/* HUD estilo Diablo: globos de vida/maná en las esquinas, acción al centro, XP abajo */
 .hud-bottom {
   position: absolute; left: 0; right: 0; bottom: 0;
-  padding: 0 10px calc(8px + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 0;
   pointer-events: none;
 }
-.hud-belt-row {
-  display: flex; align-items: center; justify-content: center; gap: 8px; pointer-events: auto;
+/* globos anclados a las esquinas; la barra de acción se centra entre ellos y envuelve
+   si no entra (móvil portrait). Así la barra nunca queda tapada por un globo. */
+.globe-row {
+  position: relative; display: flex; align-items: flex-end; justify-content: center;
+  padding: 0 6px 2px; min-height: 88px; pointer-events: auto;
 }
-.hud-bars-row {
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
-  pointer-events: auto;
+.globe {
+  --globe: 84px;
+  position: absolute; bottom: 2px; width: var(--globe); height: var(--globe); flex: 0 0 auto;
+  background-size: 100% 100%; background-repeat: no-repeat; pointer-events: none;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
 }
-.belt { display: flex; align-items: center; gap: 4px; }
+.globe:first-child { left: 6px; }
+.globe:last-child { right: 6px; }
+.globe-liquid {
+  position: absolute; left: 0; bottom: 0; width: 100%; overflow: hidden;
+  background-repeat: no-repeat; background-position: center bottom;
+  background-size: var(--globe) var(--globe);
+}
+.globe-label {
+  position: absolute; left: 0; right: 0; bottom: 40%; text-align: center;
+  font-family: Georgia, serif; font-size: 11px; color: #f7efdd;
+  text-shadow: 0 1px 2px #000, 0 0 4px #000; pointer-events: none;
+}
+/* barra de acción compuesta con piezas reales de Flare: cinturón + oro + botones de menú.
+   Sólo mostramos slots usables (nada de huecos de poderes vacíos). Marco de latón oscuro. */
+.actionbar {
+  align-self: center; flex: 0 1 auto; max-width: calc(100% - 172px);
+  display: flex; align-items: center; gap: 7px;
+  padding: 4px 9px;
+  background: linear-gradient(180deg, #2a2118 0%, #17120c 55%, #0c0906 100%);
+  border: 1px solid #6b5320; border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(120, 90, 40, 0.35);
+}
+/* cinturón: 4 slots con la textura real de Flare */
+.ab-belt { display: flex; gap: 3px; }
+.ab-cell {
+  position: relative; width: 40px; height: 40px; flex: 0 0 auto;
+  background-size: 100% 100%; background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+/* slots del cinturón que se pueden usar (consumibles) */
+.ab-cell.usable, .db-slot.usable { cursor: pointer; }
+.ab-cell.usable:hover, .db-slot.usable:hover { box-shadow: inset 0 0 0 2px rgba(230, 200, 90, 0.75); }
+.ab-cell.usable:active, .db-slot.usable:active { filter: brightness(1.25); }
+/* slot del cinturón bloqueado (se abre con un cinturón más grande) */
+.ab-cell.locked, .db-slot.locked { cursor: default; }
+.ab-lock {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 13px; opacity: 0.5; filter: grayscale(1);
+  background: rgba(10, 9, 12, 0.5);
+}
+/* oro con moneda */
+.ab-gold {
+  display: flex; align-items: center; gap: 4px; padding: 0 4px;
+  font-family: Georgia, serif; font-size: 14px; color: var(--gold);
+  text-shadow: 0 1px 2px #000; white-space: nowrap;
+}
+.ab-coin {
+  width: 15px; height: 15px; border-radius: 50%; flex: 0 0 auto;
+  background: radial-gradient(circle at 35% 30%, #ffe89a, #c9a227 60%, #8a6a12);
+  box-shadow: 0 0 0 1px #5a4410, inset 0 -2px 3px rgba(0, 0, 0, 0.4);
+}
+/* fila de botones de menú, centrada arriba de la barra (así no la tapan los globos) */
+.menu-row {
+  display: flex; justify-content: center; gap: 6px;
+  padding: 4px 0 2px; pointer-events: auto;
+}
+.ab-btn {
+  width: 46px; height: 46px; flex: 0 0 auto; border: 0; padding: 0; cursor: pointer;
+  background-color: transparent; background-size: 100% 100%; background-repeat: no-repeat;
+  -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
+}
+.ab-btn:active { filter: brightness(1.35); }
+
+/* barra de habilidades activas (botones redondos con recarga) */
+.ability-row {
+  display: flex; justify-content: center; gap: 8px;
+  padding: 2px 0 4px; pointer-events: auto;
+}
+.abil-btn {
+  position: relative; width: 50px; height: 50px; flex: 0 0 auto; overflow: hidden;
+  border: 2px solid #8a6f1e; border-radius: 50%; padding: 0; cursor: pointer;
+  background: radial-gradient(circle at 42% 34%, #3a3346, #17141d 78%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6), inset 0 0 6px rgba(0, 0, 0, 0.6);
+  -webkit-tap-highlight-color: transparent;
+}
+.abil-btn:not(:disabled):active { transform: scale(0.92); }
+.abil-btn:disabled { cursor: default; }
+.abil-btn.nomana { border-color: #4a4356; filter: grayscale(0.5) brightness(0.78); }
+.abil-ic { display: block; font-size: 22px; line-height: 50px; text-align: center; filter: drop-shadow(0 1px 2px #000); }
+.abil-mp {
+  position: absolute; bottom: -1px; right: 4px; font-family: Georgia, serif; font-size: 9px;
+  font-weight: bold; color: #7fd0ff; text-shadow: 0 1px 2px #000;
+}
+.abil-cd { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(10, 8, 14, 0.66); pointer-events: none; }
+.abil-cd-txt {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: Georgia, serif; font-size: 17px; font-weight: bold; color: #f2ead6;
+  text-shadow: 0 1px 3px #000; pointer-events: none;
+}
+
+/* potencias temporales activas (Vigor, etc.) */
+.buff-row { display: flex; justify-content: center; gap: 6px; padding: 2px 0; pointer-events: none; }
+.buff-chip {
+  display: flex; align-items: center; gap: 4px; padding: 2px 8px;
+  background: rgba(20, 26, 40, 0.7); border: 1px solid #4a6fa0; border-radius: 12px;
+  box-shadow: 0 0 6px rgba(120, 190, 255, 0.35);
+}
+.buff-ic { font-size: 14px; filter: drop-shadow(0 1px 2px #000); }
+.buff-sec { font-family: Georgia, serif; font-size: 11px; font-weight: bold; color: #bfe0ff; text-shadow: 0 1px 2px #000; }
+
+/* barra COMPLETA de Flare (Demonic UI) para escritorio: sólo visible en pantallas anchas.
+   El marco 1280×70 en una fila, con los slots texturizados y los botones grabados. */
+.desktop-bar { display: none; }
+.db-slot, .db-menu {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  height: 80%; aspect-ratio: 1;
+}
+.db-slot {
+  background-size: 100% 100%; background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+.db-menu {
+  border: 0; padding: 0; background: transparent; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.db-menu:active { filter: brightness(1.4); }
+
+/* chip de oro arriba a la izquierda (para escritorio, donde la barra Flare no lo muestra) */
+.hud-gold {
+  display: none; align-items: center; gap: 5px; margin-top: 4px;
+  font-family: Georgia, serif; font-size: 15px; color: var(--gold); text-shadow: 0 1px 2px #000;
+}
+
+/* chat / registro de eventos, abajo a la izquierda (estilo Valorant, estética Vigilia) */
+.chat {
+  position: absolute; left: 8px; bottom: 150px; z-index: 5;
+  width: min(42vw, 360px); display: flex; flex-direction: column; gap: 4px;
+  pointer-events: none;
+}
+.chat-log {
+  display: flex; flex-direction: column; gap: 1px; max-height: 168px; overflow: hidden;
+  font-family: Georgia, serif; font-size: 12px; line-height: 1.35;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22px);
+  mask-image: linear-gradient(to bottom, transparent, #000 22px);
+}
+.chat-line {
+  color: #d7cdbb; text-shadow: 0 1px 2px #000, 0 0 3px #000;
+  background: rgba(10, 9, 12, 0.34); padding: 1px 6px; border-radius: 3px; width: fit-content;
+}
+.chat-tag { font-weight: bold; }
+.chat-name { color: #7fd0e6; font-weight: bold; }
+.chat-say {
+  pointer-events: auto; align-self: flex-start; cursor: pointer;
+  font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  background: linear-gradient(180deg, #2a2320, #17120e); border: 1px solid var(--gold);
+  border-radius: 4px; padding: 4px 12px; text-shadow: 0 1px 2px #000;
+}
+.chat-say:active { filter: brightness(1.2); }
+.chat-input { pointer-events: auto; }
+.chat-input input {
+  width: 100%; box-sizing: border-box; font-family: Georgia, serif; font-size: 13px;
+  color: #f2ead6; background: rgba(10, 9, 12, 0.9); border: 1px solid var(--gold);
+  border-radius: 4px; padding: 6px 10px; outline: none;
+}
+
+/* aviso breve (toast): arriba-centro, se va solo */
+.toast {
+  position: absolute; left: 50%; top: 66px; transform: translateX(-50%);
+  z-index: 6; pointer-events: none; white-space: nowrap;
+  background: rgba(10, 9, 12, 0.94); border: 1px solid var(--gold); color: #f7efdd;
+  font-family: Georgia, serif; font-size: 14px; padding: 8px 16px; border-radius: 7px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6); animation: toast-in 0.18s ease;
+}
+@keyframes toast-in { from { transform: translate(-50%, -14px); } }
+
+/* botón para interactuar con el NPC cercano: fila propia arriba de todo el HUD inferior */
+.interact-wrap { display: flex; justify-content: center; padding-bottom: 8px; pointer-events: none; }
+/* piedra oscura + borde de latón + texto pergamino serif (estética Flare) */
+.interact-btn {
+  pointer-events: auto; font-family: Georgia, serif; font-size: 14px; white-space: nowrap;
+  letter-spacing: 0.02em; color: var(--parch);
+  background: linear-gradient(180deg, #2a2320 0%, #17120e 60%, #0d0a08 100%);
+  border: 1px solid var(--gold); border-radius: 4px; padding: 8px 18px; cursor: pointer;
+  text-shadow: 0 1px 2px #000;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(201, 162, 39, 0.22);
+  animation: interact-pop 0.15s ease;
+}
+.interact-btn:active { filter: brightness(1.2); }
+/* variante portal: mismo estilo con acento arcano (borde/letra violeta) */
+.portal-btn {
+  color: #e6d9ff; border-color: #7a52c0;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(154, 107, 255, 0.28);
+}
+/* variante ataque: acento rojo/ember */
+.attack-btn {
+  color: #f2d6c6; border-color: #a23c22;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(194, 85, 31, 0.3);
+}
+@keyframes interact-pop { from { transform: scale(0.9); opacity: 0; } }
+
+/* barra de XP: canal siempre visible (aunque esté en 0) con relleno + etiqueta de nivel */
+.xp-strip {
+  position: relative; height: 16px; pointer-events: auto;
+  background: linear-gradient(180deg, #14100a, #0a0806);
+  border-top: 1px solid #6b5320;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+  margin-bottom: env(safe-area-inset-bottom);
+}
+.xp-strip-fill {
+  height: 100%;
+  background: linear-gradient(180deg, #d06bff, #8a30d6);
+  box-shadow: 0 0 6px rgba(180, 90, 255, 0.6);
+  transition: width 0.3s ease;
+}
+.xp-strip-label {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: Georgia, serif; font-size: 10px; letter-spacing: 0.03em;
+  color: #ead9c4; text-shadow: 0 1px 2px #000; pointer-events: none;
+}
+
+/* ---------- PC / pantallas anchas: Demonic UI a lo grande (globos y barra) ---------- */
+@media (min-width: 860px) {
+  .globe { --globe: 128px; bottom: 8px; }
+  .globe:first-child { left: 14px; }
+  .globe:last-child { right: 14px; }
+  .globe-label { font-size: 15px; }
+  .globe-row { min-height: 132px; padding-bottom: 6px; }
+
+  /* En escritorio va la barra Flare completa; se ocultan el compacto y la fila de menú. */
+  .actionbar, .menu-row { display: none; }
+  .hud-gold { display: flex; }
+  .desktop-bar {
+    display: block; position: relative; align-self: flex-end;
+    width: min(1280px, calc(100% - 300px)); aspect-ratio: 1280 / 70;
+    background-size: 100% 100%; background-repeat: no-repeat;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5)); pointer-events: auto;
+  }
+
+  .xp-strip { height: 20px; }
+  .xp-strip-label { font-size: 12px; }
+}
 .run-btn {
   display: flex; align-items: center; gap: 6px;
   font-size: 15px; color: var(--parch); background: var(--crypt); border: 1px solid var(--edge);
@@ -168,6 +408,13 @@ html, body, #root {
   position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
   background: #ffcf5a; box-shadow: 0 0 4px #ffcf5a, 0 0 0 1px #000;
 }
+/* marcador de portal en el minimapa (violeta pulsante) */
+.mm-portal {
+  position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%;
+  background: #b98bff; box-shadow: 0 0 5px #9a6bff, 0 0 0 1px #000;
+  animation: mm-pulse 1.4s ease-in-out infinite;
+}
+@keyframes mm-pulse { 50% { transform: scale(1.5); opacity: 0.7; } }
 
 /* ---------- caja de diálogo (RPG con retrato) ---------- */
 .dialogue {
@@ -249,6 +496,13 @@ html, body, #root {
 }
 .inv-cell.on { box-shadow: inset 0 0 0 2px var(--gold); border-radius: 3px; }
 .inv-cell:active { filter: brightness(1.25); }
+/* celda bloqueada (se desbloquea por nivel) */
+.inv-cell.locked { cursor: default; }
+.inv-cell.locked::before {
+  content: ''; position: absolute; inset: 2px; border-radius: 3px;
+  background: rgba(10, 9, 12, 0.62);
+}
+.inv-lock { position: relative; font-size: 13px; opacity: 0.5; filter: grayscale(1); }
 .panel-close {
   position: absolute; aspect-ratio: 64 / 38; border: 0; cursor: pointer;
   /* button_x.png son 4 estados apilados; mostramos el primero (rojo normal) */
@@ -287,9 +541,24 @@ html, body, #root {
   text-shadow: 0 1px 2px #000; white-space: nowrap;
 }
 .char-primary-lbl em { color: var(--gold); font-style: normal; font-size: 10px; }
-.char-stats {
-  position: absolute; width: 44%; display: flex; flex-direction: column; gap: 5px;
+.char-attr-add {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 20px; height: 20px; padding: 0; line-height: 18px; text-align: center;
+  font-family: Georgia, serif; font-size: 15px; font-weight: bold; color: #14111a;
+  background: radial-gradient(circle at 40% 35%, #e6c85a, #c9a227);
+  border: 1px solid #8a6f1e; border-radius: 50%; cursor: pointer;
+  box-shadow: 0 1px 3px #000; -webkit-tap-highlight-color: transparent;
+  animation: attrPulse 1.4s ease-in-out infinite;
 }
+.char-attr-add:active { transform: translate(-50%, -50%) scale(0.9); }
+@keyframes attrPulse { 0%,100% { box-shadow: 0 0 3px #e6c85a; } 50% { box-shadow: 0 0 9px #e6c85a; } }
+@media (prefers-reduced-motion: reduce) { .char-attr-add { animation: none; } }
+.char-attr-pts {
+  position: absolute; transform: translate(-50%, -50%); white-space: nowrap;
+  font-family: Georgia, serif; font-size: 11px; color: var(--gold);
+  text-shadow: 0 1px 2px #000; letter-spacing: 0.04em;
+}
+.char-stats { display: flex; flex-direction: column; gap: 5px; }
 .char-stat {
   display: flex; justify-content: space-between; align-items: baseline;
   border-bottom: 1px solid rgba(120, 104, 80, 0.25); padding-bottom: 3px;
@@ -297,6 +566,23 @@ html, body, #root {
 }
 .char-stat span { color: var(--parch); text-shadow: 0 1px 2px #000; }
 .char-stat b { color: #f2ead6; text-shadow: 0 1px 2px #000; }
+/* contenedor inferior: fluye (arranca bajo el ícono de vitalidad, ~38% del panel) */
+.char-lower {
+  position: absolute; left: 5%; top: 35%; width: 44%;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.char-xp-bar {
+  height: 8px; border: 1px solid #3b3145; border-radius: 4px; overflow: hidden;
+  background: rgba(20, 17, 26, 0.7);
+}
+.char-xp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #c9a227, #e6c85a); }
+.char-xp span { font-family: Georgia, serif; font-size: 10px; color: var(--dim); text-shadow: 0 1px 2px #000; }
+.char-skills { display: flex; flex-direction: column; gap: 4px; }
+.char-skills-h {
+  font-family: Georgia, serif; font-size: 12px; color: var(--gold);
+  letter-spacing: 0.06em; text-shadow: 0 1px 2px #000; margin-bottom: 2px;
+}
+.char-skills .char-stat b em { color: var(--dim); font-style: normal; font-size: 10px; }
 
 /* mercader (panel storage_generic.png) */
 .shop-title {
@@ -319,17 +605,137 @@ html, body, #root {
 }
 .shop-tabs button.on { color: #14111a; background: var(--gold); border-color: var(--gold); }
 
+/* panel de Acciones (poderes) */
+.pw-tabs {
+  position: absolute; left: 0; right: 0; top: 8.5%;
+  display: flex; justify-content: center; gap: 10px;
+}
+.pw-tabs button {
+  font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  background: rgba(20, 17, 26, 0.6); border: 1px solid #3b3145; border-radius: 5px;
+  padding: 3px 16px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.pw-tabs button.on { color: #14111a; background: var(--gold); border-color: var(--gold); }
+.pw-list {
+  position: absolute; left: 12%; right: 12%; top: 14.5%; bottom: 9%;
+  display: flex; flex-direction: column; gap: 9px; overflow-y: auto;
+}
+
+/* árbol de habilidades */
+.tree-body {
+  position: absolute; left: 10%; right: 10%; top: 14.5%; bottom: 8%;
+  display: flex; flex-direction: column; gap: 8px; overflow-y: auto;
+}
+.tree-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tree-pts { font-family: Georgia, serif; font-size: 12px; color: var(--gold); text-shadow: 0 1px 2px #000; }
+.tree-respec {
+  font-family: Georgia, serif; font-size: 10px; color: var(--parch);
+  background: rgba(20, 17, 26, 0.6); border: 1px solid #3b3145; border-radius: 5px;
+  padding: 3px 10px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.tree-respec:active { transform: scale(0.96); }
+.tree-hint { font-family: Georgia, serif; font-size: 10px; color: var(--dim); text-shadow: 0 1px 2px #000; line-height: 1.3; }
+.tree-branch { display: flex; flex-direction: column; gap: 5px; }
+.tree-branch-h {
+  display: flex; align-items: baseline; gap: 6px;
+  font-family: Georgia, serif; border-bottom: 1px solid rgba(120, 104, 80, 0.35); padding-bottom: 3px;
+}
+.tree-branch-ic { font-size: 15px; }
+.tree-branch-h b { color: #f2ead6; font-size: 13px; text-shadow: 0 1px 2px #000; }
+.tree-branch-h em { color: var(--gold); font-style: normal; font-size: 10px; margin-left: auto; }
+.tree-nodes { display: flex; flex-direction: column; gap: 6px; }
+.tree-node {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(20, 17, 26, 0.45); border: 1px solid #322a3c; border-radius: 6px; padding: 5px 7px;
+}
+.tree-node.locked { opacity: 0.5; }
+.tree-node.maxed { border-color: #6b5a1e; background: rgba(60, 50, 20, 0.35); }
+.tree-node-ic {
+  flex: 0 0 auto; width: 26px; height: 26px; line-height: 26px; text-align: center;
+  font-size: 16px; background: rgba(0, 0, 0, 0.35); border: 1px solid #3b3145; border-radius: 5px;
+}
+.tree-node-info { flex: 1 1 auto; min-width: 0; }
+.tree-node-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.tree-node-top b { color: #f2ead6; font-family: Georgia, serif; font-size: 12px; text-shadow: 0 1px 2px #000; }
+.tree-node-rank { display: flex; gap: 3px; }
+.tree-node-rank i { width: 6px; height: 6px; border-radius: 50%; background: #3b3145; border: 1px solid #241f2c; }
+.tree-node-rank i.on { background: var(--gold); border-color: #8a6f1e; box-shadow: 0 0 3px #e6c85a; }
+.tree-node-desc { font-family: Georgia, serif; font-size: 10px; color: var(--parch); text-shadow: 0 1px 2px #000; line-height: 1.25; }
+.tree-node-req { font-family: Georgia, serif; font-size: 9px; color: #c77; margin-top: 2px; }
+.tree-node-add {
+  flex: 0 0 auto; width: 24px; height: 24px; padding: 0; line-height: 22px; text-align: center;
+  font-family: Georgia, serif; font-size: 15px; font-weight: bold; color: #14111a;
+  background: radial-gradient(circle at 40% 35%, #e6c85a, #c9a227);
+  border: 1px solid #8a6f1e; border-radius: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.tree-node-add:disabled { background: #2a2433; color: #5a5262; border-color: #322a3c; cursor: default; }
+.tree-node-add:not(:disabled):active { transform: scale(0.9); }
+.pw-row { display: flex; flex-direction: column; gap: 3px;
+  border-bottom: 1px solid rgba(120, 104, 80, 0.25); padding-bottom: 7px; }
+.pw-head { display: flex; justify-content: space-between; align-items: baseline;
+  font-family: Georgia, serif; }
+.pw-head b { color: #f2ead6; font-size: 14px; text-shadow: 0 1px 2px #000; }
+.pw-head span { color: var(--gold); font-size: 12px; text-shadow: 0 1px 2px #000; }
+.pw-head span em { color: var(--dim); font-style: normal; font-size: 10px; }
+.pw-desc { font-family: Georgia, serif; font-size: 11px; color: var(--parch); text-shadow: 0 1px 2px #000; }
+.pw-bar { height: 6px; border: 1px solid #3b3145; border-radius: 3px; overflow: hidden;
+  background: rgba(20, 17, 26, 0.7); }
+.pw-bar i { display: block; height: 100%; background: linear-gradient(90deg, #4f9d6b, #7fd0a0); }
+
+/* herrero (reparación) */
+.smith-body {
+  position: absolute; left: 12%; right: 12%; top: 15%; bottom: 10%;
+  display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
+}
+.smith-empty { color: var(--dim); font-family: Georgia, serif; font-size: 13px; text-align: center; margin-top: 20px; }
+.smith-row { display: flex; align-items: center; gap: 8px; font-family: Georgia, serif; }
+.smith-name { flex: 1 1 auto; font-size: 13px; text-shadow: 0 1px 2px #000; }
+.smith-name em { color: var(--dim); font-style: normal; font-size: 10px; }
+.smith-bar {
+  flex: 0 0 90px; height: 8px; border: 1px solid #3b3145; border-radius: 3px; overflow: hidden;
+  background: rgba(20, 17, 26, 0.7);
+}
+.smith-bar i { display: block; height: 100%; background: linear-gradient(90deg, #b98b3a, #e6c85a); }
+.smith-bar i.broken { background: #b23b3b; }
+.smith-dur { flex: 0 0 auto; font-size: 11px; color: var(--parch); min-width: 52px; text-align: right; }
+.smith-repair {
+  margin-top: 10px; align-self: center; font-family: Georgia, serif; font-size: 14px;
+  color: var(--parch); background: linear-gradient(180deg, #2a2320, #17120e);
+  border: 1px solid var(--gold); border-radius: 5px; padding: 9px 20px; cursor: pointer;
+  text-shadow: 0 1px 2px #000;
+}
+.smith-repair:active { filter: brightness(1.2); }
+.smith-repair:disabled { opacity: 0.5; cursor: default; border-color: var(--edge); }
+
+/* panel de configuración (chico) */
+.settings-panel {
+  width: min(90vw, 320px); background: var(--stone); border: 1px solid var(--edge);
+  border-radius: 8px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  font-family: Georgia, serif;
+}
+.settings-head { display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--edge); padding-bottom: 8px; margin-bottom: 12px; }
+.settings-head b { color: var(--gold); font-size: 15px; letter-spacing: 0.05em; }
+.settings-x { background: none; border: 0; color: var(--parch); font-size: 16px; cursor: pointer; }
+.settings-row { display: flex; justify-content: space-between; align-items: center; }
+.settings-row span { color: #e6dcc6; font-size: 13px; }
+.settings-toggle { font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  background: var(--crypt); border: 1px solid var(--edge); border-radius: 5px;
+  padding: 6px 12px; cursor: pointer; }
+.settings-toggle.on { color: var(--gold); border-color: var(--gold); }
+
 /* tooltip estilo Flare */
 .inv-tooltip {
-  position: absolute; transform: translateX(-50%); z-index: 3; width: max-content; max-width: 210px;
+  position: absolute; z-index: 3; width: max-content; max-width: 210px;
   background: rgba(10, 9, 12, 0.96); border: 1px solid var(--edge);
   box-shadow: 0 0 0 1px #000, 0 6px 18px rgba(0, 0, 0, 0.6);
   padding: 8px 10px; display: flex; flex-direction: column; gap: 1px; pointer-events: auto;
 }
-.inv-tooltip b { font-family: Georgia, serif; font-size: 14px; }
+.inv-tooltip b { font-family: Georgia, serif; font-size: 14px; overflow-wrap: anywhere; }
 .inv-tooltip .tt-sub { font-size: 11px; color: var(--dim); }
 .tt-stat { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--parch); }
 .tt-stat .up { color: #8fc46b; } .tt-stat .down { color: #e8836a; }
+.tt-stat.broken { color: #e8836a; }
 .tt-price { font-size: 11px; color: var(--gold); margin-top: 3px; }
 .tt-do {
   margin-top: 7px; padding: 7px; background: var(--stone); border: 1px solid var(--edge);
@@ -347,3 +753,212 @@ html, body, #root {
   position: absolute; left: 12px; right: 12px; top: 50%;
   color: #e8836a; text-align: center; font-size: 13px;
 }
+
+/* ---------- pantalla de carga entre zonas (modal del sistema) ---------- */
+.zoneload-backdrop {
+  z-index: 60;  /* sobre cualquier otro modal */
+  background:
+    radial-gradient(120% 80% at 50% 38%, rgba(60, 36, 96, 0.5), rgba(10, 9, 12, 0.98) 62%),
+    var(--obsidian);
+  animation: zl-in 140ms ease-out;
+}
+@keyframes zl-in { from { opacity: 0; } }
+/* contenido centrado dentro del marco de Flare */
+.zoneload-inner {
+  position: absolute; left: 12%; right: 12%; top: 50%; transform: translateY(-50%);
+  text-align: center;
+}
+.zoneload-title {
+  font-family: Georgia, serif; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px; margin-bottom: 6px;
+}
+/* runa giratoria (mismo violeta que el portal) */
+.zoneload-rune {
+  width: 48px; height: 48px; margin: 6px auto 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(154, 107, 255, 0.28);
+  border-top-color: #b58bff; border-right-color: #8a5bff;
+  box-shadow: 0 0 18px rgba(138, 91, 255, 0.4), inset 0 0 10px rgba(138, 91, 255, 0.25);
+  animation: zl-spin 1s linear infinite;
+}
+@keyframes zl-spin { to { transform: rotate(360deg); } }
+.zoneload-zone {
+  font-family: Georgia, serif; color: #e6d9ff; font-size: 25px;
+  margin: 4px 0 18px; text-shadow: 0 2px 10px rgba(138, 91, 255, 0.4);
+}
+.zoneload-bar {
+  height: 8px; border-radius: 5px; overflow: hidden;
+  background: rgba(10, 8, 14, 0.85);
+  border: 1px solid #3b3145; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+.zoneload-fill {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, #6a3fb0, #b58bff);
+  box-shadow: 0 0 10px rgba(138, 91, 255, 0.6);
+  animation: zl-fill 1.25s ease-in-out forwards;
+}
+@keyframes zl-fill { 0% { width: 6%; } 70% { width: 88%; } 100% { width: 100%; } }
+.zoneload-lore {
+  margin: 18px 4px 0; color: var(--parch); opacity: 0.82;
+  font-family: Georgia, serif; font-style: italic; font-size: 13px; line-height: 1.5;
+  min-height: 3.2em;
+}
+
+/* ---------- panel de alquimia ---------- */
+.alch-body {
+  position: absolute; left: 10%; right: 10%; top: 13%; bottom: 8%;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.alch-hint {
+  color: var(--dim); font-family: Georgia, serif; font-style: italic;
+  font-size: 12px; text-align: center; margin-bottom: 2px;
+}
+.alch-list { display: flex; flex-direction: column; gap: 7px; overflow-y: auto; padding-right: 4px; }
+.alch-recipe {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 6px;
+  background: rgba(20, 17, 26, 0.55); border: 1px solid #332b3f;
+}
+.alch-recipe.lack { opacity: 0.6; }
+.alch-ins { display: flex; gap: 6px; flex: 0 0 auto; }
+.alch-in { position: relative; display: inline-flex; }
+.alch-in em {
+  position: absolute; right: -3px; bottom: -4px; font-style: normal;
+  font-size: 10px; color: var(--parch); background: rgba(10, 8, 14, 0.9);
+  border-radius: 3px; padding: 0 2px; line-height: 1.3;
+}
+.alch-in em.short { color: #e0705a; }
+.alch-arrow { color: var(--dim); font-size: 15px; flex: 0 0 auto; }
+.alch-out { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; }
+.alch-out-name {
+  font-family: Georgia, serif; font-size: 12px; color: #d9c9a8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.alch-craft {
+  flex: 0 0 auto; font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  background: linear-gradient(180deg, #2a2320, #17120e);
+  border: 1px solid var(--gold); border-radius: 5px; padding: 6px 12px; cursor: pointer;
+  text-shadow: 0 1px 2px #000;
+}
+.alch-craft:active { filter: brightness(1.2); }
+.alch-craft:disabled { opacity: 0.45; cursor: default; border-color: var(--edge); }
+
+/* ---------- selector de idioma (Configuración) ---------- */
+.lang-switch { display: flex; gap: 6px; }
+.lang-opt {
+  font-family: Georgia, serif; font-size: 13px; color: var(--dim);
+  background: linear-gradient(180deg, #201b28, #14111a);
+  border: 1px solid var(--edge); border-radius: 5px; padding: 6px 12px; cursor: pointer;
+}
+.lang-opt.on { color: var(--parch); border-color: var(--gold); box-shadow: inset 0 0 0 1px rgba(201,162,39,0.25); }
+.lang-opt:active { filter: brightness(1.15); }
+
+/* ---------- modal de red de portales (dentro del panel de Flare) ---------- */
+.wp-body { position: absolute; left: 11%; right: 11%; top: 13%; bottom: 9%; display: flex; flex-direction: column; }
+.wp-hint { color: var(--dim); font-family: Georgia, serif; font-size: 12px; font-style: italic; text-align: center; margin-bottom: 10px; }
+.wp-empty { color: var(--dim); font-family: Georgia, serif; font-size: 13px; text-align: center; padding: 14px 6px; line-height: 1.5; }
+.wp-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; padding-right: 4px; }
+.wp-row {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  font-family: Georgia, serif; font-size: 14px; color: var(--parch);
+  background: linear-gradient(180deg, rgba(34,29,43,0.6), rgba(16,12,22,0.75));
+  border: 1px solid #3b3145; border-radius: 6px; padding: 9px 12px; cursor: pointer;
+}
+.wp-row:hover:not(:disabled) { border-color: #7a52c0; box-shadow: inset 0 0 0 1px rgba(154,107,255,0.2); }
+.wp-row:active:not(:disabled) { filter: brightness(1.15); }
+.wp-row.current { opacity: 0.6; cursor: default; border-color: var(--gold); }
+.wp-rune { font-size: 15px; filter: saturate(1.2); }
+.wp-name { flex: 1 1 auto; }
+.wp-tag { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.wp-row.current .wp-tag { color: var(--gold); }
+
+/* ---------- botón de misiones en el HUD ---------- */
+.hud-missions {
+  position: relative; display: flex; align-items: center; gap: 6px; pointer-events: auto;
+  background: linear-gradient(180deg, #2a2118, #17120c);
+  border: 1px solid var(--gold); border-radius: 7px; padding: 7px 12px; cursor: pointer;
+  font-family: Georgia, serif; color: var(--parch); box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+.hud-missions-ic { font-size: 16px; line-height: 1; }
+.hud-missions-lbl { font-size: 13px; letter-spacing: 0.03em; color: #e6dcc6; }
+.hud-missions:active { filter: brightness(1.2); }
+.hud-missions.ready { animation: hm-pulse 1.4s ease-in-out infinite; }
+@keyframes hm-pulse {
+  0%, 100% { box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 0 0 rgba(201,162,39,0); }
+  50% { box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 10px 2px rgba(201,162,39,0.55); }
+}
+@media (max-width: 560px) { .hud-missions-lbl { display: none; } }
+.hud-badge {
+  position: absolute; top: -7px; right: -7px; min-width: 17px; height: 17px;
+  background: var(--ember); color: #fff; border-radius: 9px; font-family: Georgia, serif;
+  font-size: 10px; line-height: 17px; text-align: center; padding: 0 3px; box-shadow: 0 1px 3px #000;
+}
+
+/* ---------- panel de misiones (dentro del marco de Flare) ---------- */
+.ms-body { position: absolute; left: 10%; right: 10%; top: 13%; bottom: 9%; display: flex; flex-direction: column; }
+.ms-hint { color: var(--dim); font-family: Georgia, serif; font-size: 12px; font-style: italic; text-align: center; margin-bottom: 12px; }
+.ms-list { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px; }
+.ms-row {
+  padding: 10px 12px; border-radius: 7px;
+  background: rgba(20,17,26,0.55); border: 1px solid #332b3f;
+}
+.ms-row.done { border-color: #4f9d6b; box-shadow: inset 0 0 0 1px rgba(79,157,107,0.25); }
+.ms-row.claimed { opacity: 0.55; }
+.ms-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-family: Georgia, serif; }
+.ms-head b { color: #f2ead6; font-size: 14px; }
+.ms-where { color: var(--dim); font-size: 11px; font-style: italic; white-space: nowrap; }
+.ms-bar { height: 8px; margin: 8px 0 6px; border: 1px solid #3b3145; border-radius: 4px; overflow: hidden; background: rgba(10,8,14,0.7); }
+.ms-bar i { display: block; height: 100%; background: linear-gradient(90deg, #6a3fb0, #b58bff); }
+.ms-row.done .ms-bar i { background: linear-gradient(90deg, #3f8f5f, #6fce8f); }
+.ms-foot { display: flex; align-items: center; gap: 10px; font-family: Georgia, serif; }
+.ms-count { color: var(--parch); font-size: 12px; min-width: 44px; }
+.ms-reward { flex: 1 1 auto; color: var(--gold); font-size: 12px; }
+.ms-claim {
+  font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  background: linear-gradient(180deg, #2a2320, #17120e);
+  border: 1px solid var(--gold); border-radius: 5px; padding: 6px 14px; cursor: pointer;
+}
+.ms-claim:active { filter: brightness(1.2); }
+.ms-claim:disabled { opacity: 0.4; cursor: default; border-color: var(--edge); }
+.hud-right { display: flex; align-items: center; gap: 10px; }
+
+/* ---------- herrero: pestañas + forja ---------- */
+.smith-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; }
+.smith-tabs button {
+  font-family: Georgia, serif; font-size: 13px; color: var(--dim);
+  background: linear-gradient(180deg, #201b28, #14111a); border: 1px solid var(--edge);
+  border-radius: 5px; padding: 6px 16px; cursor: pointer;
+}
+.smith-tabs button.on { color: var(--parch); border-color: var(--gold); box-shadow: inset 0 0 0 1px rgba(201,162,39,0.25); }
+.forge-hint { color: var(--dim); font-family: Georgia, serif; font-size: 12px; font-style: italic; text-align: center; margin-bottom: 10px; }
+.forge-row {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 8px;
+  background: rgba(20,17,26,0.55); border: 1px solid #332b3f; border-radius: 6px;
+}
+.forge-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.forge-stat { font-family: Georgia, serif; font-size: 11px; color: var(--gold); }
+.forge-stat em { color: var(--dim); font-style: normal; }
+.forge-btn {
+  flex: 0 0 auto; font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  background: linear-gradient(180deg, #2a2320, #17120e); border: 1px solid var(--gold);
+  border-radius: 5px; padding: 7px 14px; cursor: pointer;
+}
+.forge-btn:active { filter: brightness(1.2); }
+.forge-btn:disabled { opacity: 0.4; cursor: default; border-color: var(--edge); }
+
+.tt-sub.aff { color: #9fb0e0; font-style: italic; }
+
+/* ---------- sellos + cofre de sellos (panel de misiones) ---------- */
+.ms-seals { font-family: Georgia, serif; font-size: 13px; color: var(--gold); text-align: center; margin-bottom: 6px; }
+.ms-seals b { color: #ffe08a; }
+.ms-sealchest {
+  margin-top: 12px; align-self: center; font-family: Georgia, serif; font-size: 13px; color: var(--parch);
+  background: linear-gradient(180deg, #2a2320, #17120e); border: 1px solid var(--gold);
+  border-radius: 6px; padding: 9px 18px; cursor: pointer;
+}
+.ms-sealchest:active { filter: brightness(1.2); }
+.ms-sealchest:disabled { opacity: 0.4; cursor: default; border-color: var(--edge); }
+
+/* variante recolectar: acento verde */
+.gather-btn { color: #cde6b0; border-color: #4f7d3b;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.45), inset 0 1px 0 rgba(120,200,90,0.28); }
