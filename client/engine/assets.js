@@ -46,12 +46,6 @@ export async function loadWorld(mapName) {
     t.cum = a.durs.map((d) => (acc += d))
     t.total = acc
   }
-  // Tiles de agua: fracción de agua del tile (0..1). El renderer le pinta un shimmer diagonal
-  // cuya intensidad va con esa fracción (agua abierta ondula, orilla rocosa casi nada).
-  const water = tsDef.water || {}
-  for (const [id, frac] of Object.entries(water)) {
-    if (tiles[id]) tiles[id].water = frac
-  }
 
   return { manifest, map, tileset: { name: tsName, tiles, scale: manifest.scale, atlasSrc: BASE + 'assets/' + tsDef.src } }
 }

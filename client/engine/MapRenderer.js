@@ -67,7 +67,6 @@ export class MapRenderer {
     this.objectPool = new SpritePool(this.objectLayer)
 
     this._anim = []   // { s, t } de los tiles animados visibles (se rehace en cada _rebuild)
-    this._water = []  // { s, depth, frac } de los tiles de agua visibles (shimmer diagonal)
     this._last = { x0: 1, y0: 1, x1: 0, y1: 0 } // rect inválido -> primer build forzado
     this.visibleTiles = 0
   }
@@ -116,8 +115,9 @@ export class MapRenderer {
     }
   }
 
-  // Ubica el frame de un tile animado según el reloj (ms) y pinta el shimmer del agua. Se llama
-  // cada frame, pero sólo toca los tiles animados / de agua que están en cámara.
+  // Ubica el frame de cada tile animado según el reloj (ms). Se llama cada frame, pero sólo
+  // toca los pocos tiles animados que están en cámara. Animación real de Flare (agua que fluye,
+  // cascadas, lava): nada procedural.
   tickAnim(ms) {
     for (const a of this._anim) {
       const t = a.t
@@ -126,19 +126,6 @@ export class MapRenderer {
       while (i < t.cum.length - 1 && ph >= t.cum[i]) i++
       a.s.texture = t.frames[i]
     }
-    // Agua: una onda diagonal de sombra azulada barre la superficie (tinte sólo oscurece en
-    // Pixi). Rompe el aspecto cuadrado y estático — el agua "se mueve".
-    if (this._water.length) {
-      const time = ms * 0.0016
-      for (const w of this._water) {
-        const s = 0.5 + 0.5 * Math.sin(time - w.depth * 0.55)
-        const k = w.frac * 0.24 * s              // 0..~0.24: cuánto oscurece esta banda
-        const r = (255 * (1 - k * 1.1)) & 255
-        const g = (255 * (1 - k * 0.72)) & 255
-        const b = (255 * (1 - k * 0.18)) & 255   // menos en azul => la sombra tira a celeste
-        w.s.tint = (r << 16) | (g << 8) | b
-      }
-    }
   }
 
   _rebuild(r) {
@@ -146,7 +133,6 @@ export class MapRenderer {
     groundPool.begin()
     objectPool.begin()
     this._anim.length = 0
-    this._water.length = 0
     let count = 0
 
     // Iteramos en orden (x+y) creciente para dar un back-to-front natural; igual
@@ -169,8 +155,6 @@ export class MapRenderer {
             s.zIndex = depth
             s.visible = true
             if (t.frames) this._anim.push({ s, t })
-            if (t.water) this._water.push({ s, depth, frac: t.water })
-            else s.tint = 0xffffff   // reset por si el sprite del pool venía tinteado (agua)
             count++
           }
         }
@@ -187,7 +171,6 @@ export class MapRenderer {
             s._ti = i           // índice de tile (para la atenuación por-tile del occlusion)
             s.visible = true
             if (t.frames) this._anim.push({ s, t })
-            if (t.water) this._water.push({ s, depth, frac: t.water })
             count++
           }
         }

@@ -440,44 +440,12 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
         if ok and len(fr) > 1 and frames_change(tid, len(fr)) >= 0.02:
             out_anim[str(tid)] = {"frames": fr, "durs": durs}
 
-    # Agua: Flare pone sus tiles de agua en imágenes `*_water.png`. Ese es el marcador fiable
-    # (mejor que adivinar por color). Como algunas son transiciones de orilla (roca con poca
-    # agua), guardamos la FRACCIÓN de agua del tile: el cliente le da un shimmer diagonal cuya
-    # intensidad va con esa fracción — el agua abierta ondula, la orilla rocosa casi nada. Así
-    # el agua deja de verse cuadrada y estática.
-    def water_frac(crop):
-        small = crop.resize((max(1, crop.width // 3), max(1, crop.height // 3)))
-        wat = tot = 0
-        for r, g, b, al in small.getdata():
-            if al < 40:
-                continue
-            tot += 1
-            br = (r + g + b) / 3
-            # agua azul/turquesa (b domina) O agua turbia oscura de ciénaga (marrón apagado y
-            # oscuro). Excluye pasto/roca clara (brillante, saturada, roja).
-            if (b >= r + 4) or (r >= g >= b and br < 96):
-                wat += 1
-        return wat / tot if tot else 0.0
-
-    water = {}
-    for tid, (img_rel, _) in tiledefs.items():
-        if "water" not in img_rel.lower():
-            continue
-        p = placed.get(("t", tid))
-        if not p:
-            continue
-        f = water_frac(p[2])
-        if f > 0.45:
-            water[str(tid)] = round(f, 2)
-
     out = os.path.join(out_dir, "tilesets", name + ".png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     atlas.save(out, optimize=True)
     res = {"src": "tilesets/" + name + ".png", "tiles": out_tiles}
     if out_anim:
         res["anim"] = out_anim
-    if water:
-        res["water"] = water
     return res
 
 
