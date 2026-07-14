@@ -24,7 +24,9 @@ import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryC
 import { saveGame, snapshot } from './data/save.js'
 
 // Idioma persistido (aparte del save: es una preferencia del dispositivo, no de la partida).
-const LANG_KEY = 'vigilia:lang'
+// Clave nueva 'velgrim:lang': ignora cualquier 'vigilia:lang' viejo (que podía tener 'es'
+// guardado) para que el default sea inglés en todos lados, incluso al entrar por primera vez.
+const LANG_KEY = 'velgrim:lang'
 function loadLang() {
   try { const l = localStorage.getItem(LANG_KEY); return l === 'es' ? 'es' : 'en' } catch { return 'en' }
 }

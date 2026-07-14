@@ -64,7 +64,7 @@ class Net {
   async walletChallenge(pubkey) { this._send({ t: 'wallet_challenge', pubkey }); return this._once('challenge') }
   async walletVerify(pubkey, signature) { this._send({ t: 'wallet_verify', pubkey, signature }); return this._once('auth') }
   async save(name, race, char) { this._send({ t: 'save', name, race, char }); return this._once('saved') }
-  async join({ name, race, map, x, y, dir, channel }) { this._send({ t: 'join', name, race, map, x, y, dir, channel }); return this._once('present') }
+  async join({ name, race, map, x, y, dir, channel, spectator }) { this._send({ t: 'join', name, race, map, x, y, dir, channel, spectator }); return this._once('present') }
 
   move(map, x, y, dir) { this._send({ t: 'move', map, x, y, dir }) }
   chat(text) { this._send({ t: 'chat', text }) }

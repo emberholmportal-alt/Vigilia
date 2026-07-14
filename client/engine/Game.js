@@ -156,9 +156,17 @@ export class Game {
     renderer.objectLayer.addChild(player.view)
     this.player = player
     this.remotes = new Map()          // id -> RemotePlayer (otros jugadores en este mapa)
-    player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'))
-    this._nameLevel = this.store.getPlayerLevel()
-    await player.setEquipment(equipToGfx(this.store.getEquipment()))
+    // Modo mirón: no controlás un personaje ni interactuás; sólo ves a los demás y recorrés el
+    // pueblo con la cámara. Ocultamos tu avatar y la cámara sigue un punto libre (tap para mover).
+    this._spectator = this.store.isSpectator()
+    if (this._spectator) {
+      player.view.visible = false
+      this._camTile = { x: spawn.x, y: spawn.y }
+    } else {
+      player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'))
+      this._nameLevel = this.store.getPlayerLevel()
+      await player.setEquipment(equipToGfx(this.store.getEquipment()))
+    }
 
     // NPCs de la plaza.
     this.npcs = []
@@ -281,7 +289,8 @@ export class Game {
     net.join({
       name: this.store.getPlayerName(), race: this.store.getRaceName(),
       map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
-      channel: this._channel,   // intenta conservar tu canal entre mapas
+      channel: this._channel,        // intenta conservar tu canal entre mapas
+      spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
     }).catch(() => {})
   }
 
@@ -325,7 +334,7 @@ export class Game {
 
   // Reetiqueta todo lo que dibuja el motor cuando cambia el idioma.
   _onLangChange() {
-    if (this.player) this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'))
+    if (this.player && !this._spectator) this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'))
     this.store.setMapTitle(zoneTitle(this.mapName))
     for (const p of (this.portals || [])) {
       const nl = zoneTitle(p.to, p.label)
@@ -515,7 +524,7 @@ export class Game {
   // Click derecho: busca la criatura bajo el cursor. Enemigo vivo -> atacar; cadáver ->
   // inspeccionar. En el piso vacío no hace nada (no camina, para no moverse sin querer).
   _rightClick(gx, gy) {
-    if (this._dead || this._loading || this._changing || !this.enemies) return
+    if (this._spectator || this._dead || this._loading || this._changing || !this.enemies) return
     const w = this.camera.screenToWorld(gx, gy)
     const t = this.iso.toTile(w.x, w.y)
     const tx = Math.round(t.x), ty = Math.round(t.y)
@@ -535,6 +544,7 @@ export class Game {
 
   // Tocar un NPC: el jugador se acerca, el NPC te mira y se abre la caja de diálogo.
   _talkTo(npc) {
+    if (this._spectator) return   // el mirón no habla con NPCs
     this.player.walkTo(npc.tx, npc.ty) // A* enruta a un tile adyacente (el suyo está bloqueado)
     const pv = this.iso.toWorld(this.player.tx, this.player.ty)
     const nv = this.iso.toWorld(npc.tx, npc.ty)
@@ -636,7 +646,7 @@ export class Game {
 
   // Tocar un cofre: caminar hasta él; se abre al llegar (en el tick).
   _tapChest(chest) {
-    if (chest.opened) return
+    if (this._spectator || chest.opened) return
     this.player.walkTo(chest.x, chest.y) // A* enruta a un tile adyacente si está bloqueado
     this._pendingChest = chest
   }
@@ -667,7 +677,7 @@ export class Game {
       if (!item) return
       const [tx, ty] = tiles[i] || [cx, cy]
       const gi = new GroundItem(this.iso, tx, ty, item, d.qty, RARITY_COLOR[item.rarity])
-      gi.onTap((g) => { this.player.walkTo(g.tx, g.ty) }) // caminar hacia él; se recoge al pasar
+      gi.onTap((g) => { if (!this._spectator) this.player.walkTo(g.tx, g.ty) }) // caminar hacia él; se recoge al pasar
       this.renderer.objectLayer.addChild(gi.view)
       this.groundItems.push(gi)
     })
@@ -892,7 +902,7 @@ export class Game {
 
   // Tocar un nodo: el jugador camina hasta él y junta al llegar.
   _gatherNode(node) {
-    if (node.depleted || this._dead) return
+    if (this._spectator || node.depleted || this._dead) return
     this._pendingNode = node
     this.player.walkTo(node.tx, node.ty)
   }
@@ -1192,7 +1202,7 @@ export class Game {
     for (const gr of list) {
       const m = new Grave(this.iso, gr)
       m.view.scale.set(this._eScale)
-      m.onTap((mk) => this.player.walkTo(mk.tx, mk.ty))   // caminar hacia ella; se recupera al llegar
+      m.onTap((mk) => { if (!this._spectator) this.player.walkTo(mk.tx, mk.ty) })   // caminar hacia ella; se recupera al llegar
       renderer.objectLayer.addChild(m.view)
       this.graves.push(m)
     }
@@ -1392,6 +1402,11 @@ export class Game {
       const t = this.iso.toTile(w.x, w.y)
       const tx = Math.round(t.x)
       const ty = Math.round(t.y)
+      // Mirón: tocar el suelo mueve la cámara hacia ahí (recorrer el pueblo), nunca camina.
+      if (this._spectator) {
+        this._camTile = { x: Math.max(0, Math.min(this.grid.w - 1, tx)), y: Math.max(0, Math.min(this.grid.h - 1, ty)) }
+        return
+      }
       // Clic izquierdo sobre (o CERCA de) un enemigo vivo = atacarlo. El tap directo al sprite ya
       // lo maneja Enemy.onTap; esto rescata el caso común de errarle a un enemigo en movimiento
       // (antes caía al piso y caminaba en vez de atacar).
@@ -1545,21 +1560,24 @@ export class Game {
     // Online: interpolar a los jugadores remotos + difundir mi posición (throttle ~8Hz).
     if (this._online) {
       if (this.remotes) for (const r of this.remotes.values()) r.update(dt)
-      this._netAccum = (this._netAccum || 0) + dt
-      if (this._netAccum >= 0.12) {
-        this._netAccum = 0
-        const tx = Math.round(this.player.tx), ty = Math.round(this.player.ty), dir = this.player.dir
-        if (tx !== this._netTx || ty !== this._netTy || dir !== this._netDir) {
-          this._netTx = tx; this._netTy = ty; this._netDir = dir
-          net.move(this.mapName, tx, ty, dir)
+      // El mirón sólo observa: no difunde posición ni persiste (no tiene personaje real).
+      if (!this._spectator) {
+        this._netAccum = (this._netAccum || 0) + dt
+        if (this._netAccum >= 0.12) {
+          this._netAccum = 0
+          const tx = Math.round(this.player.tx), ty = Math.round(this.player.ty), dir = this.player.dir
+          if (tx !== this._netTx || ty !== this._netTy || dir !== this._netDir) {
+            this._netTx = tx; this._netTy = ty; this._netDir = dir
+            net.move(this.mapName, tx, ty, dir)
+          }
         }
-      }
-      // Persistencia en el servidor: subo el personaje cada ~20s (respaldo real en la DB).
-      this._netSaveAccum = (this._netSaveAccum || 0) + dt
-      if (this._netSaveAccum >= 20) {
-        this._netSaveAccum = 0
-        const b = this.store.getSaveBlob ? this.store.getSaveBlob() : null
-        if (b) net.save(b.name, b.race, b.char)
+        // Persistencia en el servidor: subo el personaje cada ~20s (respaldo real en la DB).
+        this._netSaveAccum = (this._netSaveAccum || 0) + dt
+        if (this._netSaveAccum >= 20) {
+          this._netSaveAccum = 0
+          const b = this.store.getSaveBlob ? this.store.getSaveBlob() : null
+          if (b) net.save(b.name, b.race, b.char)
+        }
       }
     }
 
@@ -1629,12 +1647,14 @@ export class Game {
     this._stamAccum = (this._stamAccum || 0) + dt
     if (this._stamAccum >= 0.08 || (stamina === 0) !== (st.stamina === 0)) {
       this.store.setStamina(Math.round(stamina))
-      this.store.setPlayerTile({ x: this.player.tx, y: this.player.ty })
+      const ptile = this._spectator ? this._camTile : this.player
+      this.store.setPlayerTile({ x: ptile.x, y: ptile.y })
       const n = this._nearbyNpc
       this.store.setNearby(n ? { name: npcName(n.def, getLang()), shop: !!n.def.shop } : null)
       this._stamAccum = 0
     }
-    this.camera.follow(this.player.tx, this.player.ty)
+    if (this._spectator) this.camera.follow(this._camTile.x, this._camTile.y)
+    else this.camera.follow(this.player.tx, this.player.ty)
     this.camera.update(dtFrames)
 
     // Posicionar el mundo según la cámara.

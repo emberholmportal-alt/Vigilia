@@ -17,7 +17,8 @@ const CHANNEL_CAP = Number(process.env.CHANNEL_CAP || 50)   // tope de jugadores
 const AOI_RADIUS = Number(process.env.AOI_RADIUS || 24)     // radio de interés, en tiles
 const AOI_R2 = AOI_RADIUS * AOI_RADIUS
 
-const players = new Map()  // id -> { id, name, race, map, ch, x, y, dir, send }
+const players = new Map()    // id -> { id, name, race, map, ch, x, y, dir, send }
+const observers = new Map()  // id -> { id, map, ch, send }  (mirones: ven pero no son vistos)
 let seq = 1
 
 export function playerCount() { return players.size }
@@ -49,15 +50,29 @@ function pickChannel(map, want) {
   return ch
 }
 
-// Difunde a todos los de (map, ch), salteando opcionalmente un id.
+// Canal más poblado del mapa (para el mirón: querés ver donde hay gente). Def. 1 si no hay nadie.
+function pickBusiest(map) {
+  let best = 1, max = -1
+  for (const [ch, n] of channelCounts(map)) if (n > max) { max = n; best = ch }
+  return best
+}
+
+// Manda a los mirones de (map, ch). Ven todo lo que pasa en el canal aunque no sean vistos.
+function sendObservers(map, ch, msg) {
+  for (const o of observers.values()) if (o.map === map && o.ch === ch) o.send(msg)
+}
+
+// Difunde a todos los de (map, ch), salteando opcionalmente un id. Incluye a los mirones.
 function broadcast(map, ch, msg, exceptId) {
   for (const p of players.values()) {
     if (p.map !== map || p.ch !== ch || p.id === exceptId) continue
     p.send(msg)
   }
+  sendObservers(map, ch, msg)
 }
 
-// Difunde sólo a quienes están dentro del radio de interés de (x,y) en (map, ch).
+// Difunde sólo a quienes están dentro del radio de interés de (x,y) en (map, ch). Los mirones,
+// que recorren el mapa con la cámara, reciben todo el movimiento del canal (sin recorte).
 function broadcastAoI(map, ch, x, y, msg, exceptId) {
   for (const p of players.values()) {
     if (p.map !== map || p.ch !== ch || p.id === exceptId) continue
@@ -65,12 +80,21 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
     if (dx * dx + dy * dy > AOI_R2) continue
     p.send(msg)
   }
+  sendObservers(map, ch, msg)
 }
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, map, x, y, dir = 7, channel } = {}) {
+export function join(send, { name, race, map, x, y, dir = 7, channel, spectator } = {}) {
   const id = seq++
+  // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
+  // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
+  if (spectator) {
+    const ch = pickBusiest(map)
+    observers.set(id, { id, map, ch, send })
+    const present = inChannel(map, ch).map(pub)
+    return { id, channel: ch, present, spectator: true }
+  }
   const ch = pickChannel(map, channel)
   const p = { id, name: name || 'Vigilante', race: race || null, map, ch, x, y, dir, send }
   players.set(id, p)
@@ -107,8 +131,9 @@ export function chat(id, text) {
   broadcast(p.map, p.ch, { t: 'chat', id, name: p.name, text: clean }, /* exceptId */ null)
 }
 
-// Saca a un jugador (desconexión) y avisa a su canal.
+// Saca a un jugador (desconexión) y avisa a su canal. Si era mirón, sólo lo quita (nadie lo veía).
 export function leave(id) {
+  if (observers.delete(id)) return
   const p = players.get(id)
   if (!p) return
   players.delete(id)

@@ -14,6 +14,7 @@ const CHANNEL = {
 export default function ChatLog() {
   const log = useGameStore((s) => s.chatLog)
   const sayChat = useGameStore((s) => s.sayChat)
+  const spectator = useGameStore((s) => s.spectator)
   const t = useT()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
@@ -45,7 +46,8 @@ export default function ChatLog() {
         <div ref={endRef} />
       </div>
 
-      {open ? (
+      {/* El mirón sólo observa: no puede hablar. */}
+      {spectator ? null : open ? (
         <form className="chat-input" onSubmit={submit}>
           <input autoFocus value={text} maxLength={120}
                  onChange={(e) => setText(e.target.value)}

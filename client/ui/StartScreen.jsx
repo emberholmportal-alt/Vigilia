@@ -76,7 +76,7 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
             {wallet ? (
               <div className="wallet-on">
                 <span>🟢 {t('wallet_connected')}: <b>{short(wallet)}</b></span>
-                <button className="wallet-x" onClick={disconnect} title={t('wallet_disconnect')}>✕</button>
+                <button className="wallet-disc" onClick={disconnect}>🔌 {t('wallet_disconnect')}</button>
               </div>
             ) : (
               <button className="wallet-btn" onClick={connect} disabled={busy}>
