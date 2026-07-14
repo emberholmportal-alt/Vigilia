@@ -97,6 +97,8 @@ html, body, #root {
   border-radius: 0 0 10px 10px; padding: 6px 14px;
   font-family: Georgia, serif; font-size: 13px; color: #bfe0ff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
+.spec-hint { color: #7f8aa0; font-size: 11px; font-style: italic; }
+@media (max-width: 520px) { .spec-hint { display: none; } }
 .spectator-bar button {
   font-family: Georgia, serif; font-size: 12px; font-weight: bold; color: #14111a;
   background: linear-gradient(180deg, #e6c85a, #c9a227); border: 1px solid #8a6f1e; border-radius: 5px;

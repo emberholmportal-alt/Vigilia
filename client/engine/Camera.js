@@ -33,6 +33,21 @@ export class Camera {
 
   snap() { this.x = this.targetX; this.y = this.targetY; this._clamp() }
 
+  // Pan libre (modo mirón). En pixel de MUNDO: mueve el objetivo (el lerp lo alcanza).
+  panWorld(dx, dy) {
+    const c = this._clampVal(this.targetX + dx, this.targetY + dy)
+    this.targetX = c.x; this.targetY = c.y
+  }
+
+  // Pan por arrastre: 1:1 con el dedo/mouse. Arrastrar a la derecha corre el mundo a la derecha
+  // (mirás más a la izquierda). Sin lerp: movemos objetivo Y posición juntos.
+  panScreen(dxScreen, dyScreen) {
+    const dx = dxScreen / this.zoom, dy = dyScreen / this.zoom
+    const c = this._clampVal(this.targetX - dx, this.targetY - dy)
+    this.targetX = c.x; this.targetY = c.y
+    this.x = c.x; this.y = c.y
+  }
+
   update(dtFrames) {
     // lerp independiente del framerate (dtFrames = 1 a 60fps)
     const k = 1 - Math.pow(1 - this.lerp, dtFrames)
@@ -41,21 +56,20 @@ export class Camera {
     this._clamp()
   }
 
-  _clamp() {
-    // Medio-viewport en pixel de MUNDO (el zoom achica lo que entra en pantalla).
+  // Clampa un (x,y) al área visible del mundo (respetando el zoom). Devuelve {x,y}.
+  _clampVal(x, y) {
     const halfW = this.viewW / (2 * this.zoom)
     const halfH = this.viewH / (2 * this.zoom)
-    if (this.maxX - this.minX > halfW * 2) {
-      this.x = Math.max(this.minX + halfW, Math.min(this.maxX - halfW, this.x))
-    } else {
-      this.x = (this.minX + this.maxX) / 2
-    }
-    if (this.maxY - this.minY > halfH * 2) {
-      this.y = Math.max(this.minY + halfH, Math.min(this.maxY - halfH, this.y))
-    } else {
-      this.y = (this.minY + this.maxY) / 2
-    }
+    const cx = (this.maxX - this.minX > halfW * 2)
+      ? Math.max(this.minX + halfW, Math.min(this.maxX - halfW, x))
+      : (this.minX + this.maxX) / 2
+    const cy = (this.maxY - this.minY > halfH * 2)
+      ? Math.max(this.minY + halfH, Math.min(this.maxY - halfH, y))
+      : (this.minY + this.maxY) / 2
+    return { x: cx, y: cy }
   }
+
+  _clamp() { const c = this._clampVal(this.x, this.y); this.x = c.x; this.y = c.y }
 
   // Offset del contenedor del mundo (con zoom: screen = world*zoom + offset).
   get offsetX() { return Math.round(this.viewW / 2 - this.x * this.zoom) }

@@ -161,7 +161,7 @@ export class Game {
     this._spectator = this.store.isSpectator()
     if (this._spectator) {
       player.view.visible = false
-      this._camTile = { x: spawn.x, y: spawn.y }
+      this._panKeys = new Set()   // teclas de pan sostenidas (WASD / flechas)
     } else {
       player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'))
       this._nameLevel = this.store.getPlayerLevel()
@@ -1402,11 +1402,7 @@ export class Game {
       const t = this.iso.toTile(w.x, w.y)
       const tx = Math.round(t.x)
       const ty = Math.round(t.y)
-      // Mirón: tocar el suelo mueve la cámara hacia ahí (recorrer el pueblo), nunca camina.
-      if (this._spectator) {
-        this._camTile = { x: Math.max(0, Math.min(this.grid.w - 1, tx)), y: Math.max(0, Math.min(this.grid.h - 1, ty)) }
-        return
-      }
+      if (this._spectator) return   // el mirón mueve la cámara arrastrando, no tocando (ver abajo)
       // Clic izquierdo sobre (o CERCA de) un enemigo vivo = atacarlo. El tap directo al sprite ya
       // lo maneja Enemy.onTap; esto rescata el caso común de errarle a un enemigo en movimiento
       // (antes caía al piso y caminaba en vez de atacar).
@@ -1427,6 +1423,29 @@ export class Game {
     this._onContext = (e) => e.preventDefault()
     app.canvas.addEventListener('contextmenu', this._onContext)
     app.stage.on('pointerdown', (e) => { if (e.button === 2) this._rightClick(e.global.x, e.global.y) })
+
+    // Mirón: cámara libre. Arrastrar (dedo o mouse) mueve el mundo 1:1 — la forma más natural
+    // en móvil y desktop. Además WASD / flechas para desplazarse en desktop.
+    if (this._spectator) {
+      let dragging = false, lx = 0, ly = 0
+      app.stage.on('pointerdown', (e) => { if (e.button === 2) return; dragging = true; lx = e.global.x; ly = e.global.y })
+      app.stage.on('pointermove', (e) => {
+        if (!dragging) return
+        this.camera.panScreen(e.global.x - lx, e.global.y - ly)
+        lx = e.global.x; ly = e.global.y
+      })
+      const endDrag = () => { dragging = false }
+      app.stage.on('pointerup', endDrag)
+      app.stage.on('pointerupoutside', endDrag)
+      app.canvas.style.cursor = 'grab'
+
+      const KEYMAP = { KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down',
+                       KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right' }
+      this._onKeyDown = (e) => { const k = KEYMAP[e.code]; if (k) { this._panKeys.add(k); e.preventDefault() } }
+      this._onKeyUp = (e) => { const k = KEYMAP[e.code]; if (k) this._panKeys.delete(k) }
+      window.addEventListener('keydown', this._onKeyDown)
+      window.addEventListener('keyup', this._onKeyUp)
+    }
   }
 
   // Marca el destino con una X (estilo Diablo): queda mientras el personaje camina.
@@ -1647,14 +1666,26 @@ export class Game {
     this._stamAccum = (this._stamAccum || 0) + dt
     if (this._stamAccum >= 0.08 || (stamina === 0) !== (st.stamina === 0)) {
       this.store.setStamina(Math.round(stamina))
-      const ptile = this._spectator ? this._camTile : this.player
+      const ptile = this._spectator ? this.iso.toTile(this.camera.x, this.camera.y) : this.player
       this.store.setPlayerTile({ x: ptile.x, y: ptile.y })
       const n = this._nearbyNpc
       this.store.setNearby(n ? { name: npcName(n.def, getLang()), shop: !!n.def.shop } : null)
       this._stamAccum = 0
     }
-    if (this._spectator) this.camera.follow(this._camTile.x, this._camTile.y)
-    else this.camera.follow(this.player.tx, this.player.ty)
+    if (this._spectator) {
+      // Pan con teclado (WASD / flechas): en pixel de pantalla, dirección intuitiva.
+      if (this._panKeys && this._panKeys.size) {
+        const sp = 620 * dt   // pixels de mundo por segundo
+        let dx = 0, dy = 0
+        if (this._panKeys.has('up')) dy -= sp
+        if (this._panKeys.has('down')) dy += sp
+        if (this._panKeys.has('left')) dx -= sp
+        if (this._panKeys.has('right')) dx += sp
+        if (dx || dy) this.camera.panWorld(dx, dy)
+      }
+    } else {
+      this.camera.follow(this.player.tx, this.player.ty)
+    }
     this.camera.update(dtFrames)
 
     // Posicionar el mundo según la cámara.
@@ -1701,6 +1732,8 @@ export class Game {
     this.destroyed = true
     if (this._online) { this._clearRemotes(); net.close() }
     window.removeEventListener('resize', this._onResize)
+    if (this._onKeyDown) window.removeEventListener('keydown', this._onKeyDown)
+    if (this._onKeyUp) window.removeEventListener('keyup', this._onKeyUp)
     if (this._onContext && this.app?.canvas) this.app.canvas.removeEventListener('contextmenu', this._onContext)
     if (this._unsub) { this._unsub(); this._unsub = null }
     if (this.app) {

@@ -271,6 +271,7 @@ const DICT = {
   online_on: { es: 'Conectado al mundo compartido', en: 'Connected to the shared world' },
   online_off: { es: 'Modo sin conexión', en: 'Offline mode' },
   channel_on: { es: 'Canal {n}', en: 'Channel {n}' },
+  spec_hint: { es: 'Arrastrá para mirar · WASD/flechas', en: 'Drag to look · WASD/arrows' },
   // billetera (Solana)
   wallet_connect: { es: 'Conectar billetera', en: 'Connect wallet' },
   wallet_connecting: { es: 'Conectando…', en: 'Connecting…' },

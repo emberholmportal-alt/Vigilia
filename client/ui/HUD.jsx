@@ -27,6 +27,7 @@ function SpectatorBar({ onExit, t }) {
   return (
     <div className="spectator-bar">
       <span>👁 {t('spectating')}</span>
+      <span className="spec-hint">{t('spec_hint')}</span>
       <button onClick={onExit}>▶ {t('play_now')}</button>
     </div>
   )
