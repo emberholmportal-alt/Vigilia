@@ -211,6 +211,26 @@ const TRISTON = [
   { sprite: 'PigSE', x: 64, y: 54, dir: 0, critter: true },
   { sprite: 'PigSW', x: 60, y: 58, dir: 0, critter: true },
   { sprite: 'Guard_dog', scale: 1.4, x: 57, y: 56, dir: 0, critter: true },
+  { sprite: 'PigSE', x: 73, y: 53, dir: 0, critter: true },
+  { sprite: 'PigSW', x: 54, y: 54, dir: 0, critter: true },
+  { sprite: 'Guard_dog', scale: 1.4, x: 62, y: 48, dir: 0, critter: true },
+
+  // Aldeanos de ambiente (HERESY): pobladores animados repartidos por la plaza y las calles.
+  // Sin nombre ni diálogo, sólo dan vida — un pueblo lleno. scale 1.8 (los sprites son chicos).
+  { sprite: 'MalePeasant2', scale: 1.8, x: 58, y: 44, dir: 0, critter: true },
+  { sprite: 'FemalePeasant1', scale: 1.8, x: 66, y: 44, dir: 0, critter: true },
+  { sprite: 'NobleWomanFat1', scale: 1.8, x: 74, y: 44, dir: 0, critter: true },
+  { sprite: 'OldManBrown', scale: 1.8, x: 60, y: 46, dir: 0, critter: true },
+  { sprite: 'FemalePeasant2', scale: 1.8, x: 67, y: 47, dir: 0, critter: true },
+  { sprite: 'MalePeasant3', scale: 1.8, x: 48, y: 48, dir: 0, critter: true },
+  { sprite: 'NoblemanFatGreen', scale: 1.8, x: 65, y: 49, dir: 0, critter: true },
+  { sprite: 'FemalePeasant3', scale: 1.8, x: 74, y: 50, dir: 0, critter: true },
+  { sprite: 'OldManGrey', scale: 1.8, x: 67, y: 51, dir: 0, critter: true },
+  { sprite: 'MalePeasant4', scale: 1.8, x: 56, y: 52, dir: 0, critter: true },
+  { sprite: 'NobleWoman1', scale: 1.8, x: 76, y: 52, dir: 0, critter: true },
+  { sprite: 'FemalePeasant4', scale: 1.8, x: 50, y: 54, dir: 0, critter: true },
+  { sprite: 'NoblemanFatRed', scale: 1.8, x: 68, y: 54, dir: 0, critter: true },
+  { sprite: 'NobleWomanFat2', scale: 1.8, x: 71, y: 55, dir: 0, critter: true },
 ]
 
 export const NPCS_BY_MAP = {
