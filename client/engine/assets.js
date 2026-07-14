@@ -24,7 +24,7 @@ export async function loadWorld(mapName) {
   const baseTex = await Assets.load(BASE + 'assets/' + tsDef.src)
   // Vecino más cercano se ve peor al escalar iso; dejamos el default (linear).
 
-  // id de tile -> { texture, ox, oy, w, h }
+  // id de tile -> { texture, ox, oy, w, h, frames?, durs?, total? }
   const tiles = {}
   for (const [id, r] of Object.entries(tsDef.tiles)) {
     const [x, y, w, h, ox, oy] = r
@@ -32,6 +32,19 @@ export async function loadWorld(mapName) {
       texture: new Texture({ source: baseTex.source, frame: new Rectangle(x, y, w, h) }),
       ox, oy, w, h,
     }
+  }
+  // Tiles animados (agua, lava, cascadas…): construimos las texturas de cada frame y el
+  // tiempo total del ciclo. El renderer las intercambia en el tiempo (ver MapRenderer.tickAnim).
+  const anim = tsDef.anim || {}
+  for (const [id, a] of Object.entries(anim)) {
+    const t = tiles[id]
+    if (!t) continue
+    t.frames = a.frames.map(([x, y, w, h]) => new Texture({ source: baseTex.source, frame: new Rectangle(x, y, w, h) }))
+    t.durs = a.durs
+    // límites acumulados (ms) para ubicar el frame según el reloj; total = fin del ciclo.
+    let acc = 0
+    t.cum = a.durs.map((d) => (acc += d))
+    t.total = acc
   }
 
   return { manifest, map, tileset: { name: tsName, tiles, scale: manifest.scale, atlasSrc: BASE + 'assets/' + tsDef.src } }

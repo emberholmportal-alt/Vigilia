@@ -66,6 +66,7 @@ export class MapRenderer {
     this.groundPool = new SpritePool(this.groundLayer)
     this.objectPool = new SpritePool(this.objectLayer)
 
+    this._anim = []  // { s, t } de los tiles animados visibles (se rehace en cada _rebuild)
     this._last = { x0: 1, y0: 1, x1: 0, y1: 0 } // rect inválido -> primer build forzado
     this.visibleTiles = 0
   }
@@ -114,10 +115,23 @@ export class MapRenderer {
     }
   }
 
+  // Ubica el frame de un tile animado según el reloj (ms) y lo pinta. Se llama cada frame,
+  // pero sólo toca los pocos tiles animados que están en cámara.
+  tickAnim(ms) {
+    for (const a of this._anim) {
+      const t = a.t
+      let ph = ms % t.total
+      let i = 0
+      while (i < t.cum.length - 1 && ph >= t.cum[i]) i++
+      a.s.texture = t.frames[i]
+    }
+  }
+
   _rebuild(r) {
     const { groundPool, objectPool, tiles, iso, w } = this
     groundPool.begin()
     objectPool.begin()
+    this._anim.length = 0
     let count = 0
 
     // Iteramos en orden (x+y) creciente para dar un back-to-front natural; igual
@@ -139,6 +153,7 @@ export class MapRenderer {
             s.y = wy - t.oy
             s.zIndex = depth
             s.visible = true
+            if (t.frames) this._anim.push({ s, t })
             count++
           }
         }
@@ -154,6 +169,7 @@ export class MapRenderer {
             s.zIndex = depth
             s._ti = i           // índice de tile (para la atenuación por-tile del occlusion)
             s.visible = true
+            if (t.frames) this._anim.push({ s, t })
             count++
           }
         }

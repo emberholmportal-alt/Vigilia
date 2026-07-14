@@ -327,6 +327,33 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
     if not tiledefs:
         return None
 
+    # Tiles animados de Flare: `animation=<tid>;x,y,duración;x,y,duración;…`. Los frames se
+    # recortan de la MISMA imagen fuente y con el MISMO tamaño (w,h,ox,oy) que el tile base;
+    # sólo cambia el (x,y) por frame. Así el agua, la lava y demás cobran vida.
+    anims_raw = {}   # tid -> [(fx, fy, dur_ms), …]
+    for line in open(tdef, encoding="utf-8", errors="ignore"):
+        line = line.strip()
+        if not line.startswith("animation="):
+            continue
+        parts = line.split("=", 1)[1].split(";")
+        try:
+            tid = int(parts[0])
+        except ValueError:
+            continue
+        frames = []
+        for fr in parts[1:]:
+            fr = fr.strip()
+            if not fr:
+                continue
+            c = fr.split(",")
+            if len(c) < 3:
+                continue
+            fx, fy = int(c[0]), int(c[1])
+            dur = int("".join(ch for ch in c[2] if ch.isdigit()) or "100")
+            frames.append((fx, fy, dur))
+        if frames:
+            anims_raw[tid] = frames
+
     srccache = {}
     def src_img(rel):
         if rel not in srccache:
@@ -334,8 +361,9 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
             srccache[rel] = Image.open(p).convert("RGBA") if p else None
         return srccache[rel]
 
-    # Recortar y escalar cada tile.
-    crops = {}   # id -> (PIL, ox_escalado, oy_escalado)
+    # Recortar y escalar cada tile base y cada frame de animación en una sola lista para
+    # empaquetar juntos. key = ("t", tid) para el tile base, ("a", tid, j) para el frame j.
+    items = []   # (key, PIL, ox_escalado, oy_escalado)
     for tid, (img_rel, (x, y, w, h, ox, oy)) in tiledefs.items():
         im = src_img(img_rel)
         if im is None:
@@ -346,37 +374,73 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
         crop = im.crop((x, y, x + w, y + h))
         if s != 1.0:
             crop = crop.resize((max(1, int(w * s)), max(1, int(h * s))), Image.LANCZOS)
-        crops[tid] = (crop, int(ox * s), int(oy * s))
-    if not crops:
+        items.append((("t", tid), crop, int(ox * s), int(oy * s)))
+
+    for tid, frames in anims_raw.items():
+        base = tiledefs.get(tid)
+        if not base:
+            continue
+        img_rel, (x0, y0, w, h, ox, oy) = base
+        im = src_img(img_rel)
+        if im is None:
+            continue
+        s = scale_fn(w, h) if scale_fn else scale
+        for j, (fx, fy, dur) in enumerate(frames):
+            crop = im.crop((fx, fy, fx + w, fy + h))
+            if s != 1.0:
+                crop = crop.resize((max(1, int(w * s)), max(1, int(h * s))), Image.LANCZOS)
+            items.append((("a", tid, j), crop, int(ox * s), int(oy * s)))
+    if not items:
         return None
 
     # Empaquetado por estanterías (altura descendente); pad de 2px anti-bleeding.
     pad = 2
-    order = sorted(crops, key=lambda t: crops[t][0].height, reverse=True)
+    items.sort(key=lambda it: it[1].height, reverse=True)
     cx = cy = rowh = 0
-    placed = {}
-    for tid in order:
-        cw, ch = crops[tid][0].size
+    placed = {}   # key -> (px, py, crop, ox, oy)
+    for key, crop, ox, oy in items:
+        cw, ch = crop.size
         if cx + cw + pad > atlas_w:
             cx = 0
             cy += rowh + pad
             rowh = 0
-        placed[tid] = (cx, cy)
+        placed[key] = (cx, cy, crop, ox, oy)
         cx += cw + pad
         rowh = max(rowh, ch)
     atlas_h = cy + rowh + pad
 
     atlas = Image.new("RGBA", (atlas_w, atlas_h), (0, 0, 0, 0))
-    out_tiles = {}
-    for tid, (crop, ox, oy) in crops.items():
-        px, py = placed[tid]
+    for px, py, crop, ox, oy in placed.values():
         atlas.alpha_composite(crop, (px, py))
-        out_tiles[str(tid)] = [px, py, crop.width, crop.height, ox, oy]
+
+    out_tiles = {}
+    for tid in tiledefs:
+        p = placed.get(("t", tid))
+        if p:
+            px, py, crop, ox, oy = p
+            out_tiles[str(tid)] = [px, py, crop.width, crop.height, ox, oy]
+
+    out_anim = {}
+    for tid, frames in anims_raw.items():
+        fr, durs, ok = [], [], True
+        for j, (_, _, dur) in enumerate(frames):
+            p = placed.get(("a", tid, j))
+            if not p:
+                ok = False
+                break
+            px, py, crop, ox, oy = p
+            fr.append([px, py, crop.width, crop.height, ox, oy])
+            durs.append(dur)
+        if ok and len(fr) > 1:   # 1 solo frame no es animación
+            out_anim[str(tid)] = {"frames": fr, "durs": durs}
 
     out = os.path.join(out_dir, "tilesets", name + ".png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     atlas.save(out, optimize=True)
-    return {"src": "tilesets/" + name + ".png", "tiles": out_tiles}
+    res = {"src": "tilesets/" + name + ".png", "tiles": out_tiles}
+    if out_anim:
+        res["anim"] = out_anim
+    return res
 
 
 # ---------------------------------------------------------------- main

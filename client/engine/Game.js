@@ -1737,6 +1737,8 @@ export class Game {
 
     // Culling de tiles.
     this.renderer.update(this.camera)
+    // Tiles animados (agua, lava, cascadas) — intercambia el frame según el reloj.
+    this.renderer.tickAnim(this._pt * 1000)
 
     // Transparencia: si un edificio queda DELANTE del jugador (lo tapa), lo atenuamos
     // para no perderlo de vista al pasar por detrás.
