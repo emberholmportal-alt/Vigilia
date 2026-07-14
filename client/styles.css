@@ -149,6 +149,17 @@ html, body, #root {
   animation-name: bootFill; animation-timing-function: ease-in-out; animation-fill-mode: forwards;
 }
 @keyframes bootFill { from { width: 0; } to { width: 100%; } }
+/* barra indeterminada del loader de juego (bloque que se desliza) */
+.boot-bar i.loop { width: 45%; animation: loaderSlide 1.25s ease-in-out infinite; }
+@keyframes loaderSlide { 0% { margin-left: -45%; } 100% { margin-left: 100%; } }
+.game-loader .loader-title {
+  font-family: Georgia, serif; font-size: 20px; letter-spacing: 0.06em; color: var(--gold);
+  text-shadow: 0 2px 12px rgba(194, 85, 31, 0.4); text-align: center;
+}
+.game-loader .loader-lore {
+  font-family: Georgia, serif; font-size: 13px; font-style: italic; color: var(--dim);
+  text-align: center; max-width: 460px; line-height: 1.5; margin: 4px 0 0; text-wrap: balance;
+}
 .boot-label {
   font-family: Georgia, serif; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
   color: var(--dim); text-shadow: 0 1px 2px #000; margin: -8px 0 0;

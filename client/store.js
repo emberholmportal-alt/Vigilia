@@ -26,7 +26,7 @@ import { saveGame, snapshot } from './data/save.js'
 // Idioma persistido (aparte del save: es una preferencia del dispositivo, no de la partida).
 const LANG_KEY = 'vigilia:lang'
 function loadLang() {
-  try { const l = localStorage.getItem(LANG_KEY); return l === 'en' ? 'en' : 'es' } catch { return 'es' }
+  try { const l = localStorage.getItem(LANG_KEY); return l === 'es' ? 'es' : 'en' } catch { return 'en' }
 }
 function saveLang(l) { try { localStorage.setItem(LANG_KEY, l) } catch {} }
 setLangGlobal(loadLang()) // sincroniza el idioma del módulo i18n al arrancar

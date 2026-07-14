@@ -38,8 +38,8 @@ export default function RaceScreen({ onChoose }) {
           <div className="race-mods">{en ? (race.modText_en || race.modText) : race.modText}</div>
           <p className="race-fantasy">“{en ? (race.fantasy_en || race.fantasy) : race.fantasy}”</p>
         </div>
-        <button className="enter" onClick={() => onChoose(race.id, name.trim())}>
-          {t('incarnate', { race: rn(race) })}
+        <button className="enter" disabled={!name.trim()} onClick={() => onChoose(race.id, name.trim())}>
+          {name.trim() ? t('incarnate', { race: rn(race) }) : t('need_name')}
         </button>
       </div>
     </div>

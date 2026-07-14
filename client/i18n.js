@@ -2,9 +2,9 @@
 // también en un módulo local `_lang` para que el motor y el store lean sin ciclo de imports.
 // Los componentes usan el hook useT (ui/useT.js); el motor/store usan tt().
 
-let _lang = 'es'
+let _lang = 'en'   // inglés por defecto (se puede cambiar en Ajustes; se guarda por dispositivo)
 export const getLang = () => _lang
-export function setLangGlobal(l) { _lang = l === 'en' ? 'en' : 'es' }
+export function setLangGlobal(l) { _lang = l === 'es' ? 'es' : 'en' }
 
 // Diccionario de strings de UI. clave -> { es, en }. Interpolación con {var}.
 const DICT = {
@@ -68,6 +68,7 @@ const DICT = {
   // inicio
   start_tag: { es: 'Black Oak City es lo último que queda en pie.', en: 'Black Oak City is the last thing left standing.' },
   start_new: { es: 'Nueva partida', en: 'New game' },
+  start_credit: { es: 'Arte, sprites, tilesets y mapas: Flare — Empyrean Campaign, © Flare Team, bajo licencia CC-BY-SA 3.0.', en: 'Art, sprites, tilesets and maps: Flare — Empyrean Campaign, © Flare Team, licensed CC-BY-SA 3.0.' },
   start_begin: { es: 'Comenzar', en: 'Begin' },
   start_continue: { es: 'Continuar', en: 'Continue' },
   loading: { es: 'Cargando…', en: 'Loading…' },
@@ -282,6 +283,8 @@ const DICT = {
   spectating: { es: 'Modo espectador', en: 'Spectator mode' },
   players_online: { es: 'en línea', en: 'online' },
   players_monthly: { es: 'este mes', en: 'this month' },
+  entering_world: { es: 'Entrando a Velgrim…', en: 'Entering Velgrim…' },
+  need_name: { es: 'Elegí un nombre', en: 'Choose a name' },
   // slots del mouse (M1 / M2) + configuración del especial
   m1_normal: { es: 'Ataque normal (clic izquierdo)', en: 'Normal attack (left click)' },
   bind_special: { es: 'Elegir especial (clic derecho)', en: 'Set special (right click)' },

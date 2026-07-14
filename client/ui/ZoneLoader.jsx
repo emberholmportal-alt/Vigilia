@@ -6,7 +6,7 @@ import { useGameStore } from '../store.js'
 import { useT } from './useT.js'
 
 // Frases de lore del mundo (dark fantasy). Se elige una al azar por viaje.
-const LORE = {
+export const LORE = {
   es: [
     'Los caminos entre zonas los abrieron los primeros Vigilantes, y no todos volvieron.',
     'Dicen que la piedra de los obeliscos recuerda cada nombre que la tocó.',

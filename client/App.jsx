@@ -3,7 +3,8 @@ import { Game } from './engine/Game.js'
 import { storeApi, useGameStore } from './store.js'
 import { playMusic } from './engine/audio.js'
 import { startingCharacter, raceById, RACES } from './data/characters.js'
-import { loadGame, hasSave } from './data/save.js'
+import { loadGame, hasSave, unpackSave } from './data/save.js'
+import { net, ONLINE } from './net/net.js'
 import HUD from './ui/HUD.jsx'
 import StartScreen from './ui/StartScreen.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
@@ -17,6 +18,7 @@ import Alchemy from './ui/Alchemy.jsx'
 import Missions from './ui/Missions.jsx'
 import MouseBind from './ui/MouseBind.jsx'
 import BootSplash from './ui/BootSplash.jsx'
+import GameLoader from './ui/GameLoader.jsx'
 import ChatLog from './ui/ChatLog.jsx'
 import Minimap from './ui/Minimap.jsx'
 import DialogueBox from './ui/DialogueBox.jsx'
@@ -36,36 +38,8 @@ export default function App() {
   const initCharacter = useGameStore((s) => s.initCharacter)
   const t = useT()
 
-  function startGame() {
-    playMusic('title_theme.ogg') // gesto del usuario: arranca la música
-    setPhase('race')
-  }
-
-  function chooseRace(raceId, name) {
-    // Personaje con kit real ANTES de montar el juego (el paperdoll lo lee al arrancar).
-    if (name) useGameStore.getState().setPlayerName(name)
-    initCharacter(startingCharacter(raceId))
-    playMusic('town_theme.ogg')
-    setLoading(true)
-    setPhase('game')
-  }
-
-  // Modo espectador (mirón): entra al hub con un personaje descartable, sin combate ni guardado.
-  function spectate() {
-    useGameStore.getState().setPlayerName('Espectador')
-    initCharacter({ ...startingCharacter('humano'), spectator: true })
-    playMusic('town_theme.ogg')
-    setLoading(true)
-    setPhase('game')
-  }
-
-  // PLAY NOW: continúa la partida si hay, o arranca una nueva.
-  function play() { if (hasSave()) continueGame(); else startGame() }
-
-  // Continuar la partida guardada (progreso, oro, XP, skills, inventario y equipo).
-  function continueGame() {
-    const s = loadGame()
-    if (!s) { startGame(); return }
+  // Entra al juego con un personaje ya rehidratado (de localStorage o del servidor).
+  function enterWithBlob(s) {
     useGameStore.getState().setPlayerName(s.playerName)
     const race = raceById(s.raceId) || RACES[0]
     initCharacter({ race, gold: s.gold, inventory: s.inventory, equipment: s.equipment,
@@ -73,6 +47,37 @@ export default function App() {
                     missions: s.missions, missionsDate: s.missionsDate, seals: s.seals,
                     attrAlloc: s.attrAlloc, skillRanks: s.skillRanks, questFlags: s.questFlags,
                     specialAbility: s.specialAbility, graves: s.graves })
+    playMusic('town_theme.ogg')
+    setLoading(true)
+    setPhase('game')
+  }
+
+  // PLAY NOW: `char` es el blob del servidor (o null). Con la billetera conectada, un personaje
+  // por cuenta con la raza fija: si ya existe se carga; si no, elegís nombre + raza.
+  function play(char) {
+    const s = char ? unpackSave(char) : null
+    if (s && s.raceId) { enterWithBlob(s); return }
+    if (!ONLINE) { const local = loadGame(); if (local && local.raceId) { enterWithBlob(local); return } }
+    playMusic('title_theme.ogg')
+    setPhase('race')   // crear personaje: pide nombre (obligatorio) + raza
+  }
+  function startGame() { setPhase('race') }
+
+  // Crea el personaje (raza + nombre elegidos). Online: lo guarda en el servidor (queda ligado
+  // a la cuenta/billetera — uno por cuenta, raza fija de acá en más).
+  function chooseRace(raceId, name) {
+    useGameStore.getState().setPlayerName(name || 'Vigilante')
+    initCharacter(startingCharacter(raceId))
+    if (ONLINE) { const b = storeApi.getSaveBlob(); net.save(b.name, b.race, b.char) }
+    playMusic('town_theme.ogg')
+    setLoading(true)
+    setPhase('game')
+  }
+
+  // Modo espectador (mirón): entra al hub con un personaje descartable, sin combate ni guardado.
+  function spectate() {
+    useGameStore.getState().setPlayerName('Spectator')
+    initCharacter({ ...startingCharacter('humano'), spectator: true })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
@@ -121,7 +126,7 @@ export default function App() {
       {phase === 'boot' && <BootSplash onDone={() => setPhase('start')} />}
       {phase === 'start' && <StartScreen onPlay={play} onSpectate={spectate} onNew={startGame} canContinue={hasSave()} loading={false} />}
       {phase === 'race' && <RaceScreen onChoose={chooseRace} />}
-      {phase === 'game' && loading && <div className="loading">{t('loading_city')}</div>}
+      {phase === 'game' && loading && <GameLoader />}
     </div>
   )
 }

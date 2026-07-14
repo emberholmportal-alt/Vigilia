@@ -26,17 +26,37 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
     return () => { alive = false; clearInterval(id) }
   }, [])
 
+  // Asegura sesión de billetera (reanuda con el token o firma de nuevo). { ok, char } o { ok:false }.
+  async function ensureWallet() {
+    await net.connect()
+    const sess = loadSession()
+    if (sess?.token) {
+      const r = await net.resume(sess.token).catch(() => ({ ok: false }))
+      if (r.ok) { setWallet(sess.pubkey); return { ok: true, char: r.char } }
+    }
+    const r = await walletSignIn(net)
+    if (!r.ok) return { ok: false, error: r.error }
+    setWallet(r.pubkey)
+    return { ok: true, char: r.char }
+  }
+
   async function connect() {
     setBusy(true); setErr(null)
-    try {
-      await net.connect()
-      const r = await walletSignIn(net)
-      if (r.ok) setWallet(r.pubkey)
-      else setErr(r.error === 'no-wallet' ? t('wallet_none') : t('wallet_fail'))
-    } catch { setErr(t('wallet_fail')) }
+    try { const r = await ensureWallet(); if (!r.ok) setErr(r.error === 'no-wallet' ? t('wallet_none') : t('wallet_fail')) }
+    catch { setErr(t('wallet_fail')) }
     setBusy(false)
   }
   function disconnect() { clearSession(); setWallet(null) }
+
+  // PLAY NOW: online exige billetera (para elegir raza / cargar tu personaje). Offline, directo.
+  async function handlePlay() {
+    if (!ONLINE) { onPlay(null); return }
+    setBusy(true); setErr(null)
+    const r = await ensureWallet().catch(() => ({ ok: false }))
+    setBusy(false)
+    if (!r.ok) { setErr(r.error === 'no-wallet' ? t('wallet_none') : t('wallet_fail')); return }
+    onPlay(r.char)
+  }
 
   return (
     <div className="start">
@@ -68,18 +88,17 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
         )}
 
         <div className="entry">
-          <button className="enter play-now" onClick={onPlay} disabled={loading}>
-            {loading ? t('loading') : '▶ ' + t('play_now')}
+          <button className="enter play-now" onClick={handlePlay} disabled={loading || busy}>
+            {busy ? t('wallet_connecting') : loading ? t('loading') : '▶ ' + t('play_now')}
           </button>
           <button className="enter secondary" onClick={onSpectate} disabled={loading}>
             👁 {t('spectate')}
           </button>
         </div>
-        {canContinue && <button className="new-link" onClick={onNew}>{t('start_new')}</button>}
+        {!ONLINE && canContinue && <button className="new-link" onClick={onNew}>{t('start_new')}</button>}
 
         <p className="attribution">
-          Arte, sprites, tilesets y mapas: <b>Flare — Empyrean Campaign</b>,
-          © Flare Team, bajo licencia CC-BY-SA 3.0.
+          {t('start_credit')}
           <br />
           <a href="https://github.com/flareteam/flare-game" target="_blank" rel="noreferrer">
             github.com/flareteam/flare-game

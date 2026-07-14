@@ -28,12 +28,10 @@ export function hasSave() {
   try { return !!localStorage.getItem(KEY) } catch { return false }
 }
 
-export function loadGame() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return null
-    const s = JSON.parse(raw)
-    return {
+// Rehidrata un blob del save (localStorage o servidor) a la forma que usa initCharacter.
+export function unpackSave(s) {
+  if (!s) return null
+  return {
       playerName: s.playerName,
       raceId: s.raceId,
       gold: s.gold || 0,
@@ -52,8 +50,11 @@ export function loadGame() {
       questFlags: s.questFlags || null,
       specialAbility: s.specialAbility ?? undefined,
       graves: s.graves || null,
-    }
-  } catch { return null }
+  }
+}
+
+export function loadGame() {
+  try { return unpackSave(JSON.parse(localStorage.getItem(KEY))) } catch { return null }
 }
 
 // Construye el blob serializable del personaje (mismo shape para localStorage y para el server).
