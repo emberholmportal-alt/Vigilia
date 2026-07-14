@@ -610,6 +610,7 @@ export class Game {
   // Decoraciones estáticas del mapa (secciones [npc] de Flare: fuente, cerdos, aldeanos
   // ambientales). Sprites reales de HERESY (public/assets/decor/), depth-sort por x+y.
   async _buildDecorations(renderer, iso, map, grid) {
+    this._animDecor = []   // decoraciones animadas (p. ej. la fuente que corre agua)
     const list = map.decorations || []
     if (!list.length) return
     const BASE = import.meta.env.BASE_URL || '/'
@@ -628,6 +629,26 @@ export class Game {
       if (!meta) continue
       // Saltar sprites chicos: son crops mal parseados (salen como "pies" o basura).
       if (meta.cell[1] < 100) continue
+      // Decoración ANIMADA (la fuente corre agua): sprite que cicla frames de un strip.
+      if (meta.anim) {
+        const a = meta.anim
+        let atex
+        try { atex = await Assets.load(BASE + 'assets/' + a.src) } catch { atex = null }
+        if (this.destroyed) return
+        if (atex) {
+          const sp = new Sprite(new Texture({ source: atex.source, frame: new Rectangle(0, 0, a.cell[0], a.cell[1]) }))
+          sp.anchor.set(a.anchor[0] / a.cell[0], a.anchor[1] / a.cell[1])
+          sp.x = iso.toWorldX(d.x, d.y); sp.y = iso.toWorldY(d.x, d.y); sp.zIndex = d.x + d.y
+          renderer.objectLayer.addChild(sp)
+          this._animDecor.push({ tex: sp.texture, a, t: 0 })
+          for (let dy = 0; dy < (d.h || 1); dy++)
+            for (let dx = 0; dx < (d.w || 1); dx++) {
+              const bx = d.x + dx, by = d.y + dy
+              if (bx >= 0 && bx < grid.w && by >= 0 && by < grid.h) grid.blocked[by * grid.w + bx] = 1
+            }
+          continue
+        }
+      }
       let tex
       try { tex = await Assets.load(BASE + 'assets/' + meta.src) } catch { continue }
       if (this.destroyed) return
@@ -1537,6 +1558,14 @@ export class Game {
 
     // NPCs (anim idle + globos).
     for (const npc of this.npcs) npc.update(dt)
+    // Decoraciones animadas (la fuente): avanzar el frame según el reloj.
+    if (this._animDecor) for (const ad of this._animDecor) {
+      ad.t += dt * 1000
+      const f = Math.floor(ad.t / (ad.a.ms / ad.a.frames)) % ad.a.frames
+      const fr = ad.tex.frame
+      fr.x = f * ad.a.cell[0]; fr.y = 0; fr.width = ad.a.cell[0]; fr.height = ad.a.cell[1]
+      ad.tex.updateUvs()
+    }
 
     // Combate: IA de enemigos, ataque del jugador, daño y muerte/reaparición.
     this._combatTick(dt)
