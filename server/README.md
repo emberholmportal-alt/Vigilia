@@ -20,6 +20,9 @@ DATABASE_URL=postgres://... npm run server   # con PostgreSQL (producción)
 |---|---|---|
 | `PORT` | `8787` | Puerto HTTP + WebSocket |
 | `DATABASE_URL` | — | Si está, usa PostgreSQL; si no, archivo local |
+| `VEL_MINT` | — | Mint de $VEL (SPL). **Vacío = sin gate** (entra cualquier wallet). Al setearlo, exige el mínimo. |
+| `VEL_MIN` | `0` | Mínimo de $VEL para jugar (con `VEL_MINT`) |
+| `SOLANA_RPC` | mainnet-beta | RPC de Solana para chequear el balance |
 
 ## Cliente
 
@@ -36,8 +39,12 @@ DATABASE_URL=postgres://... npm run server   # con PostgreSQL (producción)
 
 ## Protocolo (JSON sobre WS)
 
-Cliente → servidor: `register`, `login`, `resume`, `save`, `join`, `move`, `chat`, `ping`.
-Servidor → cliente: `auth`, `saved`, `present`, `join`, `move`, `leave`, `chat`, `pong`, `error`.
+Cliente → servidor: `register`, `login`, `resume`, `wallet_challenge`, `wallet_verify`, `save`, `join`, `move`, `chat`, `ping`.
+Servidor → cliente: `auth`, `challenge`, `saved`, `present`, `join`, `move`, `leave`, `chat`, `pong`, `error`.
+
+Login por wallet (Solana): `wallet_challenge {pubkey}` → `challenge {message}` → el cliente firma
+el mensaje → `wallet_verify {pubkey, signature(hex)}` → `auth {ok, token, char}`. La cuenta es la
+dirección de la wallet. Verificación ed25519 con node:crypto (sin deps).
 
 ## Estructura
 

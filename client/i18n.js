@@ -269,6 +269,13 @@ const DICT = {
   no_combat_town: { es: 'En el pueblo no se combate', en: 'No fighting in town' },
   online_on: { es: 'Conectado al mundo compartido', en: 'Connected to the shared world' },
   online_off: { es: 'Modo sin conexión', en: 'Offline mode' },
+  // billetera (Solana)
+  wallet_connect: { es: 'Conectar billetera', en: 'Connect wallet' },
+  wallet_connecting: { es: 'Conectando…', en: 'Connecting…' },
+  wallet_connected: { es: 'Billetera', en: 'Wallet' },
+  wallet_disconnect: { es: 'Desconectar', en: 'Disconnect' },
+  wallet_none: { es: 'No se detectó billetera. Instalá Phantom (Solana).', en: 'No wallet detected. Install Phantom (Solana).' },
+  wallet_fail: { es: 'No se pudo conectar la billetera.', en: "Couldn't connect the wallet." },
   // slots del mouse (M1 / M2) + configuración del especial
   m1_normal: { es: 'Ataque normal (clic izquierdo)', en: 'Normal attack (left click)' },
   bind_special: { es: 'Elegir especial (clic derecho)', en: 'Set special (right click)' },

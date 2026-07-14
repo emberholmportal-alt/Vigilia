@@ -25,6 +25,8 @@ function newToken(account) {
   tokens.set(token, { accountId: account.id, username: account.username })
   return token
 }
+// Emite un token de sesión para una cuenta ya resuelta (lo usa también el login por wallet).
+export function issueToken(account) { return newToken(account) }
 
 // Valida usuario/contraseña. Reglas mínimas para no guardar basura.
 function validate(username, password) {

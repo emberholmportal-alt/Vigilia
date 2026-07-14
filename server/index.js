@@ -7,6 +7,7 @@ import http from 'node:http'
 import { WebSocketServer } from 'ws'
 import * as db from './db/db.js'
 import { register, login, session, logout } from './systems/auth.js'
+import * as wallet from './systems/wallet.js'
 import * as rooms from './world/rooms.js'
 
 const PORT = process.env.PORT || 8787
@@ -52,6 +53,20 @@ wss.on('connection', (ws) => {
           conn.username = r.username
           const char = await db.loadCharacter(conn.accountId)
           return send({ t: 'auth', ok: true, token: r.token, username: r.username, char: char ? char.data : null })
+        }
+
+        case 'wallet_challenge': {   // paso 1 del login por wallet: pedir el texto a firmar
+          if (!m.pubkey || typeof m.pubkey !== 'string') return send({ t: 'error', error: 'falta la dirección de la wallet' })
+          return send({ t: 'challenge', message: wallet.challenge(m.pubkey) })
+        }
+
+        case 'wallet_verify': {      // paso 2: verificar la firma -> sesión (cuenta = la wallet)
+          const r = await wallet.walletVerify(m.pubkey, m.signature)
+          if (!r.ok) return send({ t: 'auth', ok: false, error: r.error })
+          conn.accountId = session(r.token).accountId
+          conn.username = r.pubkey
+          const char = await db.loadCharacter(conn.accountId)
+          return send({ t: 'auth', ok: true, token: r.token, username: r.pubkey, char: char ? char.data : null, wallet: r.pubkey })
         }
 
         case 'resume': {   // reanudar con un token existente (reconexión)

@@ -68,7 +68,26 @@ html, body, #root {
   display: block; width: 100%; max-width: 380px; height: auto; margin: 0 auto 4px;
   filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.7));
 }
-.tagline { color: var(--dim); margin: 10px 0 28px; font-style: italic; }
+.tagline { color: var(--dim); margin: 10px 0 22px; font-style: italic; }
+
+/* conexión de billetera (Solana) en la pantalla de inicio */
+.wallet-box { margin: 0 0 18px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.wallet-btn {
+  font-family: Georgia, serif; font-size: 14px; letter-spacing: 0.04em; color: #14111a;
+  background: radial-gradient(circle at 40% 30%, #b98cf0, #8a5ad0);
+  border: 1px solid #6a44a8; border-radius: 7px; padding: 10px 22px; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(138, 90, 208, 0.4); -webkit-tap-highlight-color: transparent;
+}
+.wallet-btn:disabled { opacity: 0.6; cursor: default; }
+.wallet-btn:not(:disabled):active { transform: scale(0.97); }
+.wallet-on {
+  display: flex; align-items: center; gap: 8px; font-family: Georgia, serif; font-size: 13px;
+  color: var(--parch); background: rgba(20, 26, 40, 0.6); border: 1px solid #4a6fa0;
+  border-radius: 7px; padding: 7px 12px;
+}
+.wallet-on b { color: #bfe0ff; font-family: 'Courier New', monospace; }
+.wallet-x { background: none; border: 0; color: var(--dim); cursor: pointer; font-size: 13px; padding: 0 2px; }
+.wallet-err { color: #d98a6a; font-family: Georgia, serif; font-size: 11px; margin: 2px 0 0; max-width: 300px; }
 
 /* splash de arranque: logo + barra de carga estilo Flare */
 .boot {

@@ -38,6 +38,7 @@ class Net {
   }
 
   connect(url = WS_URL) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) return Promise.resolve()
     return new Promise((res, rej) => {
       try { this.ws = new WebSocket(url) } catch (e) { return rej(e) }
       this.ws.onopen = () => { this.connected = true; res() }
@@ -60,6 +61,8 @@ class Net {
   async register(user, pass) { this._send({ t: 'register', user, pass }); return this._once('auth') }
   async login(user, pass) { this._send({ t: 'login', user, pass }); return this._once('auth') }
   async resume(token) { this._send({ t: 'resume', token }); return this._once('auth') }
+  async walletChallenge(pubkey) { this._send({ t: 'wallet_challenge', pubkey }); return this._once('challenge') }
+  async walletVerify(pubkey, signature) { this._send({ t: 'wallet_verify', pubkey, signature }); return this._once('auth') }
   async save(name, race, char) { this._send({ t: 'save', name, race, char }); return this._once('saved') }
   async join({ name, race, map, x, y, dir }) { this._send({ t: 'join', name, race, map, x, y, dir }); return this._once('present') }
 
