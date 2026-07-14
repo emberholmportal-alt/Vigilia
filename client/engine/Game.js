@@ -21,6 +21,8 @@ import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCous
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
 import { Weather, weatherFor } from './Weather.js'
+import { DayNight } from './DayNight.js'
+import { Fauna } from './Fauna.js'
 import { GroundItem, loadIcons, iconsTexture } from './GroundItem.js'
 import { Grave } from './Grave.js'
 import { RemotePlayer } from './RemotePlayer.js'
@@ -82,6 +84,17 @@ export class Game {
     this.weather.layer.zIndex = 5e6
     app.stage.addChild(this.weather.layer)
     this.weather.resize(app.screen.width, app.screen.height)
+
+    // Ciclo día/noche: cortina de color sobre el mundo (debajo del clima y del fundido).
+    this.dayNight = new DayNight()
+    this.dayNight.rect.zIndex = 4.9e6
+    app.stage.addChild(this.dayNight.rect)
+
+    // Fauna: bandadas de día, murciélagos de noche. Sobre el clima, debajo del fundido.
+    this.fauna = new Fauna(app.renderer)
+    this.fauna.layer.zIndex = 5.1e6
+    app.stage.addChild(this.fauna.layer)
+    this.fauna.resize(app.screen.width, app.screen.height)
 
     await this._buildWorld(mapName)
     if (this.destroyed) { app.destroy(true); return }
@@ -241,10 +254,23 @@ export class Game {
         ? { x: w.x, y: w.y - 34, rx: 7, ry: 5, rate: 16, tint, vy: -30, spread: 6, life: 2.2, size: 1.1 }
         : { x: w.x, y: w.y - 30, rx: 9, ry: 6, rate: 9, tint, vy: -20, spread: 5, life: 1.8, size: 0.9 })
     }
+    // Fuego de la fragua: brasas cálidas que suben y titilan sobre el yunque del herrero
+    // ("la fragua no se apaga nunca"). Dos capas: base naranja + núcleo amarillo.
+    for (const npc of this.npcs) {
+      if (!npc.def.smith) continue
+      const w = iso.toWorld(npc.tx, npc.ty)
+      this.particles.addEmitter({ x: w.x, y: w.y - 16, rx: 5, ry: 3, rate: 20, tint: 0xff7a1e, vy: -34, spread: 7, life: 1.1, size: 1.1 })
+      this.particles.addEmitter({ x: w.x, y: w.y - 12, rx: 3, ry: 2, rate: 9, tint: 0xffd24a, vy: -22, spread: 4, life: 0.8, size: 0.75 })
+    }
 
     // Clima de la zona (por bioma o mapa): brasas en el pueblo, niebla en la ciénaga, nieve en
     // los llanos helados, hojas en el campo, polvo en las cuevas.
     if (this.weather) this.weather.set(weatherFor(mapName, world.map.tileset))
+
+    // Día/noche y fauna sólo al aire libre (una cueva no tiene cielo ni se oscurece de noche).
+    const OUTDOOR = new Set(['tileset_grassland', 'tileset_snowplains', 'tileset_triston'])
+    this._outdoor = OUTDOOR.has(world.map.tileset)
+    if (this.dayNight) this.dayNight.rect.visible = this._outdoor
 
     // Portales del mapa (viaje entre zonas). Precargamos el pad de teletransporte.
     const BASE = import.meta.env.BASE_URL || '/'
@@ -1378,6 +1404,7 @@ export class Game {
     if (!this.app) return
     this.camera.resize(this.app.screen.width, this.app.screen.height)
     this.weather?.resize(this.app.screen.width, this.app.screen.height)
+    this.fauna?.resize(this.app.screen.width, this.app.screen.height)
   }
 
   // Minimapa: proyección iso de la ciudad (misma orientación que la vista).
@@ -1617,6 +1644,8 @@ export class Game {
     this._pt = (this._pt || 0) + dt
     this.particles.update(dt, this._pt)
     if (this.weather) this.weather.update(dt)
+    if (this.dayNight && this._outdoor) this.dayNight.update(dt)
+    if (this.fauna && this._outdoor) this.fauna.update(dt, this.dayNight?.isNight)
 
     // Portales (waypoints): halo con pulso suave, SIN titilar. Pisar un portal por primera
     // vez descubre su destino (lo activa). El botón abre el menú de destinos.
@@ -1750,6 +1779,8 @@ export class Game {
     if (this._onKeyUp) window.removeEventListener('keyup', this._onKeyUp)
     if (this._onContext && this.app?.canvas) this.app.canvas.removeEventListener('contextmenu', this._onContext)
     if (this.weather) { this.weather.destroy(); this.weather = null }
+    if (this.dayNight) { this.dayNight.destroy(); this.dayNight = null }
+    if (this.fauna) { this.fauna.destroy(); this.fauna = null }
     if (this._unsub) { this._unsub(); this._unsub = null }
     if (this.app) {
       this.app.ticker.remove(this._tick)
