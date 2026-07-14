@@ -72,3 +72,9 @@ class Net {
 }
 
 export const net = new Net()
+
+// URL HTTP del server (para /stats): wss->https, ws->http.
+export const serverHttp = () => WS_URL.replace(/^ws/, 'http')
+export async function fetchStats() {
+  try { const r = await fetch(serverHttp() + '/stats'); return await r.json() } catch { return null }
+}

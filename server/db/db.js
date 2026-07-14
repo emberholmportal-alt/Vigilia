@@ -28,8 +28,10 @@ export async function init() {
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         pass_hash TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT now()
+        created_at TIMESTAMPTZ DEFAULT now(),
+        last_seen TIMESTAMPTZ DEFAULT now()
       );
+      ALTER TABLE accounts ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ DEFAULT now();
       CREATE TABLE IF NOT EXISTS characters (
         account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
         name TEXT, race TEXT, data JSONB, updated_at TIMESTAMPTZ DEFAULT now()
@@ -85,6 +87,23 @@ export async function saveCharacter(accountId, { name, race, data }) {
   }
   file.chars[accountId] = { name: name || null, race: race || null, data: data || {} }
   flush()
+}
+
+// Marca actividad de una cuenta (para el contador de jugadores mensuales).
+export async function touchAccount(accountId) {
+  if (pg) { await pg.query('UPDATE accounts SET last_seen=now() WHERE id=$1', [accountId]); return }
+  const acc = file.accounts.find((a) => a.id === accountId)
+  if (acc) { acc.last_seen = Date.now(); flush() }
+}
+
+// Cuenta de jugadores distintos vistos en los últimos 30 días.
+export async function monthlyCount() {
+  if (pg) {
+    const r = await pg.query("SELECT count(*)::int AS n FROM accounts WHERE last_seen > now() - interval '30 days'")
+    return r.rows[0]?.n || 0
+  }
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
+  return file.accounts.filter((a) => (a.last_seen || 0) > cutoff).length
 }
 
 // Carga el personaje de una cuenta. Devuelve {name, race, data} o null.

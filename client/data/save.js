@@ -81,6 +81,7 @@ export function snapshot(state) {
 }
 
 export function saveGame(state) {
+  if (state.spectator) return   // el espectador no persiste (no pisa la partida real)
   try { localStorage.setItem(KEY, JSON.stringify(snapshot(state))) }
   catch { /* almacenamiento lleno / bloqueado: ignorar */ }
 }

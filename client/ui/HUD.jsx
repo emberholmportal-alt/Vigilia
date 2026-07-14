@@ -22,7 +22,18 @@ function Toast() {
   return <div className="toast" key={toast.until}>{toast.text}</div>
 }
 
-export default function HUD() {
+// Barra del modo espectador: aviso + botón para pasar a jugar.
+function SpectatorBar({ onExit, t }) {
+  return (
+    <div className="spectator-bar">
+      <span>👁 {t('spectating')}</span>
+      <button onClick={onExit}>▶ {t('play_now')}</button>
+    </div>
+  )
+}
+
+export default function HUD({ onExitSpectate }) {
+  const spectator = useGameStore((s) => s.spectator)
   const mapTitle = useGameStore((s) => s.mapTitle)
   const playerName = useGameStore((s) => s.playerName)
   const fps = useGameStore((s) => s.fps)
@@ -50,6 +61,7 @@ export default function HUD() {
 
   return (
     <>
+      {spectator && <SpectatorBar onExit={onExitSpectate} t={t} />}
       <div className="hud">
         <button className="who" onClick={() => togglePanel('character')} title={t('view_character')}>
           <b>{playerName} {race ? '· ' + raceName(race, t.lang) : ''}</b>

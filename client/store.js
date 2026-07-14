@@ -108,6 +108,7 @@ export const useGameStore = create((set, get) => ({
     if (t) set({ speech: { text: t, until: Date.now() + 4500 } })
   },
   stats: null,              // {level, str, dex, int, vit, hp, hpMax, mp, mpMax, staminaMax, ...}
+  spectator: false,         // modo mirón: sin combate/acciones, invulnerable, no persiste
   xp: 0,                    // XP total del jugador (define el nivel)
   skills: emptySkills(),    // las 6 acciones: { skill: {xp, level} }
   attrAlloc: { str: 0, dex: 0, int: 0, vit: 0 }, // puntos de atributo repartidos (por nivel)
@@ -200,6 +201,7 @@ export const useGameStore = create((set, get) => ({
   takeDamage: (n) => {
     const s = get(); const st = s.stats
     if (!st) return 0
+    if (s.spectator) return st.hp   // el espectador es invulnerable
     const hp = Math.max(0, st.hp - Math.max(0, n | 0))
     set({ stats: { ...st, hp } })
     return hp
@@ -465,7 +467,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined, graves = null }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined, graves = null, spectator = false }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -486,6 +488,7 @@ export const useGameStore = create((set, get) => ({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
       attrAlloc: alloc, skillRanks: ranks, questFlags: questFlags || {}, specialAbility: special,
       graves: graves || [], _graveId: (graves || []).reduce((m, g) => Math.max(m, g.id || 0), 0),
+      spectator: !!spectator,
       inventory: inv, equipment: equip, belt: b, equippedBelt,
       discovered: discovered || {},
       missions: missions || [], missionsDate: missionsDate || '', seals: seals || 0,
@@ -990,6 +993,7 @@ export const storeApi = {
   recoverGrave: (id) => useGameStore.getState().recoverGrave(id),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
+  isSpectator: () => useGameStore.getState().spectator,
   getSaveBlob: () => { const s = useGameStore.getState(); return { name: s.playerName, race: s.race?.id, char: snapshot(s) } },
   showToast: (t) => useGameStore.getState().showToast(t),
   logMessage: (m) => useGameStore.getState().logMessage(m),

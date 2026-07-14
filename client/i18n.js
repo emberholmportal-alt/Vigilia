@@ -276,6 +276,12 @@ const DICT = {
   wallet_disconnect: { es: 'Desconectar', en: 'Disconnect' },
   wallet_none: { es: 'No se detectó billetera. Instalá Phantom (Solana).', en: 'No wallet detected. Install Phantom (Solana).' },
   wallet_fail: { es: 'No se pudo conectar la billetera.', en: "Couldn't connect the wallet." },
+  // entrada estilo Kintara + contadores + espectador
+  play_now: { es: 'JUGAR', en: 'PLAY NOW' },
+  spectate: { es: 'MIRAR', en: 'SPECTATE' },
+  spectating: { es: 'Modo espectador', en: 'Spectator mode' },
+  players_online: { es: 'en línea', en: 'online' },
+  players_monthly: { es: 'este mes', en: 'this month' },
   // slots del mouse (M1 / M2) + configuración del especial
   m1_normal: { es: 'Ataque normal (clic izquierdo)', en: 'Normal attack (left click)' },
   bind_special: { es: 'Elegir especial (clic derecho)', en: 'Set special (right click)' },

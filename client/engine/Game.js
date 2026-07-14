@@ -838,7 +838,7 @@ export class Game {
   }
 
   _targetEnemy(e) {
-    if (this._dead || e.dead) return
+    if (this._dead || e.dead || this.store.isSpectator()) return   // el mirón no ataca
     this._target = e
     this.player.walkTo(Math.round(e.tx), Math.round(e.ty))
     this._retargetT = 0.3
@@ -927,7 +927,7 @@ export class Game {
   // Lanza una habilidad activa (pedida desde la barra). Valida desbloqueo, recarga, objetivo
   // y maná; si pasa, ejecuta su efecto y arranca la recarga.
   _castAbility(id) {
-    if (this._dead || !this.player) return
+    if (this._dead || !this.player || this.store.isSpectator()) return
     if (this._safeZone) { this.store.showToast(tt('no_combat_town')); return }
     const ab = ABILITY_BY_ID[id]
     if (!ab) return
@@ -1390,7 +1390,7 @@ export class Game {
       // lo maneja Enemy.onTap; esto rescata el caso común de errarle a un enemigo en movimiento
       // (antes caía al piso y caminaba en vez de atacar).
       const foe = this._enemyNear(tx, ty, 1.1)
-      if (foe && !this._safeZone) { this._targetEnemy(foe); return }
+      if (foe && !this._safeZone && !this.store.isSpectator()) { this._targetEnemy(foe); return }
       this._target = null                    // tocar el suelo cancela el ataque
       const path = this.player.walkTo(tx, ty)
       if (path.length) {

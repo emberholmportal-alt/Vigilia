@@ -14,15 +14,25 @@ const PORT = process.env.PORT || 8787
 
 await db.init()
 
-// HTTP mínimo: health check para Render y una raíz informativa.
-const http_server = http.createServer((req, res) => {
-  if (req.url === '/health' || req.url === '/healthz') {
+// HTTP mínimo: health, /stats (contadores para el landing) y una raíz informativa. CORS abierto
+// para que el static site (otro origen) pueda leer /stats.
+const http_server = http.createServer(async (req, res) => {
+  res.setHeader('access-control-allow-origin', '*')
+  const path = (req.url || '').split('?')[0]
+  if (path === '/health' || path === '/healthz') {
     res.writeHead(200, { 'content-type': 'application/json' })
     res.end(JSON.stringify({ ok: true, players: rooms.playerCount(), db: db.usingPostgres() ? 'postgres' : 'file' }))
     return
   }
+  if (path === '/stats') {
+    let monthly = 0
+    try { monthly = await db.monthlyCount() } catch {}
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ online: rooms.playerCount(), monthly }))
+    return
+  }
   res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' })
-  res.end('Velgrim server — WebSocket en la misma URL. GET /health para estado.')
+  res.end('Velgrim server — WebSocket en la misma URL. GET /health o /stats.')
 })
 
 const wss = new WebSocketServer({ server: http_server })
@@ -85,6 +95,7 @@ wss.on('connection', (ws) => {
 
         case 'join': {
           if (!conn.accountId) return send({ t: 'error', error: 'no autenticado' })
+          db.touchAccount(conn.accountId).catch(() => {})   // actividad (jugadores mensuales)
           if (conn.playerId != null) rooms.leave(conn.playerId)
           const { id, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir })
           conn.playerId = id

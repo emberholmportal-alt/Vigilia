@@ -50,6 +50,18 @@ export default function App() {
     setPhase('game')
   }
 
+  // Modo espectador (mirón): entra al hub con un personaje descartable, sin combate ni guardado.
+  function spectate() {
+    useGameStore.getState().setPlayerName('Espectador')
+    initCharacter({ ...startingCharacter('humano'), spectator: true })
+    playMusic('town_theme.ogg')
+    setLoading(true)
+    setPhase('game')
+  }
+
+  // PLAY NOW: continúa la partida si hay, o arranca una nueva.
+  function play() { if (hasSave()) continueGame(); else startGame() }
+
   // Continuar la partida guardada (progreso, oro, XP, skills, inventario y equipo).
   function continueGame() {
     const s = loadGame()
@@ -89,7 +101,7 @@ export default function App() {
   return (
     <div id="wrap">
       {phase === 'game' && <div ref={canvasRef} className="canvas-host" />}
-      {phase === 'game' && !loading && !error && <HUD />}
+      {phase === 'game' && !loading && !error && <HUD onExitSpectate={() => setPhase('start')} />}
       {phase === 'game' && !loading && !error && <Minimap />}
       {phase === 'game' && !loading && !error && <ChatLog />}
       {phase === 'game' && panel === 'inventory' && <Inventory />}
@@ -107,7 +119,7 @@ export default function App() {
       {error && <div className="error">Error: {error}</div>}
 
       {phase === 'boot' && <BootSplash onDone={() => setPhase('start')} />}
-      {phase === 'start' && <StartScreen onEnter={startGame} onContinue={continueGame} canContinue={hasSave()} loading={false} />}
+      {phase === 'start' && <StartScreen onPlay={play} onSpectate={spectate} onNew={startGame} canContinue={hasSave()} loading={false} />}
       {phase === 'race' && <RaceScreen onChoose={chooseRace} />}
       {phase === 'game' && loading && <div className="loading">{t('loading_city')}</div>}
     </div>
