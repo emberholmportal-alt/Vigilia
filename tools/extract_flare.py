@@ -22,7 +22,7 @@ Licencia del arte: CC-BY-SA 3.0 — Flare "Empyrean Campaign", flareteam/flare-g
 Este script NO redistribuye arte: lo procesa desde tu copia local del repo.
 """
 import os, re, json, argparse, sys
-from PIL import Image
+from PIL import Image, ImageChops
 
 # ---------------------------------------------------------------- config
 # Capas del paperdoll. La clave es el nombre lógico; el valor, el archivo de Flare.
@@ -315,8 +315,10 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
     if not tdef:
         return None
 
-    # id -> (img_rel, (x, y, w, h, ox, oy)); el último define gana.
-    cur_img, tiledefs = None, {}
+    # id -> (img_rel, (x, y, w, h, ox, oy)); el último define gana. Los tiles animados
+    # (`animation=<tid>;x,y,dur;…`) referencian la imagen `img=` VIGENTE en esa línea, que
+    # puede NO ser la del tile base (grassland pone el agua en tileset_grassland_water.png).
+    cur_img, tiledefs, anims_raw = None, {}, {}
     for line in open(tdef, encoding="utf-8", errors="ignore"):
         line = line.strip()
         if line.startswith("img="):
@@ -324,35 +326,26 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
         elif line.startswith("tile=") and cur_img:
             p = [int(x) for x in line.split("=")[1].split(",")]
             tiledefs[p[0]] = (cur_img, tuple(p[1:7]))
+        elif line.startswith("animation=") and cur_img:
+            parts = line.split("=", 1)[1].split(";")
+            try:
+                tid = int(parts[0])
+            except ValueError:
+                continue
+            frames = []
+            for fr in parts[1:]:
+                fr = fr.strip()
+                if not fr:
+                    continue
+                c = fr.split(",")
+                if len(c) < 3:
+                    continue
+                dur = int("".join(ch for ch in c[2] if ch.isdigit()) or "100")
+                frames.append((int(c[0]), int(c[1]), dur))
+            if frames:
+                anims_raw[tid] = (cur_img, frames)   # imagen VIGENTE en la línea de animación
     if not tiledefs:
         return None
-
-    # Tiles animados de Flare: `animation=<tid>;x,y,duración;x,y,duración;…`. Los frames se
-    # recortan de la MISMA imagen fuente y con el MISMO tamaño (w,h,ox,oy) que el tile base;
-    # sólo cambia el (x,y) por frame. Así el agua, la lava y demás cobran vida.
-    anims_raw = {}   # tid -> [(fx, fy, dur_ms), …]
-    for line in open(tdef, encoding="utf-8", errors="ignore"):
-        line = line.strip()
-        if not line.startswith("animation="):
-            continue
-        parts = line.split("=", 1)[1].split(";")
-        try:
-            tid = int(parts[0])
-        except ValueError:
-            continue
-        frames = []
-        for fr in parts[1:]:
-            fr = fr.strip()
-            if not fr:
-                continue
-            c = fr.split(",")
-            if len(c) < 3:
-                continue
-            fx, fy = int(c[0]), int(c[1])
-            dur = int("".join(ch for ch in c[2] if ch.isdigit()) or "100")
-            frames.append((fx, fy, dur))
-        if frames:
-            anims_raw[tid] = frames
 
     srccache = {}
     def src_img(rel):
@@ -376,12 +369,12 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
             crop = crop.resize((max(1, int(w * s)), max(1, int(h * s))), Image.LANCZOS)
         items.append((("t", tid), crop, int(ox * s), int(oy * s)))
 
-    for tid, frames in anims_raw.items():
+    for tid, (anim_img, frames) in anims_raw.items():
         base = tiledefs.get(tid)
         if not base:
             continue
-        img_rel, (x0, y0, w, h, ox, oy) = base
-        im = src_img(img_rel)
+        _, (x0, y0, w, h, ox, oy) = base   # tamaño/anclas del tile base
+        im = src_img(anim_img)             # …pero los frames salen de la imagen de la animación
         if im is None:
             continue
         s = scale_fn(w, h) if scale_fn else scale
@@ -420,8 +413,21 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
             px, py, crop, ox, oy = p
             out_tiles[str(tid)] = [px, py, crop.width, crop.height, ox, oy]
 
+    # Sólo dejamos animaciones que se PERCIBEN. El agua quieta de Flare son 2 frames casi
+    # idénticos (un shimmer imperceptible): esas las descartamos como animación y las tratamos
+    # como agua (shimmer procedural en el cliente). Quedan las que cambian de verdad: lava,
+    # cascadas, fuego.
+    def frames_change(tid, n):
+        crops = [placed[("a", tid, j)][2] for j in range(n)]
+        best = 0.0
+        for i in range(len(crops) - 1):
+            d = ImageChops.difference(crops[i].convert("RGB"), crops[i + 1].convert("RGB"))
+            diff = sum(1 for p in d.getdata() if p[0] + p[1] + p[2] > 24)
+            best = max(best, diff / (crops[i].width * crops[i].height or 1))
+        return best
+
     out_anim = {}
-    for tid, frames in anims_raw.items():
+    for tid, (anim_img, frames) in anims_raw.items():
         fr, durs, ok = [], [], True
         for j, (_, _, dur) in enumerate(frames):
             p = placed.get(("a", tid, j))
@@ -431,8 +437,38 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
             px, py, crop, ox, oy = p
             fr.append([px, py, crop.width, crop.height, ox, oy])
             durs.append(dur)
-        if ok and len(fr) > 1:   # 1 solo frame no es animación
+        if ok and len(fr) > 1 and frames_change(tid, len(fr)) >= 0.02:
             out_anim[str(tid)] = {"frames": fr, "durs": durs}
+
+    # Agua: Flare pone sus tiles de agua en imágenes `*_water.png`. Ese es el marcador fiable
+    # (mejor que adivinar por color). Como algunas son transiciones de orilla (roca con poca
+    # agua), guardamos la FRACCIÓN de agua del tile: el cliente le da un shimmer diagonal cuya
+    # intensidad va con esa fracción — el agua abierta ondula, la orilla rocosa casi nada. Así
+    # el agua deja de verse cuadrada y estática.
+    def water_frac(crop):
+        small = crop.resize((max(1, crop.width // 3), max(1, crop.height // 3)))
+        wat = tot = 0
+        for r, g, b, al in small.getdata():
+            if al < 40:
+                continue
+            tot += 1
+            br = (r + g + b) / 3
+            # agua azul/turquesa (b domina) O agua turbia oscura de ciénaga (marrón apagado y
+            # oscuro). Excluye pasto/roca clara (brillante, saturada, roja).
+            if (b >= r + 4) or (r >= g >= b and br < 96):
+                wat += 1
+        return wat / tot if tot else 0.0
+
+    water = {}
+    for tid, (img_rel, _) in tiledefs.items():
+        if "water" not in img_rel.lower():
+            continue
+        p = placed.get(("t", tid))
+        if not p:
+            continue
+        f = water_frac(p[2])
+        if f > 0.45:
+            water[str(tid)] = round(f, 2)
 
     out = os.path.join(out_dir, "tilesets", name + ".png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -440,6 +476,8 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
     res = {"src": "tilesets/" + name + ".png", "tiles": out_tiles}
     if out_anim:
         res["anim"] = out_anim
+    if water:
+        res["water"] = water
     return res
 
 

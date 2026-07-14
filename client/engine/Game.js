@@ -244,7 +244,7 @@ export class Game {
     const sc = iso.toWorld(spawn.x, spawn.y)
     this.particles.addEmitter({
       x: sc.x, y: sc.y - 24, rx: iso.wHalf * 11, ry: iso.hHalf * 11,
-      rate: 11, tint: 0xffe08a, vy: -4, spread: 5, life: 3.6, size: 1,
+      rate: 3.5, tint: 0xffe08a, vy: -4, spread: 5, life: 3.4, size: 0.9,
     })
     for (const npc of this.npcs) {
       if (!npc.def.landmark) continue
@@ -254,14 +254,8 @@ export class Game {
         ? { x: w.x, y: w.y - 34, rx: 7, ry: 5, rate: 16, tint, vy: -30, spread: 6, life: 2.2, size: 1.1 }
         : { x: w.x, y: w.y - 30, rx: 9, ry: 6, rate: 9, tint, vy: -20, spread: 5, life: 1.8, size: 0.9 })
     }
-    // Fuego de la fragua: brasas cálidas que suben y titilan sobre el yunque del herrero
-    // ("la fragua no se apaga nunca"). Dos capas: base naranja + núcleo amarillo.
-    for (const npc of this.npcs) {
-      if (!npc.def.smith) continue
-      const w = iso.toWorld(npc.tx, npc.ty)
-      this.particles.addEmitter({ x: w.x, y: w.y - 16, rx: 5, ry: 3, rate: 20, tint: 0xff7a1e, vy: -34, spread: 7, life: 1.1, size: 1.1 })
-      this.particles.addEmitter({ x: w.x, y: w.y - 12, rx: 3, ry: 2, rate: 9, tint: 0xffd24a, vy: -22, spread: 4, life: 0.8, size: 0.75 })
-    }
+    // (El fuego de la fragua se hará como decoración animada colocada sobre un brasero/hornalla,
+    // no como partículas sobre el NPC del herrero — quedaba como si se estuviera quemando.)
 
     // Clima de la zona (por bioma o mapa): brasas en el pueblo, niebla en la ciénaga, nieve en
     // los llanos helados, hojas en el campo, polvo en las cuevas.
