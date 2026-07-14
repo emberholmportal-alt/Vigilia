@@ -60,9 +60,24 @@ export default function HUD({ onExitSpectate }) {
   const s = stats || { level: 1, str: 0, dex: 0, int: 0, vit: 0, hp: 0, hpMax: 1, mp: 0, mpMax: 1 }
   const prog = playerProgress(xp || 0)
 
+  // El mirón sólo observa: HUD mínimo (barra de espectador + título de zona), sin orbes,
+  // barra de acciones, misiones ni XP.
+  if (spectator) {
+    return (
+      <>
+        <SpectatorBar onExit={onExitSpectate} t={t} />
+        <div className="hud">
+          <div className="telemetry">
+            <span className={fps >= 55 ? 'ok' : fps >= 40 ? 'warn' : 'bad'}>{fps} fps</span>
+            <span className="dim2">{mapTitle}</span>
+          </div>
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
-      {spectator && <SpectatorBar onExit={onExitSpectate} t={t} />}
       <div className="hud">
         <button className="who" onClick={() => togglePanel('character')} title={t('view_character')}>
           <b>{playerName} {race ? '· ' + raceName(race, t.lang) : ''}</b>

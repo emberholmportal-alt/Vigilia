@@ -20,6 +20,7 @@ import { NPCS_BY_MAP } from '../data/npcs.js'
 import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCousin, enemyAbility } from '../data/bestiary.js'
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
+import { Weather, weatherFor } from './Weather.js'
 import { GroundItem, loadIcons, iconsTexture } from './GroundItem.js'
 import { Grave } from './Grave.js'
 import { RemotePlayer } from './RemotePlayer.js'
@@ -74,6 +75,13 @@ export class Game {
     app.stage.sortableChildren = true
     app.stage.addChild(this.fade)
     this._fadeAlpha = 0
+
+    // Clima/ambiente en pantalla (lluvia, niebla, brasas…). Vive en el stage — sobre el mundo,
+    // debajo de la cortina de viaje — así sobrevive al cambio de mapa. Se le fija el tipo por zona.
+    this.weather = new Weather(app.renderer)
+    this.weather.layer.zIndex = 5e6
+    app.stage.addChild(this.weather.layer)
+    this.weather.resize(app.screen.width, app.screen.height)
 
     await this._buildWorld(mapName)
     if (this.destroyed) { app.destroy(true); return }
@@ -233,6 +241,10 @@ export class Game {
         ? { x: w.x, y: w.y - 34, rx: 7, ry: 5, rate: 16, tint, vy: -30, spread: 6, life: 2.2, size: 1.1 }
         : { x: w.x, y: w.y - 30, rx: 9, ry: 6, rate: 9, tint, vy: -20, spread: 5, life: 1.8, size: 0.9 })
     }
+
+    // Clima de la zona (por bioma o mapa): brasas en el pueblo, niebla en la ciénaga, nieve en
+    // los llanos helados, hojas en el campo, polvo en las cuevas.
+    if (this.weather) this.weather.set(weatherFor(mapName, world.map.tileset))
 
     // Portales del mapa (viaje entre zonas). Precargamos el pad de teletransporte.
     const BASE = import.meta.env.BASE_URL || '/'
@@ -1365,6 +1377,7 @@ export class Game {
   _onResize = () => {
     if (!this.app) return
     this.camera.resize(this.app.screen.width, this.app.screen.height)
+    this.weather?.resize(this.app.screen.width, this.app.screen.height)
   }
 
   // Minimapa: proyección iso de la ciudad (misma orientación que la vista).
@@ -1603,6 +1616,7 @@ export class Game {
     // Partículas ambientales.
     this._pt = (this._pt || 0) + dt
     this.particles.update(dt, this._pt)
+    if (this.weather) this.weather.update(dt)
 
     // Portales (waypoints): halo con pulso suave, SIN titilar. Pisar un portal por primera
     // vez descubre su destino (lo activa). El botón abre el menú de destinos.
@@ -1735,6 +1749,7 @@ export class Game {
     if (this._onKeyDown) window.removeEventListener('keydown', this._onKeyDown)
     if (this._onKeyUp) window.removeEventListener('keyup', this._onKeyUp)
     if (this._onContext && this.app?.canvas) this.app.canvas.removeEventListener('contextmenu', this._onContext)
+    if (this.weather) { this.weather.destroy(); this.weather = null }
     if (this._unsub) { this._unsub(); this._unsub = null }
     if (this.app) {
       this.app.ticker.remove(this._tick)
