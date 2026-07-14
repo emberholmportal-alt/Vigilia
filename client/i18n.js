@@ -270,6 +270,7 @@ const DICT = {
   no_combat_town: { es: 'En el pueblo no se combate', en: 'No fighting in town' },
   online_on: { es: 'Conectado al mundo compartido', en: 'Connected to the shared world' },
   online_off: { es: 'Modo sin conexión', en: 'Offline mode' },
+  channel_on: { es: 'Canal {n}', en: 'Channel {n}' },
   // billetera (Solana)
   wallet_connect: { es: 'Conectar billetera', en: 'Connect wallet' },
   wallet_connecting: { es: 'Conectando…', en: 'Connecting…' },

@@ -97,15 +97,15 @@ wss.on('connection', (ws) => {
           if (!conn.accountId) return send({ t: 'error', error: 'no autenticado' })
           db.touchAccount(conn.accountId).catch(() => {})   // actividad (jugadores mensuales)
           if (conn.playerId != null) rooms.leave(conn.playerId)
-          const { id, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel })
           conn.playerId = id
-          return send({ t: 'present', you: id, players: present, map: m.map })
+          return send({ t: 'present', you: id, players: present, map: m.map, channel })
         }
 
         case 'move': {
           if (conn.playerId == null) return
           const r = rooms.move(conn.playerId, m.map, m.x, m.y, m.dir)
-          if (r) send({ t: 'present', you: conn.playerId, players: r.present, map: m.map }) // cambió de mapa
+          if (r) send({ t: 'present', you: conn.playerId, players: r.present, map: m.map, channel: r.channel }) // cambió de mapa
           return
         }
 

@@ -281,6 +281,7 @@ export class Game {
     net.join({
       name: this.store.getPlayerName(), race: this.store.getRaceName(),
       map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
+      channel: this._channel,   // intenta conservar tu canal entre mapas
     }).catch(() => {})
   }
 
@@ -288,6 +289,11 @@ export class Game {
     this._selfId = m.you
     this._clearRemotes()
     for (const p of m.players || []) this._addRemote(p)
+    // El server te asigna un canal (shard) del mapa; avisá en qué canal quedaste.
+    if (m.channel != null && m.channel !== this._channel) {
+      this._channel = m.channel
+      this.store.logMessage({ channel: 'sistema', text: tt('channel_on', { n: m.channel }) })
+    }
   }
   _addRemote(p) {
     if (!p || p.id === this._selfId || !this.remotes || this.remotes.has(p.id) || !this._manifest) return
