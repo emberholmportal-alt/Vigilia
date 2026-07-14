@@ -201,9 +201,9 @@ export class Game {
       const ok = await npc.load()
       if (this.destroyed) return
       if (!ok) continue
-      npc.view.scale.set(eScale)
+      npc.view.scale.set(eScale * (def.scale || 1))   // los sprites HERESY son chicos: se agrandan
       renderer.objectLayer.addChild(npc.view)
-      grid.blocked[y * grid.w + x] = 1
+      if (!def.critter) grid.blocked[y * grid.w + x] = 1   // los animales no bloquean el paso
       npc.onTap((n) => this._talkTo(n))
       this.npcs.push(npc)
     }
@@ -576,7 +576,7 @@ export class Game {
 
   // Tocar un NPC: el jugador se acerca, el NPC te mira y se abre la caja de diálogo.
   _talkTo(npc) {
-    if (this._spectator) return   // el mirón no habla con NPCs
+    if (this._spectator || npc.def.critter) return   // el mirón / los animales no hablan
     this.player.walkTo(npc.tx, npc.ty) // A* enruta a un tile adyacente (el suyo está bloqueado)
     const pv = this.iso.toWorld(this.player.tx, this.player.ty)
     const nv = this.iso.toWorld(npc.tx, npc.ty)
@@ -1573,6 +1573,7 @@ export class Game {
     // NPC cercano interactuable (para el botón del HUD): el más próximo dentro de rango.
     let near = null, nd = 1e9
     for (const npc of this.npcs) {
+      if (npc.def.critter) continue   // los animales no se interactúan
       const d = Math.abs(npc.tx - this.player.tx) + Math.abs(npc.ty - this.player.ty)
       if (d < nd) { nd = d; near = npc }
     }

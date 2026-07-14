@@ -163,13 +163,13 @@ const TRISTON = [
             'Anoche hubo tambores del lado de las minas.'],
     lines_en: ['Hard eyes, watcher. The wilds do not forgive.',
                'There were drums by the mines last night.'] },
-  { sprite: 'guild_man', name: 'Halvard', name_en: 'Halvard', portrait: 'male01.png', x: 56, y: 58, dir: 5,
+  { sprite: 'NoblemanBlue', scale: 1.8, name: 'Halvard', name_en: 'Halvard', portrait: 'male01.png', x: 56, y: 58, dir: 0,
     lines: ['Los gremios reclutan de nuevo.',
             'Quinientos de oro y una sigla de tres letras.'],
     lines_en: ['The guilds are recruiting again.',
                'Five hundred gold and a three-letter tag.'] },
-  // Herrero: repara el equipo por oro (zona de la fragua/yunque).
-  { sprite: 'peasant_man2', name: 'Herrero Dorn', name_en: 'Dorn the Smith', portrait: 'male16.png', x: 70, y: 52, dir: 5, smith: true,
+  // Herrero: repara el equipo por oro (zona de la fragua/yunque). Sprite HERESY con idle animado.
+  { sprite: 'MalePeasant1', scale: 1.8, name: 'Herrero Dorn', name_en: 'Dorn the Smith', portrait: 'male16.png', x: 70, y: 52, dir: 0, smith: true,
     lines: ['El acero se cansa como los hombres.',
             'Tráemelo antes de que se quiebre del todo.'],
     lines_en: ['Steel tires just like men do.',
@@ -178,7 +178,7 @@ const TRISTON = [
   // el mundo, este obelisco te devuelve al punto anclado (mecánica de portal de Diablo).
   { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', name_en: 'Obelisk of Return', landmark: true, obelisk: true, x: 55, y: 45, dir: 7 },
   // Alquimista: prepara pociones reales con lo que juntás afuera (recetas de Flare).
-  { sprite: 'peasant_woman2', name: 'Alquimista Yara', name_en: 'Yara the Alchemist', portrait: 'female04.png', x: 59, y: 53, dir: 5, alchemy: true,
+  { sprite: 'OldWitch', scale: 1.8, name: 'Alquimista Yara', name_en: 'Yara the Alchemist', portrait: 'female04.png', x: 59, y: 53, dir: 0, alchemy: true,
     lines: ['Tráeme hierbas y cristales; yo les saco el jugo.',
             'Una botella vacía y aloe, y tenés vida embotellada.'],
     lines_en: ['Bring me herbs and crystals; I wring the juice from them.',
@@ -187,7 +187,7 @@ const TRISTON = [
   // con los tres nombres, despierta (quest "Los Tres Nombres").
   { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, guardian: true, x: 57, y: 47, dir: 3 },
   // Udana la Vidente: da y cierra la quest de los Guardianes. Diálogo condicional por banderas.
-  { sprite: 'peasant_woman1', name: 'Udana la Vidente', name_en: 'Udana the Seer', portrait: 'female01.png', x: 58, y: 50, dir: 1,
+  { sprite: 'FemaleOld', scale: 1.8, name: 'Udana la Vidente', name_en: 'Udana the Seer', portrait: 'female01.png', x: 58, y: 50, dir: 0,
     dialog: [
       { req: ['q3_finish'],
         lines: ['Los sellos cedieron. El pueblo respira distinto desde entonces.'],
@@ -206,6 +206,11 @@ const TRISTON = [
         lines_en: ['Those three statues are not stone: they are mages who sealed themselves.',
                    'Seek their three names in the ruins and bring them back. The Guardians will wake.'] },
     ] },
+  // Fauna del pueblo (HERESY): animales con idle animado que le dan vida a la plaza. Sin nombre
+  // ni diálogo — sólo ambiente. dir 0 (los sprites de HERESY son de una sola dirección).
+  { sprite: 'PigSE', x: 64, y: 54, dir: 0, critter: true },
+  { sprite: 'PigSW', x: 60, y: 58, dir: 0, critter: true },
+  { sprite: 'Guard_dog', scale: 1.4, x: 57, y: 56, dir: 0, critter: true },
 ]
 
 export const NPCS_BY_MAP = {
