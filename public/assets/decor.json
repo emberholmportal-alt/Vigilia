@@ -191,27 +191,5 @@
    64,
    96
   ]
- },
- "grave_cross": {
-  "src": "decor/grave_cross.png",
-  "cell": [
-   52,
-   104
-  ],
-  "anchor": [
-   25,
-   91
-  ]
- },
- "grave_cross2": {
-  "src": "decor/grave_cross2.png",
-  "cell": [
-   52,
-   104
-  ],
-  "anchor": [
-   25,
-   91
-  ]
  }
 }

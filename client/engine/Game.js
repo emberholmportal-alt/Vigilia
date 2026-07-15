@@ -248,7 +248,7 @@ export class Game {
       rate: 3.5, tint: 0xffe08a, vy: -4, spread: 5, life: 3.4, size: 0.9,
     })
     for (const npc of this.npcs) {
-      if (!npc.def.landmark) continue
+      if (!npc.def.landmark || npc.def.noParticles) continue   // el obelisco va sin partículas mágicas
       const w = iso.toWorld(npc.tx, npc.ty)
       const tint = npc.def.glow || GLOW_TINT[npc.def.sprite] || 0xffcf5a
       this.particles.addEmitter(npc.def.portal
@@ -825,23 +825,19 @@ export class Game {
     const p = this.player
     if (!p || !this._atlasCtx) return
     const iso = this.iso
+    const pd = p.tx + p.ty                         // profundidad del jugador (x+y)
     const bldMinW = iso.tileW * 2.5                // sólo sprites grandes (edificios)
     const bldMinH = iso.tileH * 2.5
-    // Todos los personajes vivos: jugador + NPCs + enemigos. Un edificio se atenúa si tapa a
-    // CUALQUIERA de ellos por detrás (antes sólo se miraba al jugador, y los NPCs/enemigos que
-    // caían detrás de un edificio quedaban con los pies asomando).
-    const chars = [{ x: p.view.x, y: p.view.y, d: p.tx + p.ty }]
-    for (const n of this.npcs) if (n.view && n.view.visible !== false) chars.push({ x: n.view.x, y: n.view.y, d: n.tx + n.ty })
-    for (const e of this.enemies) if (e.view && !e.dead) chars.push({ x: e.view.x, y: e.view.y, d: e.tx + e.ty })
+    // Sólo se atenúan los edificios que tapan al JUGADOR (los NPCs no hacen que las casas se
+    // vuelvan translúcidas: si un NPC queda detrás de un edificio, se lo reubica a un tile visible).
     const occ = this._occAlpha || (this._occAlpha = new Map()) // alpha por tile (persiste entre rebuilds)
     this.renderer.eachVisibleObject((s) => {
       let hide = false
       const tw = s.texture ? s.texture.width : s.width
       const th = s.texture ? s.texture.height : s.height
-      if (tw >= bldMinW && th >= bldMinH) {           // es un edificio
+      if (s.zIndex > pd && tw >= bldMinW && th >= bldMinH) {   // edificio dibujado por encima del jugador
         const m = this._maskFor(s)
-        // tapa a un personaje que esté DETRÁS (el edificio se dibuja por encima: zIndex mayor).
-        if (m) for (const c of chars) { if (s.zIndex > c.d && this._coversChar(m, s, c.x, c.y)) { hide = true; break } }
+        if (m) hide = this._coversChar(m, s, p.view.x, p.view.y)
       }
       const target = hide ? 0.3 : 1
       let a = occ.get(s._ti); if (a === undefined) a = 1

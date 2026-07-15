@@ -174,9 +174,10 @@ const TRISTON = [
             'Tráemelo antes de que se quiebre del todo.'],
     lines_en: ['Steel tires just like men do.',
                'Bring it to me before it breaks for good.'] },
-  // Obelisco de Retorno: al lado del portal del pueblo. Si usaste una Piedra de Retorno en
-  // el mundo, este obelisco te devuelve al punto anclado (mecánica de portal de Diablo).
-  { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', name_en: 'Obelisk of Return', landmark: true, obelisk: true, x: 55, y: 45, dir: 7 },
+  // Obelisco de Retorno: en el camposanto (junto a la cripta de la iglesia). Si usaste una
+  // Piedra de Retorno en el mundo, este obelisco te devuelve al punto anclado (mecánica de
+  // portal de Diablo). Sin partículas mágicas (noParticles): queda como piedra sobria.
+  { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', name_en: 'Obelisk of Return', landmark: true, obelisk: true, noParticles: true, x: 47, y: 70, dir: 7 },
   // Yara la Bruja: la alquimista es la bruja de la casa del rincón (NE del mapa). ES la ÚNICA que
   // vende pociones de vida/maná y el Pergamino de Retorno (shopKind 'alchemist'). Sprite de la
   // bruja de HERESY, en su lugar (87,18).
@@ -185,28 +186,29 @@ const TRISTON = [
             'La botella vacía y el aloe los junta cualquiera. El jugo lo saco yo.'],
     lines_en: ['Health and mana potions, and scrolls to return. Nothing more… nothing less.',
                'Anyone can gather an empty bottle and aloe. Wringing the juice — that I do.'] },
-  // Guardián: estatua del monumento. Recibe la ofrenda de oro del día (misión Ofrenda) y,
-  // con los tres nombres, despierta (quest "Los Tres Nombres").
-  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, guardian: true, x: 57, y: 47, dir: 3 },
-  // Udana la Vidente: da y cierra la quest de los Guardianes. Diálogo condicional por banderas.
-  { sprite: 'peasant_woman1', name: 'Udana la Vidente', name_en: 'Udana the Seer', portrait: 'female01.png', x: 58, y: 50, dir: 1,
+  // Udana la Vidente: da y CIERRA la quest de los Tres Nombres. Con los tres nombres, ella misma
+  // los pronuncia y los sellos ceden (antes lo hacía el Guardián de Fuego, ya quitado). Diálogo
+  // condicional por banderas; el nodo con los tres nombres setea q3_finish (recompensa incluida).
+  { sprite: 'peasant_woman1', name: 'Udana la Vidente', name_en: 'Udana the Seer', portrait: 'female01.png', x: 58, y: 50, dir: 6,
     dialog: [
       { req: ['q3_finish'],
         lines: ['Los sellos cedieron. El pueblo respira distinto desde entonces.'],
         lines_en: ['The seals gave way. The town has breathed differently since.'] },
-      { req: ['q3_init', 'q3_ice', 'q3_fire', 'q3_wind'], not: ['q3_finish'],
-        lines: ['Tenés los tres nombres en la boca. Andá al Guardián de Fuego y pronuncialos.'],
-        lines_en: ['You carry the three names on your tongue. Go to the Guardian of Fire and speak them.'] },
+      { req: ['q3_init', 'q3_ice', 'q3_fire', 'q3_wind'], not: ['q3_finish'], set: 'q3_finish',
+        lines: ['Traés los tres nombres. Dejá que los pronuncie…',
+                'Scathelocke. Vesuvvio. Grisbon. Los sellos ceden. Está hecho.'],
+        lines_en: ['You carry the three names. Let me speak them…',
+                   'Scathelocke. Vesuvvio. Grisbon. The seals give way. It is done.'] },
       { req: ['q3_init'], not: ['q3_finish'],
         lines: ['Los nombres duermen en las ruinas: uno en el hielo, uno en el fuego, uno en el viento.',
-                'Caminá sobre ellas y los oirás resonar.'],
+                'Caminá sobre ellas y los oirás resonar. Traémelos y yo los pronunciaré.'],
         lines_en: ['The names sleep in the ruins: one in ice, one in fire, one in wind.',
-                   'Walk upon them and you will hear them echo.'] },
+                   'Walk upon them and you will hear them echo. Bring them to me and I will speak them.'] },
       { not: ['q3_init'], set: 'q3_init',
-        lines: ['Esas tres estatuas no son piedra: son magos que sellaron ellos mismos.',
-                'Buscá sus tres nombres en las ruinas y traelos de vuelta. Los Guardianes despertarán.'],
-        lines_en: ['Those three statues are not stone: they are mages who sealed themselves.',
-                   'Seek their three names in the ruins and bring them back. The Guardians will wake.'] },
+        lines: ['Tres magos se sellaron a sí mismos en las ruinas, hechos piedra y silencio.',
+                'Buscá sus tres nombres y traémelos. Cuando los pronuncie, los sellos cederán.'],
+        lines_en: ['Three mages sealed themselves in the ruins, turned to stone and silence.',
+                   'Seek their three names and bring them to me. When I speak them, the seals will give way.'] },
     ] },
   // Aldeanos de ambiente: unos pocos pobladores repartidos por la plaza (los cerdos viven en la
   // granja del norte, ya en el mapa). Mismos sprites que los NPCs con nombre (mismo tamaño y con
