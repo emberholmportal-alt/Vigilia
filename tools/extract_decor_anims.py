@@ -14,7 +14,8 @@ DECORS = [
     # (nombre en decor.json, .txt de anim, scale, ms_override)
     # ms_override acelera la animación: la de Flare es muy lenta (cerdo 6s, fuente 1.5s) y se ve
     # a los tirones. La bajamos para que fluya suave.
-    ("stone_fountain", "animations/npcs/stone_fountain.txt", 1.0, 900),   # 200x200 completo
+    # Fuente: usamos el ciclo COMPLETO de 16 frames (mucho más suave que el de 4) a 1.6s.
+    ("stone_fountain", "animations/npcs/Zstone_fountain full cycle.txt", 1.0, 1600),   # 200x200
     ("PigSE", "animations/npcs/PigSE.txt", 1.0, 2400),
     ("PigSW", "animations/npcs/PigSW.txt", 1.0, 2400),
 ]

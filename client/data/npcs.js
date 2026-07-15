@@ -151,7 +151,7 @@ const GREENWOOD = [
 const TRISTON = [
   // Nix el Buhonero: el ÚNICO mercader del pueblo (compra/venta). Arma su puesto frente al carro
   // y los barriles (el mercado). De frente (dir 7 = S) para que se le vea la cara y la mercadería.
-  { sprite: 'peddler_goblin', name: 'Nix el Buhonero', name_en: 'Nix the Peddler', portrait: 'goblin.png', x: 61, y: 51, dir: 7, shop: true,
+  { sprite: 'peddler_goblin', name: 'Nix el Buhonero', name_en: 'Nix the Peddler', portrait: 'goblin.png', x: 61, y: 51, dir: 6, shop: true,
     lines: ['¡Psst! Reliquias raras, precios de robo.',
             'Para vos, robo doble.',
             'No preguntes de dónde salió. Preguntá cuánto vale.'],
@@ -180,7 +180,7 @@ const TRISTON = [
   // Yara la Bruja: la alquimista es la bruja de la casa del rincón (NE del mapa). ES la ÚNICA que
   // vende pociones de vida/maná y el Pergamino de Retorno (shopKind 'alchemist'). Sprite de la
   // bruja de HERESY, en su lugar (87,18).
-  { sprite: 'witch_adriana', name: 'Yara la Bruja', name_en: 'Yara the Witch', portrait: 'female04.png', x: 87, y: 18, dir: 7, alchemy: true,
+  { sprite: 'witch_adriana', name: 'Yara la Bruja', name_en: 'Yara the Witch', portrait: 'female04.png', x: 87, y: 18, dir: 0, alchemy: true,
     lines: ['Pociones de vida y de maná, y pergaminos para volver. Nada más… nada menos.',
             'La botella vacía y el aloe los junta cualquiera. El jugo lo saco yo.'],
     lines_en: ['Health and mana potions, and scrolls to return. Nothing more… nothing less.',
