@@ -151,7 +151,51 @@ export class Enemy {
     this._dealt = false
   }
 
+  // --- modo autoritativo (online): el servidor manda; acá sólo interpolamos y reflejamos --------
+  // No corre IA. La posición/HP/muerte llegan del server; suavizamos el movimiento y animamos.
+  netInit(eid) { this.netDriven = true; this.eid = eid; this._nx = this.tx; this._ny = this.ty }
+  netSetTarget(x, y, dir, hp) {
+    this._nx = x; this._ny = y
+    if (dir != null) this.dir = dir
+    if (hp != null && hp !== this.hp) { this.hp = hp; if (this.hp < this.hpMax) this._drawHpBar() }
+  }
+  netDamage(hp, dmg, crit) {
+    if (this.dead) return
+    this.hp = Math.max(0, hp); this._drawHpBar()
+    if (this._anim !== 'hit') this._startAnim('hit')
+    playSfx(this._sfx + '_hit.ogg')
+  }
+  netDie() {
+    if (this.dead) return
+    this.hp = 0; this._startAnim('die'); this.state = 'dead'; this.dead = true; this._deathT = this._animS('die')
+    this.view.eventMode = 'none'; this.view.cursor = 'default'; this.hpBar.visible = false
+    playSfx(this._sfx + '_die.ogg')
+  }
+  _netUpdate(dt) {
+    this.pendingHit = 0
+    if (this.state === 'dead') {
+      this._deathT -= dt; this._advanceAnim(dt)
+      if (this._deathT <= 0) { this.view.alpha -= dt * 2; if (this.view.alpha <= 0) this.remove = true }
+      return
+    }
+    // Interpolación suave hacia la última posición del server (llega ~5 Hz).
+    const k = Math.min(1, dt * 12)
+    this.tx += (this._nx - this.tx) * k
+    this.ty += (this._ny - this.ty) * k
+    this._syncWorld()
+    if (this._anim === 'hit') {
+      this._animT -= dt
+      if (this._animT <= 0) this._startAnim('stance', true)
+    } else {
+      const moving = Math.abs(this._nx - this.tx) + Math.abs(this._ny - this.ty) > 0.08
+      const want = moving ? 'run' : 'stance'
+      if (this._anim !== want) this._startAnim(want, true)
+    }
+    this._advanceAnim(dt)
+  }
+
   update(dt, player) {
+    if (this.netDriven) return this._netUpdate(dt)
     this.pendingHit = 0
     if (this._attackCd > 0) this._attackCd -= dt
     if (this._summonCd > 0) this._summonCd -= dt

@@ -218,6 +218,7 @@ export class Game {
 
     // Enemigos + estado de combate.
     this.enemies = []
+    this._netEnemies = new Map()   // eid -> Enemy (enemigos autoritativos del servidor)
     this._floaters = []
     this._projectiles = []
     this._target = null
@@ -314,6 +315,13 @@ export class Game {
         net.on('move', (m) => { const r = this.remotes?.get(m.id); if (r) r.setTarget(m.x, m.y, m.dir) })
         net.on('leave', (m) => this._removeRemote(m.id))
         net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
+        // Combate autoritativo: los enemigos los manda el servidor (compartidos por canal).
+        net.on('espawn', (m) => { for (const e of m.es || []) this._spawnNetEnemy(e) })
+        net.on('estate', (m) => { for (const s of m.es || []) { const e = this._netEnemies?.get(s.i); if (e) e.netSetTarget(s.x, s.y, s.d, s.hp) } })
+        net.on('edmg', (m) => this._onEdmg(m))
+        net.on('edie', (m) => this._onEdie(m))
+        net.on('ekill', (m) => this._onEkill(m))
+        net.on('ehit', (m) => this._onEhit(m))
         this.store.logMessage({ channel: 'sistema', text: tt('online_on') })
       } catch { this.store.logMessage({ channel: 'sistema', text: tt('online_off') }); return }
     }
@@ -325,6 +333,20 @@ export class Game {
       channel: this._channel,        // intenta conservar tu canal entre mapas
       spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
     }).catch(() => {})
+    this._sendStats()   // stats de combate para que el server tire el daño de nuestros golpes
+  }
+
+  // Envía al server las stats de combate del jugador (dependen del equipo). El server las usa
+  // para tirar el daño de forma autoritativa. Se reenvía cuando cambian (al equiparse).
+  _sendStats() {
+    if (!this._online || this._spectator) return
+    const st = this.store.getStats() || {}
+    this._lastStatsObj = st
+    net.setStats({
+      dmgMin: st.dmgMin || 2, dmgMax: st.dmgMax || 5, dmgMul: st.dmgMul || 1,
+      str: st.str || 10, crit: st.crit || 0, weaponKind: st.weaponKind || 'melee',
+      defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
+    })
   }
 
   _onPresent(m) {
@@ -384,6 +406,7 @@ export class Game {
     if (this.worldContainer) { this.worldContainer.destroy({ children: true, texture: false }); this.worldContainer = null }
     this.npcs = []
     this.enemies = []
+    this._netEnemies = new Map()
     this.groundItems = []
     this.chests = []
     this._floaters = []
@@ -861,6 +884,7 @@ export class Game {
     // Guardados para invocaciones en vivo (los nigromantes crean esbirros durante el combate).
     this._manifest = manifest
     this._grid = grid
+    if (ONLINE) return   // online: los enemigos los manda el servidor (espawn), no se spawnean local
     const spawners = map.spawners || []
     if (!spawners.length || !manifest.enemies) return
     const MAX = 40
@@ -900,6 +924,7 @@ export class Game {
   // Élite del día: si hay un contrato activo para esta zona, aparece su jefe (una vez), más
   // fuerte y con nombre. Matarlo completa la misión Contrato.
   async _spawnContractElite(renderer, grid, manifest, spawn, mapName) {
+    if (ONLINE) return   // online: el spawn de élites lo maneja el servidor (fase 2)
     const missions = this.store.getMissions ? this.store.getMissions() : []
     const c = (missions || []).find((m) => m.type === 'contract' && !m.claimed && m.progress < m.target && m.map === mapName)
     if (!c) return
@@ -1145,6 +1170,76 @@ export class Game {
     if (this._target === e) this._target = null
   }
 
+  // --- enemigos autoritativos del servidor (online) --------------------------
+  // Crea un enemigo que manda el servidor (modo net: sin IA local, se interpola su posición).
+  async _spawnNetEnemy(data) {
+    if (!this._manifest || !this.renderer || !this._netEnemies) return
+    if (this._netEnemies.has(data.i)) return
+    const st = enemyStats(data.s, data.lv)
+    const def = {
+      sprite: data.s, x: data.x, y: data.y, level: data.lv, hpMax: data.hpm, damage: st.damage,
+      xp: st.xp, boss: st.boss, ranged: !!data.rng, projKind: projectileKind(data.s),
+      ability: enemyAbility(data.s), name: enemyName(data.s, getLang()),
+    }
+    const e = new Enemy(this._manifest, def, this.iso, this._grid)
+    const ok = await e.load()
+    if (this.destroyed || !ok) return
+    // pudo llegar la muerte mientras cargaba el sprite
+    if (this._netDeadPending && this._netDeadPending.has(data.i)) { this._netDeadPending.delete(data.i); e.view.destroy({ children: true }); return }
+    e.netInit(data.i)
+    e.tx = data.x; e.ty = data.y; e.hp = data.hp; e._syncWorld()
+    e.view.scale.set(this._eScale)
+    e.onTap((en) => this._targetEnemy(en))
+    this.renderer.objectLayer.addChild(e.view)
+    this.enemies.push(e)
+    this._netEnemies.set(data.i, e)
+  }
+
+  _onEdmg(m) {
+    const e = this._netEnemies && this._netEnemies.get(m.i)
+    if (!e) return
+    e.netDamage(m.hp, m.dmg, m.crit)
+    this._floatText(e.view.x, e.view.y + (e._hpY || -40), m.crit ? `¡${m.dmg}!` : `${m.dmg}`, m.crit ? '#ff9a3a' : '#ffe08a')
+  }
+
+  _onEdie(m) {
+    const e = this._netEnemies && this._netEnemies.get(m.i)
+    if (!e) { (this._netDeadPending ||= new Set()).add(m.i); return }
+    e.netDie()
+    this._netEnemies.delete(m.i)
+    if (this._target === e) this._target = null
+  }
+
+  // Aviso al matador: XP autoritativa del server + el botín/oro se tira local (instanciado).
+  _onEkill(m) {
+    const xp = m.xp || 0
+    this.store.addSkillXp('combate', xp)
+    this.store.addXp(xp)
+    this.store.missionProgress('kill', 1)
+    const e = (this.enemies || []).find((x) => x.eid === m.i)   // sigue en la lista (muriendo)
+    const fx = e ? e.view.x : this.player.view.x, fy = e ? e.view.y + (e._hpY || -40) : this.player.view.y - 80
+    this._floatText(fx, fy, `+${xp} XP`, '#9fe0ff')
+    this.store.logMessage({ channel: 'sistema', text: tt('defeated', { name: enemyName(m.sprite, getLang()) }) })
+    const boss = enemyStats(m.sprite, m.lv).boss, lvl = Math.max(1, Math.min(16, m.lv || 1))
+    const mf = this.store.getStats()?.itemFind || 0
+    const roll = rollMonsterDrop(lvl, boss, mf)
+    if (roll.gold > 0) { this.store.addGold(roll.gold); this._floatText(fx, fy - 16, `+${roll.gold}`, '#e6c85a') }
+    if (roll.drops.length && e) this._dropItems(Math.round(e.tx), Math.round(e.ty), roll.drops)
+  }
+
+  // El servidor nos avisa que un enemigo nos pegó (ya restó nuestra defensa).
+  _onEhit(m) {
+    if (this._dead || this._spectator || !this.player) return
+    const dmg = m.dmg || 0
+    if (dmg <= 0) return
+    const hp = this.store.takeDamage(dmg)
+    const p = this.player
+    this._floatText(p.view.x, p.view.y - 70, `-${dmg}`, '#ff6a5a')
+    this.store.degradeGear('armor', 1)
+    if (this._hurtCd <= 0) { p.hurt(); playSfx('player_hit.ogg'); this._hurtCd = 0.5 }
+    if (hp <= 0) this._playerDeath()
+  }
+
   _floatText(x, y, text, color) {
     const t = new Text({ text, style: {
       fontFamily: 'Georgia, serif', fontSize: 15, fill: color,
@@ -1333,6 +1428,8 @@ export class Game {
     // Habilidad pedida desde la barra de acción.
     const cseq = this.store.getCastSeq()
     if (cseq !== this._lastCastSeq) { this._lastCastSeq = cseq; this._castAbility(this.store.getCastAbility()) }
+    // online: si cambiaron las stats (equipo), reenviarlas para que el server tire bien el daño.
+    if (this._online && !this._spectator) { const st = this.store.getStats(); if (st && st !== this._lastStatsObj) this._sendStats() }
 
     // Enemigos: IA + daño al jugador (la defensa del equipo + buff reduce cada golpe).
     const defense = ((this.store.getStats()?.defense) || 0) + this._buffDefense()
@@ -1372,9 +1469,18 @@ export class Game {
           const ms = p.attack(anim) || 400
           playSfx('swing.ogg')
           this._playerAtkCd = Math.max(0.65, ms / 1000)
-          const hit = this._playerMeleeDamage()
-          if (ranged) this._playerShoot(t, hit, kind)
-          else this._pendingHit = { at: (ms / 1000) * 0.5, dmg: hit.dmg, crit: hit.crit, target: t }
+          if (this._online && t.netDriven) {
+            // online: el servidor tira el daño y valida el alcance (autoritativo).
+            net.attack(t.eid)
+            if (ranged) {   // proyectil sólo cosmético (el daño lo aplica el server, llega por edmg)
+              const proj = kind === 'mental' ? 'magic' : 'arrow'
+              this._spawnProjectile(p.view.x, p.view.y - 40, t.view.x, t.view.y + (t._hpY || -40) * 0.5, proj, () => {})
+            }
+          } else {
+            const hit = this._playerMeleeDamage()
+            if (ranged) this._playerShoot(t, hit, kind)
+            else this._pendingHit = { at: (ms / 1000) * 0.5, dmg: hit.dmg, crit: hit.crit, target: t }
+          }
         }
       }
     } else if (t && t.dead) {
