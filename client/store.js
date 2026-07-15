@@ -18,7 +18,7 @@ const GRAVE_GOLD_FRACTION = 0.25 // fracción del oro que dejás en la tumba al 
 import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
 import { tt, setLangGlobal, itemName, raceName, questName } from './i18n.js'
-import { dailyStock, todayStr } from './data/shop.js'
+import { dailyStock, alchemistStock, todayStr } from './data/shop.js'
 import { dailyMissions } from './data/missions.js'
 import { emptySkills, playerLevelFromXp, skillLevelFromXp, SKILL_CAP, inventoryCapacity } from './data/progression.js'
 import { saveGame, snapshot } from './data/save.js'
@@ -635,7 +635,13 @@ export const useGameStore = create((set, get) => ({
   shopStockDate: '',
   // Stock del día: se genera una vez por día y se conserva (con lo ya comprado) hasta el
   // día siguiente, que repone. Todos los jugadores ven el mismo stock (mercado compartido).
-  openShop: (vendor) => {
+  openShop: (vendor, kind) => {
+    // La bruja (kind 'alchemist') vende un stock FIJO: pociones de vida/maná + Pergamino de
+    // Retorno. Cualquier otro mercader (Nix) usa el mercado del día (sin esas 3 cosas).
+    if (kind === 'alchemist') {
+      set({ shopStock: alchemistStock(), shopVendor: vendor || 'Alquimista', panel: 'shop' })
+      return
+    }
     const s = get()
     const today = todayStr()
     let shopStock = s.shopStock, shopStockDate = s.shopStockDate

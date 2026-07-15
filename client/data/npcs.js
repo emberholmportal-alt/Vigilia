@@ -177,12 +177,14 @@ const TRISTON = [
   // Obelisco de Retorno: al lado del portal del pueblo. Si usaste una Piedra de Retorno en
   // el mundo, este obelisco te devuelve al punto anclado (mecánica de portal de Diablo).
   { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', name_en: 'Obelisk of Return', landmark: true, obelisk: true, x: 55, y: 45, dir: 7 },
-  // Alquimista: prepara pociones reales con lo que juntás afuera (recetas de Flare).
-  { sprite: 'peasant_woman2', name: 'Alquimista Yara', name_en: 'Yara the Alchemist', portrait: 'female04.png', x: 59, y: 53, dir: 5, alchemy: true,
-    lines: ['Tráeme hierbas y cristales; yo les saco el jugo.',
-            'Una botella vacía y aloe, y tenés vida embotellada.'],
-    lines_en: ['Bring me herbs and crystals; I wring the juice from them.',
-               'An empty bottle and aloe, and you have life in a flask.'] },
+  // Yara la Bruja: la alquimista es la bruja de la casa del rincón (NE del mapa). ES la ÚNICA que
+  // vende pociones de vida/maná y el Pergamino de Retorno (shopKind 'alchemist'). Sprite de la
+  // bruja de HERESY, en su lugar (87,18).
+  { sprite: 'witch_adriana', name: 'Yara la Bruja', name_en: 'Yara the Witch', portrait: 'female04.png', x: 87, y: 18, dir: 7, shop: true, shopKind: 'alchemist',
+    lines: ['Pociones de vida y de maná, y pergaminos para volver. Nada más… nada menos.',
+            'La botella vacía y el aloe los junta cualquiera. El jugo lo saco yo.'],
+    lines_en: ['Health and mana potions, and scrolls to return. Nothing more… nothing less.',
+               'Anyone can gather an empty bottle and aloe. Wringing the juice — that I do.'] },
   // Guardián: estatua del monumento. Recibe la ofrenda de oro del día (misión Ofrenda) y,
   // con los tres nombres, despierta (quest "Los Tres Nombres").
   { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, guardian: true, x: 57, y: 47, dir: 3 },

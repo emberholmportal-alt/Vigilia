@@ -11,10 +11,12 @@ import os
 from PIL import Image
 
 DECORS = [
-    # (nombre en decor.json, .txt de anim, scale)
-    ("stone_fountain", "animations/npcs/stone_fountain.txt", 1.0),   # 200x200 completo
-    ("PigSE", "animations/npcs/PigSE.txt", 1.0),
-    ("PigSW", "animations/npcs/PigSW.txt", 1.0),
+    # (nombre en decor.json, .txt de anim, scale, ms_override)
+    # ms_override acelera la animación: la de Flare es muy lenta (cerdo 6s, fuente 1.5s) y se ve
+    # a los tirones. La bajamos para que fluya suave.
+    ("stone_fountain", "animations/npcs/stone_fountain.txt", 1.0, 900),   # 200x200 completo
+    ("PigSE", "animations/npcs/PigSE.txt", 1.0, 2400),
+    ("PigSW", "animations/npcs/PigSW.txt", 1.0, 2400),
 ]
 
 
@@ -44,11 +46,13 @@ def main():
     heresy = os.path.join(a.flare, "mods", "heresy")
 
     decor = json.load(open(os.path.join(a.out, "decor.json")))
-    for name, rel, scale in DECORS:
+    for name, rel, scale, ms_override in DECORS:
         txt = os.path.join(heresy, rel)
         if not os.path.exists(txt):
             print("  (falta)", name); continue
         image, frames, ms = parse_anim(txt)
+        if ms_override:
+            ms = ms_override
         src = os.path.join(heresy, image)
         if not os.path.exists(src):
             print("  (falta img)", name, image); continue

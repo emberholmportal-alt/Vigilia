@@ -584,7 +584,7 @@ export class Game {
     const nm = npcName(npc.def, getLang())
     if (npc.def.obelisk) this._useObelisk()
     else if (npc.def.guardian) this._makeOffering(npc)
-    else if (npc.def.shop) this.store.openShop(nm)
+    else if (npc.def.shop) this.store.openShop(nm, npc.def.shopKind)
     else if (npc.def.smith) this.store.openSmith(nm)
     else if (npc.def.alchemy) this.store.openAlchemy(nm)
     else if (npc.def.dialog) this._talkDialog(npc)
@@ -1900,7 +1900,7 @@ const zoneTitle = (mapName, fallback) => zoneName(mapName, getLang(), fallback)
 
 // Decoraciones ambientales de HERESY que sacamos a mano (por mapa). En Triston quitamos
 // al posadero rojo del carro: ese puesto es donde ponemos al mercader (parece un mercado).
-const DECOR_SKIP = { triston: new Set(['Act1_innkeeper_owens']) }
+const DECOR_SKIP = { triston: new Set(['Act1_innkeeper_owens', 'Act1_witch_adriana']) }
 
 // Límite de copias por nombre (por mapa): en Triston el cementerio del noroeste tenía
 // muchos monjes; dejamos uno solo.
