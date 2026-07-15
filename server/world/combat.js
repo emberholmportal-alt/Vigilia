@@ -207,7 +207,22 @@ export function playerOpenChest(pid, cid) {
 
 // --- stats de combate del jugador (las envía el cliente) ------------------------------------
 const pstats = new Map()   // playerId -> { dmgMin, dmgMax, dmgMul, str, crit, weaponKind, reach, defense }
-export function setStats(pid, s) { if (s && typeof s === 'object') pstats.set(pid, s) }
+// Backstop anti-cheat: el cliente calcula sus stats de combate (dependen del equipo), pero el
+// server las ACOTA a máximos sanos muy por encima de cualquier build legítima. Así un cliente
+// hackeado no puede mandar dmg=9999 y romper el mundo compartido de los demás. (La autoridad
+// total — el server recalcula stats desde el equipo/nivel/inventario reales y persistidos — es
+// una fase mayor: requiere personaje autoritativo en el server.)
+const clampNum = (v, max) => Math.max(0, Math.min(max, Number(v) || 0))
+export function setStats(pid, s) {
+  if (!s || typeof s !== 'object') return
+  pstats.set(pid, {
+    dmgMin: clampNum(s.dmgMin, 500), dmgMax: clampNum(s.dmgMax, 500),
+    dmgMul: clampNum(s.dmgMul, 8) || 1, str: clampNum(s.str, 999),
+    crit: clampNum(s.crit, 100), defense: clampNum(s.defense, 3000),
+    reach: clampNum(s.reach, 8) || 1.6,
+    weaponKind: (s.weaponKind === 'ranged' || s.weaponKind === 'mental') ? s.weaponKind : 'melee',
+  })
+}
 export function dropPlayer(pid) { pstats.delete(pid) }
 
 // Golpe jugador -> enemigo (pedido por el cliente). El server tira el daño con las stats del

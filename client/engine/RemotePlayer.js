@@ -34,7 +34,15 @@ export class RemotePlayer {
   // Nueva posición/dirección difundida por el servidor.
   setTarget(x, y, dir) { this._tgx = x; this._tgy = y; if (dir != null) this.dir = dir }
 
+  // Muerte / reaparición (difundida por el server para el co-op): cae y se atenúa; al revivir vuelve.
+  setDead(dead) {
+    this.dead = !!dead
+    if (dead) { this.paperdoll.playOnce('die', true); this.view.alpha = 0.5 }
+    else { this.paperdoll._oneShot = null; this.view.alpha = 1 }
+  }
+
   update(dt) {
+    if (this.dead) { this.paperdoll.update(dt); this._sync(); return }   // caído: no se mueve
     const dx = this._tgx - this.tx, dy = this._tgy - this.ty
     const d = Math.hypot(dx, dy)
     const moving = d > 0.06

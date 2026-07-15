@@ -164,6 +164,19 @@ export function openChest(id, cid) { combat.playerOpenChest(id, cid) }
 // El cliente envía sus stats de combate (dependen del equipo) para que el server tire el daño.
 export function setStats(id, stats) { combat.setStats(id, stats) }
 
+// Muerte / reaparición del jugador: se difunde al canal para que los demás la vean (co-op).
+export function playerDead(id) {
+  const p = players.get(id); if (!p) return
+  p.dead = true
+  broadcast(p.map, p.ch, { t: 'pdied', id }, id)
+}
+export function playerAlive(id, x, y, dir) {
+  const p = players.get(id); if (!p) return
+  p.dead = false
+  if (x != null) { p.x = x; p.y = y; if (dir != null) p.dir = dir }
+  broadcast(p.map, p.ch, { t: 'palive', id, x: p.x, y: p.y, dir: p.dir }, id)
+}
+
 // Inyecta en la simulación de combate cómo consultar/avisar a los jugadores (sin acoplar módulos).
 combat.init({
   playersIn: (map, ch) => { const out = []; for (const p of players.values()) if (p.map === map && p.ch === ch) out.push(p); return out },

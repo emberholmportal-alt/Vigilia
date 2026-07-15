@@ -58,6 +58,8 @@ class Net {
         else if (m.t === 'nspawn' || m.t === 'ndeplete' || m.t === 'ngather') this._emit(m.t, m)
         // cofres autoritativos (compartidos por canal)
         else if (m.t === 'cspawn' || m.t === 'copen' || m.t === 'cloot') this._emit(m.t, m)
+        // muerte / reaparición de otros jugadores (co-op)
+        else if (m.t === 'pdied' || m.t === 'palive') this._emit(m.t, m)
       }
     })
   }
@@ -78,6 +80,8 @@ class Net {
   attack(eid) { this._send({ t: 'atk', eid }) }              // pedir ataque a un enemigo del server
   gather(nid) { this._send({ t: 'gather', nid }) }           // pedir juntar un nodo de recurso
   openChest(cid) { this._send({ t: 'openchest', cid }) }     // pedir abrir un cofre del server
+  dead() { this._send({ t: 'pdead' }) }                      // avisar que morí (co-op)
+  alive(x, y, dir) { this._send({ t: 'palive', x, y, dir }) }  // avisar que reaparecí
   close() { try { this.ws?.close() } catch {} }
 }
 

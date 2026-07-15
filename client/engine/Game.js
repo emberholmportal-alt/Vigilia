@@ -340,6 +340,9 @@ export class Game {
         net.on('cspawn', (m) => this._onCspawn(m))
         net.on('copen', (m) => this._onCopen(m))
         net.on('cloot', (m) => this._onCloot(m))
+        // Muerte / reaparición de otros jugadores (co-op).
+        net.on('pdied', (m) => { const r = this.remotes?.get(m.id); if (r) r.setDead(true) })
+        net.on('palive', (m) => { const r = this.remotes?.get(m.id); if (r) { r.setTarget(m.x, m.y, m.dir); r.tx = m.x; r.ty = m.y; r.setDead(false) } })
         this.store.logMessage({ channel: 'sistema', text: tt('online_on') })
       } catch { this.store.logMessage({ channel: 'sistema', text: tt('online_off') }); return }
     }
@@ -1446,6 +1449,7 @@ export class Game {
     this.player.path.length = 0
     this.player.playDie()
     playSfx('player_die.ogg')
+    if (this._online) net.dead()   // avisar al canal (co-op: los demás te ven caer)
     this.store.showToast(tt('fell_combat'))
     // Riesgo estilo Kintara: tu carga (inventario + parte del oro) queda en una tumba acá.
     const dropped = this.store.createGrave(this.mapName, Math.round(this.player.tx), Math.round(this.player.ty))
@@ -1486,6 +1490,7 @@ export class Game {
     this.player.moving = false; this.player.path.length = 0
     this.player.paperdoll._oneShot = null
     this.camera.follow(s.x, s.y); this.camera.snap()
+    if (this._online) net.alive(Math.round(s.x), Math.round(s.y), 7)   // reaparecí en el lugar (co-op)
   }
 
   // Lógica de combate por frame (la llama el tick). dt en segundos.

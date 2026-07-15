@@ -134,6 +134,16 @@ wss.on('connection', (ws) => {
           return rooms.openChest(conn.playerId, m.cid)
         }
 
+        case 'pdead': {      // el jugador murió (se difunde al canal para el co-op)
+          if (conn.playerId == null) return
+          return rooms.playerDead(conn.playerId)
+        }
+
+        case 'palive': {     // el jugador reapareció
+          if (conn.playerId == null) return
+          return rooms.playerAlive(conn.playerId, m.x, m.y, m.dir)
+        }
+
         default: return
       }
     } catch (e) {
