@@ -139,6 +139,7 @@ export const useGameStore = create((set, get) => ({
   nearbyPortal: null,       // {label} — portal cercano (lo escribe el loop)
   portalTiles: [],          // [{x,y,label}] — para marcar en el minimapa
   npcTiles: [],             // [{x,y,label,role}] — NPCs de servicio en el minimapa
+  graveTiles: [],           // [{x,y}] — tus tumbas en este mapa, para el minimapa
   discovered: {},           // { zona: {tx,ty,label} } — waypoints que descubriste (persistido)
   waypointList: [],         // [{zone,label,tx,ty,adjacent,current}] — lo arma el loop
   waypointOpen: false,      // el modal de destinos está abierto
@@ -148,6 +149,7 @@ export const useGameStore = create((set, get) => ({
   setNearbyPortal: (p) => set((s) => (s.nearbyPortal?.label === p?.label ? {} : { nearbyPortal: p })),
   setPortals: (portalTiles) => set({ portalTiles }),
   setNpcTiles: (npcTiles) => set({ npcTiles }),
+  setGraveTiles: (graveTiles) => set({ graveTiles }),
   setWaypointList: (waypointList) => set({ waypointList }),
   // Descubre un waypoint (zona) con su tile de llegada. Devuelve true si es nuevo.
   discoverZone: (zone, tx, ty, label) => {
@@ -974,6 +976,7 @@ export const storeApi = {
   setNearbyPortal: (v) => useGameStore.getState().setNearbyPortal(v),
   setPortals: (v) => useGameStore.getState().setPortals(v),
   setNpcTiles: (v) => useGameStore.getState().setNpcTiles(v),
+  setGraveTiles: (v) => useGameStore.getState().setGraveTiles(v),
   getRecallSeq: () => useGameStore.getState().recallSeq,
   getRecallSource: () => useGameStore.getState().recallSource,
   consumeBelt: (i) => useGameStore.getState().consumeBelt(i),

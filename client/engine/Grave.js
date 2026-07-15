@@ -2,6 +2,7 @@
 // Una lápida con cruz, un aura tenue y una etiqueta flotante. Se recupera al caminarle encima
 // o tocándola. Riesgo estilo Kintara: si morís de nuevo antes de volver, sumás otra tumba.
 import { Container, Graphics, Text } from 'pixi.js'
+import { tt } from '../i18n.js'
 
 export class Grave {
   constructor(iso, grave) {
@@ -31,7 +32,7 @@ export class Grave {
     this.slab = g
 
     this.label = new Text({
-      text: '☠ Tu tumba', style: {
+      text: tt('your_grave'), style: {
         fontFamily: 'Georgia, serif', fontSize: 11, fill: '#c9b3e6',
         stroke: { color: '#0a090c', width: 3 }, align: 'center',
       },

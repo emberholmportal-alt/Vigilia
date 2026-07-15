@@ -1491,6 +1491,12 @@ export class Game {
       renderer.objectLayer.addChild(m.view)
       this.graves.push(m)
     }
+    this._publishGraves()
+  }
+
+  // Publica al HUD las tumbas de este mapa, para marcarlas en el minimapa.
+  _publishGraves() {
+    this.store.setGraveTiles((this.graves || []).filter((m) => !m.taken).map((m) => ({ x: m.tx, y: m.ty })))
   }
 
   // Recupera una tumba (vuelca su contenido al inventario). Si el inventario está lleno, la
@@ -1498,7 +1504,7 @@ export class Game {
   _recoverGrave(m) {
     if (m._cd > 0) return
     const ok = this.store.recoverGrave(m.grave.id)
-    if (ok) { m.taken = true; m.destroy() }
+    if (ok) { m.taken = true; m.destroy(); this._publishGraves() }
     else { m._cd = 1.8 }   // inventario lleno: reintenta más tarde
   }
 

@@ -548,9 +548,17 @@ html, body, #root {
 }
 .minimap-inner { position: absolute; left: 9px; right: 9px; top: 50%; transform: translateY(-50%); }
 .minimap-inner img { width: 100%; display: block; image-rendering: auto; }
+/* TU punto (el jugador): cian brillante y pulsante, distinto del oro de los mercaderes, para
+   que se vea claramente dónde estás y cómo te movés. */
 .mm-dot {
+  position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%;
+  background: #5fe0ff; box-shadow: 0 0 6px #5fe0ff, 0 0 0 1.5px #06131a;
+  animation: mm-pulse 1.4s ease-in-out infinite;
+}
+/* tus tumbas en el minimapa (calavera violeta) */
+.mm-grave {
   position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
-  background: #ffcf5a; box-shadow: 0 0 4px #ffcf5a, 0 0 0 1px #000;
+  background: #b98bff; box-shadow: 0 0 4px #7a4bd0, 0 0 0 1px #000;
 }
 /* marcador de portal en el minimapa (violeta pulsante) */
 .mm-portal {

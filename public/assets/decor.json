@@ -11,7 +11,7 @@
   ],
   "anim": {
    "src": "decor/stone_fountain_anim.png",
-   "frames": 6,
+   "frames": 13,
    "cell": [
     200,
     200
@@ -20,7 +20,7 @@
     100,
     100
    ],
-   "ms": 2400
+   "ms": 2600
   }
  },
  "Act1_innkeeper_owens": {

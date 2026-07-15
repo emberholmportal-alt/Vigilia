@@ -276,6 +276,7 @@ const DICT = {
   online_off: { es: 'Modo sin conexión', en: 'Offline mode' },
   online_lost: { es: 'Conexión perdida, reconectando…', en: 'Connection lost, reconnecting…' },
   online_back: { es: 'Reconectado al mundo', en: 'Reconnected to the world' },
+  your_grave: { es: '☠ Tu tumba', en: '☠ Your grave' },
   channel_on: { es: 'Canal {n}', en: 'Channel {n}' },
   spec_hint: { es: 'Arrastrá para mirar · WASD/flechas', en: 'Drag to look · WASD/arrows' },
   // billetera (Solana)

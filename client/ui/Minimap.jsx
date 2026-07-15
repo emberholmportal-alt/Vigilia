@@ -9,6 +9,7 @@ export default function Minimap() {
   const pt = useGameStore((s) => s.playerTile)
   const portals = useGameStore((s) => s.portalTiles)
   const npcs = useGameStore((s) => s.npcTiles)
+  const graves = useGameStore((s) => s.graveTiles)
   if (!mm) return null
 
   // misma proyección iso que usa Game para el minimapa
@@ -29,6 +30,10 @@ export default function Minimap() {
         {(npcs || []).map((n, i) => {
           const pos = proj(n.x, n.y)
           return <span key={'n' + i} className={`mm-npc mm-${n.role}`} title={n.label} style={{ left: `${pos.left}%`, top: `${pos.top}%` }} />
+        })}
+        {(graves || []).map((g, i) => {
+          const pos = proj(g.x, g.y)
+          return <span key={'g' + i} className="mm-grave" title="☠" style={{ left: `${pos.left}%`, top: `${pos.top}%` }} />
         })}
         <span className="mm-dot" style={{ left: `${me.left}%`, top: `${me.top}%` }} />
       </div>
