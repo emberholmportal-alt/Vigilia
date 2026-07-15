@@ -27,7 +27,9 @@ const POOL = [
   { id: 'contract_camp', type: 'contract', map: 'goblin_camp', elite: 'goblin_elite', target: 1, xp: 150, gold: 110, seals: 5, giver: 'Guardia Bram', giver_en: 'Guard Bram' },
   { id: 'contract_cemetery', type: 'contract', map: 'lochport_cemetery', elite: 'skeleton_knight_boss', target: 1, xp: 180, gold: 140, seals: 6, giver: 'Guardia Bram', giver_en: 'Guard Bram' },
   { id: 'contract_cave', type: 'contract', map: 'goblin_cave', elite: 'goblin_elite_runner', target: 1, xp: 150, gold: 110, seals: 5, giver: 'Guardia Bram', giver_en: 'Guard Bram' },
-  // (La misión "Ofrenda" se retiró junto con el Guardián de Fuego del pueblo.)
+  // Ofrenda: dejás oro en el Obelisco de Retorno (sumidero). Cuesta oro, da sellos + XP. Se
+  // entrega tocando el obelisco (con confirmación, no cobra solo).
+  { id: 'offer_obelisk', type: 'offering', map: 'triston', target: 200, xp: 60, gold: 0, seals: 4, giver: 'Obelisco de Retorno', giver_en: 'Obelisk of Return' },
 ]
 
 // Devuelve las 3 misiones del día (con progreso 0, sin reclamar).

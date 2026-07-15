@@ -703,8 +703,14 @@ export const useGameStore = create((set, get) => ({
     saveGame(get())
   },
 
-  // Progreso de una ofrenda: entregar oro a un Guardián (lo llama el loop al hablarle). Cobra
-  // el oro que falta y completa la misión de tipo 'offering'. Devuelve {ok} o motivo.
+  // Oro que pide la ofrenda diaria pendiente (0 si no hay ninguna activa). El obelisco lo usa
+  // para ofrecer la donación con confirmación.
+  pendingOfferingNeed: () => {
+    const m = get().missions.find((x) => x.type === 'offering' && !x.claimed && x.progress < x.target)
+    return m ? m.target - m.progress : 0
+  },
+  // Progreso de una ofrenda: entregar oro (lo llama el obelisco al confirmar). Cobra el oro que
+  // falta y completa la misión de tipo 'offering'. Devuelve {ok} o motivo.
   deliverOffering: () => {
     const s = get()
     const i = s.missions.findIndex((m) => m.type === 'offering' && !m.claimed && m.progress < m.target)
@@ -987,6 +993,7 @@ export const storeApi = {
   missionProgress: (type, n) => useGameStore.getState().missionProgress(type, n),
   getMissions: () => useGameStore.getState().missions,
   deliverOffering: () => useGameStore.getState().deliverOffering(),
+  pendingOfferingNeed: () => useGameStore.getState().pendingOfferingNeed(),
   setQuestFlag: (f) => useGameStore.getState().setQuestFlag(f),
   hasQuestFlag: (f) => useGameStore.getState().hasQuestFlag(f),
   revealForZone: (z) => useGameStore.getState().revealForZone(z),

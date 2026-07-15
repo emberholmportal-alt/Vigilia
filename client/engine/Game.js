@@ -525,10 +525,17 @@ export class Game {
   // Tocar el Obelisco de Retorno del pueblo: si hay un ancla guardada, te devuelve ahí.
   _useObelisk() {
     const a = this.store.getRecallAnchor()
-    if (a) {
+    if (a) {   // función principal: te devuelve al punto anclado (tiene prioridad)
       this.store.clearRecallAnchor()
       this.store.showToast(tt('obelisk_opens', { zone: a.label }))
       this.changeMap(a.map, a.tx, a.ty)
+      return
+    }
+    // Sumidero de oro: si hay una ofrenda diaria pendiente, la piedra la pide (con confirmación
+    // vía botón en la caja de diálogo; no cobra sola). Si no, sólo su lore.
+    const need = this.store.pendingOfferingNeed ? this.store.pendingOfferingNeed() : 0
+    if (need > 0) {
+      this.store.openDialogue({ name: tt('obelisk_name'), portrait: null, lines: [tt('offer_prompt', { n: need })], offer: { need } })
     } else {
       this.store.openDialogue({ name: tt('obelisk_name'), portrait: null, lines: [tt('obelisk_l1'), tt('obelisk_l2')] })
     }
