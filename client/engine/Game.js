@@ -2018,7 +2018,7 @@ export class Game {
     this._stamAccum = (this._stamAccum || 0) + dt
     if (this._stamAccum >= 0.08 || (stamina === 0) !== (st.stamina === 0)) {
       this.store.setStamina(Math.round(stamina))
-      const ptile = this._spectator ? this.iso.toTile(this.camera.x, this.camera.y) : this.player
+      const ptile = this._spectator ? this.iso.toTile(this.camera.x, this.camera.y) : { x: this.player.tx, y: this.player.ty }
       this.store.setPlayerTile({ x: ptile.x, y: ptile.y })
       const n = this._nearbyNpc
       this.store.setNearby(n ? { name: npcName(n.def, getLang()), shop: !!n.def.shop } : null)

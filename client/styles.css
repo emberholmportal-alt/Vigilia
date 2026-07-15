@@ -471,23 +471,18 @@ html, body, #root {
 @keyframes interact-pop { from { transform: scale(0.9); opacity: 0; } }
 
 /* barra de XP: canal siempre visible (aunque esté en 0) con relleno + etiqueta de nivel */
+/* Barra de XP: el asset real de Flare/Demonic (bar_xp_background = marco con borde,
+   bar_xp = relleno fino). Aspecto nativo 256/16; el relleno (246x6) va inset dentro del marco.
+   Fina, con su borde, como la propone la Demonic UI por defecto. */
 .xp-strip {
-  position: relative; height: 16px; pointer-events: auto;
-  background: linear-gradient(180deg, #14100a, #0a0806);
-  border-top: 1px solid #6b5320;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
-  margin-bottom: env(safe-area-inset-bottom);
+  position: relative; width: 100%; height: 13px;
+  background-size: 100% 100%; background-repeat: no-repeat; image-rendering: auto;
+  pointer-events: auto; margin-bottom: env(safe-area-inset-bottom);
 }
 .xp-strip-fill {
-  height: 100%;
-  background: linear-gradient(180deg, #d06bff, #8a30d6);
-  box-shadow: 0 0 6px rgba(180, 90, 255, 0.6);
+  position: absolute; left: 2%; top: 31.25%; bottom: 31.25%;   /* región del relleno (246x6 en 256x16) */
+  background-size: 100% 100%; background-repeat: no-repeat;
   transition: width 0.3s ease;
-}
-.xp-strip-label {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-family: Georgia, serif; font-size: 10px; letter-spacing: 0.03em;
-  color: #ead9c4; text-shadow: 0 1px 2px #000; pointer-events: none;
 }
 
 /* ---------- PC / pantallas anchas: Demonic UI a lo grande (globos y barra) ---------- */
@@ -508,8 +503,7 @@ html, body, #root {
     filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5)); pointer-events: auto;
   }
 
-  .xp-strip { height: 20px; }
-  .xp-strip-label { font-size: 12px; }
+  .xp-strip { height: 15px; }
 }
 .run-btn {
   display: flex; align-items: center; gap: 6px;

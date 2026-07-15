@@ -9,6 +9,8 @@ import ActionBar, { MenuRow, DesktopBar, BuffBar } from './ActionBar.jsx'
 import { useT } from './useT.js'
 import { raceName } from '../i18n.js'
 
+const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
+
 // Aviso breve que aparece arriba de la barra y se va solo.
 function Toast() {
   const toast = useGameStore((s) => s.toast)
@@ -141,9 +143,9 @@ export default function HUD({ onExitSpectate }) {
           <Globe type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} />
         </div>
 
-        <div className="xp-strip" title={`XP ${prog.into}/${prog.need}`}>
-          <div className="xp-strip-fill" style={{ width: `${Math.round(prog.pct * 100)}%` }} />
-          <span className="xp-strip-label">{t('xp_of', { lv: s.level, into: prog.into, need: prog.need })}</span>
+        <div className="xp-strip" title={t('xp_of', { lv: s.level, into: prog.into, need: prog.need })}
+             style={{ backgroundImage: `url(${UI}bar_xp_background.png)` }}>
+          <div className="xp-strip-fill" style={{ width: `${prog.pct * 96}%`, backgroundImage: `url(${UI}bar_xp.png)` }} />
         </div>
       </div>
     </>
