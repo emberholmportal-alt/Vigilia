@@ -2159,17 +2159,44 @@ const MAP_ZOOM = { triston: 1.3 }
 
 // Mapas cuyos portales nativos no sirven: usamos SÓLO esta lista.
 const PORTAL_REPLACE = {
-  // El portal del pueblo va en las afueras (al norte de la plaza), no en el centro.
-  triston: [{ x: 57, y: 41, w: 1, h: 1, to: 'goblin_camp', tx: 29, ty: 31, label: 'Campo de Duendes' }],
+  // Hub del pueblo: los dos arcos curados que flanquean la plaza (tiles caminables verificados).
+  // Oeste = rama de gathering (Granja→Río→Campo Salado); Este = rama de combate (Cueva de Duendes).
+  // Pisar un arco descubre el destino (lo suma a la red de waypoints); el viaje se elige en el menú.
+  triston: [
+    { x: 45, y: 58, w: 1, h: 1, to: 'black_oak_farm', tx: 58, ty: 54, label: 'Granja de Black Oak' },
+    { x: 72, y: 58, w: 1, h: 1, to: 'goblin_cave', tx: 25, ty: 24, label: 'Cueva de Duendes' },
+  ],
 }
 
 // Portales que AGREGAMOS encima de los nativos del mapa (llegada = spawn walkable del destino).
+// Portales curados (Diablo-style): Triston (hub) es un nexo de waypoints. Los pads se plantan en
+// tiles CAMINABLES (verificados contra las capas de colisión). Pisar un pad descubre el destino
+// (lo suma a tu red de waypoints); el viaje se hace desde el menú de waypoints o la Piedra de
+// Retorno (Town Portal). Progresión de arranque (ESCENARIOS.md, 4 realms):
+//   Triston ──Oeste──▶ Granja(1-3) ──▶ Sendero del Río(3-5) ──▶ Campo Salado(4-6)
+//   Triston ──Este───▶ Cueva de Duendes(5-8)
+// Cada realm tiene su pad de "Volver a Triston". Coordenadas calculadas desde collision.
 const PORTAL_EXTRA = {
-  // Vuelta al pueblo desde la zona de entrada.
+  // (El hub Triston usa PORTAL_REPLACE — ver abajo — porque reemplaza sus portales nativos.)
+  // --- Rama Oeste (gathering / progresión temprana) ---
+  black_oak_farm: [
+    { x: 61, y: 54, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 36, y: 26, w: 1, h: 1, to: 'river_trail', tx: 42, ty: 20, label: 'Sendero del Río' },
+  ],
+  river_trail: [
+    { x: 45, y: 20, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 6, y: 4, w: 1, h: 1, to: 'salted_field', tx: 30, ty: 30, label: 'Campo Salado' },
+  ],
+  salted_field: [
+    { x: 33, y: 30, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // --- Rama Este (combate) ---
+  goblin_cave: [
+    { x: 28, y: 24, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // --- clusters futuros (ya cableados, fuera del arranque) ---
   goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],
-  // Puente racimo I (nivel 1-3) -> racimo II (nivel 5-6): del puerto a las minas.
   lochport: [{ x: 43, y: 1, w: 1, h: 1, to: 'abandoned_mines', tx: 76, ty: 71, label: 'Minas Abandonadas' }],
-  // Puente racimo II (nivel 5-6) -> racimo III (nivel 9-10): de la brecha a Black Oak City.
   the_breach: [{ x: 46, y: 98, w: 1, h: 1, to: 'black_oak_city', tx: 98, ty: 50, label: 'Black Oak City' }],
 }
 

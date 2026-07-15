@@ -1159,7 +1159,9 @@ html, body, #root {
 .wp-row:hover:not(:disabled) { border-color: #7a52c0; box-shadow: inset 0 0 0 1px rgba(154,107,255,0.2); }
 .wp-row:active:not(:disabled) { filter: brightness(1.15); }
 .wp-row.current { opacity: 0.6; cursor: default; border-color: var(--gold); }
-.wp-rune { font-size: 15px; filter: saturate(1.2); }
+.wp-rune { display: inline-flex; width: 18px; height: 18px; flex: 0 0 auto; color: #b58bff; }
+.wp-rune svg { width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.6; fill: none;
+  filter: drop-shadow(0 0 3px rgba(154, 107, 255, 0.5)); }
 .wp-name { flex: 1 1 auto; }
 .wp-tag { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
 .wp-row.current .wp-tag { color: var(--gold); }
