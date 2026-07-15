@@ -27,9 +27,13 @@ export class RemotePlayer {
     this.view.addChild(this.nameText)
 
     this.paperdoll.setDirection(this.dir)
-    this._ready = this.paperdoll.setEquipment({})   // cuerpo base (sin equipo remoto aún)
+    this._ready = this.paperdoll.setEquipment(p.gfx || {})   // equipo real del jugador remoto
+    if (p.dead) this.setDead(true)                           // se unió mientras estaba caído
     this._sync()
   }
+
+  // Cambió el equipo del jugador remoto: reaplica sus capas de paperdoll.
+  setGfx(gfx) { this.paperdoll.setEquipment(gfx || {}) }
 
   // Nueva posición/dirección difundida por el servidor.
   setTarget(x, y, dir) { this._tgx = x; this._tgy = y; if (dir != null) this.dir = dir }

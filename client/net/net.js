@@ -60,6 +60,8 @@ class Net {
         else if (m.t === 'cspawn' || m.t === 'copen' || m.t === 'cloot') this._emit(m.t, m)
         // muerte / reaparición de otros jugadores (co-op)
         else if (m.t === 'pdied' || m.t === 'palive') this._emit(m.t, m)
+        // equipo visible de otro jugador (cambió su gear)
+        else if (m.t === 'gfx') this._emit(m.t, m)
       }
     })
   }
@@ -72,7 +74,8 @@ class Net {
   async walletChallenge(pubkey) { this._send({ t: 'wallet_challenge', pubkey }); return this._once('challenge') }
   async walletVerify(pubkey, signature) { this._send({ t: 'wallet_verify', pubkey, signature }); return this._once('auth') }
   async save(name, race, char) { this._send({ t: 'save', name, race, char }); return this._once('saved') }
-  async join({ name, race, map, x, y, dir, channel, spectator }) { this._send({ t: 'join', name, race, map, x, y, dir, channel, spectator }); return this._once('present') }
+  async join({ name, race, map, x, y, dir, channel, spectator, gfx }) { this._send({ t: 'join', name, race, map, x, y, dir, channel, spectator, gfx }); return this._once('present') }
+  setGfx(gfx) { this._send({ t: 'setgfx', gfx }) }           // equipo visible (capas del paperdoll)
 
   move(map, x, y, dir) { this._send({ t: 'move', map, x, y, dir }) }
   chat(text) { this._send({ t: 'chat', text }) }

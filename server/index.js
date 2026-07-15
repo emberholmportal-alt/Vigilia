@@ -97,7 +97,7 @@ wss.on('connection', (ws) => {
           if (!conn.accountId) return send({ t: 'error', error: 'no autenticado' })
           db.touchAccount(conn.accountId).catch(() => {})   // actividad (jugadores mensuales)
           if (conn.playerId != null) rooms.leave(conn.playerId)
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx })
           conn.playerId = id
           return send({ t: 'present', you: id, players: present, map: m.map, channel })
         }
@@ -117,6 +117,11 @@ wss.on('connection', (ws) => {
         case 'setstats': {   // stats de combate del jugador (para que el server tire el daño)
           if (conn.playerId == null) return
           return rooms.setStats(conn.playerId, m.stats)
+        }
+
+        case 'setgfx': {     // equipo visible del jugador (capas del paperdoll)
+          if (conn.playerId == null) return
+          return rooms.setGfx(conn.playerId, m.gfx)
         }
 
         case 'atk': {        // pedido de ataque a un enemigo (lo valida la simulación)

@@ -105,6 +105,7 @@ export class Game {
     window.addEventListener('resize', this._onResize)
     this._unsub = this.store.onEquipmentChange((equip) => {
       if (this.player) this.player.setEquipment(equipToGfx(equip))
+      if (this._online && !this._spectator) net.setGfx(equipToGfx(equip))   // que los demás vean mi gear
     })
 
     if (import.meta.env.DEV) window.__vigilia = this
@@ -325,6 +326,7 @@ export class Game {
         net.on('move', (m) => { const r = this.remotes?.get(m.id); if (r) r.setTarget(m.x, m.y, m.dir) })
         net.on('leave', (m) => this._removeRemote(m.id))
         net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
+        net.on('gfx', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGfx(m.gfx) })   // gear de otro jugador
         // Combate autoritativo: los enemigos los manda el servidor (compartidos por canal).
         net.on('espawn', (m) => { for (const e of m.es || []) this._spawnNetEnemy(e) })
         net.on('estate', (m) => { for (const s of m.es || []) { const e = this._netEnemies?.get(s.i); if (e) e.netSetTarget(s.x, s.y, s.d, s.hp) } })
@@ -353,6 +355,7 @@ export class Game {
       map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
       channel: this._channel,        // intenta conservar tu canal entre mapas
       spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
+      gfx: this._spectator ? null : equipToGfx(this.store.getEquipment()),   // equipo visible para los demás
     }).catch(() => {})
     this._sendStats()   // stats de combate para que el server tire el daño de nuestros golpes
   }
