@@ -20,6 +20,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { pickSprite, enemyStats, isRanged, rangedCousin } from '../../shared/bestiary.js'
 import { GATHER } from '../../shared/gather.js'
+import { rollLoot, hasLootTable } from '../../shared/loot.js'
 
 const MAPS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../public/maps')
 
@@ -36,7 +37,7 @@ function loadMap(name) {
   try {
     const raw = JSON.parse(fs.readFileSync(path.join(MAPS_DIR, name + '.json'), 'utf8'))
     const coll = raw.layers && raw.layers.collision
-    data = { w: raw.w, h: raw.h, coll, spawners: raw.spawners || [] }
+    data = { w: raw.w, h: raw.h, coll, spawners: raw.spawners || [], chests: raw.chests || [] }
   } catch { data = null }
   mapCache.set(name, data)
   return data
@@ -60,6 +61,7 @@ function randTileIn(map, sp) {
 const worlds = new Map()   // "map:ch" -> world
 let eidSeq = 1
 let nidSeq = 1
+let cidSeq = 1
 const key = (map, ch) => map + ':' + ch
 
 const AGGRO = 8          // tiles a los que el enemigo detecta al jugador
@@ -71,6 +73,8 @@ const RESPAWN = 12       // segundos para reponer un enemigo muerto
 const MAX_PER_MAP = 40
 const NODE_RESPAWN = 25  // segundos para que un nodo de recurso vuelva a crecer
 const GATHER_REACH = 2.4 // tiles: alcance para juntar un nodo
+const CHEST_RESPAWN = 90 // segundos para que un cofre saqueado reaparezca
+const CHEST_REACH = 2.4  // tiles: alcance para abrir un cofre
 
 // Tile caminable al azar en todo el mapa (para nodos de recursos), evitando repetir.
 function randWalkable(map, used) {
@@ -133,7 +137,13 @@ export function ensureWorld(map, ch) {
       nodes.set(nidSeq, { n: nidSeq, x: t.x, y: t.y, ...mat }); nidSeq++
     }
   }
-  worlds.set(k, { map, ch, md, enemies, dead: [], nodes, nodeDead: [] })
+  // Cofres del mapa (posiciones fijas), compartidos por el canal. Primero en llegar se lo lleva;
+  // reaparecen a los ~90s. El servidor tira el loot (autoritativo).
+  const chests = new Map()
+  for (const c of md.chests) {
+    chests.set(cidSeq, { c: cidSeq, x: c.x, y: c.y, loot: c.loot }); cidSeq++
+  }
+  worlds.set(k, { map, ch, md, enemies, dead: [], nodes, nodeDead: [], chests, chestDead: [] })
 }
 
 // Snapshot completo de los enemigos de un canal (para el que recién entra).
@@ -167,6 +177,32 @@ export function playerGather(pid, nid) {
   w.nodeDead.push({ x: nd.x, y: nd.y, at: now() + NODE_RESPAWN * 1000 })
   ctx.broadcast(w.map, w.ch, { t: 'ndeplete', n: nid, by: pid })
   ctx.sendTo(pid, { t: 'ngather', n: nid, id: nd.id, skill: nd.skill })
+}
+
+// Snapshot de los cofres (cerrados) de un canal.
+export function chestSnapshot(map, ch) {
+  const w = worlds.get(key(map, ch))
+  if (!w || !w.chests) return null
+  return [...w.chests.values()].map((c) => ({ c: c.c, x: c.x, y: c.y }))
+}
+
+// Pedido de abrir un cofre (del cliente). Valida alcance, lo marca abierto (primero en llegar),
+// tira el loot en el servidor (autoritativo) y se lo manda al que abrió. Reaparece a los ~90s.
+export function playerOpenChest(pid, cid) {
+  if (!ctx) return
+  const pl = ctx.getPlayer(pid)
+  if (!pl) return
+  const w = worlds.get(key(pl.map, pl.ch))
+  if (!w || !w.chests) return
+  const c = w.chests.get(cid)
+  if (!c) return
+  const dx = pl.x - c.x, dy = pl.y - c.y
+  if (dx * dx + dy * dy > CHEST_REACH * CHEST_REACH) return   // fuera de alcance
+  w.chests.delete(cid)
+  w.chestDead.push({ x: c.x, y: c.y, loot: c.loot, at: now() + CHEST_RESPAWN * 1000 })
+  ctx.broadcast(w.map, w.ch, { t: 'copen', c: cid, by: pid })
+  const roll = hasLootTable(c.loot) ? rollLoot(c.loot) : { gold: 0, drops: [] }
+  ctx.sendTo(pid, { t: 'cloot', c: cid, x: c.x, y: c.y, gold: roll.gold || 0, drops: roll.drops || [] })
 }
 
 // --- stats de combate del jugador (las envía el cliente) ------------------------------------
@@ -244,6 +280,18 @@ function step() {
         } else still.push(d)
       }
       w.nodeDead = still
+    }
+    // reponer cofres saqueados (reaparecen cerrados en su lugar)
+    if (w.chestDead && w.chestDead.length) {
+      const still = []
+      for (const d of w.chestDead) {
+        if (t >= d.at) {
+          const c = { c: cidSeq++, x: d.x, y: d.y, loot: d.loot }
+          w.chests.set(c.c, c)
+          ctx.broadcast(w.map, w.ch, { t: 'cspawn', cs: [{ c: c.c, x: c.x, y: c.y }] })
+        } else still.push(d)
+      }
+      w.chestDead = still
     }
     if (sendState) broadcastState(w, players)
   }

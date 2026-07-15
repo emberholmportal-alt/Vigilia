@@ -129,6 +129,11 @@ wss.on('connection', (ws) => {
           return rooms.gather(conn.playerId, m.nid)
         }
 
+        case 'openchest': {  // pedido de abrir un cofre (lo valida la simulación)
+          if (conn.playerId == null) return
+          return rooms.openChest(conn.playerId, m.cid)
+        }
+
         default: return
       }
     } catch (e) {

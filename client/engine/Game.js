@@ -336,6 +336,10 @@ export class Game {
         net.on('nspawn', (m) => { for (const n of m.ns || []) this._spawnNetNode(n) })
         net.on('ndeplete', (m) => this._onNdeplete(m))
         net.on('ngather', (m) => this._onNgather(m))
+        // Cofres autoritativos (compartidos por canal, primero en llegar + respawn).
+        net.on('cspawn', (m) => this._onCspawn(m))
+        net.on('copen', (m) => this._onCopen(m))
+        net.on('cloot', (m) => this._onCloot(m))
         this.store.logMessage({ channel: 'sistema', text: tt('online_on') })
       } catch { this.store.logMessage({ channel: 'sistema', text: tt('online_off') }); return }
     }
@@ -731,28 +735,55 @@ export class Game {
   // Crea los cofres del mapa: brillo dorado que pulsa + hotspot para abrir.
   _buildChests(renderer, iso, map, grid) {
     this.chests = []
-    for (const c of map.chests || []) {
-      const wx = iso.toWorldX(c.x, c.y), wy = iso.toWorldY(c.x, c.y)
+    if (ONLINE) return   // online: los cofres los manda el servidor (cspawn), compartidos + respawn
+    for (const c of map.chests || []) this._addChest(c.x, c.y, c.loot, null)
+  }
 
-      const glow = new Graphics()
-      glow.ellipse(0, 0, iso.wHalf * 0.7, iso.hHalf * 0.7).fill({ color: 0xffcf5a, alpha: 0.3 })
-      glow.x = wx; glow.y = wy
-      glow.zIndex = c.x + c.y - 1
-      renderer.groundLayer.addChild(glow)
+  // Crea el brillo + hotspot de un cofre (el sprite ya está dibujado en el tile del mapa).
+  // Lo usan tanto el modo offline (_buildChests) como el online (_onCspawn).
+  _addChest(x, y, loot, cid) {
+    const iso = this.iso, renderer = this.renderer
+    const wx = iso.toWorldX(x, y), wy = iso.toWorldY(x, y)
+    const glow = new Graphics()
+    glow.ellipse(0, 0, iso.wHalf * 0.7, iso.hHalf * 0.7).fill({ color: 0xffcf5a, alpha: 0.3 })
+    glow.x = wx; glow.y = wy; glow.zIndex = x + y - 1
+    renderer.groundLayer.addChild(glow)
+    const hot = new Graphics()
+    hot.poly([0, -iso.hHalf, iso.wHalf, 0, 0, iso.hHalf, -iso.wHalf, 0]).fill({ color: 0xffffff, alpha: 0.001 })
+    hot.x = wx; hot.y = wy - iso.hHalf; hot.zIndex = 1e6
+    hot.eventMode = 'static'
+    hot.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
+    renderer.objectLayer.addChild(hot)
+    const chest = { x, y, loot, cid, opened: false, glow, hot }
+    hot.on('pointertap', (e) => { e.stopPropagation(); this._tapChest(chest) })
+    this.chests.push(chest)
+    return chest
+  }
 
-      // hotspot invisible sobre el tile del cofre (el sprite ya está dibujado en object).
-      const hot = new Graphics()
-      hot.poly([0, -iso.hHalf, iso.wHalf, 0, 0, iso.hHalf, -iso.wHalf, 0]).fill({ color: 0xffffff, alpha: 0.001 })
-      hot.x = wx; hot.y = wy - iso.hHalf
-      hot.zIndex = 1e6
-      hot.eventMode = 'static'
-      hot.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
-      renderer.objectLayer.addChild(hot)
-
-      const chest = { x: c.x, y: c.y, loot: c.loot, opened: false, glow, hot }
-      hot.on('pointertap', (e) => { e.stopPropagation(); this._tapChest(chest) })
-      this.chests.push(chest)
+  // --- cofres autoritativos del servidor (online) ----------------------------
+  _onCspawn(m) {
+    for (const cd of m.cs || []) {
+      if ((this.chests || []).some((c) => c.cid === cd.c)) continue
+      this._addChest(cd.x, cd.y, null, cd.c)
     }
+  }
+  _onCopen(m) {
+    const c = (this.chests || []).find((x) => x.cid === m.c)
+    if (!c) return
+    c.opened = true
+    if (c.glow) { c.glow.destroy(); c.glow = null }
+    if (c.hot) { c.hot.destroy(); c.hot = null }
+    playSfx('wood_open.ogg')
+    this.chests = this.chests.filter((x) => x !== c)
+    if (this._pendingChest === c) this._pendingChest = null
+  }
+  // Sólo al que abrió: el loot lo tiró el servidor (autoritativo). Aplica oro/ítems + XP + misión.
+  _onCloot(m) {
+    this.store.addSkillXp('saqueo', 14)
+    this.store.addXp(10)
+    this.store.missionProgress('chest', 1)
+    if (m.gold > 0) this.store.addGold(m.gold)
+    if (m.drops && m.drops.length) this._dropItems(m.x, m.y, m.drops)
   }
 
   // Tocar un cofre: caminar hasta él; se abre al llegar (en el tick).
@@ -1773,7 +1804,10 @@ export class Game {
     if (this._pendingChest && !this.player.moving) {
       const c = this._pendingChest
       const near = Math.abs(this.player.tx - c.x) <= 1.6 && Math.abs(this.player.ty - c.y) <= 1.6
-      if (near && !c.opened) this._openChest(c)
+      if (near && !c.opened) {
+        if (this._online && c.cid != null) net.openChest(c.cid)   // el server valida y responde cloot
+        else this._openChest(c)
+      }
       this._pendingChest = null
     }
 

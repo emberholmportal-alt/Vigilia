@@ -98,6 +98,7 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator 
     combat.ensureWorld(map, ch)
     const es = combat.snapshot(map, ch); if (es && es.length) send({ t: 'espawn', es })
     const ns = combat.nodeSnapshot(map, ch); if (ns && ns.length) send({ t: 'nspawn', ns })
+    const cs = combat.chestSnapshot(map, ch); if (cs && cs.length) send({ t: 'cspawn', cs })
     return { id, channel: ch, present, spectator: true }
   }
   const ch = pickChannel(map, channel)
@@ -108,6 +109,7 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator 
   combat.ensureWorld(map, ch)   // spawnea los enemigos + nodos del canal (una vez)
   const es = combat.snapshot(map, ch); if (es && es.length) send({ t: 'espawn', es })
   const ns = combat.nodeSnapshot(map, ch); if (ns && ns.length) send({ t: 'nspawn', ns })
+  const cs = combat.chestSnapshot(map, ch); if (cs && cs.length) send({ t: 'cspawn', cs })
   return { id, channel: ch, present }
 }
 
@@ -126,6 +128,7 @@ export function move(id, map, x, y, dir) {
     combat.ensureWorld(map, p.ch)   // enemigos + nodos del canal nuevo
     const es = combat.snapshot(map, p.ch); if (es && es.length) p.send({ t: 'espawn', es })
     const ns = combat.nodeSnapshot(map, p.ch); if (ns && ns.length) p.send({ t: 'nspawn', ns })
+    const cs = combat.chestSnapshot(map, p.ch); if (cs && cs.length) p.send({ t: 'cspawn', cs })
     return { channel: p.ch, present }
   }
   p.x = x; p.y = y; if (dir != null) p.dir = dir
@@ -156,6 +159,8 @@ export function leave(id) {
 export function attack(id, eid) { combat.playerAttack(id, eid) }
 // Pedido de juntar un nodo de recurso (del cliente).
 export function gather(id, nid) { combat.playerGather(id, nid) }
+// Pedido de abrir un cofre (del cliente).
+export function openChest(id, cid) { combat.playerOpenChest(id, cid) }
 // El cliente envía sus stats de combate (dependen del equipo) para que el server tire el daño.
 export function setStats(id, stats) { combat.setStats(id, stats) }
 

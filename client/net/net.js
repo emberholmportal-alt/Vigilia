@@ -56,6 +56,8 @@ class Net {
         else if (m.t === 'espawn' || m.t === 'estate' || m.t === 'edmg' || m.t === 'edie' || m.t === 'ekill' || m.t === 'ehit') this._emit(m.t, m)
         // nodos de recursos autoritativos (compartidos por canal)
         else if (m.t === 'nspawn' || m.t === 'ndeplete' || m.t === 'ngather') this._emit(m.t, m)
+        // cofres autoritativos (compartidos por canal)
+        else if (m.t === 'cspawn' || m.t === 'copen' || m.t === 'cloot') this._emit(m.t, m)
       }
     })
   }
@@ -75,6 +77,7 @@ class Net {
   setStats(stats) { this._send({ t: 'setstats', stats }) }   // stats de combate (server tira el daño)
   attack(eid) { this._send({ t: 'atk', eid }) }              // pedir ataque a un enemigo del server
   gather(nid) { this._send({ t: 'gather', nid }) }           // pedir juntar un nodo de recurso
+  openChest(cid) { this._send({ t: 'openchest', cid }) }     // pedir abrir un cofre del server
   close() { try { this.ws?.close() } catch {} }
 }
 
