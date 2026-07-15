@@ -180,7 +180,7 @@ const TRISTON = [
   // Yara la Bruja: la alquimista es la bruja de la casa del rincón (NE del mapa). ES la ÚNICA que
   // vende pociones de vida/maná y el Pergamino de Retorno (shopKind 'alchemist'). Sprite de la
   // bruja de HERESY, en su lugar (87,18).
-  { sprite: 'witch_adriana', name: 'Yara la Bruja', name_en: 'Yara the Witch', portrait: 'female04.png', x: 87, y: 18, dir: 7, shop: true, shopKind: 'alchemist',
+  { sprite: 'witch_adriana', name: 'Yara la Bruja', name_en: 'Yara the Witch', portrait: 'female04.png', x: 87, y: 18, dir: 7, alchemy: true,
     lines: ['Pociones de vida y de maná, y pergaminos para volver. Nada más… nada menos.',
             'La botella vacía y el aloe los junta cualquiera. El jugo lo saco yo.'],
     lines_en: ['Health and mana potions, and scrolls to return. Nothing more… nothing less.',

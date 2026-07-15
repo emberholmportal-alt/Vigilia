@@ -975,6 +975,15 @@ html, body, #root {
   color: var(--dim); font-family: Georgia, serif; font-style: italic;
   font-size: 12px; text-align: center; margin-bottom: 2px;
 }
+/* sección de compra de la bruja (arriba de las recetas) */
+.alch-shop { border-bottom: 1px solid #332b3f; padding-bottom: 8px; margin-bottom: 2px; }
+.alch-gold { color: var(--gold); font-style: normal; }
+.alch-buy-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.alch-buy {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; width: 30%; min-width: 92px;
+  padding: 7px 6px; border-radius: 6px; background: rgba(20, 17, 26, 0.55); border: 1px solid #332b3f;
+}
+.alch-buy-name { font-family: Georgia, serif; font-size: 11px; color: var(--parch); text-align: center; line-height: 1.15; }
 .alch-list { display: flex; flex-direction: column; gap: 7px; overflow-y: auto; padding-right: 4px; }
 .alch-recipe {
   display: flex; align-items: center; gap: 8px;

@@ -658,7 +658,9 @@ export const useGameStore = create((set, get) => ({
 
   // Abre a la alquimista (panel de recetas).
   alchemyName: '',
-  openAlchemy: (name) => set({ alchemyName: name || 'Alquimista', panel: 'alchemy' }),
+  // La bruja: además de craftear, vende lo básico (pociones vida/maná + Pergamino de Retorno).
+  // Cargamos su stock fijo para que el panel de alquimia tenga la sección de compra.
+  openAlchemy: (name) => set({ alchemyName: name || 'Alquimista', shopStock: alchemistStock(), panel: 'alchemy' }),
 
   // --- misiones diarias ---
   missions: [],

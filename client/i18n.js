@@ -60,6 +60,7 @@ const DICT = {
   smith_repair: { es: 'Reparar todo — {n} oro', en: 'Repair all — {n} gold' },
   // alquimia
   alch_hint: { es: 'Juntá hierbas y cristales en el mundo; acá los volvés pociones.', en: 'Gather herbs and crystals out in the world; here you turn them into potions.' },
+  alch_buy_hint: { es: 'Pociones y pergaminos de retorno, listos para llevar', en: 'Potions and return scrolls, ready to take' },
   alch_craft: { es: 'Preparar', en: 'Brew' },
   alch_lack: { es: 'Faltan', en: 'Missing' },
   // chat

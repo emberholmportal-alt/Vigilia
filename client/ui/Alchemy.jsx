@@ -14,6 +14,9 @@ export default function Alchemy() {
   const alchemyName = useGameStore((s) => s.alchemyName)
   const craftAlchemy = useGameStore((s) => s.craftAlchemy)
   const setPanel = useGameStore((s) => s.setPanel)
+  const shopStock = useGameStore((s) => s.shopStock)
+  const gold = useGameStore((s) => s.gold)
+  const buyItem = useGameStore((s) => s.buyItem)
   const t = useT()
 
   const countOf = (id) => inventory.reduce((n, it) => n + (it && it.id === id ? (it.count || 1) : 0), 0)
@@ -28,6 +31,21 @@ export default function Alchemy() {
         <div className="char-title" style={{ left: '50%', top: (24 / PH * 100) + '%', transform: 'translate(-50%,-50%)', position: 'absolute' }}>{alchemyName}</div>
 
         <div className="alch-body">
+          {/* Venta: pociones de vida/maná + Pergamino de Retorno (sólo la bruja los vende). */}
+          <div className="alch-shop">
+            <div className="alch-hint">{t('alch_buy_hint')} · <b className="alch-gold">{gold} {t('gold')}</b></div>
+            <div className="alch-buy-row">
+              {(shopStock || []).map((it, i) => (
+                <div className="alch-buy" key={it.id} title={t.item(it)}>
+                  <ItemIcon icon={it.icon} size={30} />
+                  <span className="alch-buy-name">{t.item(it)}</span>
+                  <button className="alch-craft" disabled={gold < (it.price || 0)} onClick={() => buyItem(i)}>
+                    {it.price} {t('gold')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="alch-hint">{t('alch_hint')}</div>
           <div className="alch-list">
             {ALCHEMY_RECIPES.map((r, i) => {
