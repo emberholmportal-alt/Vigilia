@@ -1266,9 +1266,10 @@ export class Game {
     if (!this._manifest || !this.renderer || !this._netEnemies) return
     if (this._netEnemies.has(data.i)) return
     const st = enemyStats(data.s, data.lv)
+    const elite = !!data.el
     const def = {
       sprite: data.s, x: data.x, y: data.y, level: data.lv, hpMax: data.hpm, damage: st.damage,
-      xp: st.xp, boss: st.boss, ranged: !!data.rng, projKind: projectileKind(data.s),
+      xp: st.xp, boss: st.boss || elite, ranged: !!data.rng, projKind: projectileKind(data.s),
       ability: enemyAbility(data.s), name: enemyName(data.s, getLang()),
     }
     const e = new Enemy(this._manifest, def, this.iso, this._grid)
@@ -1277,8 +1278,9 @@ export class Game {
     // pudo llegar la muerte mientras cargaba el sprite
     if (this._netDeadPending && this._netDeadPending.has(data.i)) { this._netDeadPending.delete(data.i); e.view.destroy({ children: true }); return }
     e.netInit(data.i)
+    e.eliteContract = elite
     e.tx = data.x; e.ty = data.y; e.hp = data.hp; e._syncWorld()
-    e.view.scale.set(this._eScale)
+    e.view.scale.set(this._eScale * (elite ? 1.35 : 1))   // la élite del contrato es más grande
     e.onTap((en) => this._targetEnemy(en))
     this.renderer.objectLayer.addChild(e.view)
     this.enemies.push(e)
@@ -1306,6 +1308,7 @@ export class Game {
     this.store.addSkillXp('combate', xp)
     this.store.addXp(xp)
     this.store.missionProgress('kill', 1)
+    if (m.contract) this.store.missionProgress('contract', 1)   // élite del contrato del día
     const e = (this.enemies || []).find((x) => x.eid === m.i)   // sigue en la lista (muriendo)
     const fx = e ? e.view.x : this.player.view.x, fy = e ? e.view.y + (e._hpY || -40) : this.player.view.y - 80
     this._floatText(fx, fy, `+${xp} XP`, '#9fe0ff')

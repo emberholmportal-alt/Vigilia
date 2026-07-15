@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url'
 import { pickSprite, enemyStats, isRanged, rangedCousin } from '../../shared/bestiary.js'
 import { GATHER } from '../../shared/gather.js'
 import { rollLoot, hasLootTable } from '../../shared/loot.js'
+import { todayContract } from '../../shared/missions.js'
 
 const MAPS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../public/maps')
 
@@ -111,6 +112,23 @@ function spawnEnemy(map, sp) {
   }
 }
 
+// Élite de contrato: un enemigo más fuerte y grande que aparece SÓLO en la zona del contrato del
+// día (igual para todos, porque la misión diaria es determinística por fecha). Matarlo acredita
+// la misión Contrato del que lo mata. Reaparece para que cada jugador pueda cazar el suyo.
+const ELITE_LEVEL = 7
+function spawnElite(md, sprite, contractId) {
+  const t = randWalkable(md, new Set())
+  if (!t) return null
+  const st = enemyStats(sprite, ELITE_LEVEL)
+  const hp = Math.round(st.hpMax * 1.6)
+  return {
+    i: eidSeq++, s: sprite, lv: ELITE_LEVEL, x: t.x + 0.5, y: t.y + 0.5, d: 7,
+    hp, hpm: hp, dmg: Math.round(st.damage * 1.3), xp: st.xp + 40,
+    rng: isRanged(sprite), atkCd: 0, home: { x: t.x, y: t.y }, sp: null,
+    el: true, contract: contractId,
+  }
+}
+
 // Crea (una vez) el mundo de enemigos de un canal si el mapa tiene spawners.
 export function ensureWorld(map, ch) {
   const k = key(map, ch)
@@ -143,6 +161,12 @@ export function ensureWorld(map, ch) {
   for (const c of md.chests) {
     chests.set(cidSeq, { c: cidSeq, x: c.x, y: c.y, loot: c.loot }); cidSeq++
   }
+  // Élite del contrato del día, si es de este mapa (una, compartida por el canal).
+  const con = todayContract()
+  if (con && con.map === map && con.elite) {
+    const el = spawnElite(md, con.elite, con.id)
+    if (el) enemies.set(el.i, el)
+  }
   worlds.set(k, { map, ch, md, enemies, dead: [], nodes, nodeDead: [], chests, chestDead: [] })
 }
 
@@ -150,7 +174,7 @@ export function ensureWorld(map, ch) {
 export function snapshot(map, ch) {
   const w = worlds.get(key(map, ch))
   if (!w) return null
-  return [...w.enemies.values()].map((e) => ({ i: e.i, s: e.s, lv: e.lv, x: r2(e.x), y: r2(e.y), d: e.d, hp: e.hp, hpm: e.hpm, rng: e.rng }))
+  return [...w.enemies.values()].map((e) => ({ i: e.i, s: e.s, lv: e.lv, x: r2(e.x), y: r2(e.y), d: e.d, hp: e.hp, hpm: e.hpm, rng: e.rng, el: e.el ? 1 : 0 }))
 }
 
 // Snapshot de los nodos de recursos de un canal (para el que recién entra).
@@ -254,10 +278,14 @@ function rollPlayerDamage(st) {
 
 function killEnemy(w, e, killerId) {
   w.enemies.delete(e.i)
-  w.dead.push({ sp: e.sp, at: now() + RESPAWN * 1000 })
+  // La élite reaparece más lento (para que sea un evento); los comunes al ritmo normal.
+  if (e.el) w.dead.push({ el: true, sprite: e.s, contract: e.contract, at: now() + RESPAWN * 3 * 1000 })
+  else w.dead.push({ sp: e.sp, at: now() + RESPAWN * 1000 })
   ctx.broadcast(w.map, w.ch, { t: 'edie', i: e.i, by: killerId })
   // Aviso al matador: XP autoritativa del server; el loot/oro lo tira él local (instanciado).
-  ctx.sendTo(killerId, { t: 'ekill', i: e.i, xp: e.xp, sprite: e.s, lv: e.lv })
+  const ek = { t: 'ekill', i: e.i, xp: e.xp, sprite: e.s, lv: e.lv }
+  if (e.contract) ek.contract = e.contract   // acredita la misión Contrato del que lo mata
+  ctx.sendTo(killerId, ek)
 }
 
 // --- bucle de simulación --------------------------------------------------------------------
@@ -276,8 +304,10 @@ function step() {
     if (w.dead.length && w.enemies.size < MAX_PER_MAP) {
       const still = []
       for (const d of w.dead) {
-        if (t >= d.at) { const e = spawnEnemy(w.md, d.sp); if (e) { w.enemies.set(e.i, e); ctx.broadcast(w.map, w.ch, { t: 'espawn', es: [pubEnemy(e)] }) } }
-        else still.push(d)
+        if (t >= d.at) {
+          const e = d.el ? spawnElite(w.md, d.sprite, d.contract) : spawnEnemy(w.md, d.sp)
+          if (e) { w.enemies.set(e.i, e); ctx.broadcast(w.map, w.ch, { t: 'espawn', es: [pubEnemy(e)] }) }
+        } else still.push(d)
       }
       w.dead = still
     }
@@ -345,7 +375,7 @@ function broadcastState(w, players) {
   if (es.length) ctx.broadcast(w.map, w.ch, { t: 'estate', es })
 }
 
-const pubEnemy = (e) => ({ i: e.i, s: e.s, lv: e.lv, x: r2(e.x), y: r2(e.y), d: e.d, hp: e.hp, hpm: e.hpm, rng: e.rng })
+const pubEnemy = (e) => ({ i: e.i, s: e.s, lv: e.lv, x: r2(e.x), y: r2(e.y), d: e.d, hp: e.hp, hpm: e.hpm, rng: e.rng, el: e.el ? 1 : 0 })
 const r2 = (v) => Math.round(v * 100) / 100
 // Vector de pantalla -> dirección Flare (0=SW 1=W 2=NW 3=N 4=NE 5=E 6=SE 7=S), en coords de tile.
 function vecToDir(dx, dy) {
