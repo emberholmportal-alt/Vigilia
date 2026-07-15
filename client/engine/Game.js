@@ -203,6 +203,15 @@ export class Game {
       if (!ok) continue
       npc.view.scale.set(eScale * (def.scale || 1))   // los sprites HERESY son chicos: se agrandan
       renderer.objectLayer.addChild(npc.view)
+      // El nombre va a la capa de etiquetas (por encima de los edificios), en coords de mundo,
+      // para que ningún edificio lo tape. El NPC no se mueve, así que se posiciona una vez.
+      if (npc.nameText) {
+        const nt = npc.nameText, headY = nt.y
+        npc.view.removeChild(nt)
+        nt.x = npc.view.x; nt.y = npc.view.y + headY * npc.view.scale.y
+        nt.zIndex = 2e6
+        renderer.labelLayer.addChild(nt)
+      }
       if (!def.critter) grid.blocked[y * grid.w + x] = 1   // los animales no bloquean el paso
       npc.onTap((n) => this._talkTo(n))
       this.npcs.push(npc)
@@ -852,6 +861,7 @@ export class Game {
   // Atenúa un EDIFICIO sólo cuando su pixel opaco realmente tapa al personaje (lo cubre
   // por detrás). Excluye cercas, árboles, barriles y props del suelo por tamaño.
   _updateOcclusion() {
+    return   // desactivado: la transparencia de edificios no estaba funcionando bien (queda opaco)
     const p = this.player
     if (!p || !this._atlasCtx) return
     const iso = this.iso

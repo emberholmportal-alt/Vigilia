@@ -59,6 +59,10 @@ export class Npc {
     if (!d) return false
     this.d = d
     const tex = await Assets.load(BASE + 'assets/' + d.src)
+    // Filas (direcciones) reales del sheet: los sprites de 1 sola dirección (p. ej. la bruja)
+    // tienen 1 fila; si `dir` supera las filas, la celda cae fuera del sheet y el NPC desaparece.
+    // Clampeamos con módulo para que hablarle (que le cambia la dirección) no lo borre.
+    this._rows = Math.max(1, Math.round(tex.source.height / d.cell[1]))
     this.sprite.texture = new Texture({
       source: tex.source, frame: new Rectangle(0, 0, d.cell[0], d.cell[1]),
     })
@@ -138,7 +142,7 @@ export class Npc {
     }
     const fr = this.sprite.texture.frame
     fr.x = (st.start + f) * this.d.cell[0]
-    fr.y = this.dir * this.d.cell[1]
+    fr.y = (this.dir % (this._rows || 1)) * this.d.cell[1]
     fr.width = this.d.cell[0]
     fr.height = this.d.cell[1]
     this.sprite.texture.updateUvs()

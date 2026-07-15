@@ -58,10 +58,14 @@ export class MapRenderer {
     this.groundLayer.sortableChildren = true
     this.objectLayer = new Container()
     this.objectLayer.sortableChildren = true
+    // Capa de etiquetas (nombres de NPC): por ENCIMA de los objetos, para que un edificio no
+    // tape el nombre. Los nombres se posicionan en coords de mundo (los reparenta el Game).
+    this.labelLayer = new Container()
 
     this.root = new Container()
     this.root.addChild(this.groundLayer)
     this.root.addChild(this.objectLayer)
+    this.root.addChild(this.labelLayer)
 
     this.groundPool = new SpritePool(this.groundLayer)
     this.objectPool = new SpritePool(this.objectLayer)

@@ -644,13 +644,11 @@ export const useGameStore = create((set, get) => ({
       set({ shopStock: alchemistStock(), shopVendor: vendor || 'Alquimista', panel: 'shop' })
       return
     }
-    const s = get()
+    // Mercader (Nix): SIEMPRE el mercado del día (sin pociones ni pergamino: esos los vende la
+    // bruja). Recalculamos por las dudas el `shopStock` haya quedado con el stock de la bruja
+    // (openAlchemy lo comparte); dailyStock es determinístico por fecha y no se agota al comprar.
     const today = todayStr()
-    let shopStock = s.shopStock, shopStockDate = s.shopStockDate
-    if (shopStockDate !== today || !shopStock || !shopStock.length) {
-      shopStock = dailyStock(today); shopStockDate = today
-    }
-    set({ shopStock, shopStockDate, shopVendor: vendor || 'Mercader', panel: 'shop' })
+    set({ shopStock: dailyStock(today), shopStockDate: today, shopVendor: vendor || 'Mercader', panel: 'shop' })
     saveGame(get())
   },
 

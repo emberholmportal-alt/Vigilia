@@ -749,10 +749,12 @@ html, body, #root {
   position: absolute; left: 0; right: 0; transform: translateY(-50%); text-align: center;
   font-family: Georgia, serif; font-size: 15px; letter-spacing: 0.06em;
   color: var(--gold); text-shadow: 0 1px 2px #000;
+  pointer-events: none;   /* es ancho completo: sin esto tapaba el click de la X de cerrar */
 }
 .shop-gold {
   position: absolute; left: 0; right: 0; transform: translateY(-50%); text-align: center;
   font-family: Georgia, serif; font-size: 12px; color: #e6dcc6; text-shadow: 0 1px 2px #000;
+  pointer-events: none;
 }
 .shop-tabs {
   position: absolute; left: 0; right: 0; transform: translateY(-50%);
@@ -867,6 +869,7 @@ html, body, #root {
 }
 .smith-empty { color: var(--dim); font-family: Georgia, serif; font-size: 13px; text-align: center; margin-top: 20px; }
 .smith-row { display: flex; align-items: center; gap: 8px; font-family: Georgia, serif; }
+.smith-ico { flex: 0 0 auto; display: flex; align-items: center; }
 .smith-name { flex: 1 1 auto; font-size: 13px; text-shadow: 0 1px 2px #000; }
 .smith-name em { color: var(--dim); font-style: normal; font-size: 10px; }
 .smith-bar {

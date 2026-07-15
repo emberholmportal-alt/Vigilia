@@ -189,7 +189,7 @@ const TRISTON = [
   // Udana la Vidente: da y CIERRA la quest de los Tres Nombres. Con los tres nombres, ella misma
   // los pronuncia y los sellos ceden (antes lo hacía el Guardián de Fuego, ya quitado). Diálogo
   // condicional por banderas; el nodo con los tres nombres setea q3_finish (recompensa incluida).
-  { sprite: 'peasant_woman1', name: 'Udana la Vidente', name_en: 'Udana the Seer', portrait: 'female01.png', x: 58, y: 50, dir: 6,
+  { sprite: 'peasant_woman1', name: 'Udana la Vidente', name_en: 'Udana the Seer', portrait: 'female01.png', x: 58, y: 50, dir: 7,
     dialog: [
       { req: ['q3_finish'],
         lines: ['Los sellos cedieron. El pueblo respira distinto desde entonces.'],
