@@ -158,6 +158,15 @@ const TRISTON = [
     lines_en: ['I brought steel from the south and some leather.',
                'The price rises with the moon, not with me.',
                "Sell what you don't use. Rusted iron won't keep you warm."] },
+  // Nix el duende buhonero: segundo mercader de la plaza (compra/venta). De frente (dir 7 = S)
+  // para que se le vea la cara y la mercadería, no la espalda.
+  { sprite: 'peddler_goblin', name: 'Nix el Buhonero', name_en: 'Nix the Peddler', portrait: 'goblin.png', x: 65, y: 49, dir: 7, shop: true,
+    lines: ['¡Psst! Reliquias raras, precios de robo.',
+            'Para vos, robo doble.',
+            'No preguntes de dónde salió. Preguntá cuánto vale.'],
+    lines_en: ['Psst! Rare relics, thieving prices.',
+               'For you, double the thieving.',
+               "Don't ask where it came from. Ask what it's worth."] },
   { sprite: 'knight', name: 'Guardia Bram', name_en: 'Guard Bram', portrait: 'male07.png', x: 64, y: 57, dir: 1,
     lines: ['Ojos duros, vigilante. Afuera no perdona.',
             'Anoche hubo tambores del lado de las minas.'],
