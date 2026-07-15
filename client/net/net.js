@@ -38,12 +38,18 @@ class Net {
   }
 
   connect(url = WS_URL) {
+    this._url = url
+    this._wantOpen = true
     if (this.ws && this.ws.readyState === WebSocket.OPEN) return Promise.resolve()
     return new Promise((res, rej) => {
       try { this.ws = new WebSocket(url) } catch (e) { return rej(e) }
-      this.ws.onopen = () => { this.connected = true; res() }
+      this.ws.onopen = () => { this.connected = true; this._backoff = 0; res() }
       this.ws.onerror = (e) => { if (!this.connected) rej(new Error('no se pudo conectar')) }
-      this.ws.onclose = () => { this.connected = false; this._emit('close', {}) }
+      this.ws.onclose = () => {
+        this.connected = false
+        this._emit('close', {})
+        if (this._wantOpen) this._scheduleReconnect()   // caída no intencional (móvil, red): reintenta
+      }
       this.ws.onmessage = (e) => {
         let m; try { m = JSON.parse(e.data) } catch { return }
         // resolver RPC pendientes por tipo
@@ -68,6 +74,21 @@ class Net {
     })
   }
 
+  // Reconexión con backoff exponencial (2s→4s→…→cap 30s). Al reabrir el socket, emite
+  // 'reconnect' para que el juego re-autentique (resume) y re-anuncie su mapa. Clave en móvil.
+  _scheduleReconnect() {
+    if (this._reconnectT) return
+    this._backoff = Math.min(30000, (this._backoff || 1000) * 2)
+    this._reconnectT = setTimeout(async () => {
+      this._reconnectT = null
+      if (!this._wantOpen) return
+      try {
+        await this.connect(this._url)
+        this._emit('reconnect', {})
+      } catch { this._scheduleReconnect() }
+    }, this._backoff)
+  }
+
   _send(o) { if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(o)) }
 
   async register(user, pass) { this._send({ t: 'register', user, pass }); return this._once('auth') }
@@ -88,7 +109,7 @@ class Net {
   openChest(cid) { this._send({ t: 'openchest', cid }) }     // pedir abrir un cofre del server
   dead() { this._send({ t: 'pdead' }) }                      // avisar que morí (co-op)
   alive(x, y, dir) { this._send({ t: 'palive', x, y, dir }) }  // avisar que reaparecí
-  close() { try { this.ws?.close() } catch {} }
+  close() { this._wantOpen = false; if (this._reconnectT) { clearTimeout(this._reconnectT); this._reconnectT = null } try { this.ws?.close() } catch {} }
 }
 
 export const net = new Net()

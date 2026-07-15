@@ -274,6 +274,8 @@ const DICT = {
   no_combat_town: { es: 'En el pueblo no se combate', en: 'No fighting in town' },
   online_on: { es: 'Conectado al mundo compartido', en: 'Connected to the shared world' },
   online_off: { es: 'Modo sin conexión', en: 'Offline mode' },
+  online_lost: { es: 'Conexión perdida, reconectando…', en: 'Connection lost, reconnecting…' },
+  online_back: { es: 'Reconectado al mundo', en: 'Reconnected to the world' },
   channel_on: { es: 'Canal {n}', en: 'Channel {n}' },
   spec_hint: { es: 'Arrastrá para mirar · WASD/flechas', en: 'Drag to look · WASD/arrows' },
   // billetera (Solana)

@@ -328,6 +328,10 @@ export class Game {
         net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
         net.on('gfx', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGfx(m.gfx) })   // gear de otro jugador
         net.on('php', (m) => { const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax) })   // vida de otro jugador
+        // Reconexión (clave en móvil): al caerse la red, net reintenta con backoff; al reabrir
+        // el socket, re-autenticamos (resume) y reconstruimos el mapa actual (snapshots frescos).
+        net.on('close', () => this.store.logMessage({ channel: 'sistema', text: tt('online_lost') }))
+        net.on('reconnect', () => this._onReconnect())
         // Combate autoritativo: los enemigos los manda el servidor (compartidos por canal).
         net.on('espawn', (m) => { for (const e of m.es || []) this._spawnNetEnemy(e) })
         net.on('estate', (m) => { for (const s of m.es || []) { const e = this._netEnemies?.get(s.i); if (e) e.netSetTarget(s.x, s.y, s.d, s.hp) } })
@@ -372,6 +376,20 @@ export class Game {
       str: st.str || 10, crit: st.crit || 0, weaponKind: st.weaponKind || 'melee',
       defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
     })
+  }
+
+  // Reconexión: re-autentica (resume) y reconstruye el mapa actual para reenganchar el estado
+  // compartido con snapshots frescos (enemigos/nodos/cofres/jugadores del canal).
+  async _onReconnect() {
+    if (this.destroyed || !this._online) return
+    try {
+      const auth = await deviceAuth(net)
+      if (this.destroyed || !auth.ok) return
+      this.store.logMessage({ channel: 'sistema', text: tt('online_back') })
+      if (!this._loading && !this._changing && this.player) {
+        this.changeMap(this.mapName, Math.round(this.player.tx), Math.round(this.player.ty))
+      }
+    } catch { /* si falla, net seguirá reintentando el socket */ }
   }
 
   _onPresent(m) {
