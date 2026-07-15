@@ -109,6 +109,15 @@ class Net {
   openChest(cid) { this._send({ t: 'openchest', cid }) }     // pedir abrir un cofre del server
   dead() { this._send({ t: 'pdead' }) }                      // avisar que morí (co-op)
   alive(x, y, dir) { this._send({ t: 'palive', x, y, dir }) }  // avisar que reaparecí
+
+  // Gremios (WORLD.md): RPC contra el server autoritativo. Todas responden `t:'guild'`, salvo
+  // el ranking (`t:'guild_list'`). Awaitéalas en orden (comparten el tipo de respuesta).
+  async guildInfo(id) { this._send({ t: 'guild_info', id }); return this._once('guild') }
+  async guildList(limit = 20) { this._send({ t: 'guild_list', limit }); return this._once('guild_list') }
+  async guildCreate(name, tag, color) { this._send({ t: 'guild_create', name, tag, color }); return this._once('guild') }
+  async guildJoin({ id, tag }) { this._send({ t: 'guild_join', id, tag }); return this._once('guild') }
+  async guildLeave() { this._send({ t: 'guild_leave' }); return this._once('guild') }
+  async guildDonate(amount) { this._send({ t: 'guild_donate', amount }); return this._once('guild') }
   close() { this._wantOpen = false; if (this._reconnectT) { clearTimeout(this._reconnectT); this._reconnectT = null } try { this.ws?.close() } catch {} }
 }
 

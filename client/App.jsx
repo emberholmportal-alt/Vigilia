@@ -15,6 +15,7 @@ import Settings from './ui/Settings.jsx'
 import Vendor from './ui/Vendor.jsx'
 import Blacksmith from './ui/Blacksmith.jsx'
 import Alchemy from './ui/Alchemy.jsx'
+import Guild from './ui/Guild.jsx'
 import Missions from './ui/Missions.jsx'
 import MouseBind from './ui/MouseBind.jsx'
 import BootSplash from './ui/BootSplash.jsx'
@@ -116,6 +117,7 @@ export default function App() {
       {phase === 'game' && panel === 'shop' && <Vendor />}
       {phase === 'game' && panel === 'smith' && <Blacksmith />}
       {phase === 'game' && panel === 'alchemy' && <Alchemy />}
+      {phase === 'game' && panel === 'guild' && <Guild />}
       {phase === 'game' && panel === 'missions' && <Missions />}
       {phase === 'game' && panel === 'mousebind' && <MouseBind />}
       {phase === 'game' && !loading && !error && <DialogueBox />}

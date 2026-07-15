@@ -163,7 +163,7 @@ const TRISTON = [
             'Anoche hubo tambores del lado de las minas.'],
     lines_en: ['Hard eyes, watcher. The wilds do not forgive.',
                'There were drums by the mines last night.'] },
-  { sprite: 'guild_man', name: 'Halvard', name_en: 'Halvard', portrait: 'male01.png', x: 56, y: 58, dir: 5,
+  { sprite: 'guild_man', name: 'Halvard', name_en: 'Halvard', portrait: 'male01.png', x: 56, y: 58, dir: 5, guild: true,
     lines: ['Los gremios reclutan de nuevo.',
             'Quinientos de oro y una sigla de tres letras.'],
     lines_en: ['The guilds are recruiting again.',

@@ -8,6 +8,7 @@ import { WebSocketServer } from 'ws'
 import * as db from './db/db.js'
 import { register, login, session, logout } from './systems/auth.js'
 import * as wallet from './systems/wallet.js'
+import * as guilds from './systems/guilds.js'
 import * as rooms from './world/rooms.js'
 
 const PORT = process.env.PORT || 8787
@@ -91,6 +92,31 @@ wss.on('connection', (ws) => {
           if (!conn.accountId) return send({ t: 'saved', ok: false, error: 'no autenticado' })
           await db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data: m.char })
           return send({ t: 'saved', ok: true })
+        }
+
+        // ---------- Gremios (WORLD.md) ----------
+        case 'guild_info': {   // gremio del jugador (o uno puntual por id) + miembros
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.info(conn.accountId, m.id)) })
+        }
+        case 'guild_list': {   // ranking público
+          return send({ t: 'guild_list', ...(await guilds.ranking(m.limit)) })
+        }
+        case 'guild_create': {
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.create(conn.accountId, { name: m.name, tag: m.tag, color: m.color })) })
+        }
+        case 'guild_join': {
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.join(conn.accountId, { guildId: m.id, tag: m.tag })) })
+        }
+        case 'guild_leave': {
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.leave(conn.accountId)), left: true })
+        }
+        case 'guild_donate': {
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.donate(conn.accountId, m.amount)) })
         }
 
         case 'join': {

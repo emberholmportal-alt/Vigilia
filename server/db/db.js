@@ -35,6 +35,22 @@ export async function init() {
       CREATE TABLE IF NOT EXISTS characters (
         account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
         name TEXT, race TEXT, data JSONB, updated_at TIMESTAMPTZ DEFAULT now()
+      );
+      CREATE TABLE IF NOT EXISTS guilds (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        tag TEXT UNIQUE NOT NULL,
+        color TEXT,
+        level INTEGER DEFAULT 1,
+        donated BIGINT DEFAULT 0,
+        founder INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ DEFAULT now()
+      );
+      CREATE TABLE IF NOT EXISTS guild_members (
+        account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+        guild_id INTEGER REFERENCES guilds(id) ON DELETE CASCADE,
+        role TEXT DEFAULT 'member',
+        joined_at TIMESTAMPTZ DEFAULT now()
       );`)
     console.log('[db] PostgreSQL conectado')
     return
@@ -45,6 +61,9 @@ export async function init() {
     try { file = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')) } catch { file = null }
   }
   if (!file) file = { accounts: [], chars: {} }
+  if (!file.guilds) file.guilds = []                 // [{id,name,tag,color,level,donated,founder}]
+  if (!file.guildMembers) file.guildMembers = {}     // account_id -> {guild_id, role}
+  if (file.guildSeq == null) file.guildSeq = file.guilds.reduce((m, g) => Math.max(m, g.id), 0) + 1
   seq = file.accounts.reduce((m, a) => Math.max(m, a.id), 0) + 1
   console.log('[db] Sin DATABASE_URL: usando archivo local (' + DATA_FILE + ')')
 }
@@ -113,4 +132,108 @@ export async function loadCharacter(accountId) {
     return r.rows[0] || null
   }
   return file.chars[accountId] || null
+}
+
+// ---------- Gremios ----------
+// El oro de fundación/donación lo descuenta el server del blob persistido del personaje
+// (la única fuente de verdad del oro), no del cliente. Ver server/systems/guilds.js.
+
+// Sólo el oro del blob del personaje, para validar donaciones sin cargar todo. Devuelve número.
+export async function getCharacterGold(accountId) {
+  const ch = await loadCharacter(accountId)
+  return ch?.data?.gold | 0
+}
+
+// Escribe el oro del blob del personaje (descuento de fundación/donación), preservando el resto.
+export async function setCharacterGold(accountId, gold) {
+  const ch = await loadCharacter(accountId)
+  if (!ch) return false
+  const data = { ...(ch.data || {}), gold: gold | 0 }
+  await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+  return true
+}
+
+export async function findGuildByTag(tag) {
+  const t = String(tag).toUpperCase()
+  if (pg) return (await pg.query('SELECT * FROM guilds WHERE upper(tag)=$1', [t])).rows[0] || null
+  return file.guilds.find((g) => g.tag.toUpperCase() === t) || null
+}
+export async function findGuildByName(name) {
+  const n = String(name).toLowerCase()
+  if (pg) return (await pg.query('SELECT * FROM guilds WHERE lower(name)=$1', [n])).rows[0] || null
+  return file.guilds.find((g) => g.name.toLowerCase() === n) || null
+}
+export async function getGuild(id) {
+  if (pg) return (await pg.query('SELECT * FROM guilds WHERE id=$1', [id])).rows[0] || null
+  return file.guilds.find((g) => g.id === id) || null
+}
+export async function createGuild({ name, tag, color, founder }) {
+  if (pg) {
+    const r = await pg.query(
+      'INSERT INTO guilds (name, tag, color, founder, level, donated) VALUES ($1,$2,$3,$4,1,0) RETURNING *',
+      [name, String(tag).toUpperCase(), color || null, founder])
+    return r.rows[0]
+  }
+  const g = { id: file.guildSeq++, name, tag: String(tag).toUpperCase(), color: color || null, level: 1, donated: 0, founder }
+  file.guilds.push(g); flush()
+  return g
+}
+export async function addGuildDonation(guildId, amount, newLevel) {
+  if (pg) {
+    const r = await pg.query(
+      'UPDATE guilds SET donated=donated+$2, level=$3 WHERE id=$1 RETURNING *',
+      [guildId, amount, newLevel])
+    return r.rows[0]
+  }
+  const g = file.guilds.find((x) => x.id === guildId)
+  if (g) { g.donated += amount; g.level = newLevel; flush() }
+  return g
+}
+export async function getGuildMembership(accountId) {
+  if (pg) return (await pg.query('SELECT guild_id, role FROM guild_members WHERE account_id=$1', [accountId])).rows[0] || null
+  return file.guildMembers[accountId] || null
+}
+export async function setGuildMembership(accountId, guildId, role = 'member') {
+  if (pg) {
+    await pg.query(
+      `INSERT INTO guild_members (account_id, guild_id, role) VALUES ($1,$2,$3)
+       ON CONFLICT (account_id) DO UPDATE SET guild_id=$2, role=$3, joined_at=now()`,
+      [accountId, guildId, role])
+    return
+  }
+  file.guildMembers[accountId] = { guild_id: guildId, role }; flush()
+}
+export async function removeGuildMembership(accountId) {
+  if (pg) { await pg.query('DELETE FROM guild_members WHERE account_id=$1', [accountId]); return }
+  delete file.guildMembers[accountId]; flush()
+}
+export async function guildMemberCount(guildId) {
+  if (pg) return (await pg.query('SELECT count(*)::int AS n FROM guild_members WHERE guild_id=$1', [guildId])).rows[0]?.n || 0
+  return Object.values(file.guildMembers).filter((m) => m.guild_id === guildId).length
+}
+// Miembros de un gremio con su nombre de cuenta y rol. Ordena fundador primero.
+export async function guildMembers(guildId) {
+  if (pg) {
+    const r = await pg.query(
+      `SELECT a.username, m.role FROM guild_members m JOIN accounts a ON a.id=m.account_id
+       WHERE m.guild_id=$1 ORDER BY (m.role='founder') DESC, m.joined_at ASC`, [guildId])
+    return r.rows
+  }
+  return Object.entries(file.guildMembers)
+    .filter(([, m]) => m.guild_id === guildId)
+    .map(([aid, m]) => ({ username: (file.accounts.find((a) => a.id === +aid) || {}).username, role: m.role }))
+    .sort((a, b) => (b.role === 'founder') - (a.role === 'founder'))
+}
+// Ranking público: gremios por nivel y oro donado, con conteo de miembros.
+export async function listGuilds(limit = 20) {
+  if (pg) {
+    const r = await pg.query(
+      `SELECT g.*, (SELECT count(*)::int FROM guild_members m WHERE m.guild_id=g.id) AS members
+       FROM guilds g ORDER BY g.level DESC, g.donated DESC, g.created_at ASC LIMIT $1`, [limit])
+    return r.rows
+  }
+  return file.guilds
+    .map((g) => ({ ...g, members: Object.values(file.guildMembers).filter((m) => m.guild_id === g.id).length }))
+    .sort((a, b) => b.level - a.level || b.donated - a.donated || a.id - b.id)
+    .slice(0, limit)
 }

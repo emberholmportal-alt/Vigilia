@@ -113,7 +113,20 @@ export function weaponDamage(equipment) {
   return { min: base.min + up, max: base.max + up }
 }
 
-export function computeStats(raceId, level = 1, equipment = null, attrAlloc = null, skillRanks = null) {
+// Ventajas de gremio por nivel (WORLD.md): n1 +oro de botín · n2 +defensa a todos ·
+// n3 +XP compartida · n4 Depósito · n5 estandarte. Devuelve los modificadores derivados.
+export function guildPerks(guildLevel = 0) {
+  const L = guildLevel | 0
+  return {
+    goldMul: L >= 1 ? 1.05 : 1,       // +5% oro de botín
+    defense: L >= 2 ? 4 : 0,          // +4 defensa a todos
+    xpMul: L >= 3 ? 1.05 : 1,         // +5% XP
+    deposit: L >= 4,                  // acceso al Depósito del Gremio
+    banner: L >= 5,                   // estandarte visible en ciudad
+  }
+}
+
+export function computeStats(raceId, level = 1, equipment = null, attrAlloc = null, skillRanks = null, guildLevel = 0) {
   const r = RACE_RULES[raceId] || {}
   const a = attrAlloc || {}
   // Atributos: base + raza + puntos repartidos al subir de nivel.
@@ -124,6 +137,7 @@ export function computeStats(raceId, level = 1, equipment = null, attrAlloc = nu
   const e = equipBonus(equipment)
   const aff = affinityBonus(raceId, equipment)   // bonus si la raza porta equipo afín
   const tb = treeBonus(skillRanks)               // bonus pasivo de los nodos del árbol
+  const gp = guildPerks(guildLevel)              // ventajas del gremio (por nivel)
   const lv = Math.max(1, level | 0)
 
   // Vida/maná: base por atributo + crecimiento por nivel + bonus plano del equipo + afinidad + árbol.
@@ -138,7 +152,7 @@ export function computeStats(raceId, level = 1, equipment = null, attrAlloc = nu
     hp: hpMax, hpMax,
     mp: mpMax, mpMax,
     staminaMax,
-    defense: e.absorb + aff.absorb + tb.absorb, // reduce el daño recibido (+ afinidad + árbol)
+    defense: e.absorb + aff.absorb + tb.absorb + gp.defense, // reduce el daño recibido (+ afinidad + árbol + gremio)
     hpRegen: e.hpRegen, mpRegen: e.mpRegen + tb.mpRegen,
     crit: e.crit + tb.crit, accuracy: e.accuracy + tb.accuracy, avoidance: e.avoidance,
     itemFind: e.itemFind + tb.itemFind, // +% de hallazgo (magic find) para el loot
@@ -147,6 +161,7 @@ export function computeStats(raceId, level = 1, equipment = null, attrAlloc = nu
     weaponKind: weaponKind(equipment), // melee / ranged / mental (define ataque a distancia)
     dmgMul: (r.dmgMul || 1) * aff.dmgMul * (1 + tb.dmgMul),
     speedMul: (r.speedMul || 1) * (1 + tb.speedMul),
-    xpMul: (r.xpMul || 1) * (1 + e.xpGain / 100) * (1 + tb.xpMul),
+    xpMul: (r.xpMul || 1) * (1 + e.xpGain / 100) * (1 + tb.xpMul) * gp.xpMul,
+    guildGoldMul: gp.goldMul, // +oro de botín del gremio (se aplica en addGold)
   }
 }

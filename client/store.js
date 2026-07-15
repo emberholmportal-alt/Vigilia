@@ -9,7 +9,7 @@ import { computeStats, upgradeLevel } from './data/stats.js'
 import { NODE_BY_ID, attrEarned, skillEarned, attrSpent, skillSpent } from './data/skilltree.js'
 import { QUESTS, ZONE_REVEALS } from './data/quests.js'
 import { unlockedAbilities } from './data/abilities.js'
-import { net } from './net/net.js'
+import { net, ONLINE } from './net/net.js'
 import { rollLoot } from '../shared/loot.js'
 
 const FORGE_MAX = 5        // nivel máximo de mejora por pieza
@@ -515,7 +515,7 @@ export const useGameStore = create((set, get) => ({
   recomputeStats: () => {
     const s = get()
     if (!s.race || !s.stats) return
-    const fresh = computeStats(s.race.id, s.stats.level, s.equipment, s.attrAlloc, s.skillRanks)
+    const fresh = computeStats(s.race.id, s.stats.level, s.equipment, s.attrAlloc, s.skillRanks, s.guild?.level || 0)
     const hp = Math.min(s.stats.hp, fresh.hpMax)
     const mp = Math.min(s.stats.mp, fresh.mpMax)
     set({ stats: { ...fresh, hp, mp } })
@@ -527,7 +527,7 @@ export const useGameStore = create((set, get) => ({
     const xp = s.xp + Math.max(0, n | 0)
     const level = playerLevelFromXp(xp)
     if (s.stats && level !== s.stats.level) {
-      const fresh = computeStats(s.race?.id, level, s.equipment, s.attrAlloc, s.skillRanks) // subir de nivel cura
+      const fresh = computeStats(s.race?.id, level, s.equipment, s.attrAlloc, s.skillRanks, s.guild?.level || 0) // subir de nivel cura
       set({ xp, stats: fresh })
       get().showToast(tt('levelup_toast', { n: level }))
     } else {
@@ -609,8 +609,13 @@ export const useGameStore = create((set, get) => ({
     saveGame(get())
   },
 
-  // Agrega oro (loot).
-  addGold: (n) => { set((s) => ({ gold: s.gold + (n | 0) })); saveGame(get()) },
+  // Agrega oro (loot). El gremio da +oro de botín (ventaja de nivel 1): se aplica el multiplicador.
+  addGold: (n) => {
+    const s = get()
+    const mul = (n > 0 && s.stats?.guildGoldMul) || 1
+    set({ gold: s.gold + Math.round((n | 0) * mul) })
+    saveGame(get())
+  },
 
   // Fragmentos de sello: moneda premium de las misiones diarias (cofres de sello, ofrendas).
   seals: 0,
@@ -670,6 +675,82 @@ export const useGameStore = create((set, get) => ({
   // La bruja: además de craftear, vende lo básico (pociones vida/maná + Pergamino de Retorno).
   // Cargamos su stock fijo para que el panel de alquimia tenga la sección de compra.
   openAlchemy: (name) => set({ alchemyName: name || 'Alquimista', shopStock: alchemistStock(), panel: 'alchemy' }),
+
+  // --- gremios (Casa de Gremios, WORLD.md) ---
+  // El server es autoritativo: acá guardamos la vista (mi gremio + miembros + ranking) y el oro
+  // que confirma el server tras fundar/donar. El oro es la fuente de verdad del server.
+  guild: null,            // { id, name, tag, color, level, donated, next } o null
+  guildRole: null,        // 'founder' | 'member' | null
+  guildMembers: [],       // [{ username, role }]
+  guildRanking: [],       // ranking público
+  guildBusy: false,
+  guildError: '',
+  // Aplica la respuesta del server a un cambio de gremio (oro autoritativo + recálculo de stats).
+  _applyGuildResult: (r) => {
+    if (!r || r.ok === false) { set({ guildError: r?.error || 'error del gremio' }); return false }
+    const patch = { guildError: '' }
+    if (r.guild !== undefined) patch.guild = r.guild
+    if (r.role !== undefined) patch.guildRole = r.role
+    if (typeof r.gold === 'number') patch.gold = r.gold   // el server descontó/confirmó el oro
+    if (r.left) { patch.guild = null; patch.guildRole = null; patch.guildMembers = [] }
+    set(patch)
+    if (typeof r.gold === 'number') saveGame(get())
+    get().recomputeStats()   // las ventajas del gremio cambian defensa/XP
+    return true
+  },
+  // Empuja el estado actual al server (el server descuenta el oro del blob persistido, así que
+  // antes de fundar/donar hay que sincronizar el oro vivo del cliente con el del server).
+  _flushServerSave: async () => {
+    const s = get()
+    try { await net.save(s.playerName, s.race?.id, snapshot(s)) } catch {}
+  },
+  openGuild: () => { set({ panel: 'guild', guildError: '' }); get().refreshGuild() },
+  refreshGuild: async () => {
+    if (!ONLINE || !net.connected) { set({ guild: null, guildRole: null, guildMembers: [], guildRanking: [] }); return }
+    set({ guildBusy: true })
+    try {
+      const info = await net.guildInfo()
+      const list = await net.guildList(20)
+      set({ guild: info.guild || null, guildRole: info.mine || null, guildMembers: info.members || [],
+            guildRanking: list.guilds || [], guildBusy: false })
+      get().recomputeStats()
+    } catch { set({ guildBusy: false }) }
+  },
+  createGuild: async (name, tag, color) => {
+    if (!ONLINE || !net.connected) { set({ guildError: tt('guild_need_online') }); return }
+    set({ guildBusy: true })
+    await get()._flushServerSave()   // sincronizar el oro con el server antes de que cobre la fundación
+    const r = await net.guildCreate(name, tag, color).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt('guild_founded', { tag: r.guild.tag })); get().refreshGuild() }
+  },
+  joinGuild: async (id) => {
+    if (!ONLINE || !net.connected) { set({ guildError: tt('guild_need_online') }); return }
+    set({ guildBusy: true })
+    const r = await net.guildJoin({ id }).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt('guild_joined', { tag: r.guild.tag })); get().refreshGuild() }
+  },
+  leaveGuild: async () => {
+    if (!ONLINE || !net.connected) return
+    set({ guildBusy: true })
+    const r = await net.guildLeave().catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt('guild_left')); get().refreshGuild() }
+  },
+  donateGuild: async (amount) => {
+    if (!ONLINE || !net.connected) return
+    const amt = Math.floor(Number(amount) || 0)
+    if (amt <= 0) { set({ guildError: tt('guild_bad_amount') }); return }
+    set({ guildBusy: true })
+    await get()._flushServerSave()   // sincronizar el oro con el server antes de que cobre la donación
+    const r = await net.guildDonate(amt).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) {
+      get().showToast(r.leveledUp ? tt('guild_leveled', { n: r.guild.level }) : tt('guild_donated', { n: amt }))
+      get().refreshGuild()
+    }
+  },
 
   // --- misiones diarias ---
   missions: [],
@@ -964,6 +1045,8 @@ export const storeApi = {
   openShop: (vendor) => useGameStore.getState().openShop(vendor),
   openSmith: (name) => useGameStore.getState().openSmith(name),
   openAlchemy: (name) => useGameStore.getState().openAlchemy(name),
+  openGuild: () => useGameStore.getState().openGuild(),
+  refreshGuild: () => useGameStore.getState().refreshGuild(),
   setSafeZone: (v) => useGameStore.getState().setSafeZone(v),
   getRunState: () => {
     const s = useGameStore.getState()

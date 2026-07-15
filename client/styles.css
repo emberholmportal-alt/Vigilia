@@ -882,6 +882,88 @@ html, body, #root {
   background: rgba(20, 17, 26, 0.7); }
 .pw-bar i { display: block; height: 100%; background: linear-gradient(90deg, #4f9d6b, #7fd0a0); }
 
+/* ---------- Casa de Gremios ---------- */
+.guild-body {
+  position: absolute; left: 10%; right: 10%; top: 14.5%; bottom: 7%;
+  display: flex; flex-direction: column; gap: 9px; overflow-y: auto;
+  font-family: Georgia, serif; color: var(--parch);
+}
+.guild-offline, .guild-empty {
+  margin: auto; text-align: center; font-size: 13px; color: var(--dim); max-width: 82%;
+  line-height: 1.5; font-style: italic; text-wrap: balance;
+}
+.guild-none { display: flex; flex-direction: column; gap: 3px; text-align: center; padding: 4px 0 2px; }
+.guild-none b { color: var(--gold); font-size: 14px; text-shadow: 0 1px 2px #000; }
+.guild-none span { color: var(--dim); font-size: 11px; }
+.guild-found { display: flex; flex-direction: column; gap: 8px;
+  background: rgba(20, 17, 26, 0.5); border: 1px solid #322a3c; border-radius: 7px; padding: 10px; }
+.guild-found-head { color: var(--gold); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.guild-input {
+  width: 100%; background: rgba(12, 10, 16, 0.9); border: 1px solid #4a3d2a; border-radius: 4px;
+  color: var(--parch); font-family: Georgia, serif; font-size: 14px; padding: 8px 10px; box-sizing: border-box;
+}
+.guild-input:focus { outline: none; border-color: var(--ember); }
+.guild-input.tag { width: 78px; text-transform: uppercase; letter-spacing: 0.14em; text-align: center; }
+.guild-row { display: flex; gap: 9px; align-items: center; }
+.guild-banner-pick { display: flex; gap: 6px; flex-wrap: wrap; }
+.guild-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5); -webkit-tap-highlight-color: transparent; }
+.guild-swatch.on { border-color: #fff; transform: scale(1.12); }
+.guild-preview { display: flex; align-items: center; gap: 8px; border: 1px solid; border-radius: 6px;
+  padding: 6px 9px; background: rgba(12, 10, 16, 0.5); }
+.guild-preview-name { color: var(--parch); font-size: 13px; }
+.guild-tag-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 20px;
+  padding: 0 6px; border-radius: 4px; color: #14111a; font-weight: bold; font-size: 11px; letter-spacing: 0.08em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
+.guild-tag-chip.big { min-width: 46px; height: 30px; font-size: 15px; }
+.guild-btn {
+  align-self: stretch; font-family: Georgia, serif; font-size: 13px; color: var(--gold);
+  background: var(--stone); border: 1px solid var(--edge); border-radius: 5px; padding: 8px 12px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.guild-btn.primary { background: linear-gradient(180deg, #8a6f1e, #6b5416); color: #fff2cf; border-color: #b08a2e; }
+.guild-btn.danger { color: #e0808a; border-color: #7a3038; align-self: center; padding: 6px 16px; margin-top: 2px; }
+.guild-btn.small { align-self: center; padding: 5px 12px; font-size: 12px; flex: 0 0 auto; }
+.guild-btn:disabled { opacity: 0.45; cursor: default; }
+.guild-btn:not(:disabled):active { transform: scale(0.97); }
+.guild-error { color: #e0808a; font-size: 12px; text-align: center; }
+.guild-hint { color: var(--dim); font-size: 11px; text-align: center; }
+/* con gremio */
+.guild-header { display: flex; align-items: center; gap: 10px; border: 1px solid; border-left-width: 4px;
+  border-radius: 7px; padding: 8px 10px; background: rgba(20, 17, 26, 0.5); }
+.guild-header-txt { display: flex; flex-direction: column; gap: 1px; }
+.guild-header-txt b { color: #f2ead6; font-size: 15px; text-shadow: 0 1px 2px #000; }
+.guild-header-txt span { color: var(--gold); font-size: 11px; }
+.guild-level-bar { height: 9px; border: 1px solid #3b3145; border-radius: 5px; overflow: hidden;
+  background: rgba(20, 17, 26, 0.8); }
+.guild-level-bar i { display: block; height: 100%; transition: width 0.4s ease; }
+.guild-level-cap { color: var(--dim); font-size: 11px; text-align: center; margin-top: -3px; }
+.guild-donate { display: flex; gap: 8px; }
+.guild-donate .guild-input { flex: 1; }
+.guild-donate .guild-btn { align-self: stretch; flex: 0 0 auto; }
+.guild-sub { color: var(--gold); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
+  border-bottom: 1px solid rgba(120, 104, 80, 0.25); padding-bottom: 3px; }
+.guild-perks { display: flex; flex-direction: column; gap: 4px; }
+.guild-perk { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6a6472; }
+.guild-perk.on { color: var(--parch); }
+.guild-perk-lv { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+  border-radius: 50%; background: #2a2433; color: #5a5262; font-size: 10px; flex: 0 0 auto; border: 1px solid #322a3c; }
+.guild-perk.on .guild-perk-lv { background: var(--gold); color: #14111a; border-color: var(--gold); }
+.guild-roster { display: flex; flex-direction: column; gap: 4px; }
+.guild-roster-list { display: flex; flex-direction: column; gap: 2px; max-height: 120px; overflow-y: auto; }
+.guild-member { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 4px;
+  border-bottom: 1px solid rgba(120, 104, 80, 0.14); }
+.guild-member em { color: var(--dim); font-style: normal; font-size: 10px; }
+/* ranking */
+.guild-rank-list { display: flex; flex-direction: column; gap: 5px; }
+.guild-rank-row { display: flex; align-items: center; gap: 9px; padding: 6px 7px; border-radius: 6px;
+  background: rgba(20, 17, 26, 0.45); border: 1px solid #2a2433; }
+.guild-rank-row.mine { border-color: var(--gold); background: rgba(90, 70, 20, 0.28); }
+.guild-rank-n { color: var(--gold); font-size: 13px; font-weight: bold; width: 16px; text-align: center; flex: 0 0 auto; }
+.guild-rank-txt { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.guild-rank-txt b { color: #f2ead6; font-size: 13px; }
+.guild-rank-txt span { color: var(--dim); font-size: 10px; }
+
 /* herrero (reparación) */
 .smith-body {
   position: absolute; left: 12%; right: 12%; top: 15%; bottom: 10%;

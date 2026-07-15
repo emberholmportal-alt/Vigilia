@@ -361,7 +361,7 @@ export class Game {
       channel: this._channel,        // intenta conservar tu canal entre mapas
       spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
       gfx: this._spectator ? null : equipToGfx(this.store.getEquipment()),   // equipo visible para los demás
-    }).catch(() => {})
+    }).then(() => { if (!this._spectator) this.store.refreshGuild() }).catch(() => {})   // cargar gremio -> aplicar ventajas
     this._sendStats()   // stats de combate para que el server tire el daño de nuestros golpes
   }
 
@@ -674,6 +674,7 @@ export class Game {
     else if (npc.def.shop) this.store.openShop(nm, npc.def.shopKind)
     else if (npc.def.smith) this.store.openSmith(nm)
     else if (npc.def.alchemy) this.store.openAlchemy(nm)
+    else if (npc.def.guild) this.store.openGuild()
     else if (npc.def.dialog) this._talkDialog(npc)
     else this.store.openDialogue({ name: nm, portrait: npc.def.portrait, lines: npcLines(npc.def, getLang()) })
   }
