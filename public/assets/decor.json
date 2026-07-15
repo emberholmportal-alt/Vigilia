@@ -191,5 +191,53 @@
    64,
    96
   ]
+ },
+ "cursed_grave_fire": {
+  "src": "decor/cursed_grave_fire.png",
+  "cell": [
+   52,
+   109
+  ],
+  "anchor": [
+   25,
+   96
+  ],
+  "anim": {
+   "src": "decor/cursed_grave_fire_anim.png",
+   "frames": 8,
+   "cell": [
+    52,
+    109
+   ],
+   "anchor": [
+    25,
+    96
+   ],
+   "ms": 1066
+  }
+ },
+ "cursed_grave_ice": {
+  "src": "decor/cursed_grave_ice.png",
+  "cell": [
+   52,
+   109
+  ],
+  "anchor": [
+   25,
+   96
+  ],
+  "anim": {
+   "src": "decor/cursed_grave_ice_anim.png",
+   "frames": 8,
+   "cell": [
+    52,
+    109
+   ],
+   "anchor": [
+    25,
+    96
+   ],
+   "ms": 1066
+  }
  }
 }

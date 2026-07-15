@@ -212,7 +212,7 @@ const TRISTON = [
   // granja del norte, ya en el mapa). Mismos sprites que los NPCs con nombre (mismo tamaño y con
   // idle animado), sin nombre ni diálogo — sólo dan vida sin amontonar. Direcciones variadas.
   { sprite: 'peasant_man1', x: 58, y: 44, dir: 6, critter: true },
-  { sprite: 'peasant_woman1', x: 67, y: 47, dir: 5, critter: true },
+  { sprite: 'peasant_woman1', x: 67, y: 47, dir: 6, critter: true },
   { sprite: 'peasant_man2', x: 48, y: 48, dir: 4, critter: true },
   { sprite: 'peasant_woman2', x: 74, y: 51, dir: 7, critter: true },
   { sprite: 'peasant_man1', x: 68, y: 54, dir: 1, critter: true },
