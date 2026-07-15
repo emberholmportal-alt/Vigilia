@@ -327,6 +327,7 @@ export class Game {
         net.on('leave', (m) => this._removeRemote(m.id))
         net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
         net.on('gfx', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGfx(m.gfx) })   // gear de otro jugador
+        net.on('php', (m) => { const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax) })   // vida de otro jugador
         // Combate autoritativo: los enemigos los manda el servidor (compartidos por canal).
         net.on('espawn', (m) => { for (const e of m.es || []) this._spawnNetEnemy(e) })
         net.on('estate', (m) => { for (const s of m.es || []) { const e = this._netEnemies?.get(s.i); if (e) e.netSetTarget(s.x, s.y, s.d, s.hp) } })
@@ -1883,6 +1884,16 @@ export class Game {
           if (tx !== this._netTx || ty !== this._netTy || dir !== this._netDir) {
             this._netTx = tx; this._netTy = ty; this._netDir = dir
             net.move(this.mapName, tx, ty, dir)
+          }
+        }
+        // Difundir mi vida para que los demás vean mi barra (throttle ~4Hz; inmediato si muero).
+        const hst = this.store.getStats()
+        if (hst) {
+          const hp = hst.hp | 0, hpMax = hst.hpMax | 0
+          this._hpAccum = (this._hpAccum || 0) + dt
+          if ((hp !== this._netHp || hpMax !== this._netHpMax) && (this._hpAccum >= 0.25 || hp <= 0)) {
+            this._hpAccum = 0; this._netHp = hp; this._netHpMax = hpMax
+            net.hp(hp, hpMax)
           }
         }
         // Persistencia en el servidor: subo el personaje cada ~20s (respaldo real en la DB).

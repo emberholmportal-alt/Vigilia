@@ -27,7 +27,7 @@ export function playerCount() { return players.size }
 
 // Vista pública de un jugador (lo que ven los demás). Incluye `gfx` = capas del paperdoll
 // (equipo visible) y `dead` para que un recién llegado vea el estado correcto.
-function pub(p) { return { id: p.id, name: p.name, race: p.race, x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead } }
+function pub(p) { return { id: p.id, name: p.name, race: p.race, x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax } }
 
 function inChannel(map, ch) {
   const out = []
@@ -171,6 +171,13 @@ export function setGfx(id, gfx) {
   const p = players.get(id); if (!p) return
   p.gfx = gfx || null
   broadcast(p.map, p.ch, { t: 'gfx', id, gfx: p.gfx }, id)
+}
+
+// Vida del jugador: se difunde por AoI (cambia seguido) para que los demás vean su barra.
+export function playerHp(id, hp, hpMax) {
+  const p = players.get(id); if (!p) return
+  p.hp = hp | 0; p.hpMax = hpMax | 0
+  broadcastAoI(p.map, p.ch, p.x, p.y, { t: 'php', id, hp: p.hp, hpMax: p.hpMax }, id)
 }
 
 // Muerte / reaparición del jugador: se difunde al canal para que los demás la vean (co-op).

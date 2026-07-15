@@ -62,6 +62,8 @@ class Net {
         else if (m.t === 'pdied' || m.t === 'palive') this._emit(m.t, m)
         // equipo visible de otro jugador (cambió su gear)
         else if (m.t === 'gfx') this._emit(m.t, m)
+        // vida de otro jugador (para su barra)
+        else if (m.t === 'php') this._emit(m.t, m)
       }
     })
   }
@@ -76,6 +78,7 @@ class Net {
   async save(name, race, char) { this._send({ t: 'save', name, race, char }); return this._once('saved') }
   async join({ name, race, map, x, y, dir, channel, spectator, gfx }) { this._send({ t: 'join', name, race, map, x, y, dir, channel, spectator, gfx }); return this._once('present') }
   setGfx(gfx) { this._send({ t: 'setgfx', gfx }) }           // equipo visible (capas del paperdoll)
+  hp(hp, hpMax) { this._send({ t: 'php', hp, hpMax }) }      // mi vida (para la barra que ven los demás)
 
   move(map, x, y, dir) { this._send({ t: 'move', map, x, y, dir }) }
   chat(text) { this._send({ t: 'chat', text }) }

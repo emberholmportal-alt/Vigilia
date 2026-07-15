@@ -124,6 +124,11 @@ wss.on('connection', (ws) => {
           return rooms.setGfx(conn.playerId, m.gfx)
         }
 
+        case 'php': {        // vida del jugador (para su barra que ven los demás)
+          if (conn.playerId == null) return
+          return rooms.playerHp(conn.playerId, m.hp, m.hpMax)
+        }
+
         case 'atk': {        // pedido de ataque a un enemigo (lo valida la simulación)
           if (conn.playerId == null) return
           return rooms.attack(conn.playerId, m.eid)
