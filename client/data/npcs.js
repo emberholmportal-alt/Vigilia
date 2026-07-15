@@ -149,18 +149,9 @@ const GREENWOOD = [
 // casas de entramado, graneros, fragua). Es el hub principal + punto de respawn.
 // Plaza de la fuente (61,55): por ahora sólo el mercader + 2 NPCs (sin totems).
 const TRISTON = [
-  // El mercader arma su puesto en el claro frente al carro y los barriles (parece un
-  // mercado). Tile caminable, adelante del carro para que no lo tape.
-  { sprite: 'wandering_trader', name: 'Mercader Oswin', name_en: 'Oswin the Trader', portrait: 'male10.png', x: 61, y: 51, dir: 3, shop: true,
-    lines: ['Traje acero del sur y algo de cuero.',
-            'El precio sube con la luna, no conmigo.',
-            'Vendé lo que no uses. El hierro oxidado no abriga.'],
-    lines_en: ['I brought steel from the south and some leather.',
-               'The price rises with the moon, not with me.',
-               "Sell what you don't use. Rusted iron won't keep you warm."] },
-  // Nix el duende buhonero: segundo mercader de la plaza (compra/venta). De frente (dir 7 = S)
-  // para que se le vea la cara y la mercadería, no la espalda.
-  { sprite: 'peddler_goblin', name: 'Nix el Buhonero', name_en: 'Nix the Peddler', portrait: 'goblin.png', x: 65, y: 49, dir: 7, shop: true,
+  // Nix el Buhonero: el ÚNICO mercader del pueblo (compra/venta). Arma su puesto frente al carro
+  // y los barriles (el mercado). De frente (dir 7 = S) para que se le vea la cara y la mercadería.
+  { sprite: 'peddler_goblin', name: 'Nix el Buhonero', name_en: 'Nix the Peddler', portrait: 'goblin.png', x: 61, y: 51, dir: 7, shop: true,
     lines: ['¡Psst! Reliquias raras, precios de robo.',
             'Para vos, robo doble.',
             'No preguntes de dónde salió. Preguntá cuánto vale.'],
