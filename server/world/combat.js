@@ -19,6 +19,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { pickSprite, enemyStats, isRanged, rangedCousin } from '../../shared/bestiary.js'
+import { GATHER } from '../../shared/gather.js'
 
 const MAPS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../public/maps')
 
@@ -58,6 +59,7 @@ function randTileIn(map, sp) {
 // --- mundos por (mapa, canal) ---------------------------------------------------------------
 const worlds = new Map()   // "map:ch" -> world
 let eidSeq = 1
+let nidSeq = 1
 const key = (map, ch) => map + ':' + ch
 
 const AGGRO = 8          // tiles a los que el enemigo detecta al jugador
@@ -67,6 +69,28 @@ const SPEED = 2.3        // tiles por segundo
 const ATK_CD = 1.3       // segundos entre ataques del enemigo
 const RESPAWN = 12       // segundos para reponer un enemigo muerto
 const MAX_PER_MAP = 40
+const NODE_RESPAWN = 25  // segundos para que un nodo de recurso vuelva a crecer
+const GATHER_REACH = 2.4 // tiles: alcance para juntar un nodo
+
+// Tile caminable al azar en todo el mapa (para nodos de recursos), evitando repetir.
+function randWalkable(map, used) {
+  for (let i = 0; i < 40; i++) {
+    const x = 1 + Math.floor(Math.random() * (map.w - 2))
+    const y = 1 + Math.floor(Math.random() * (map.h - 2))
+    if (!isWalkable(map, x, y)) continue
+    if (used.has(y * map.w + x)) continue
+    used.add(y * map.w + x)
+    return { x, y }
+  }
+  return null
+}
+// Elige un material de recurso segun el bioma (las minas/cuevas dan mas cristal).
+function pickMaterial(mine) {
+  const skill = (mine ? Math.random() < 0.6 : Math.random() < 0.35) ? 'excavacion' : 'herboristeria'
+  const opts = GATHER[skill]
+  const mat = opts[Math.floor(Math.random() * opts.length)]
+  return { id: mat.id, name: mat.name, glow: mat.glow, base: mat.base, skill }
+}
 
 function spawnEnemy(map, sp) {
   const tile = randTileIn(map, sp)
@@ -97,7 +121,19 @@ export function ensureWorld(map, ch) {
       if (e) enemies.set(e.i, e)
     }
   }
-  worlds.set(k, { map, ch, md, enemies, dead: [] })
+  // Nodos de recursos (hierbas / vetas de cristal), compartidos por el canal. El pueblo no tiene.
+  const nodes = new Map()
+  if (map !== 'triston') {
+    const mine = /mine|cave|cavern|underground|labyrinth|pit/i.test(map)
+    const used = new Set()
+    const total = 5 + randInt([0, 3])
+    for (let i = 0; i < total; i++) {
+      const t = randWalkable(md, used); if (!t) continue
+      const mat = pickMaterial(mine)
+      nodes.set(nidSeq, { n: nidSeq, x: t.x, y: t.y, ...mat }); nidSeq++
+    }
+  }
+  worlds.set(k, { map, ch, md, enemies, dead: [], nodes, nodeDead: [] })
 }
 
 // Snapshot completo de los enemigos de un canal (para el que recién entra).
@@ -105,6 +141,32 @@ export function snapshot(map, ch) {
   const w = worlds.get(key(map, ch))
   if (!w) return null
   return [...w.enemies.values()].map((e) => ({ i: e.i, s: e.s, lv: e.lv, x: r2(e.x), y: r2(e.y), d: e.d, hp: e.hp, hpm: e.hpm, rng: e.rng }))
+}
+
+// Snapshot de los nodos de recursos de un canal (para el que recién entra).
+export function nodeSnapshot(map, ch) {
+  const w = worlds.get(key(map, ch))
+  if (!w || !w.nodes) return null
+  return [...w.nodes.values()].map(pubNode)
+}
+const pubNode = (nd) => ({ n: nd.n, x: nd.x, y: nd.y, id: nd.id, name: nd.name, glow: nd.glow, base: nd.base, skill: nd.skill })
+
+// Pedido de juntar un nodo (del cliente). Valida el alcance, lo agota, difunde y programa el
+// respawn. El material/skill se le avisa al que junta (tira la cantidad local, instanciado).
+export function playerGather(pid, nid) {
+  if (!ctx) return
+  const pl = ctx.getPlayer(pid)
+  if (!pl) return
+  const w = worlds.get(key(pl.map, pl.ch))
+  if (!w || !w.nodes) return
+  const nd = w.nodes.get(nid)
+  if (!nd) return
+  const dx = pl.x - (nd.x + 0.5), dy = pl.y - (nd.y + 0.5)
+  if (dx * dx + dy * dy > GATHER_REACH * GATHER_REACH) return   // fuera de alcance
+  w.nodes.delete(nid)
+  w.nodeDead.push({ x: nd.x, y: nd.y, at: now() + NODE_RESPAWN * 1000 })
+  ctx.broadcast(w.map, w.ch, { t: 'ndeplete', n: nid, by: pid })
+  ctx.sendTo(pid, { t: 'ngather', n: nid, id: nd.id, skill: nd.skill })
 }
 
 // --- stats de combate del jugador (las envía el cliente) ------------------------------------
@@ -169,6 +231,20 @@ function step() {
       w.dead = still
     }
     for (const e of w.enemies.values()) stepEnemy(w, e, players, dt)
+    // reponer nodos de recursos agotados (vuelven a crecer en su lugar, con material fresco)
+    if (w.nodeDead && w.nodeDead.length) {
+      const still = []
+      const mine = /mine|cave|cavern|underground|labyrinth|pit/i.test(w.map)
+      for (const d of w.nodeDead) {
+        if (t >= d.at) {
+          const mat = pickMaterial(mine)
+          const nd = { n: nidSeq++, x: d.x, y: d.y, ...mat }
+          w.nodes.set(nd.n, nd)
+          ctx.broadcast(w.map, w.ch, { t: 'nspawn', ns: [pubNode(nd)] })
+        } else still.push(d)
+      }
+      w.nodeDead = still
+    }
     if (sendState) broadcastState(w, players)
   }
 }

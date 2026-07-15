@@ -54,6 +54,8 @@ class Net {
         if (m.t === 'present' || m.t === 'join' || m.t === 'move' || m.t === 'leave' || m.t === 'chat') this._emit(m.t, m)
         // eventos de combate autoritativo (enemigos del servidor)
         else if (m.t === 'espawn' || m.t === 'estate' || m.t === 'edmg' || m.t === 'edie' || m.t === 'ekill' || m.t === 'ehit') this._emit(m.t, m)
+        // nodos de recursos autoritativos (compartidos por canal)
+        else if (m.t === 'nspawn' || m.t === 'ndeplete' || m.t === 'ngather') this._emit(m.t, m)
       }
     })
   }
@@ -72,6 +74,7 @@ class Net {
   chat(text) { this._send({ t: 'chat', text }) }
   setStats(stats) { this._send({ t: 'setstats', stats }) }   // stats de combate (server tira el daño)
   attack(eid) { this._send({ t: 'atk', eid }) }              // pedir ataque a un enemigo del server
+  gather(nid) { this._send({ t: 'gather', nid }) }           // pedir juntar un nodo de recurso
   close() { try { this.ws?.close() } catch {} }
 }
 

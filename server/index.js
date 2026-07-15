@@ -124,6 +124,11 @@ wss.on('connection', (ws) => {
           return rooms.attack(conn.playerId, m.eid)
         }
 
+        case 'gather': {     // pedido de juntar un nodo de recurso (lo valida la simulación)
+          if (conn.playerId == null) return
+          return rooms.gather(conn.playerId, m.nid)
+        }
+
         default: return
       }
     } catch (e) {

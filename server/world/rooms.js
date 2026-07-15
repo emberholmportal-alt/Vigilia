@@ -97,6 +97,7 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator 
     const present = inChannel(map, ch).map(pub)
     combat.ensureWorld(map, ch)
     const es = combat.snapshot(map, ch); if (es && es.length) send({ t: 'espawn', es })
+    const ns = combat.nodeSnapshot(map, ch); if (ns && ns.length) send({ t: 'nspawn', ns })
     return { id, channel: ch, present, spectator: true }
   }
   const ch = pickChannel(map, channel)
@@ -104,8 +105,9 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator 
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
-  combat.ensureWorld(map, ch)   // spawnea los enemigos del canal (una vez)
+  combat.ensureWorld(map, ch)   // spawnea los enemigos + nodos del canal (una vez)
   const es = combat.snapshot(map, ch); if (es && es.length) send({ t: 'espawn', es })
+  const ns = combat.nodeSnapshot(map, ch); if (ns && ns.length) send({ t: 'nspawn', ns })
   return { id, channel: ch, present }
 }
 
@@ -121,8 +123,9 @@ export function move(id, map, x, y, dir) {
     broadcast(oldMap, oldCh, { t: 'leave', id }, id)
     const present = inChannel(map, p.ch).filter((o) => o.id !== id).map(pub)
     broadcast(map, p.ch, { t: 'join', player: pub(p) }, id)
-    combat.ensureWorld(map, p.ch)   // enemigos del canal nuevo
+    combat.ensureWorld(map, p.ch)   // enemigos + nodos del canal nuevo
     const es = combat.snapshot(map, p.ch); if (es && es.length) p.send({ t: 'espawn', es })
+    const ns = combat.nodeSnapshot(map, p.ch); if (ns && ns.length) p.send({ t: 'nspawn', ns })
     return { channel: p.ch, present }
   }
   p.x = x; p.y = y; if (dir != null) p.dir = dir
@@ -151,6 +154,8 @@ export function leave(id) {
 
 // Pedido de ataque a un enemigo (del cliente). Lo resuelve la simulación autoritativa.
 export function attack(id, eid) { combat.playerAttack(id, eid) }
+// Pedido de juntar un nodo de recurso (del cliente).
+export function gather(id, nid) { combat.playerGather(id, nid) }
 // El cliente envía sus stats de combate (dependen del equipo) para que el server tire el daño.
 export function setStats(id, stats) { combat.setStats(id, stats) }
 

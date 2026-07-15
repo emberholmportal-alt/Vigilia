@@ -246,6 +246,7 @@ export class Game {
 
     // Nodos de recursos (hierbas + vetas de cristal) para juntar/minar.
     this.nodes = []
+    this._netNodes = new Map()   // nid -> ResourceNode (nodos autoritativos del servidor)
     this._pendingNode = null
     this._spawnNodes(renderer, iso, world.map, grid, spawn, mapName)
 
@@ -331,6 +332,10 @@ export class Game {
         net.on('edie', (m) => this._onEdie(m))
         net.on('ekill', (m) => this._onEkill(m))
         net.on('ehit', (m) => this._onEhit(m))
+        // Nodos de recursos autoritativos (compartidos por canal).
+        net.on('nspawn', (m) => { for (const n of m.ns || []) this._spawnNetNode(n) })
+        net.on('ndeplete', (m) => this._onNdeplete(m))
+        net.on('ngather', (m) => this._onNgather(m))
         this.store.logMessage({ channel: 'sistema', text: tt('online_on') })
       } catch { this.store.logMessage({ channel: 'sistema', text: tt('online_off') }); return }
     }
@@ -421,6 +426,7 @@ export class Game {
     this._floaters = []
     this._projectiles = []
     this.nodes = []
+    this._netNodes = new Map()
     this._pendingNode = null
     this.portals = []
     this._target = null
@@ -973,6 +979,7 @@ export class Game {
   // Siembra unos nodos en tiles caminables lejos del spawn. Las minas/cuevas traen más
   // vetas de cristal; el resto, más hierbas. Sólo en zonas de combate (las que tienen spawners).
   _spawnNodes(renderer, iso, map, grid, spawn, mapName) {
+    if (ONLINE) return                                    // online: los nodos los manda el servidor
     if (mapName === 'triston') return                     // el pueblo no tiene recursos
     if (!(map.spawners || []).length) return              // sólo zonas salvajes
     const tex = iconsTexture()
@@ -1027,6 +1034,45 @@ export class Game {
     node.deplete()
     const mat = itemName(item, getLang())
     this._floatText(node.view.x, node.view.y - 30, `+${qty} ${mat}`, '#bfe9a0')
+    this.store.logMessage({ channel: 'sistema', text: tt('gathered', { name: mat, n: qty }) })
+    playSfx('step2.ogg', 0.5)
+  }
+
+  // --- nodos de recursos autoritativos del servidor (online) -----------------
+  _spawnNetNode(data) {
+    if (!this._netNodes || this._netNodes.has(data.n)) return
+    const tex = iconsTexture(); if (!tex) return
+    const item = itemById(data.id); if (!item) return
+    const node = new ResourceNode(this.iso, data.x, data.y, {
+      id: data.id, name: data.name, glow: data.glow, base: data.base, icon: item.icon, skill: data.skill,
+    }, tex)
+    node.nid = data.n
+    node.onTap((nd) => this._gatherNode(nd))
+    this.renderer.objectLayer.addChild(node.view)
+    this.nodes.push(node)
+    this._netNodes.set(data.n, node)
+  }
+
+  _onNdeplete(m) {
+    const node = this._netNodes && this._netNodes.get(m.n)
+    if (!node) return
+    node.deplete()
+    node.view.destroy({ children: true })
+    this.nodes = this.nodes.filter((x) => x !== node)
+    this._netNodes.delete(m.n)
+    if (this._pendingNode === node) this._pendingNode = null
+    if (this._nearbyNode === node) { this._nearbyNode = null; this.store.setNearbyNode(null) }
+  }
+
+  // El server confirma que juntaste: la cantidad se tira local (instanciado), como el loot.
+  _onNgather(m) {
+    const item = itemById(m.id); if (!item) return
+    const qty = 1 + (Math.random() < 0.25 ? 1 : 0)
+    if (!this.store.addItem(item, qty)) { this.store.showToast(tt('inv_full')); return }
+    this.store.addSkillXp(m.skill, 6)
+    this.store.missionProgress(m.skill === 'excavacion' ? 'mine' : 'herb', qty)
+    const mat = itemName(item, getLang())
+    this._floatText(this.player.view.x, this.player.view.y - 40, `+${qty} ${mat}`, '#bfe9a0')
     this.store.logMessage({ channel: 'sistema', text: tt('gathered', { name: mat, n: qty }) })
     playSfx('step2.ogg', 0.5)
   }
@@ -1737,7 +1783,10 @@ export class Game {
       if (this._pendingNode && !this.player.moving) {
         const n = this._pendingNode
         const near = Math.abs(this.player.tx - n.tx) <= 1.6 && Math.abs(this.player.ty - n.ty) <= 1.6
-        if (near && !n.depleted) this._doGather(n)
+        if (near && !n.depleted) {
+          if (this._online && n.nid != null) net.gather(n.nid)   // el server valida y responde ngather
+          else this._doGather(n)
+        }
         this._pendingNode = null
       }
       // Nodo cercano recolectable (para el botón del HUD): el más próximo no agotado.

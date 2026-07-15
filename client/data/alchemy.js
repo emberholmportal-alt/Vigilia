@@ -23,14 +23,5 @@ export const recipeView = (r) => ({
   ins: r.ins.map(([id, qty]) => ({ item: itemById(id), qty })),
 })
 
-// Materiales que se juntan en el mundo (ítems reales de Flare) por tipo de nodo/skill.
-// La Botella Vacía no se junta: es un envase que vende el mercader.
-export const GATHER = {
-  herboristeria: [
-    { id: 751, name: 'Aloe Vera', glow: 0x4f9d6b, base: 'herb' },
-    { id: 754, name: 'Hongos', glow: 0xb07acc, base: 'herb' },
-  ],
-  excavacion: [
-    { id: 752, name: 'Cristal de maná', glow: 0x4a8fd6, base: 'ore' },
-  ],
-}
+// Materiales de los nodos: viven en shared/ (los coloca el servidor autoritativo).
+export { GATHER } from '../../shared/gather.js'
