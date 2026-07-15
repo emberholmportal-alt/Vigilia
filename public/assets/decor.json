@@ -13,12 +13,12 @@
    "src": "decor/stone_fountain_anim.png",
    "frames": 4,
    "cell": [
-    100,
-    100
+    200,
+    200
    ],
    "anchor": [
-    50,
-    50
+    100,
+    100
    ],
    "ms": 1500
   }
@@ -142,7 +142,20 @@
   "anchor": [
    64,
    96
-  ]
+  ],
+  "anim": {
+   "src": "decor/PigSE_anim.png",
+   "frames": 11,
+   "cell": [
+    128,
+    128
+   ],
+   "anchor": [
+    64,
+    96
+   ],
+   "ms": 6000
+  }
  },
  "PigSW": {
   "src": "decor/PigSW.png",
@@ -153,7 +166,20 @@
   "anchor": [
    64,
    96
-  ]
+  ],
+  "anim": {
+   "src": "decor/PigSW_anim.png",
+   "frames": 11,
+   "cell": [
+    128,
+    128
+   ],
+   "anchor": [
+    64,
+    96
+   ],
+   "ms": 6000
+  }
  },
  "Lux_priest": {
   "src": "decor/Lux_priest.png",

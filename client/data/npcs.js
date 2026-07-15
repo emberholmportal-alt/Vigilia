@@ -206,29 +206,14 @@ const TRISTON = [
         lines_en: ['Those three statues are not stone: they are mages who sealed themselves.',
                    'Seek their three names in the ruins and bring them back. The Guardians will wake.'] },
     ] },
-  // Fauna del pueblo: cerdos hozando por la plaza (sprites de HERESY, animados). Escalados para
-  // que se vean (los animales son más chicos que la gente, pero visibles). Sin diálogo ni colisión.
-  { sprite: 'PigSE', scale: 2.0, x: 64, y: 54, dir: 0, critter: true },
-  { sprite: 'PigSW', scale: 2.0, x: 60, y: 58, dir: 0, critter: true },
-  { sprite: 'PigSE', scale: 2.0, x: 73, y: 53, dir: 0, critter: true },
-
-  // Aldeanos de ambiente: pobladores repartidos por la plaza y las calles. Mismos sprites que los
-  // NPCs con nombre (mismo tamaño y con animación de idle real), sin nombre ni diálogo — sólo dan
-  // vida al pueblo. Direcciones variadas para que no miren todos igual.
+  // Aldeanos de ambiente: unos pocos pobladores repartidos por la plaza (los cerdos viven en la
+  // granja del norte, ya en el mapa). Mismos sprites que los NPCs con nombre (mismo tamaño y con
+  // idle animado), sin nombre ni diálogo — sólo dan vida sin amontonar. Direcciones variadas.
   { sprite: 'peasant_man1', x: 58, y: 44, dir: 6, critter: true },
-  { sprite: 'peasant_woman1', x: 66, y: 44, dir: 5, critter: true },
-  { sprite: 'guild_man', x: 74, y: 44, dir: 3, critter: true },
-  { sprite: 'peasant_man2', x: 60, y: 46, dir: 1, critter: true },
-  { sprite: 'peasant_woman2', x: 67, y: 47, dir: 5, critter: true },
-  { sprite: 'peasant_man1', x: 48, y: 48, dir: 4, critter: true },
-  { sprite: 'peddler_goblin', x: 65, y: 49, dir: 2, critter: true },
-  { sprite: 'peasant_woman1', x: 74, y: 50, dir: 7, critter: true },
-  { sprite: 'peasant_man2', x: 67, y: 51, dir: 3, critter: true },
-  { sprite: 'peasant_woman2', x: 56, y: 52, dir: 5, critter: true },
-  { sprite: 'peasant_man1', x: 76, y: 52, dir: 1, critter: true },
-  { sprite: 'peasant_woman1', x: 50, y: 54, dir: 6, critter: true },
-  { sprite: 'guild_man', x: 68, y: 54, dir: 0, critter: true },
-  { sprite: 'peasant_man2', x: 71, y: 55, dir: 2, critter: true },
+  { sprite: 'peasant_woman1', x: 67, y: 47, dir: 5, critter: true },
+  { sprite: 'peasant_man2', x: 48, y: 48, dir: 4, critter: true },
+  { sprite: 'peasant_woman2', x: 74, y: 51, dir: 7, critter: true },
+  { sprite: 'peasant_man1', x: 68, y: 54, dir: 1, critter: true },
 ]
 
 export const NPCS_BY_MAP = {
