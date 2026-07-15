@@ -114,6 +114,16 @@ wss.on('connection', (ws) => {
           return rooms.chat(conn.playerId, m.text)
         }
 
+        case 'setstats': {   // stats de combate del jugador (para que el server tire el daño)
+          if (conn.playerId == null) return
+          return rooms.setStats(conn.playerId, m.stats)
+        }
+
+        case 'atk': {        // pedido de ataque a un enemigo (lo valida la simulación)
+          if (conn.playerId == null) return
+          return rooms.attack(conn.playerId, m.eid)
+        }
+
         default: return
       }
     } catch (e) {

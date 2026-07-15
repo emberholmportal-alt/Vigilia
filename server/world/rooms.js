@@ -13,6 +13,8 @@
 // Autoritativo en estructura (regla 2): hoy el server relaya; el día de mañana valida
 // velocidad/colisión acá mismo sin tocar el protocolo.
 
+import * as combat from './combat.js'
+
 const CHANNEL_CAP = Number(process.env.CHANNEL_CAP || 50)   // tope de jugadores por canal
 const AOI_RADIUS = Number(process.env.AOI_RADIUS || 24)     // radio de interés, en tiles
 const AOI_R2 = AOI_RADIUS * AOI_RADIUS
@@ -93,6 +95,8 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator 
     const ch = pickBusiest(map)
     observers.set(id, { id, map, ch, send })
     const present = inChannel(map, ch).map(pub)
+    combat.ensureWorld(map, ch)
+    const es = combat.snapshot(map, ch); if (es && es.length) send({ t: 'espawn', es })
     return { id, channel: ch, present, spectator: true }
   }
   const ch = pickChannel(map, channel)
@@ -100,6 +104,8 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator 
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
+  combat.ensureWorld(map, ch)   // spawnea los enemigos del canal (una vez)
+  const es = combat.snapshot(map, ch); if (es && es.length) send({ t: 'espawn', es })
   return { id, channel: ch, present }
 }
 
@@ -115,6 +121,8 @@ export function move(id, map, x, y, dir) {
     broadcast(oldMap, oldCh, { t: 'leave', id }, id)
     const present = inChannel(map, p.ch).filter((o) => o.id !== id).map(pub)
     broadcast(map, p.ch, { t: 'join', player: pub(p) }, id)
+    combat.ensureWorld(map, p.ch)   // enemigos del canal nuevo
+    const es = combat.snapshot(map, p.ch); if (es && es.length) p.send({ t: 'espawn', es })
     return { channel: p.ch, present }
   }
   p.x = x; p.y = y; if (dir != null) p.dir = dir
@@ -137,8 +145,23 @@ export function leave(id) {
   const p = players.get(id)
   if (!p) return
   players.delete(id)
+  combat.dropPlayer(id)
   broadcast(p.map, p.ch, { t: 'leave', id }, id)
 }
+
+// Pedido de ataque a un enemigo (del cliente). Lo resuelve la simulación autoritativa.
+export function attack(id, eid) { combat.playerAttack(id, eid) }
+// El cliente envía sus stats de combate (dependen del equipo) para que el server tire el daño.
+export function setStats(id, stats) { combat.setStats(id, stats) }
+
+// Inyecta en la simulación de combate cómo consultar/avisar a los jugadores (sin acoplar módulos).
+combat.init({
+  playersIn: (map, ch) => { const out = []; for (const p of players.values()) if (p.map === map && p.ch === ch) out.push(p); return out },
+  getPlayer: (id) => players.get(id) || null,
+  sendTo: (id, msg) => { const p = players.get(id); if (p) p.send(msg) },
+  broadcast: (map, ch, msg) => broadcast(map, ch, msg, null),
+})
+combat.start()
 
 // Info de canales de un mapa (para diagnóstico / UI): [{ channel, count, cap }].
 export function channels(map) {
