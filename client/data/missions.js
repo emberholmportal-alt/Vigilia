@@ -18,14 +18,15 @@ const POOL = [
   { id: 'hunt_crypt', type: 'kill', map: 'family_crypt', target: 10, xp: 95, gold: 65, seals: 2 },
   { id: 'mine_crystals', type: 'mine', map: 'abandoned_mines', target: 8, xp: 85, gold: 55, seals: 2 },
   { id: 'mine_cave', type: 'mine', map: 'goblin_cave', target: 6, xp: 65, gold: 40, seals: 2 },
-  { id: 'herb_trail', type: 'herb', map: 'river_trail', target: 10, xp: 70, gold: 45, seals: 2 },
-  { id: 'herb_farm', type: 'herb', map: 'black_oak_farm', target: 8, xp: 75, gold: 50, seals: 2 },
+  // Herboristería: las junta la bruja alquimista. La nombramos en el objetivo (giver).
+  { id: 'herb_trail', type: 'herb', map: 'river_trail', target: 10, xp: 70, gold: 45, seals: 2, giver: 'Yara la Bruja', giver_en: 'Yara the Witch' },
+  { id: 'herb_farm', type: 'herb', map: 'black_oak_farm', target: 8, xp: 75, gold: 50, seals: 2, giver: 'Yara la Bruja', giver_en: 'Yara the Witch' },
   { id: 'loot_cemetery', type: 'chest', map: 'lochport_cemetery', target: 3, xp: 100, gold: 70, seals: 3 },
   { id: 'loot_mines', type: 'chest', map: 'abandoned_mines', target: 3, xp: 100, gold: 70, seals: 3 },
   // Contrato: un élite que aparece SÓLO hoy en su zona. Combate duro, buena recompensa.
-  { id: 'contract_camp', type: 'contract', map: 'goblin_camp', elite: 'goblin_elite', target: 1, xp: 150, gold: 110, seals: 5 },
-  { id: 'contract_cemetery', type: 'contract', map: 'lochport_cemetery', elite: 'skeleton_knight_boss', target: 1, xp: 180, gold: 140, seals: 6 },
-  { id: 'contract_cave', type: 'contract', map: 'goblin_cave', elite: 'goblin_elite_runner', target: 1, xp: 150, gold: 110, seals: 5 },
+  { id: 'contract_camp', type: 'contract', map: 'goblin_camp', elite: 'goblin_elite', target: 1, xp: 150, gold: 110, seals: 5, giver: 'Guardia Bram', giver_en: 'Guard Bram' },
+  { id: 'contract_cemetery', type: 'contract', map: 'lochport_cemetery', elite: 'skeleton_knight_boss', target: 1, xp: 180, gold: 140, seals: 6, giver: 'Guardia Bram', giver_en: 'Guard Bram' },
+  { id: 'contract_cave', type: 'contract', map: 'goblin_cave', elite: 'goblin_elite_runner', target: 1, xp: 150, gold: 110, seals: 5, giver: 'Guardia Bram', giver_en: 'Guard Bram' },
   // Ofrenda: entregás oro a un Guardián del pueblo (sumidero). Cuesta oro, da sellos + XP.
   { id: 'offer_guardian', type: 'offering', map: 'triston', target: 200, xp: 60, gold: 0, seals: 4 },
 ]

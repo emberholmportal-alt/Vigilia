@@ -14,8 +14,10 @@ DECORS = [
     # (nombre en decor.json, .txt de anim, scale, ms_override)
     # ms_override acelera la animación: la de Flare es muy lenta (cerdo 6s, fuente 1.5s) y se ve
     # a los tirones. La bajamos para que fluya suave.
-    # Fuente: usamos el ciclo COMPLETO de 16 frames (mucho más suave que el de 4) a 1.6s.
-    ("stone_fountain", "animations/npcs/Zstone_fountain full cycle.txt", 1.0, 1600),   # 200x200
+    # Fuente: el "ciclo completo" (16 frames) incluye un llenado/vaciado que se ve como si la
+    # fuente se vaciara por un momento. Usamos las 6 frames de FLUJO ESTABLE (filas y=192/384 del
+    # sheet), que sólo muestran el agua corriendo, sin el vaciado. 6 frames a 2.4s = suave y calmo.
+    ("stone_fountain", "animations/npcs/Zstone_fountain.txt", 1.0, 2400),   # 200x200, flujo estable
     ("PigSE", "animations/npcs/PigSE.txt", 1.0, 2400),
     ("PigSW", "animations/npcs/PigSW.txt", 1.0, 2400),
 ]

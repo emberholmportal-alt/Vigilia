@@ -29,7 +29,10 @@ function DailyTab({ t }) {
             <div className={'ms-row' + (m.claimed ? ' claimed' : done ? ' done' : '')} key={m.id}>
               <div className="ms-head">
                 <b>{t('mission_' + m.type, { n: m.target })}</b>
-                <span className="ms-where">{t('mission_in', { zone: t.zone(m.map) })}</span>
+                <span className="ms-where">
+                  {t('mission_in', { zone: t.zone(m.map) })}
+                  {m.giver ? ' · ' + t('mission_for', { npc: t.lang === 'en' ? m.giver_en : m.giver }) : ''}
+                </span>
               </div>
               <div className="ms-bar"><i style={{ width: `${pct * 100}%` }} /></div>
               <div className="ms-foot">

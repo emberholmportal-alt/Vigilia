@@ -207,6 +207,7 @@ export class Game {
       npc.onTap((n) => this._talkTo(n))
       this.npcs.push(npc)
     }
+    this._publishNpcMarkers()
 
     await this._buildDecorations(renderer, iso, world.map, grid)
 
@@ -428,6 +429,18 @@ export class Game {
     this._changing = false
     this.store.setZoneLoad(null)
     this._fadeOut = true // el tick baja el alpha del velo de Pixi por debajo de la cortina
+  }
+
+  // Publica al HUD los NPCs de servicio (con nombre) para marcarlos en el minimapa: el mercader,
+  // el herrero, la bruja/alquimista, guardias y videntes. Los animales de ambiente (critter) y
+  // los landmarks (estatuas/obelisco) no van. El `role` colorea el marcador.
+  _publishNpcMarkers() {
+    const lang = getLang()
+    const role = (d) => d.alchemy ? 'alchemist' : d.smith ? 'smith' : d.shop ? 'merchant' : 'npc'
+    const list = (this.npcs || [])
+      .filter((n) => n.def.name && !n.def.critter && !n.def.landmark)
+      .map((n) => ({ x: n.tx, y: n.ty, label: npcName(n.def, lang), role: role(n.def) }))
+    this.store.setNpcTiles(list)
   }
 
   // Arma los marcadores de portal + guarda sus zonas para detectar la entrada.
@@ -791,14 +804,11 @@ export class Game {
     return m
   }
 
-  // ¿El sprite `s` (edificio) tapa de verdad al personaje? Muestrea la silueta del
-  // jugador (pies, torso, cabeza) contra el alpha del edificio: sólo si un pixel opaco
-  // del edificio cae sobre el cuerpo, está tapado. Así nunca se atenúa de lejos/frente.
-  _coversPlayer(s) {
-    const m = this._maskFor(s)
-    if (!m) return false
-    const px = this.player.view.x, feetY = this.player.view.y
-    const lx = Math.round(px - s.x)
+  // ¿El sprite `s` (edificio, con máscara `m`) tapa de verdad al personaje en (viewX, feetY)?
+  // Muestrea la silueta del personaje (pies, torso, cabeza) contra el alpha del edificio: sólo
+  // si un pixel opaco del edificio cae sobre el cuerpo, está tapado. Nunca se atenúa de lejos.
+  _coversChar(m, s, viewX, feetY) {
+    const lx = Math.round(viewX - s.x)
     if (lx < 0 || lx >= m.w) return false
     // puntos a lo largo del alto del personaje (mundo px; hacia arriba es negativo)
     for (const dy of [-6, -32, -58, -80]) {
@@ -815,16 +825,24 @@ export class Game {
     const p = this.player
     if (!p || !this._atlasCtx) return
     const iso = this.iso
-    const pd = p.tx + p.ty                         // profundidad del jugador (x+y)
     const bldMinW = iso.tileW * 2.5                // sólo sprites grandes (edificios)
     const bldMinH = iso.tileH * 2.5
+    // Todos los personajes vivos: jugador + NPCs + enemigos. Un edificio se atenúa si tapa a
+    // CUALQUIERA de ellos por detrás (antes sólo se miraba al jugador, y los NPCs/enemigos que
+    // caían detrás de un edificio quedaban con los pies asomando).
+    const chars = [{ x: p.view.x, y: p.view.y, d: p.tx + p.ty }]
+    for (const n of this.npcs) if (n.view && n.view.visible !== false) chars.push({ x: n.view.x, y: n.view.y, d: n.tx + n.ty })
+    for (const e of this.enemies) if (e.view && !e.dead) chars.push({ x: e.view.x, y: e.view.y, d: e.tx + e.ty })
     const occ = this._occAlpha || (this._occAlpha = new Map()) // alpha por tile (persiste entre rebuilds)
     this.renderer.eachVisibleObject((s) => {
       let hide = false
       const tw = s.texture ? s.texture.width : s.width
       const th = s.texture ? s.texture.height : s.height
-      // Debe estar dibujado por ENCIMA del jugador (más profundo) y ser un edificio.
-      if (s.zIndex > pd && tw >= bldMinW && th >= bldMinH) hide = this._coversPlayer(s)
+      if (tw >= bldMinW && th >= bldMinH) {           // es un edificio
+        const m = this._maskFor(s)
+        // tapa a un personaje que esté DETRÁS (el edificio se dibuja por encima: zIndex mayor).
+        if (m) for (const c of chars) { if (s.zIndex > c.d && this._coversChar(m, s, c.x, c.y)) { hide = true; break } }
+      }
       const target = hide ? 0.3 : 1
       let a = occ.get(s._ti); if (a === undefined) a = 1
       a += (target - a) * 0.28                      // desvanecido suave, por tile

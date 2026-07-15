@@ -559,6 +559,16 @@ html, body, #root {
   animation: mm-pulse 1.4s ease-in-out infinite;
 }
 @keyframes mm-pulse { 50% { transform: scale(1.5); opacity: 0.7; } }
+/* marcadores de NPC de servicio en el minimapa: rombo pequeño, color por rol (distinto del
+   punto redondo del jugador y los portales). mercader=oro, herrero=naranja, bruja=verde. */
+.mm-npc {
+  position: absolute; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
+  transform: rotate(45deg); box-shadow: 0 0 0 1px #000;
+}
+.mm-merchant  { background: #e8c15a; }
+.mm-smith     { background: #e0894a; }
+.mm-alchemist { background: #6bd08a; }
+.mm-npc:not(.mm-merchant):not(.mm-smith):not(.mm-alchemist) { background: #cfd3dc; }
 
 /* ---------- caja de diálogo (RPG con retrato) ---------- */
 .dialogue {

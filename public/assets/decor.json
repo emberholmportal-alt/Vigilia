@@ -11,7 +11,7 @@
   ],
   "anim": {
    "src": "decor/stone_fountain_anim.png",
-   "frames": 16,
+   "frames": 6,
    "cell": [
     200,
     200
@@ -20,7 +20,7 @@
     100,
     100
    ],
-   "ms": 1600
+   "ms": 2400
   }
  },
  "Act1_innkeeper_owens": {
@@ -192,52 +192,26 @@
    96
   ]
  },
- "cursed_grave_fire": {
-  "src": "decor/cursed_grave_fire.png",
+ "grave_cross": {
+  "src": "decor/grave_cross.png",
   "cell": [
    52,
-   109
+   104
   ],
   "anchor": [
    25,
-   96
-  ],
-  "anim": {
-   "src": "decor/cursed_grave_fire_anim.png",
-   "frames": 8,
-   "cell": [
-    52,
-    109
-   ],
-   "anchor": [
-    25,
-    96
-   ],
-   "ms": 1066
-  }
+   91
+  ]
  },
- "cursed_grave_ice": {
-  "src": "decor/cursed_grave_ice.png",
+ "grave_cross2": {
+  "src": "decor/grave_cross2.png",
   "cell": [
    52,
-   109
+   104
   ],
   "anchor": [
    25,
-   96
-  ],
-  "anim": {
-   "src": "decor/cursed_grave_ice_anim.png",
-   "frames": 8,
-   "cell": [
-    52,
-    109
-   ],
-   "anchor": [
-    25,
-    96
-   ],
-   "ms": 1066
-  }
+   91
+  ]
  }
 }

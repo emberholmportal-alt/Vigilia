@@ -8,6 +8,7 @@ export default function Minimap() {
   const mm = useGameStore((s) => s.minimap)
   const pt = useGameStore((s) => s.playerTile)
   const portals = useGameStore((s) => s.portalTiles)
+  const npcs = useGameStore((s) => s.npcTiles)
   if (!mm) return null
 
   // misma proyección iso que usa Game para el minimapa
@@ -24,6 +25,10 @@ export default function Minimap() {
         {(portals || []).map((p, i) => {
           const pos = proj(p.x, p.y)
           return <span key={i} className="mm-portal" title={p.label} style={{ left: `${pos.left}%`, top: `${pos.top}%` }} />
+        })}
+        {(npcs || []).map((n, i) => {
+          const pos = proj(n.x, n.y)
+          return <span key={'n' + i} className={`mm-npc mm-${n.role}`} title={n.label} style={{ left: `${pos.left}%`, top: `${pos.top}%` }} />
         })}
         <span className="mm-dot" style={{ left: `${me.left}%`, top: `${me.top}%` }} />
       </div>
