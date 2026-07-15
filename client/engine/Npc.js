@@ -3,6 +3,7 @@
 // Diablo— se quedan en su puesto y le dan vida a la plaza con presencia y charla.
 
 import { Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js'
+import { npcName, getLang } from '../i18n.js'
 
 const BASE = import.meta.env.BASE_URL || '/'
 
@@ -28,7 +29,7 @@ export class Npc {
     this.nameText = null
     if (def.name) {
       this.nameText = new Text({
-        text: def.name,
+        text: npcName(def, getLang()),
         style: {
           fontFamily: 'Georgia, serif', fontSize: 12,
           fill: def.landmark ? '#c9a227' : '#c9b48a',

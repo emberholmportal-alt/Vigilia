@@ -53,8 +53,8 @@ function potionEffect(it) {
   return null
 }
 
-// Slots de equipo. Los primeros 7 se ven en el paperdoll; ring/artifact no.
-export const EQUIP_SLOTS = ['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact']
+// Slots de equipo. Los primeros 7 se ven en el paperdoll; los dos anillos y el artefacto no.
+export const EQUIP_SLOTS = ['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'ring2', 'artifact']
 export const INVENTORY_SIZE = 55 // 5×11, como la grilla del panel de Flare
 
 // Slots cuyos ítems se apilan (consumibles / materiales) en vez de ocupar un hueco cada uno.
@@ -73,8 +73,15 @@ function emptyEquipment() {
   return e
 }
 
-// A qué slot de equipo va un ítem según su `slot` de datos.
-export function equipSlotFor(item) {
+// A qué slot de equipo va un ítem según su `slot` de datos. Los anillos tienen dos huecos
+// (ring / ring2): si se pasa el equipo actual, se llena el primero libre; con ambos ocupados
+// se reemplaza el primero.
+export function equipSlotFor(item, equipment) {
+  if (!item) return null
+  if (item.slot === 'ring') {
+    if (equipment && equipment.ring && !equipment.ring2) return 'ring2'
+    return 'ring'
+  }
   return EQUIP_SLOTS.includes(item.slot) ? item.slot : null
 }
 
@@ -589,7 +596,7 @@ export const useGameStore = create((set, get) => ({
     const s = get()
     const item = s.inventory[invIndex]
     if (!item) return
-    const slot = equipSlotFor(item)
+    const slot = equipSlotFor(item, s.equipment)
     if (!slot) return
     const inv = s.inventory.slice()
     const equipment = { ...s.equipment }

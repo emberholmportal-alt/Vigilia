@@ -17,10 +17,10 @@ const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 const PW = 640, PH = 832, SLOT = 64
 const EQUIP_POS = {
   head: [464, 72], chest: [464, 160], legs: [464, 248], feet: [464, 336],
-  hands: [376, 136], artifact: [552, 136], ring: [376, 224], main: [376, 312], off: [552, 312],
+  hands: [376, 136], artifact: [552, 136], ring: [376, 224], ring2: [552, 224], main: [376, 312], off: [552, 312],
 }
 const CARRIED = { x: 32, y: 64, cols: 5 }
-const EQUIP_ORDER = ['head', 'chest', 'legs', 'feet', 'hands', 'artifact', 'ring', 'main', 'off']
+const EQUIP_ORDER = ['head', 'chest', 'legs', 'feet', 'hands', 'artifact', 'ring', 'ring2', 'main', 'off']
 
 // Estilo para centrar algo en un slot (coords de Flare, en % del panel).
 function slotStyle(x, y) {
@@ -112,7 +112,7 @@ export default function Inventory() {
 
         {selItem && (
           <Tooltip item={selItem} pos={sel.pos} t={t}
-                   compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selItem)] : null}
+                   compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selItem, equipment)] : null}
                    actionLabel={sel.src === 'inv' ? t('equip') : t('unequip')} onAction={act}
                    onUse={sel.src === 'inv' && selItem.recall ? doUse : null}
                    onBelt={sel.src === 'inv' && beltEligible(selItem) ? toBelt : null}

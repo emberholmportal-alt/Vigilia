@@ -1676,23 +1676,41 @@ export class Game {
   _buildMinimap(map) {
     const w = map.w, h = map.h
     const co = map.layers.collision, bg = map.layers.background
-    const scale = 0.72
-    const pad = 3
+    const ob = map.layers.object
+    // Más resolución (scale ↑) = más detalle; el marco del HUD lo escala al tamaño visible.
+    const scale = 1.15
+    const pad = 4
     const minMx = -(h - 1)
     const cw = Math.ceil((w + h - 2) * scale) + pad * 2
     const ch = Math.ceil((w + h - 2) * 0.5 * scale) + pad * 2
     const cv = document.createElement('canvas')
     cv.width = cw; cv.height = ch
     const ctx = cv.getContext('2d')
-    const dot = Math.max(1, scale * 1.5)
+    const dot = Math.max(1, Math.ceil(scale * 1.5))
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        const ground = bg[y][x] > 0
-        if (!ground) continue // vacío -> transparente
-        const walk = co[y][x] === 0
-        ctx.fillStyle = walk ? 'rgba(150,138,110,0.72)' : 'rgba(40,34,46,0.85)'
+        const g = bg[y][x]
+        if (g <= 0) continue // vacío -> transparente
+        const blocked = co[y][x] !== 0
+        const hasObj = ob && ob[y] && ob[y][x] > 0
         const mx = x - y, my = (x + y) * 0.5
-        ctx.fillRect((mx - minMx) * scale + pad, my * scale + pad, dot, dot)
+        const px = (mx - minMx) * scale + pad, py = my * scale + pad
+        let col
+        if (blocked) {
+          // muro / edificio / agua: oscuro; si además hay objeto (estructura) un pelín más cálido.
+          col = hasObj ? 'rgba(74,54,44,0.92)' : 'rgba(40,34,46,0.88)'
+        } else {
+          // suelo caminable: tono tierra/pasto con textura sutil derivada del tile (más detalle).
+          const v = ((g * 37) % 22) - 11 // -11..+10 determinista por tile
+          col = `rgba(${(150 + v * 0.5) | 0},${(140 + v * 0.6) | 0},${(112 + v * 0.4) | 0},0.78)`
+        }
+        ctx.fillStyle = col
+        ctx.fillRect(px, py, dot, dot)
+        // decoración/props sobre suelo abierto (árboles, cofres, puestos): marca de detalle.
+        if (hasObj && !blocked) {
+          ctx.fillStyle = 'rgba(96,74,52,0.9)'
+          ctx.fillRect(px, py, dot, dot)
+        }
       }
     }
     return { url: cv.toDataURL('image/png'), scale, minMx, pad, w: cw, h: ch }

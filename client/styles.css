@@ -157,15 +157,22 @@ html, body, #root {
   animation-name: bootFill; animation-timing-function: ease-in-out; animation-fill-mode: forwards;
 }
 @keyframes bootFill { from { width: 0; } to { width: 100%; } }
-/* barra indeterminada del loader de juego: brillo que barre de izquierda a derecha sobre una
-   pista llena (se lee claro como "cargando", sin quedar un bloque cortado a la derecha). */
-.boot-bar i.loop {
-  width: 100%; margin: 0;
-  background: linear-gradient(90deg, #4a2413 0%, #8a2f1a 22%, #e6c85a 50%, #8a2f1a 78%, #4a2413 100%);
-  background-size: 220% 100%;
-  animation: loaderSweep 1.15s linear infinite;
+/* barra de carga del loader de juego: llena de 0 a ~97% con desaceleración (efecto "trickle",
+   como los loaders de siempre). El componente se desmonta al terminar la carga real, así que la
+   barra progresa de verdad en vez de mostrarse llena de entrada. */
+.boot-bar i.trickle {
+  width: 0; margin: 0;
+  background: linear-gradient(90deg, #8a2f1a, #c9a227 60%, #e6c85a);
+  box-shadow: 0 0 8px rgba(230, 200, 90, 0.5);
+  animation: bootTrickle 3.6s cubic-bezier(0.16, 0.84, 0.3, 1) forwards;
 }
-@keyframes loaderSweep { from { background-position: 220% 0; } to { background-position: -20% 0; } }
+@keyframes bootTrickle {
+  0% { width: 0; }
+  18% { width: 34%; }
+  46% { width: 64%; }
+  76% { width: 85%; }
+  100% { width: 97%; }
+}
 .game-loader .loader-title {
   font-family: Georgia, serif; font-size: 20px; letter-spacing: 0.06em; color: var(--gold);
   text-shadow: 0 2px 12px rgba(194, 85, 31, 0.4); text-align: center;
@@ -181,7 +188,7 @@ html, body, #root {
 @media (prefers-reduced-motion: reduce) {
   .boot-logo { animation: none; }
   .boot-bar i { animation-duration: 1ms !important; }
-  .boot-bar i.loop { animation: none; background-position: 50% 0; }
+  .boot-bar i.trickle { animation: none; width: 70%; }
 }
 .enter {
   font-family: Georgia, serif; font-size: 16px; letter-spacing: 0.06em;
@@ -543,7 +550,7 @@ html, body, #root {
 
 /* ---------- minimapa (marco de Flare) ---------- */
 .minimap {
-  position: absolute; top: 56px; right: 8px; width: 124px; height: 124px; z-index: 5;
+  position: absolute; top: 56px; right: 8px; width: 152px; height: 152px; z-index: 5;
   background-size: 100% 100%; background-repeat: no-repeat; pointer-events: none;
 }
 .minimap-inner { position: absolute; left: 9px; right: 9px; top: 50%; transform: translateY(-50%); }
@@ -815,6 +822,7 @@ html, body, #root {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
 }
 .tree-col-h span { font-size: 16px; filter: drop-shadow(0 1px 2px #000); }
+.tree-col-ic { display: flex; align-items: center; justify-content: center; }
 .tree-col-h em { font-family: Georgia, serif; font-style: normal; font-size: 10px; color: var(--gold); text-shadow: 0 1px 2px #000; }
 .tree-slot {
   position: absolute; transform: translate(-50%, -50%); z-index: 1;
@@ -823,7 +831,7 @@ html, body, #root {
   border: 2px solid #3b3145; border-radius: 6px; -webkit-tap-highlight-color: transparent;
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
 }
-.tree-slot-ic { display: block; font-size: 22px; line-height: 42px; text-align: center; filter: drop-shadow(0 1px 2px #000); }
+.tree-slot-ic { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; filter: drop-shadow(0 1px 2px #000); }
 .tree-slot.locked { opacity: 0.55; filter: grayscale(0.6); }
 .tree-slot.ranked { border-color: #8a6f1e; }
 .tree-slot.maxed { border-color: var(--gold); box-shadow: 0 0 8px rgba(230, 200, 90, 0.55), inset 0 0 6px rgba(0, 0, 0, 0.5); }
@@ -834,7 +842,11 @@ html, body, #root {
   padding: 0 2px; font-family: Georgia, serif; font-size: 10px; font-weight: bold; color: #14111a;
   background: var(--gold); border: 1px solid #8a6f1e; border-radius: 8px; text-align: center;
 }
-.tree-slot-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.tree-slot-lock {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 20px; height: 20px; stroke: #e6c85a; fill: rgba(20, 17, 26, 0.85);
+  filter: drop-shadow(0 1px 2px #000);
+}
 
 /* tira de detalle del nodo elegido */
 .tree-detail {

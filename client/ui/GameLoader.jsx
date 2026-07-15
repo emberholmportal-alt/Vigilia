@@ -12,7 +12,7 @@ export default function GameLoader() {
     <div className="boot game-loader">
       <div className="boot-inner">
         <div className="loader-title">{t('entering_world')}</div>
-        <div className="boot-bar"><i className="loop" /></div>
+        <div className="boot-bar"><i className="trickle" /></div>
         <p className="loader-lore">“{line}”</p>
       </div>
     </div>

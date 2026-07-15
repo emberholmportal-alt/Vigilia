@@ -6,10 +6,21 @@ import { useState } from 'react'
 import { useGameStore } from '../store.js'
 import { SKILLS, SKILL_CAP, skillXpForLevel } from '../data/progression.js'
 import { BRANCHES, NODES, skillEarned, skillSpent } from '../data/skilltree.js'
+import ItemIcon from './ItemIcon.jsx'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 const PW = 640, PH = 832
+
+// Candado dibujado (SVG), sin emojis, para los nodos aún bloqueados.
+function LockIcon() {
+  return (
+    <svg className="tree-slot-lock" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="5" y="10.5" width="14" height="10" rx="2" />
+      <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" strokeWidth="2.2" />
+    </svg>
+  )
+}
 
 // Pestaña "Oficios": las 6 acciones con su barra de progreso.
 function TradesTab({ skills, t }) {
@@ -82,7 +93,7 @@ function TreeTab({ stats, skillRanks, rankSkill, respec, respecCost, t }) {
         {/* encabezado de rama (arriba de cada columna) */}
         {BRANCHES.map((br, ci) => (
           <div key={br.id} className="tree-col-h" style={{ left: COL_X(ci) + '%' }}>
-            <span>{br.icon}</span>
+            <span className="tree-col-ic"><ItemIcon icon={br.icon} size={22} /></span>
             <em>{t('abbr_' + br.attr)} {s[br.attr] || 0}</em>
           </div>
         ))}
@@ -99,9 +110,9 @@ function TreeTab({ stats, skillRanks, rankSkill, respec, respecCost, t }) {
                       className={'tree-slot' + (locked ? ' locked' : '') + (maxed ? ' maxed' : '') + (rank > 0 && !maxed ? ' ranked' : '') + (sel === n.id ? ' sel' : '')}
                       style={{ left: p.x + '%', top: p.y + '%', backgroundImage: `url(${UISLOT})` }}
                       onClick={() => setSel(n.id)} title={t('node_' + n.id)}>
-                <span className="tree-slot-ic">{n.icon}</span>
+                <span className="tree-slot-ic"><ItemIcon icon={n.icon} size={30} /></span>
                 {rank > 0 && <span className="tree-slot-rank">{rank}</span>}
-                {locked && <span className="tree-slot-lock">🔒</span>}
+                {locked && <LockIcon />}
               </button>
             )
           }),
