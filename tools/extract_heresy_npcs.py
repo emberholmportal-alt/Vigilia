@@ -13,15 +13,13 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import extract_flare as E
 
-# Aldeanos + viejos + nobles + animales. (Los que existan; los que falten se saltan.)
-HERESY_NPCS = [
-    "MalePeasant1", "MalePeasant2", "MalePeasant3", "MalePeasant4",
-    "FemalePeasant1", "FemalePeasant2", "FemalePeasant3", "FemalePeasant4",
-    "OldManBrown", "OldManGrey", "OldWitch", "FemaleOld",
-    "NobleWomanFat1", "NobleWomanFat2", "NobleWoman1", "NobleWoman2",
-    "NoblemanBlue", "NoblemanFatBlue", "NoblemanFatGreen", "NoblemanFatRed",
-    "PigSE", "PigSW", "Guard_dog",
-]
+# NOTA: los HUMANOS de HERESY (peasants, nobles, viejos) están dibujados a una escala mucho más
+# chica que los NPCs de fantasycore (el personaje ocupa ~1/3 del cuadro) y su idle es casi
+# imperceptible a nuestro zoom, así que NO los usamos (los aldeanos del pueblo van con los sprites
+# de fantasycore, que son del tamaño correcto y animan visible). De HERESY sólo aprovechamos los
+# ANIMALES (cerdos), que no existen en fantasycore. Dejamos la lista completa por si algún día se
+# reescalan, pero por defecto extraemos sólo lo que se usa.
+HERESY_NPCS = ["PigSE", "PigSW"]
 
 
 def main():
