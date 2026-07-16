@@ -8,6 +8,7 @@ import Globe from './Globe.jsx'
 import ActionBar, { MenuRow, DesktopBar, BuffBar } from './ActionBar.jsx'
 import { useT } from './useT.js'
 import { raceName } from '../i18n.js'
+import { Scroll, Eye } from './Icon.jsx'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 
@@ -39,7 +40,7 @@ function Toast() {
 function SpectatorBar({ onExit, t }) {
   return (
     <div className="spectator-bar">
-      <span>👁 {t('spectating')}</span>
+      <span><Eye /> {t('spectating')}</span>
       <span className="spec-hint">{t('spec_hint')}</span>
       <button onClick={onExit}>▶ {t('play_now')}</button>
     </div>
@@ -111,7 +112,7 @@ export default function HUD({ onExitSpectate }) {
             const claimable = (missions || []).filter((m) => m.progress >= m.target && !m.claimed).length
             return (
               <button className={'hud-missions' + (claimable > 0 ? ' ready' : '')} onClick={openMissions} title={t('missions_menu')}>
-                <span className="hud-missions-ic">📜</span>
+                <span className="hud-missions-ic"><Scroll /></span>
                 <span className="hud-missions-lbl">{t('missions_menu')}</span>
                 {claimable > 0 ? <span className="hud-badge">{claimable}</span> : null}
               </button>

@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import ItemIcon from './ItemIcon.jsx'
 import { useGameStore } from '../store.js'
 import { ABILITY_BY_ID } from '../data/abilities.js'
+import { Lock, Fist, Gear } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
@@ -70,7 +71,7 @@ export function MouseSlot({ which, className = '', style }) {
     const wIcon = equipment?.main?.icon
     return (
       <button className={'mouse-slot m1 ' + className} style={bg} title={t('m1_normal')}>
-        {wIcon != null ? <ItemIcon icon={wIcon} fill /> : <span className="mouse-fist">✊</span>}
+        {wIcon != null ? <ItemIcon icon={wIcon} fill /> : <span className="mouse-fist"><Fist /></span>}
         <span className="mouse-tag">M1</span>
       </button>
     )
@@ -88,7 +89,7 @@ export function MouseSlot({ which, className = '', style }) {
       <span className="mouse-tag">M2</span>
       {ab && remain > 0 && <span className="mouse-cd" style={{ height: `${Math.round(frac * 100)}%` }} />}
       {ab && remain > 0 && <span className="mouse-cd-txt">{Math.ceil(remain / 1000)}</span>}
-      <span className="mouse-gear" onClick={(e) => { e.stopPropagation(); openMouseBind() }} title={t('bind_special')}>⚙</span>
+      <span className="mouse-gear" onClick={(e) => { e.stopPropagation(); openMouseBind() }} title={t('bind_special')}><Gear /></span>
     </button>
   )
 }
@@ -106,7 +107,7 @@ export default function ActionBar({ belt, gold, onUseBelt, beltCap = 4 }) {
                  title={locked ? t('bigger_belt') : undefined}
                  onClick={it && !locked ? () => onUseBelt?.(i) : undefined}>
               {it && !locked && <ItemIcon icon={it.icon} fill count={it.count} />}
-              {locked && <span className="ab-lock">🔒</span>}
+              {locked && <span className="ab-lock"><Lock /></span>}
             </div>
           )
         })}
@@ -173,7 +174,7 @@ export function DesktopBar({ belt, onPanel, onUseBelt, beltCap = 4 }) {
                title={locked ? t('bigger_belt') : undefined}
                onClick={it && !locked ? () => onUseBelt?.(i) : undefined}>
             {it && !locked && <ItemIcon icon={it.icon} fill count={it.count} />}
-            {locked && <span className="ab-lock">🔒</span>}
+            {locked && <span className="ab-lock"><Lock /></span>}
           </div>
         )
       })}

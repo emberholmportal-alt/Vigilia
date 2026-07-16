@@ -5,6 +5,7 @@ import { useGameStore } from '../store.js'
 import { isDurable, durabilityMax, RARITY_COLOR } from '../data/items.js'
 import { armorDefense, upgradeLevel } from '../data/stats.js'
 import ItemIcon from './ItemIcon.jsx'
+import { Gem, Sword, Shield } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
@@ -67,7 +68,7 @@ export default function Blacksmith() {
 
           {tab === 'forge' && (
             <>
-              <div className="forge-hint">{t('forge_hint')} · 💎 {crystals}</div>
+              <div className="forge-hint">{t('forge_hint')} · <Gem /> {crystals}</div>
               {durables.length === 0 && <div className="smith-empty">{t('forge_none')}</div>}
               {durables.map(([sl, it]) => {
                 const up = upgradeLevel(it)
@@ -82,7 +83,7 @@ export default function Blacksmith() {
                         {t.item(it)}{up ? ` +${up}` : ''} <em>{t.slot(sl)}</em>
                       </span>
                       <span className="forge-stat">
-                        {it.slot === 'main' ? '⚔' : '🛡'} {it.slot === 'main' ? '' : armorDefense(it)}
+                        {it.slot === 'main' ? <Sword /> : <Shield />} {it.slot === 'main' ? '' : armorDefense(it)}
                         {!dmax && <em> · {t('forge_cost', { c: c.crystals, g: c.gold })}</em>}
                       </span>
                     </div>

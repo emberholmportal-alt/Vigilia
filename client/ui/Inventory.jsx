@@ -7,6 +7,7 @@ import { RARITY_COLOR, isDurable, durabilityMax } from '../data/items.js'
 import { inventoryCapacity } from '../data/progression.js'
 import { armorDefense, upgradeLevel, itemAffinity } from '../data/stats.js'
 import ItemIcon from './ItemIcon.jsx'
+import { Lock } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const hasAbsorb = (it) => !!(it.stats?.absorb_max || it.stats?.absorb_min)
@@ -102,7 +103,7 @@ export default function Inventory() {
                     title={locked ? t('locked_hint') : undefined}
                     onClick={() => !locked && it && setSel({ src: 'inv', i, pos: [x, y] })}>
               {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
-              {locked && <span className="inv-lock">🔒</span>}
+              {locked && <span className="inv-lock"><Lock /></span>}
             </button>
           )
         })}

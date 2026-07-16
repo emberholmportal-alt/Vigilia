@@ -3,6 +3,7 @@
 // "hablar": lo que escribís aparece como globo sobre la cabeza del personaje + acá.
 import { useState, useRef, useEffect } from 'react'
 import { useGameStore } from '../store.js'
+import { Chat } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const CHANNEL = {
@@ -55,7 +56,7 @@ export default function ChatLog() {
                  placeholder={t('say_something')} />
         </form>
       ) : (
-        <button className="chat-say" onClick={() => setOpen(true)}>💬 {t('talk')}</button>
+        <button className="chat-say" onClick={() => setOpen(true)}><Chat /> {t('talk')}</button>
       )}
     </div>
   )

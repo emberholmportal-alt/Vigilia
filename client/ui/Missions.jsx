@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useGameStore } from '../store.js'
 import { QUESTS, ZONE_REVEALS, questActive, questComplete, activeStage } from '../data/quests.js'
 import { questName, stageText } from '../i18n.js'
+import { Seal, Chest, Scroll } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
@@ -19,7 +20,7 @@ function DailyTab({ t }) {
   const openSealChest = useGameStore((s) => s.openSealChest)
   return (
     <div className="ms-body">
-      <div className="ms-seals">🔯 {t('seals_word')}: <b>{seals || 0}</b></div>
+      <div className="ms-seals"><Seal /> {t('seals_word')}: <b>{seals || 0}</b></div>
       <div className="ms-hint">{t('missions_hint')}</div>
       <div className="ms-list">
         {(missions || []).map((m, i) => {
@@ -47,7 +48,7 @@ function DailyTab({ t }) {
         })}
       </div>
       <button className="ms-sealchest" disabled={(seals || 0) < sealCost} onClick={() => openSealChest()}>
-        🎁 {t('seal_chest_open', { n: sealCost })}
+<Chest /> {t('seal_chest_open', { n: sealCost })}
       </button>
     </div>
   )
@@ -79,7 +80,7 @@ function StoryTab({ t }) {
           const st = activeStage(flags, q)
           return (
             <div className="q-row" key={q.id}>
-              <div className="q-title">📜 {questName(q, t.lang)}</div>
+              <div className="q-title"><Scroll /> {questName(q, t.lang)}</div>
               <div className="q-stage">{stageText(st, t.lang)}</div>
               {q.id === 'guardianes' && <NameChecklist flags={flags} />}
             </div>
