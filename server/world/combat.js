@@ -39,7 +39,7 @@ function loadMap(name) {
   try {
     const raw = JSON.parse(fs.readFileSync(path.join(MAPS_DIR, name + '.json'), 'utf8'))
     const coll = raw.layers && raw.layers.collision
-    data = { w: raw.w, h: raw.h, coll, spawners: raw.spawners || [], chests: raw.chests || [] }
+    data = { w: raw.w, h: raw.h, coll, spawn: raw.spawn || null, spawners: raw.spawners || [], chests: raw.chests || [] }
   } catch { data = null }
   mapCache.set(name, data)
   return data
@@ -59,6 +59,61 @@ function randTileIn(map, sp) {
   return null
 }
 
+// Tile caminable en un anillo [rMin, rMax] alrededor de (cx, cy), sin repetir. Para densificar la
+// entrada de cada mapa salvaje.
+function nearWalkable(map, cx, cy, rMin, rMax, used) {
+  for (let i = 0; i < 60; i++) {
+    const ang = Math.random() * Math.PI * 2
+    const r = rMin + Math.random() * (rMax - rMin)
+    const x = Math.round(cx + Math.cos(ang) * r)
+    const y = Math.round(cy + Math.sin(ang) * r)
+    if (!isWalkable(map, x, y)) continue
+    const idx = y * map.w + x
+    if (used.has(idx)) continue
+    used.add(idx)
+    return { x, y }
+  }
+  return null
+}
+// Categorías "de entrada": las del mapa, evitando jefes (no querés un minotauro en la puerta).
+function entryCats(md) {
+  const raw = [...new Set((md.spawners || []).map((s) => s.category).filter(Boolean))]
+  const common = raw.filter((c) => !/chief|boss|necromancer|elite|knight/i.test(c))
+  return common.length ? common : (raw.length ? raw : ['goblin'])
+}
+// Nivel de entrada: el más bajo de los spawners del mapa (para no castigar al que recién llega).
+function entryLevel(md) {
+  let lo = 99
+  for (const s of md.spawners || []) { const l = Array.isArray(s.level) ? s.level[0] : s.level; if (l && l < lo) lo = l }
+  return lo === 99 ? [1, 1] : [lo, lo]
+}
+// Spawners sintéticos alrededor de la entrada (respawnean como cualquier otro).
+function buildNearSpawners(md, used) {
+  if (!md.spawn) return []
+  const [cx, cy] = md.spawn
+  const cats = entryCats(md), lvl = entryLevel(md)
+  const out = []
+  for (let i = 0; i < NEAR_CLUSTERS; i++) {
+    const t = nearWalkable(md, cx, cy, NEAR_MIN, NEAR_RADIUS, used)
+    if (!t) continue
+    out.push({ x: Math.max(0, t.x - 1), y: Math.max(0, t.y - 1), w: 3, h: 3, category: cats[i % cats.length], level: lvl, n: NEAR_PER, near: true })
+  }
+  return out
+}
+// Cofres garantizados cerca de la entrada (reusan la tabla de loot del mapa o una acorde al nivel).
+function buildNearChests(md, used) {
+  if (!md.spawn) return []
+  const [cx, cy] = md.spawn
+  const loot = (md.chests[0] && md.chests[0].loot) || ('chest_level_' + Math.max(1, Math.min(16, entryLevel(md)[0])) + '.txt')
+  const out = []
+  for (let i = 0; i < NEAR_CHESTS; i++) {
+    const t = nearWalkable(md, cx, cy, NEAR_MIN, NEAR_RADIUS, used)
+    if (!t) continue
+    out.push({ x: t.x, y: t.y, loot })
+  }
+  return out
+}
+
 // --- mundos por (mapa, canal) ---------------------------------------------------------------
 const worlds = new Map()   // "map:ch" -> world
 let eidSeq = 1
@@ -71,12 +126,30 @@ const MELEE = 1.4        // alcance cuerpo a cuerpo
 const RANGED_REACH = 6   // alcance de arqueros/magos
 const SPEED = 2.3        // tiles por segundo
 const ATK_CD = 1.3       // segundos entre ataques del enemigo
-const RESPAWN = 12       // segundos para reponer un enemigo muerto
-const MAX_PER_MAP = 40
+const RESPAWN = 12       // segundos base para reponer un enemigo muerto (escala con la gente)
+const MIN_RESPAWN = 4    // piso del respawn cuando el canal está lleno de jugadores
+const MAX_PER_MAP = 48
 const NODE_RESPAWN = 25  // segundos para que un nodo de recurso vuelva a crecer
 const GATHER_REACH = 2.4 // tiles: alcance para juntar un nodo
-const CHEST_RESPAWN = 90 // segundos para que un cofre saqueado reaparezca
+const CHEST_RESPAWN = 90 // segundos base para que un cofre saqueado reaparezca (escala con la gente)
+const MIN_CHEST_RESPAWN = 30 // piso del respawn de cofres con el canal lleno
 const CHEST_REACH = 2.4  // tiles: alcance para abrir un cofre
+
+// Densidad cerca del punto de entrada. Los mapas de Flare son enormes (hasta 100×100) y te dejan
+// en un borde, con los spawners repartidos por todo el mapa: al llegar ves un desierto. Estos
+// clusters garantizan acción apenas entrás, sin tocar los 56 JSON. Compartidos por canal (regla 2).
+const NEAR_RADIUS = 16   // tiles: radio máximo desde la entrada donde garantizamos contenido
+const NEAR_MIN = 5       // tiles: radio mínimo (no spawnear encima del jugador)
+const NEAR_CLUSTERS = 4  // grupitos de enemigos cerca de la entrada
+const NEAR_PER = [2, 3]  // enemigos por grupo cercano
+const NEAR_CHESTS = 2    // cofres garantizados cerca de la entrada
+
+// Respawn que escala con la población del canal: más jugadores farmeando la misma zona compartida
+// => reponemos más rápido para que la entrada no quede pelada. Con 1 jugador usa el valor base.
+function respawnDelay(w, base, floor) {
+  const n = (ctx && ctx.playersIn) ? ctx.playersIn(w.map, w.ch).length : 1
+  return Math.max(floor, base / Math.sqrt(Math.max(1, n)))
+}
 
 // Tile caminable al azar en todo el mapa (para nodos de recursos), evitando repetir.
 function randWalkable(map, used) {
@@ -136,8 +209,12 @@ export function ensureWorld(map, ch) {
   if (worlds.has(k)) return
   const md = loadMap(map)
   if (!md || !md.spawners.length) { worlds.set(k, null); return }   // mapa sin combate (pueblo)
+  // Los clusters cercanos van PRIMERO: así entran seguro bajo el tope y garantizan acción en la
+  // entrada, aunque los spawners nativos del mapa estén lejos.
+  const usedNear = new Set()
+  const near = buildNearSpawners(md, usedNear)
   const enemies = new Map()
-  for (const sp of md.spawners) {
+  for (const sp of [...near, ...md.spawners]) {
     const n = randInt(sp.n || [1, 1])
     for (let i = 0; i < n && enemies.size < MAX_PER_MAP; i++) {
       const e = spawnEnemy(md, sp)
@@ -159,7 +236,8 @@ export function ensureWorld(map, ch) {
   // Cofres del mapa (posiciones fijas), compartidos por el canal. Primero en llegar se lo lleva;
   // reaparecen a los ~90s. El servidor tira el loot (autoritativo).
   const chests = new Map()
-  for (const c of md.chests) {
+  const nearChests = buildNearChests(md, usedNear)
+  for (const c of [...nearChests, ...md.chests]) {
     chests.set(cidSeq, { c: cidSeq, x: c.x, y: c.y, loot: c.loot }); cidSeq++
   }
   // Élite del contrato del día, si es de este mapa (una, compartida por el canal).
@@ -224,7 +302,7 @@ export function playerOpenChest(pid, cid) {
   const dx = pl.x - c.x, dy = pl.y - c.y
   if (dx * dx + dy * dy > CHEST_REACH * CHEST_REACH) return   // fuera de alcance
   w.chests.delete(cid)
-  w.chestDead.push({ x: c.x, y: c.y, loot: c.loot, at: now() + CHEST_RESPAWN * 1000 })
+  w.chestDead.push({ x: c.x, y: c.y, loot: c.loot, at: now() + respawnDelay(w, CHEST_RESPAWN, MIN_CHEST_RESPAWN) * 1000 })
   ctx.broadcast(w.map, w.ch, { t: 'copen', c: cid, by: pid })
   const roll = hasLootTable(c.loot) ? rollLoot(c.loot) : { gold: 0, drops: [] }
   ctx.sendTo(pid, { t: 'cloot', c: cid, x: c.x, y: c.y, gold: roll.gold || 0, drops: roll.drops || [] })
@@ -281,7 +359,7 @@ function killEnemy(w, e, killerId) {
   w.enemies.delete(e.i)
   // La élite reaparece más lento (para que sea un evento); los comunes al ritmo normal.
   if (e.el) w.dead.push({ el: true, sprite: e.s, contract: e.contract, at: now() + RESPAWN * 3 * 1000 })
-  else w.dead.push({ sp: e.sp, at: now() + RESPAWN * 1000 })
+  else w.dead.push({ sp: e.sp, at: now() + respawnDelay(w, RESPAWN, MIN_RESPAWN) * 1000 })
   ctx.broadcast(w.map, w.ch, { t: 'edie', i: e.i, by: killerId })
   // Aviso al matador: XP autoritativa del server; el loot/oro lo tira él local (instanciado).
   const ek = { t: 'ekill', i: e.i, xp: e.xp, sprite: e.s, lv: e.lv }

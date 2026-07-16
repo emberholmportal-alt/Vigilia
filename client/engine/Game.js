@@ -445,7 +445,7 @@ export class Game {
       p.label = nl
       if (p.labelText) p.labelText.text = nl
     }
-    this.store.setPortals((this.portals || []).map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label })))
+    this.store.setPortals((this.portals || []).map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label, to: p.to })))
     this._refreshWaypoints()
   }
 
@@ -555,8 +555,8 @@ export class Game {
       renderer.objectLayer.addChild(label)
       this.portals.push({ x: p.x, y: p.y, w, h, to: p.to, tx: p.tx, ty: p.ty, label: plabel, gfx: g, pad, labelText: label, discovered })
     }
-    // Al HUD: tiles de portal para marcarlos en el minimapa.
-    this.store.setPortals(this.portals.map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label })))
+    // Al HUD: tiles de portal para marcarlos en el minimapa (el minimapa filtra por descubierto).
+    this.store.setPortals(this.portals.map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label, to: p.to })))
   }
 
   // Enciende el pad de un portal descubierto (frame de runas + alpha lleno).
