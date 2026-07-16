@@ -752,6 +752,58 @@ export const useGameStore = create((set, get) => ({
     }
   },
 
+  // --- Depósito del Gremio (banco compartido, nivel 4+) ---
+  guildDeposit: null,       // { gold, items } o null
+  guildDepBusy: false,
+  refreshDeposit: async () => {
+    if (!ONLINE || !net.connected) { set({ guildDeposit: null }); return }
+    const r = await net.guildDepView().catch(() => null)
+    set({ guildDeposit: r && r.ok ? r.deposit : null })
+  },
+  // Aplica la respuesta del depósito (oro autoritativo del personaje + contenido del depósito).
+  _applyDepResult: (r) => {
+    if (!r || r.ok === false) { set({ guildError: r?.error || 'error del depósito' }); return false }
+    const patch = { guildError: '' }
+    if (r.deposit) patch.guildDeposit = r.deposit
+    if (typeof r.gold === 'number') patch.gold = r.gold
+    set(patch)
+    if (typeof r.gold === 'number') saveGame(get())
+    return true
+  },
+  depositGold: async (amount, dir = 'in') => {
+    if (!ONLINE || !net.connected) return
+    const amt = Math.floor(Number(amount) || 0)
+    if (amt <= 0) { set({ guildError: tt('guild_bad_amount') }); return }
+    set({ guildDepBusy: true })
+    if (dir === 'in') await get()._flushServerSave()   // el server descuenta del oro persistido
+    const r = await net.guildDepGold(dir, amt).catch(() => null)
+    set({ guildDepBusy: false })
+    get()._applyDepResult(r)
+  },
+  // Depositar un ítem del inventario: el server lo guarda y lo sacamos de la bolsa.
+  depositItem: async (invIndex) => {
+    if (!ONLINE || !net.connected) return
+    const s = get()
+    const item = s.inventory[invIndex]
+    if (!item) return
+    set({ guildDepBusy: true })
+    const r = await net.guildDepItemIn(item).catch(() => null)
+    set({ guildDepBusy: false })
+    if (get()._applyDepResult(r)) {
+      const inv = get().inventory.slice(); inv[invIndex] = null
+      set({ inventory: inv }); saveGame(get())
+    }
+  },
+  // Retirar un ítem del depósito: el server nos lo devuelve y lo metemos en la bolsa.
+  withdrawItem: async (index) => {
+    if (!ONLINE || !net.connected) return
+    if (get().inventory.every((x) => x != null)) { set({ guildError: tt('guild_inv_full') }); return }
+    set({ guildDepBusy: true })
+    const r = await net.guildDepItemOut(index).catch(() => null)
+    set({ guildDepBusy: false })
+    if (get()._applyDepResult(r) && r.item) get().addItem(r.item)
+  },
+
   // --- misiones diarias ---
   missions: [],
   missionsDate: '',

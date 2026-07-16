@@ -22,6 +22,7 @@ import { pickSprite, enemyStats, isRanged, rangedCousin } from '../../shared/bes
 import { GATHER } from '../../shared/gather.js'
 import { rollLoot, hasLootTable } from '../../shared/loot.js'
 import { todayContract } from '../../shared/missions.js'
+import * as guilds from '../systems/guilds.js'
 
 const MAPS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../public/maps')
 
@@ -286,6 +287,13 @@ function killEnemy(w, e, killerId) {
   const ek = { t: 'ekill', i: e.i, xp: e.xp, sprite: e.s, lv: e.lv }
   if (e.contract) ek.contract = e.contract   // acredita la misión Contrato del que lo mata
   ctx.sendTo(killerId, ek)
+  // Contrato semanal del GREMIO del matador: si la categoría del enemigo matchea, suma al pozo
+  // común del gremio. Fire-and-forget (no bloquea el hot-path del combate).
+  const killer = ctx.getPlayer && ctx.getPlayer(killerId)
+  if (killer && killer.accountId) {
+    const cat = (e.sp && e.sp.category) || e.s
+    guilds.onKill(killer.accountId, cat).catch(() => {})
+  }
 }
 
 // --- bucle de simulación --------------------------------------------------------------------

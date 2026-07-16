@@ -118,6 +118,11 @@ class Net {
   async guildJoin({ id, tag }) { this._send({ t: 'guild_join', id, tag }); return this._once('guild') }
   async guildLeave() { this._send({ t: 'guild_leave' }); return this._once('guild') }
   async guildDonate(amount) { this._send({ t: 'guild_donate', amount }); return this._once('guild') }
+  // Depósito del Gremio (banco compartido). Responden `t:'guild_dep'`.
+  async guildDepView() { this._send({ t: 'guild_dep_view' }); return this._once('guild_dep') }
+  async guildDepGold(dir, amount) { this._send({ t: 'guild_dep_gold', dir, amount }); return this._once('guild_dep') }
+  async guildDepItemIn(item) { this._send({ t: 'guild_dep_item_in', item }); return this._once('guild_dep') }
+  async guildDepItemOut(index) { this._send({ t: 'guild_dep_item_out', index }); return this._once('guild_dep') }
   close() { this._wantOpen = false; if (this._reconnectT) { clearTimeout(this._reconnectT); this._reconnectT = null } try { this.ws?.close() } catch {} }
 }
 

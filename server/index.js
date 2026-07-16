@@ -118,12 +118,31 @@ wss.on('connection', (ws) => {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
           return send({ t: 'guild', ...(await guilds.donate(conn.accountId, m.amount)) })
         }
+        // Depósito del Gremio (banco compartido)
+        case 'guild_dep_view': {
+          if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
+          return send({ t: 'guild_dep', ...(await guilds.depositView(conn.accountId)) })
+        }
+        case 'guild_dep_gold': {   // m.dir: 'in' deposita, 'out' retira
+          if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
+          const r = m.dir === 'out' ? await guilds.withdrawGold(conn.accountId, m.amount)
+                                    : await guilds.depositGold(conn.accountId, m.amount)
+          return send({ t: 'guild_dep', ...r })
+        }
+        case 'guild_dep_item_in': {
+          if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
+          return send({ t: 'guild_dep', ...(await guilds.depositItem(conn.accountId, m.item)) })
+        }
+        case 'guild_dep_item_out': {
+          if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
+          return send({ t: 'guild_dep', ...(await guilds.withdrawItem(conn.accountId, m.index)) })
+        }
 
         case 'join': {
           if (!conn.accountId) return send({ t: 'error', error: 'no autenticado' })
           db.touchAccount(conn.accountId).catch(() => {})   // actividad (jugadores mensuales)
           if (conn.playerId != null) rooms.leave(conn.playerId)
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId })
           conn.playerId = id
           return send({ t: 'present', you: id, players: present, map: m.map, channel })
         }

@@ -44,13 +44,22 @@ export async function init() {
         level INTEGER DEFAULT 1,
         donated BIGINT DEFAULT 0,
         founder INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+        contract_week TEXT,
+        contract_progress INTEGER DEFAULT 0,
         created_at TIMESTAMPTZ DEFAULT now()
       );
+      ALTER TABLE guilds ADD COLUMN IF NOT EXISTS contract_week TEXT;
+      ALTER TABLE guilds ADD COLUMN IF NOT EXISTS contract_progress INTEGER DEFAULT 0;
       CREATE TABLE IF NOT EXISTS guild_members (
         account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
         guild_id INTEGER REFERENCES guilds(id) ON DELETE CASCADE,
         role TEXT DEFAULT 'member',
         joined_at TIMESTAMPTZ DEFAULT now()
+      );
+      CREATE TABLE IF NOT EXISTS guild_deposit (
+        guild_id INTEGER PRIMARY KEY REFERENCES guilds(id) ON DELETE CASCADE,
+        gold BIGINT DEFAULT 0,
+        items JSONB DEFAULT '[]'::jsonb
       );`)
     console.log('[db] PostgreSQL conectado')
     return
@@ -61,8 +70,9 @@ export async function init() {
     try { file = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')) } catch { file = null }
   }
   if (!file) file = { accounts: [], chars: {} }
-  if (!file.guilds) file.guilds = []                 // [{id,name,tag,color,level,donated,founder}]
+  if (!file.guilds) file.guilds = []                 // [{id,name,tag,color,level,donated,founder,contract_week,contract_progress}]
   if (!file.guildMembers) file.guildMembers = {}     // account_id -> {guild_id, role}
+  if (!file.guildDeposit) file.guildDeposit = {}     // guild_id -> {gold, items:[]}
   if (file.guildSeq == null) file.guildSeq = file.guilds.reduce((m, g) => Math.max(m, g.id), 0) + 1
   seq = file.accounts.reduce((m, a) => Math.max(m, a.id), 0) + 1
   console.log('[db] Sin DATABASE_URL: usando archivo local (' + DATA_FILE + ')')
@@ -236,4 +246,44 @@ export async function listGuilds(limit = 20) {
     .map((g) => ({ ...g, members: Object.values(file.guildMembers).filter((m) => m.guild_id === g.id).length }))
     .sort((a, b) => b.level - a.level || b.donated - a.donated || a.id - b.id)
     .slice(0, limit)
+}
+
+// --- Contrato semanal del gremio ---
+// Suma `inc` al progreso del contrato de la semana `week`. Si la semana guardada difiere,
+// reinicia el progreso (contrato nuevo). Devuelve el progreso resultante, o null si no existe.
+export async function bumpContract(guildId, week, inc) {
+  if (pg) {
+    const r = await pg.query(
+      `UPDATE guilds SET
+         contract_progress = CASE WHEN contract_week = $2 THEN contract_progress ELSE 0 END + $3,
+         contract_week = $2
+       WHERE id = $1 RETURNING contract_progress`, [guildId, week, inc])
+    return r.rows[0]?.contract_progress ?? null
+  }
+  const g = file.guilds.find((x) => x.id === guildId)
+  if (!g) return null
+  g.contract_progress = (g.contract_week === week ? (g.contract_progress || 0) : 0) + inc
+  g.contract_week = week
+  flush()
+  return g.contract_progress
+}
+
+// --- Depósito del Gremio (banco compartido) ---
+export async function getDeposit(guildId) {
+  if (pg) {
+    const r = await pg.query('SELECT gold, items FROM guild_deposit WHERE guild_id=$1', [guildId])
+    return r.rows[0] || { gold: 0, items: [] }
+  }
+  return file.guildDeposit[guildId] || { gold: 0, items: [] }
+}
+export async function setDeposit(guildId, { gold, items }) {
+  if (pg) {
+    await pg.query(
+      `INSERT INTO guild_deposit (guild_id, gold, items) VALUES ($1,$2,$3)
+       ON CONFLICT (guild_id) DO UPDATE SET gold=$2, items=$3`,
+      [guildId, gold | 0, JSON.stringify(items || [])])
+    return
+  }
+  file.guildDeposit[guildId] = { gold: gold | 0, items: items || [] }
+  flush()
 }

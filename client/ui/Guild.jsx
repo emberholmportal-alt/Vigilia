@@ -1,9 +1,10 @@
 // Casa de Gremios (WORLD.md): fundar/unirse, donar oro para subir el nivel del gremio, ver
 // ventajas por nivel, la lista de miembros y el ranking público. El server es autoritativo:
 // el oro de fundación/donación lo confirma el server (store.donateGuild / createGuild).
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useGameStore } from '../store.js'
 import { ONLINE, net } from '../net/net.js'
+import ItemIcon from './ItemIcon.jsx'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
@@ -38,6 +39,7 @@ export default function Guild() {
 
         <div className="pw-tabs">
           <button className={tab === 'mine' ? 'on' : ''} onClick={() => setTab('mine')}>{t('guild_tab_mine')}</button>
+          {guild && <button className={tab === 'deposit' ? 'on' : ''} onClick={() => setTab('deposit')}>{t('guild_tab_deposit')}</button>}
           <button className={tab === 'ranking' ? 'on' : ''} onClick={() => setTab('ranking')}>{t('guild_tab_ranking')}</button>
         </div>
 
@@ -48,7 +50,9 @@ export default function Guild() {
                 ? <MyGuild guild={guild} role={role} members={members} gold={gold} busy={busy}
                            onDonate={donateGuild} onLeave={leaveGuild} error={error} t={t} />
                 : <FoundGuild gold={gold} busy={busy} onCreate={createGuild} error={error} t={t} />)
-            : <Ranking ranking={ranking} inGuild={!!guild} busy={busy} onJoin={joinGuild} myId={guild?.id} t={t} />}
+            : tab === 'deposit'
+              ? <Deposit guild={guild} t={t} />
+              : <Ranking ranking={ranking} inGuild={!!guild} busy={busy} onJoin={joinGuild} myId={guild?.id} t={t} />}
       </div>
     </div>
   )
@@ -127,6 +131,22 @@ function MyGuild({ guild, role, members, gold, busy, onDonate, onLeave, error, t
       </div>
       {error && <div className="guild-error">{error}</div>}
 
+      {guild.contract && (
+        <div className="guild-contract">
+          <div className="guild-sub">{t('guild_contract_head')}</div>
+          <div className="guild-contract-name">{t('guild_contract_' + guild.contract.id, { n: guild.contract.target })}</div>
+          <div className="guild-contract-bar">
+            <i style={{ width: `${Math.round(Math.min(1, guild.contract.progress / guild.contract.target) * 100)}%` }} />
+            <span>{guild.contract.progress}/{guild.contract.target}</span>
+          </div>
+          <div className="guild-contract-foot">
+            {guild.contract.done
+              ? <b className="guild-contract-done">✔ {t('guild_contract_done', { n: guild.contract.reward })}</b>
+              : <span>{t('guild_contract_reward_hint', { n: guild.contract.reward })}</span>}
+          </div>
+        </div>
+      )}
+
       <div className="guild-perks">
         <div className="guild-sub">{t('guild_perks_head')}</div>
         {perks.map((p, i) => (
@@ -150,6 +170,68 @@ function MyGuild({ guild, role, members, gold, busy, onDonate, onLeave, error, t
 
       <button className="guild-btn danger" disabled={busy}
               onClick={() => { if (confirm(t('guild_leave_confirm'))) onLeave() }}>{t('guild_leave_btn')}</button>
+    </div>
+  )
+}
+
+// --- Depósito del Gremio (banco compartido, nivel 4+) ---
+function Deposit({ guild, t }) {
+  const dep = useGameStore((s) => s.guildDeposit)
+  const inventory = useGameStore((s) => s.inventory)
+  const gold = useGameStore((s) => s.gold)
+  const busy = useGameStore((s) => s.guildDepBusy)
+  const refreshDeposit = useGameStore((s) => s.refreshDeposit)
+  const depositGold = useGameStore((s) => s.depositGold)
+  const depositItem = useGameStore((s) => s.depositItem)
+  const withdrawItem = useGameStore((s) => s.withdrawItem)
+  const [amt, setAmt] = useState('')
+  const locked = guild.level < 4
+
+  useEffect(() => { if (!locked) refreshDeposit() }, [locked])
+
+  if (locked) return <div className="guild-body"><div className="guild-empty">{t('guild_deposit_locked', { n: 4 })}</div></div>
+
+  const items = dep?.items || []
+  const invItems = inventory.map((it, i) => ({ it, i })).filter((x) => x.it)
+
+  return (
+    <div className="guild-body">
+      <div className="guild-dep-gold">
+        <div className="guild-sub">{t('guild_dep_vault_gold')}</div>
+        <div className="guild-dep-goldrow">
+          <span className="guild-dep-goldn">{dep?.gold ?? 0}</span>
+          <input className="guild-input" type="number" min="1" placeholder={t('guild_dep_amount')}
+                 value={amt} onChange={(e) => setAmt(e.target.value)} />
+          <button className="guild-btn small" disabled={busy || !(Number(amt) > 0) || Number(amt) > gold}
+                  onClick={() => { depositGold(Number(amt), 'in'); setAmt('') }}>{t('guild_dep_in')}</button>
+          <button className="guild-btn small" disabled={busy || !(Number(amt) > 0) || Number(amt) > (dep?.gold || 0)}
+                  onClick={() => { depositGold(Number(amt), 'out'); setAmt('') }}>{t('guild_dep_out')}</button>
+        </div>
+      </div>
+
+      <div className="guild-dep-items">
+        <div className="guild-sub">{t('guild_dep_items')}</div>
+        {items.length === 0 && <div className="guild-empty">{t('guild_dep_empty')}</div>}
+        <div className="guild-dep-grid">
+          {items.map((it, i) => (
+            <button key={i} className="guild-dep-cell" disabled={busy} title={it.name} onClick={() => withdrawItem(i)}>
+              <ItemIcon icon={it.icon} size={30} count={it.count} />
+              <span className="guild-dep-take">{t('guild_dep_take')}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="guild-dep-put">
+        <div className="guild-sub">{t('guild_dep_put_item')}</div>
+        <div className="guild-dep-grid">
+          {invItems.map(({ it, i }) => (
+            <button key={i} className="guild-dep-cell" disabled={busy} title={it.name} onClick={() => depositItem(i)}>
+              <ItemIcon icon={it.icon} size={30} count={it.count} />
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

@@ -88,7 +88,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, map, x, y, dir = 7, channel, spectator, gfx } = {}) {
+export function join(send, { name, race, map, x, y, dir = 7, channel, spectator, gfx, accountId } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -103,7 +103,7 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator,
     return { id, channel: ch, present, spectator: true }
   }
   const ch = pickChannel(map, channel)
-  const p = { id, name: name || 'Vigilante', race: race || null, map, ch, x, y, dir, gfx: gfx || null, send }
+  const p = { id, name: name || 'Vigilante', race: race || null, map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, send }
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)

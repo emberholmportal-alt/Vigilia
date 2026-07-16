@@ -958,6 +958,33 @@ html, body, #root {
 .guild-rank-txt { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .guild-rank-txt b { color: #f2ead6; font-size: 13px; }
 .guild-rank-txt span { color: var(--dim); font-size: 10px; }
+/* contrato semanal */
+.guild-contract { display: flex; flex-direction: column; gap: 4px;
+  background: rgba(40, 30, 55, 0.4); border: 1px solid #3b2f4c; border-radius: 7px; padding: 8px 10px; }
+.guild-contract-name { color: #f2ead6; font-size: 13px; }
+.guild-contract-bar { position: relative; height: 14px; border: 1px solid #3b3145; border-radius: 5px;
+  overflow: hidden; background: rgba(20, 17, 26, 0.8); }
+.guild-contract-bar i { display: block; height: 100%; background: linear-gradient(90deg, #7a52c0, #b58bff);
+  transition: width 0.4s ease; }
+.guild-contract-bar span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: #f2ead6; text-shadow: 0 1px 2px #000; }
+.guild-contract-foot { font-size: 11px; color: var(--dim); }
+.guild-contract-done { color: #6bd08a; font-size: 11px; }
+/* depósito */
+.guild-dep-gold, .guild-dep-items, .guild-dep-put { display: flex; flex-direction: column; gap: 5px; }
+.guild-dep-goldrow { display: flex; align-items: center; gap: 6px; }
+.guild-dep-goldn { color: var(--gold); font-size: 15px; font-weight: bold; min-width: 54px;
+  font-variant-numeric: tabular-nums; }
+.guild-dep-goldrow .guild-input { flex: 1; min-width: 60px; }
+.guild-dep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 6px; }
+.guild-dep-cell { position: relative; display: flex; align-items: center; justify-content: center;
+  height: 48px; background: rgba(20, 17, 26, 0.6); border: 1px solid #322a3c; border-radius: 6px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; }
+.guild-dep-cell:disabled { opacity: 0.5; cursor: default; }
+.guild-dep-cell:not(:disabled):active { transform: scale(0.94); }
+.guild-dep-take { position: absolute; bottom: -1px; left: 0; right: 0; font-size: 8px; color: var(--gold);
+  background: rgba(10, 9, 12, 0.7); text-align: center; opacity: 0; transition: opacity 0.15s; }
+.guild-dep-cell:hover .guild-dep-take { opacity: 1; }
 
 /* herrero (reparación) */
 .smith-body {
