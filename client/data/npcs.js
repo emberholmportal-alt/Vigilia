@@ -83,11 +83,9 @@ const LOCHPORT = [
 
 // La granja (mapa abierto con edificios estampados) queda como alternativa (?map=).
 // Granja de Black Oak (realm 1, gathering lv1-3): puesto de frontera, NO un segundo pueblo.
-// Un obelisco de recall + un guardia + el buhonero ambulante. Los Tres Guardianes son seña de
-// identidad de Triston: no se repiten acá.
+// Sólo un guardia + el buhonero ambulante. El Obelisco de Retorno y los Tres Guardianes son
+// seña de identidad de Triston (el pueblo principal): no se repiten acá.
 const FARM = [
-  { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', name_en: 'Obelisk of Return', landmark: true, x: 58, y: 50, dir: 7,
-    lines: ['La piedra está tibia. Los que caen afuera, vuelven acá.'] },
   { sprite: 'knight', name: 'Guardia Bram', name_en: 'Guard Bram', portrait: 'male07.png', x: 63, y: 53, dir: 1,
     lines: ['Ojos duros, vigilante. Afuera no perdona.'] },
   { sprite: 'peddler_goblin', name: 'Nix', name_en: 'Nix', portrait: 'goblin.png', x: 61, y: 57, dir: 4,
@@ -217,21 +215,22 @@ const TRISTON = [
         lines_en: ['Three mages sealed themselves in the ruins, turned to stone and silence.',
                    'Seek their three names and bring them to me. When I speak them, the seals will give way.'] },
     ] },
-  // Los Tres Guardianes: las estatuas que velan la plaza de Triston. Son el corazón del lore
-  // (los tres archimagos de Empyrea, sellados en piedra). Cada uno habla con su voz —Vesuvvio
-  // (fuego), Scathelocke (hielo), Grisbon (viento)—. La ofrenda del buff del día se hace en el
-  // Obelisco; estos son puramente lore + ambiente.
-  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, x: 60, y: 48, dir: 0,
+  // Los Tres Guardianes: las estatuas que velan Triston desde el borde OESTE del pueblo (fuera de
+  // la plaza central, para no amontonarse con el mercado). Son el corazón del lore (los tres
+  // archimagos de Empyrea, sellados en piedra). Cada uno habla con su voz —Vesuvvio (fuego),
+  // Scathelocke (hielo), Grisbon (viento)—. La ofrenda del buff del día se hace en el Obelisco;
+  // estos son puramente lore + ambiente.
+  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, x: 38, y: 48, dir: 0,
     lines: ['Fui el Fuego de Empyrea. Vesuvvio, me llamaban, cuando aún tenía voz.',
             'Mi nombre arde sellado en las Minas de Perdición. No lo traigas de vuelta sin estar seguro.'],
     lines_en: ['I was the Fire of Empyrea. Vesuvvio, they called me, when I still had a voice.',
                'My name burns sealed in the Perdition Mines. Do not bring it back unless you are certain.'] },
-  { sprite: 'statue_guardian_wind', name: 'Guardián del Viento', name_en: 'Guardian of Wind', landmark: true, x: 62, y: 46, dir: 0,
+  { sprite: 'statue_guardian_wind', name: 'Guardián del Viento', name_en: 'Guardian of Wind', landmark: true, x: 40, y: 46, dir: 0,
     lines: ['El viento lleva los nombres de los que no volvieron.',
             'Grisbon fui, y llevé las órdenes de un confín al otro. Ahora sólo llevo silencio.'],
     lines_en: ['The wind carries the names of those who did not return.',
                'Grisbon I was, and I carried orders from one edge of the realm to the other. Now I carry only silence.'] },
-  { sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', name_en: 'Guardian of Ice', landmark: true, x: 64, y: 48, dir: 0,
+  { sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', name_en: 'Guardian of Ice', landmark: true, x: 42, y: 48, dir: 0,
     lines: ['El hielo no odia. Sólo espera.',
             'Scathelocke guardaba las verdades del reino. Ahora me guardo a mí misma, dormida en la piedra.'],
     lines_en: ['Ice does not hate. It only waits.',
