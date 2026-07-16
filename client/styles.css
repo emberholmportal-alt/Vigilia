@@ -158,6 +158,42 @@ html, body, #root {
   border-radius: 5px; padding: 9px 28px; cursor: pointer; letter-spacing: 0.05em; font-weight: 700;
 }
 .htp-close:active { transform: scale(0.97); }
+.htp-links { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+.htp-links .htp-link { margin: 0; }
+
+/* Docs: panel un poco más ancho, tabs de categoría + bloques de contenido */
+.docs-panel { max-width: 680px; }
+.docs-tabs {
+  display: flex; gap: 6px; padding: 12px 18px; overflow-x: auto; flex: 0 0 auto;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.14); scrollbar-width: thin;
+}
+.docs-tab {
+  display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; cursor: pointer;
+  font-family: Georgia, serif; font-size: 12px; color: var(--parch);
+  background: rgba(20, 17, 26, 0.6); border: 1px solid var(--edge); border-radius: 5px; padding: 6px 12px;
+}
+.docs-tab svg { color: var(--gold); }
+.docs-tab.on { color: #14111a; background: var(--gold); border-color: var(--gold); }
+.docs-tab.on svg { color: #14111a; }
+.docs-content { padding-top: 14px; }
+.docs-h {
+  font-family: Georgia, serif; font-size: 14px; color: var(--gold); margin: 14px 0 5px;
+  letter-spacing: 0.03em; text-shadow: 0 1px 2px #000;
+}
+.docs-h:first-child { margin-top: 2px; }
+.docs-p { font-family: Georgia, serif; font-size: 13.5px; line-height: 1.55; color: var(--parch); margin: 0 0 8px; max-width: 64ch; }
+.docs-list { margin: 0 0 10px; padding-left: 20px; display: flex; flex-direction: column; gap: 3px; }
+.docs-list li { font-family: Georgia, serif; font-size: 13px; line-height: 1.4; color: var(--parch); }
+.docs-list li::marker { color: var(--gold); }
+.docs-table-wrap { overflow-x: auto; margin: 4px 0 12px; }
+.docs-table { border-collapse: collapse; width: 100%; font-family: Georgia, serif; font-size: 12.5px; }
+.docs-table th {
+  text-align: left; color: var(--gold); font-weight: normal; padding: 6px 10px;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.3); white-space: nowrap;
+}
+.docs-table td { color: var(--parch); padding: 6px 10px; border-bottom: 1px solid rgba(120, 104, 80, 0.14); vertical-align: top; }
+.docs-table tr:last-child td { border-bottom: 0; }
+.docs-table td:first-child { color: #f2ead6; white-space: nowrap; }
 
 /* barra del modo espectador */
 .spectator-bar {
