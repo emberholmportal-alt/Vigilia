@@ -42,6 +42,60 @@ export const DOCS = {
         ],
       },
       {
+        title: 'Historia',
+        topics: [
+          {
+            id: 'empyrea', title: 'La Edad de Empyrea',
+            blocks: [
+              { p: 'Antes de la Caída hubo un reino: Empyrea, de torres altas y caminos de piedra, alumbrado por tres magisterios. El Fuego de Vesuvvio calentaba las fraguas y quemaba lo que debía arder. El Hielo de Scathelocke guardaba las cosechas y las verdades. El Viento de Grisbon llevaba las órdenes de un confín al otro.' },
+              { p: 'Vesuvvio, Scathelocke y Grisbon no eran estatuas: eran los tres archimagos que sostenían el reino. Su obra secreta, la que nadie cantaba en las plazas, era otra: mantener dormida una cosa antigua y sin nombre, encerrada en el corazón de hierro del mundo, bajo lo que hoy llaman el Laberinto de Hierro.' },
+              { p: 'Mientras los Tres velaron, Empyrea prosperó. La gente creyó que sería para siempre. La gente siempre lo cree.' },
+            ],
+          },
+          {
+            id: 'the-fall', title: 'La Caída',
+            blocks: [
+              { p: 'Nadie que lo viera vive para contarlo entero. Lo que se sabe es esto: el sello se quebró. Unos dicen que fue ambición —que uno de los Tres quiso usar el poder de lo que ataban—; otros, que fue descuido de una generación que dejó de creer en el peligro. Da igual. La atadura cedió, y la cosa despertó a medias.' },
+              { p: 'No hubo un ejército ni una batalla. Hubo un apagón lento. Los muertos dejaron de descansar. Los duendes huyeron de las minas hacia la superficie, más asustados que fieros. Los caminos se llenaron de cosas que antes no salían de noche. En una sola generación, Empyrea se apagó como una vela.' },
+              { p: 'A eso lo llaman la Caída. No tiene fecha exacta: cada pueblo la cuenta desde el día en que le tocó.' },
+            ],
+          },
+          {
+            id: 'guardians', title: 'Los Tres Guardianes',
+            blocks: [
+              { p: 'Cuando entendieron que no podían volver a atar del todo lo que despertaba, los Tres tomaron la última decisión. Se sellaron a sí mismos en piedra —Fuego, Hielo, Viento— en la plaza de la última ciudad, y volcaron lo que les quedaba de poder en un muro invisible que mantiene a raya lo de afuera.' },
+              { p: 'El precio fue quedar dormidos. Y algo más: para que nadie los despertara antes de tiempo —ni la cosa los usara a través de un tonto con buenas intenciones— sus nombres verdaderos fueron escondidos, cada uno en el lugar atado a su elemento. El de Vesuvvio, sellado en fuego en las Minas de Perdición. El de Scathelocke, en hielo, entre las ruinas de Santa María. El de Grisbon, en viento, en el Paso Roca-Tormenta.' },
+              { p: 'Hoy son tres estatuas que velan la plaza de Triston. Una ofrenda de oro despierta un hilo de su antiguo poder —el buff del día—. Pronunciar los tres nombres los despierta de verdad; si eso es salvación o el error final, sólo Udana la Vidente se atreve a sospecharlo.' },
+              { tip: 'La quest de los Tres Nombres te lleva a esas tres ruinas a recuperar los nombres, y de vuelta con la Vidente. Es la historia central del mundo, contada con tus pies.' },
+            ],
+          },
+          {
+            id: 'watchers', title: 'La Orden de los Vigilantes',
+            blocks: [
+              { p: 'El muro de los Guardianes protege a Triston, pero no alimenta a nadie. Alguien tiene que salir: por mastite para las fraguas, por hierbas para las pociones, por reliquias que todavía sirven, por noticias de qué se mueve allá afuera. Esos son los vigilantes.' },
+              { p: 'No es una orden noble. Son cazadores, buscavidas y penitentes a los que la ciudad les paga en oro por hacer lo que nadie más quiere. La mayoría no dura. Los que duran no hablan mucho. Vos sos uno de ellos.' },
+              { p: '“Ojos duros, vigilante. Afuera no perdona.” —Guardia Bram, en la puerta.' },
+            ],
+          },
+          {
+            id: 'perdition', title: 'Perdición',
+            blocks: [
+              { p: 'Cuanto más hondo vas hacia el corazón de hierro, más fuerte tira la cosa que despierta. Perdición no es sólo un lugar en el mapa —aunque las Minas y el Puerto de Perdición existan y sean bien reales—. Perdición es lo que te pasa cuando te quedás de más.' },
+              { p: 'Primero cobra el oro: las zonas hondas son caras de sobrevivir. Después cobra algo peor. Los vigilantes lo dicen simple: “Cada zona más honda cobra un peaje distinto: primero el oro, después el nombre.” Los que se quedan de más no vuelven, o vuelven vacíos, sin acordarse de cómo se llamaban.' },
+              { warn: 'Tu tumba es la prueba pequeña de eso: morís lejos y dejás algo tuyo atrás. Perdición es la versión grande, la que no se recupera con una caminata.' },
+            ],
+          },
+          {
+            id: 'omens', title: 'Rumores y presagios',
+            blocks: [
+              { p: 'En Triston, los aldeanos hablan. No todo es cierto, pero nada es del todo mentira:' },
+              { list: ['“Dicen que en las minas abandonadas hay algo que no es duende.”', '“Las minas cantan cuando el aire baja. No es el viento.”', '“Un arquero muerto sigue apuntando: no le des la espalda a un esqueleto.”', '“Bajo las viejas ciudades hay más túneles que calles sobre ellas.”', '“Los duendes no cavan por oro: cavan buscando algo que enterraron sus abuelos.”'] },
+              { p: 'Y siempre, la misma sombra al fondo de cada historia: algo antiguo que respira en el Laberinto de Hierro, esperando que alguien, por miedo o por codicia, termine de despertarlo.' },
+            ],
+          },
+        ],
+      },
+      {
         title: 'El Mundo',
         topics: [
           {
@@ -336,6 +390,60 @@ export const DOCS = {
               { list: ['Tap the ground to walk and explore Triston: the Forge, the Alchemy Table, the merchant and the Guild Hall.', 'Open your inventory and check your gear: you already have a weapon, armor and a couple of potions on the belt.', 'Take the West arch to Black Oak Farm (calm, level 1-3) for your first fights and gathering.', 'Once you gather gold, repair and forge at the Forge and brew potions at the Alchemy Table.'] },
               { tip: 'Triston is a refuge: nothing attacks you inside and you slowly regenerate. Use it to sort out your gear before heading out.' },
               { warn: 'If you die out in the wilds, your load stays in a grave on the spot. Do not stray too far from town until combat feels comfortable.' },
+            ],
+          },
+        ],
+      },
+      {
+        title: 'History',
+        topics: [
+          {
+            id: 'empyrea', title: 'The Age of Empyrea',
+            blocks: [
+              { p: 'Before the Fall there was a kingdom: Empyrea, of tall towers and stone roads, lit by three magisteries. The Fire of Vesuvvio warmed the forges and burned what had to burn. The Ice of Scathelocke kept the harvests and the truths. The Wind of Grisbon carried orders from one edge of the realm to the other.' },
+              { p: 'Vesuvvio, Scathelocke and Grisbon were not statues: they were the three archmages who held the kingdom up. Their secret work, the one no one sang about in the squares, was another: to keep asleep an ancient, nameless thing, locked in the iron heart of the world, beneath what today they call the Iron Labyrinth.' },
+              { p: 'While the Three kept watch, Empyrea prospered. People believed it would last forever. People always do.' },
+            ],
+          },
+          {
+            id: 'the-fall', title: 'The Fall',
+            blocks: [
+              { p: 'No one who saw it lives to tell the whole of it. What is known is this: the seal broke. Some say it was ambition —that one of the Three wanted to use the power they were binding—; others, that it was the carelessness of a generation that stopped believing in the danger. It hardly matters. The binding gave way, and the thing half-woke.' },
+              { p: 'There was no army, no battle. There was a slow going-out. The dead stopped resting. Goblins fled the mines toward the surface, more frightened than fierce. The roads filled with things that used to stay underground at night. In a single generation, Empyrea went out like a candle.' },
+              { p: 'They call it the Fall. It has no exact date: each town counts it from the day it came for them.' },
+            ],
+          },
+          {
+            id: 'guardians', title: 'The Three Guardians',
+            blocks: [
+              { p: 'When they understood they could no longer fully bind what was waking, the Three made a last decision. They sealed themselves into stone —Fire, Ice, Wind— in the square of the last city, and poured what power they had left into an invisible wall that keeps the outside at bay.' },
+              { p: 'The price was to sleep. And something more: so that no one would wake them too soon —nor the thing use them through some fool with good intentions— their true names were hidden, each in the place bound to its element. Vesuvvio\'s, sealed in fire in the Perdition Mines. Scathelocke\'s, in ice, among the ruins of St. Maria. Grisbon\'s, in wind, at Stormrock Pass.' },
+              { p: "Today they are three statues watching over Triston's square. An offering of gold wakes a thread of their old power —the buff of the day. Speaking the three names wakes them for real; whether that is salvation or the final mistake, only Udana the Seer dares to suspect." },
+              { tip: 'The Three Names quest takes you to those three ruins to recover the names, and back to the Seer. It is the central story of the world, told with your feet.' },
+            ],
+          },
+          {
+            id: 'watchers', title: 'The Order of Watchers',
+            blocks: [
+              { p: "The Guardians' wall protects Triston, but it feeds no one. Someone has to go out: for mastite for the forges, for herbs for the potions, for relics that still work, for word of what is moving out there. Those are the watchers." },
+              { p: 'It is not a noble order. They are hunters, drifters and penitents whom the city pays in gold to do what no one else will. Most do not last. The ones who last do not talk much. You are one of them.' },
+              { p: '“Hard eyes, watcher. The wilds do not forgive.” —Guard Bram, at the gate.' },
+            ],
+          },
+          {
+            id: 'perdition', title: 'Perdition',
+            blocks: [
+              { p: 'The deeper you go toward the iron heart, the harder the waking thing pulls. Perdition is not only a place on the map —though the Perdition Mines and Harbor exist and are very real. Perdition is what happens to you when you linger.' },
+              { p: 'First it takes your gold: the deep zones are expensive to survive. Then it takes something worse. The watchers put it plainly: “Each deeper zone charges a different toll: first your gold, then your name.” Those who linger do not return, or return empty, no longer remembering what they were called.' },
+              { warn: 'Your grave is the small proof of it: you die far away and leave something of yours behind. Perdition is the large version, the one a walk cannot undo.' },
+            ],
+          },
+          {
+            id: 'omens', title: 'Rumors & omens',
+            blocks: [
+              { p: 'In Triston, the townsfolk talk. Not all of it is true, but none of it is wholly a lie:' },
+              { list: ['“They say there is something in the abandoned mines that is not a goblin.”', '“The mines sing when the air drops. It is not the wind.”', '“A dead archer keeps aiming: never turn your back on a skeleton.”', '“Beneath the old cities there are more tunnels than streets above them.”', "“Goblins don't dig for gold: they dig for what their grandfathers buried.”"] },
+              { p: 'And always, the same shadow at the bottom of every story: something ancient breathing in the Iron Labyrinth, waiting for someone, out of fear or greed, to finish waking it.' },
             ],
           },
         ],
