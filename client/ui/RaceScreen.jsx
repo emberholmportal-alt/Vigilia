@@ -11,7 +11,7 @@ const PORTRAIT = { humano: 'male07', elfo: 'female04', enano: 'male16', orco: 'g
 const BASE = import.meta.env.BASE_URL || '/'
 const faceUrl = (id) => `${BASE}assets/portraits/${PORTRAIT[id] || 'male01'}.png`
 
-export default function RaceScreen({ onChoose }) {
+export default function RaceScreen({ onChoose, onBack }) {
   const [sel, setSel] = useState(RACES[0].id)
   const [name, setName] = useState('')
   const race = RACES.find((r) => r.id === sel)
@@ -23,6 +23,7 @@ export default function RaceScreen({ onChoose }) {
   return (
     <div className="race menu-scene">
       <Embers />
+      {onBack && <button className="menu-back" onClick={onBack}>‹ {t('back')}</button>}
       <div className="tome">
         {/* Página izquierda: las cuatro sangres */}
         <div className="tome-page tome-left">

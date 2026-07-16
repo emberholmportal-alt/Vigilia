@@ -1,7 +1,7 @@
 // Orquestador del juego (Fase 1): Pixi Application + loop.
 // React NO entra acá: solo lee el store que este loop actualiza.
 
-import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js'
+import { Application, Assets, Container, Graphics, Point, Rectangle, Sprite, Text, Texture } from 'pixi.js'
 import { Iso } from './iso.js'
 import { loadWorld } from './assets.js'
 import { Grid } from './Pathfinding.js'
@@ -90,6 +90,19 @@ export class Game {
     this.dayNight = new DayNight()
     this.dayNight.rect.zIndex = 4.9e6
     app.stage.addChild(this.dayNight.rect)
+
+    // Luz cálida que acompaña al personaje de noche (antorcha/linterna): un halo radial en espacio
+    // de pantalla, POR ENCIMA de la cortina, con mezcla aditiva para "abrir" la oscuridad alrededor
+    // del jugador mientras camina. De día queda apagado. (Estilo Diablo/roguelike.)
+    this.playerLight = new Sprite(makeLightTexture())
+    this.playerLight.anchor.set(0.5)
+    this.playerLight.blendMode = 'add'
+    this.playerLight.eventMode = 'none'
+    this.playerLight.visible = false
+    this.playerLight.zIndex = 4.95e6
+    this.playerLight.scale.set(1.35)
+    this._lightPt = new Point()
+    app.stage.addChild(this.playerLight)
 
     // Fauna: bandadas de día, murciélagos de noche. Sobre el clima, debajo del fundido.
     this.fauna = new Fauna(app.renderer)
@@ -223,6 +236,10 @@ export class Game {
     await this._buildDecorations(renderer, iso, world.map, grid)
 
     await loadIcons()
+    // Conexión al server ANTES de poblar el mundo: así sabemos si spawnear del server o local.
+    // Si el server no responde a tiempo, quedamos en modo local (single-player) — el mundo NO
+    // queda vacío. Sólo corre de verdad la primera vez (guardado por _onlineInit).
+    if (ONLINE) await this._initOnline()
     this.groundItems = []
     this._pendingChest = null
     this._buildChests(renderer, iso, world.map, grid)
@@ -319,46 +336,63 @@ export class Game {
 
   // Conecta al servidor la primera vez y engancha los eventos de presencia; luego, en cada
   // mapa, anuncia dónde estás (join) para recibir a los demás de esa sala.
+  // Conecta al servidor UNA vez, CON TIMEOUT: si el server no responde a tiempo (Render dormido,
+  // caído o sin desplegar), NO nos colgamos ni dejamos el mundo vacío — seguimos en modo local
+  // (single-player) y el juego spawnea enemigos/cofres/nodos por su cuenta. Un éxito tardío se
+  // ignora (this._netGaveUp) para no mezclar el mundo local con el del servidor.
+  async _initOnline() {
+    if (this._onlineInit) return
+    this._onlineInit = true
+    try {
+      const ok = await Promise.race([
+        this._doConnectAndWire(),
+        new Promise((res) => setTimeout(() => { this._netGaveUp = true; res(false) }, 4500)),
+      ])
+      if (!ok) this.store.logMessage({ channel: 'sistema', text: tt('online_off') })
+    } catch { this.store.logMessage({ channel: 'sistema', text: tt('online_off') }) }
+  }
+
+  // Establece la conexión y engancha TODOS los eventos de presencia + combate autoritativo.
+  async _doConnectAndWire() {
+    await net.connect()
+    const auth = await deviceAuth(net)
+    if (!auth.ok || this._netGaveUp) return false
+    this._online = true
+    net.on('present', (m) => this._onPresent(m))
+    net.on('join', (m) => this._addRemote(m.player))
+    net.on('move', (m) => { const r = this.remotes?.get(m.id); if (r) r.setTarget(m.x, m.y, m.dir) })
+    net.on('leave', (m) => this._removeRemote(m.id))
+    net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
+    net.on('gfx', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGfx(m.gfx) })   // gear de otro jugador
+    net.on('php', (m) => { const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax) })   // vida de otro jugador
+    // Reconexión (clave en móvil): al caerse la red, net reintenta con backoff; al reabrir
+    // el socket, re-autenticamos (resume) y reconstruimos el mapa actual (snapshots frescos).
+    net.on('close', () => this.store.logMessage({ channel: 'sistema', text: tt('online_lost') }))
+    net.on('reconnect', () => this._onReconnect())
+    // Combate autoritativo: los enemigos los manda el servidor (compartidos por canal).
+    net.on('espawn', (m) => { for (const e of m.es || []) this._spawnNetEnemy(e) })
+    net.on('estate', (m) => { for (const s of m.es || []) { const e = this._netEnemies?.get(s.i); if (e) e.netSetTarget(s.x, s.y, s.d, s.hp) } })
+    net.on('edmg', (m) => this._onEdmg(m))
+    net.on('edie', (m) => this._onEdie(m))
+    net.on('ekill', (m) => this._onEkill(m))
+    net.on('ehit', (m) => this._onEhit(m))
+    // Nodos de recursos autoritativos (compartidos por canal).
+    net.on('nspawn', (m) => { for (const n of m.ns || []) this._spawnNetNode(n) })
+    net.on('ndeplete', (m) => this._onNdeplete(m))
+    net.on('ngather', (m) => this._onNgather(m))
+    // Cofres autoritativos (compartidos por canal, primero en llegar + respawn).
+    net.on('cspawn', (m) => this._onCspawn(m))
+    net.on('copen', (m) => this._onCopen(m))
+    net.on('cloot', (m) => this._onCloot(m))
+    // Muerte / reaparición de otros jugadores (co-op).
+    net.on('pdied', (m) => { const r = this.remotes?.get(m.id); if (r) r.setDead(true) })
+    net.on('palive', (m) => { const r = this.remotes?.get(m.id); if (r) { r.setTarget(m.x, m.y, m.dir); r.tx = m.x; r.ty = m.y; r.setDead(false) } })
+    this.store.logMessage({ channel: 'sistema', text: tt('online_on') })
+    return true
+  }
+
+  // En cada mapa, anuncia dónde estás (join) para ver a los demás y recibir los enemigos del canal.
   async _enterOnlineMap(mapName, spawn) {
-    if (!this._onlineInit) {
-      this._onlineInit = true
-      try {
-        await net.connect()
-        const auth = await deviceAuth(net)
-        if (!auth.ok) { this.store.logMessage({ channel: 'sistema', text: tt('online_off') }); return }
-        this._online = true
-        net.on('present', (m) => this._onPresent(m))
-        net.on('join', (m) => this._addRemote(m.player))
-        net.on('move', (m) => { const r = this.remotes?.get(m.id); if (r) r.setTarget(m.x, m.y, m.dir) })
-        net.on('leave', (m) => this._removeRemote(m.id))
-        net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
-        net.on('gfx', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGfx(m.gfx) })   // gear de otro jugador
-        net.on('php', (m) => { const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax) })   // vida de otro jugador
-        // Reconexión (clave en móvil): al caerse la red, net reintenta con backoff; al reabrir
-        // el socket, re-autenticamos (resume) y reconstruimos el mapa actual (snapshots frescos).
-        net.on('close', () => this.store.logMessage({ channel: 'sistema', text: tt('online_lost') }))
-        net.on('reconnect', () => this._onReconnect())
-        // Combate autoritativo: los enemigos los manda el servidor (compartidos por canal).
-        net.on('espawn', (m) => { for (const e of m.es || []) this._spawnNetEnemy(e) })
-        net.on('estate', (m) => { for (const s of m.es || []) { const e = this._netEnemies?.get(s.i); if (e) e.netSetTarget(s.x, s.y, s.d, s.hp) } })
-        net.on('edmg', (m) => this._onEdmg(m))
-        net.on('edie', (m) => this._onEdie(m))
-        net.on('ekill', (m) => this._onEkill(m))
-        net.on('ehit', (m) => this._onEhit(m))
-        // Nodos de recursos autoritativos (compartidos por canal).
-        net.on('nspawn', (m) => { for (const n of m.ns || []) this._spawnNetNode(n) })
-        net.on('ndeplete', (m) => this._onNdeplete(m))
-        net.on('ngather', (m) => this._onNgather(m))
-        // Cofres autoritativos (compartidos por canal, primero en llegar + respawn).
-        net.on('cspawn', (m) => this._onCspawn(m))
-        net.on('copen', (m) => this._onCopen(m))
-        net.on('cloot', (m) => this._onCloot(m))
-        // Muerte / reaparición de otros jugadores (co-op).
-        net.on('pdied', (m) => { const r = this.remotes?.get(m.id); if (r) r.setDead(true) })
-        net.on('palive', (m) => { const r = this.remotes?.get(m.id); if (r) { r.setTarget(m.x, m.y, m.dir); r.tx = m.x; r.ty = m.y; r.setDead(false) } })
-        this.store.logMessage({ channel: 'sistema', text: tt('online_on') })
-      } catch { this.store.logMessage({ channel: 'sistema', text: tt('online_off') }); return }
-    }
     if (!this._online) return
     this._clearRemotes()
     net.join({
@@ -767,7 +801,7 @@ export class Game {
   // Crea los cofres del mapa: brillo dorado que pulsa + hotspot para abrir.
   _buildChests(renderer, iso, map, grid) {
     this.chests = []
-    if (ONLINE) return   // online: los cofres los manda el servidor (cspawn), compartidos + respawn
+    if (this._online) return   // conectado: los cofres los manda el servidor (cspawn). Sin conexión: fallback local
     for (const c of map.chests || []) this._addChest(c.x, c.y, c.loot, null)
   }
 
@@ -963,7 +997,7 @@ export class Game {
     // Guardados para invocaciones en vivo (los nigromantes crean esbirros durante el combate).
     this._manifest = manifest
     this._grid = grid
-    if (ONLINE) return   // online: los enemigos los manda el servidor (espawn), no se spawnean local
+    if (this._online) return   // conectado: los enemigos los manda el servidor (espawn). Sin conexión: fallback local
     const spawners = map.spawners || []
     if (!spawners.length || !manifest.enemies) return
     const MAX = 40
@@ -1003,7 +1037,7 @@ export class Game {
   // Élite del día: si hay un contrato activo para esta zona, aparece su jefe (una vez), más
   // fuerte y con nombre. Matarlo completa la misión Contrato.
   async _spawnContractElite(renderer, grid, manifest, spawn, mapName) {
-    if (ONLINE) return   // online: el spawn de élites lo maneja el servidor (fase 2)
+    if (this._online) return   // conectado: la élite la maneja el servidor. Sin conexión: fallback local
     const missions = this.store.getMissions ? this.store.getMissions() : []
     const c = (missions || []).find((m) => m.type === 'contract' && !m.claimed && m.progress < m.target && m.map === mapName)
     if (!c) return
@@ -1042,7 +1076,7 @@ export class Game {
   // Siembra unos nodos en tiles caminables lejos del spawn. Las minas/cuevas traen más
   // vetas de cristal; el resto, más hierbas. Sólo en zonas de combate (las que tienen spawners).
   _spawnNodes(renderer, iso, map, grid, spawn, mapName) {
-    if (ONLINE) return                                    // online: los nodos los manda el servidor
+    if (this._online) return                              // conectado: los nodos los manda el servidor. Sin conexión: local
     if (mapName === 'triston') return                     // el pueblo no tiene recursos
     if (!(map.spawners || []).length) return              // sólo zonas salvajes
     const tex = iconsTexture()
@@ -1960,6 +1994,18 @@ export class Game {
     this.particles.update(dt, this._pt)
     if (this.weather) this.weather.update(dt)
     if (this.dayNight && this._outdoor) this.dayNight.update(dt)
+    // Halo de luz del personaje: intensidad según lo oscuro que esté (noche). De día, apagado.
+    if (this.playerLight) {
+      const dark = this.dayNight ? (1 - this.dayNight.light) : 0
+      if (dark > 0.04 && this.player && !this._spectator && this._outdoor) {
+        this.player.view.getGlobalPosition(this._lightPt)
+        this.playerLight.position.set(this._lightPt.x, this._lightPt.y - 24)
+        this.playerLight.alpha = Math.min(0.72, dark * 0.85)
+        this.playerLight.visible = true
+      } else {
+        this.playerLight.visible = false
+      }
+    }
     if (this.fauna && this._outdoor) this.fauna.update(dt, this.dayNight?.isNight)
 
     // Portales (waypoints): halo con pulso suave, SIN titilar. Pisar un portal por primera
@@ -2112,6 +2158,22 @@ function randInt(range) {
   const a = Array.isArray(range) ? range[0] : range
   const b = Array.isArray(range) ? range[1] : range
   return a + Math.floor(Math.random() * (b - a + 1))
+}
+
+// Textura de halo cálido (gradiente radial) para la luz que acompaña al personaje de noche.
+let _lightTex = null
+function makeLightTexture(size = 512) {
+  if (_lightTex) return _lightTex
+  const cnv = document.createElement('canvas'); cnv.width = cnv.height = size
+  const ctx = cnv.getContext('2d')
+  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.04, size / 2, size / 2, size / 2)
+  g.addColorStop(0, 'rgba(255,238,200,0.78)')
+  g.addColorStop(0.35, 'rgba(255,220,165,0.42)')
+  g.addColorStop(0.70, 'rgba(240,190,130,0.14)')
+  g.addColorStop(1, 'rgba(240,190,130,0)')
+  ctx.fillStyle = g; ctx.fillRect(0, 0, size, size)
+  _lightTex = Texture.from(cnv)
+  return _lightTex
 }
 
 // Tile caminable al azar dentro del rectángulo de un spawner.

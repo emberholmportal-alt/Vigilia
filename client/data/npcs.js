@@ -215,23 +215,23 @@ const TRISTON = [
         lines_en: ['Three mages sealed themselves in the ruins, turned to stone and silence.',
                    'Seek their three names and bring them to me. When I speak them, the seals will give way.'] },
     ] },
-  // Los Tres Guardianes: las estatuas que velan Triston en la plaza de la fuente, DELANTE de los
-  // edificios (que quedan detrás en el orden de profundidad, así ningún techo las tapa). Posiciones
-  // verificadas contra la colisión + captura. Son el corazón del lore (los tres
+  // Los Tres Guardianes: las estatuas que velan Triston desde el BANCO DEL RÍO al oeste, en línea
+  // sobre la orilla y mirando al pueblo (dir 5 = E), lejos del centro. Posiciones caminables,
+  // sin oclusión (verificado contra colisión + captura). Son el corazón del lore (los tres
   // archimagos de Empyrea, sellados en piedra). Cada uno habla con su voz —Vesuvvio (fuego),
   // Scathelocke (hielo), Grisbon (viento)—. La ofrenda del buff del día se hace en el Obelisco;
   // estos son puramente lore + ambiente.
-  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, x: 52, y: 57, dir: 0,
+  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, x: 18, y: 44, dir: 5,
     lines: ['Fui el Fuego de Empyrea. Vesuvvio, me llamaban, cuando aún tenía voz.',
             'Mi nombre arde sellado en las Minas de Perdición. No lo traigas de vuelta sin estar seguro.'],
     lines_en: ['I was the Fire of Empyrea. Vesuvvio, they called me, when I still had a voice.',
                'My name burns sealed in the Perdition Mines. Do not bring it back unless you are certain.'] },
-  { sprite: 'statue_guardian_wind', name: 'Guardián del Viento', name_en: 'Guardian of Wind', landmark: true, x: 54, y: 56, dir: 0,
+  { sprite: 'statue_guardian_wind', name: 'Guardián del Viento', name_en: 'Guardian of Wind', landmark: true, x: 20, y: 46, dir: 5,
     lines: ['El viento lleva los nombres de los que no volvieron.',
             'Grisbon fui, y llevé las órdenes de un confín al otro. Ahora sólo llevo silencio.'],
     lines_en: ['The wind carries the names of those who did not return.',
                'Grisbon I was, and I carried orders from one edge of the realm to the other. Now I carry only silence.'] },
-  { sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', name_en: 'Guardian of Ice', landmark: true, x: 56, y: 57, dir: 0,
+  { sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', name_en: 'Guardian of Ice', landmark: true, x: 22, y: 48, dir: 5,
     lines: ['El hielo no odia. Sólo espera.',
             'Scathelocke guardaba las verdades del reino. Ahora me guardo a mí misma, dormida en la piedra.'],
     lines_en: ['Ice does not hate. It only waits.',

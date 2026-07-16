@@ -104,6 +104,26 @@ export default function App() {
     }
   }, [phase])
 
+  // Botón "atrás" del navegador / gesto de retroceso del celular: en vez de ABANDONAR la página,
+  // navega DENTRO de la app — primero cierra el overlay abierto (diálogo, waypoints, panel) y, si
+  // no hay ninguno, vuelve del juego o la creación de personaje al menú de inicio. Se re-arma un
+  // buffer de historial en cada retroceso para que la app no se cierre sola.
+  const phaseRef = useRef(phase)
+  useEffect(() => { phaseRef.current = phase }, [phase])
+  useEffect(() => {
+    window.history.pushState({ v: 'velgrim' }, '')
+    const onPop = () => {
+      const st = useGameStore.getState()
+      if (st.dialogue) st.closeDialogue()
+      else if (st.waypointOpen) st.closeWaypoints()
+      else if (st.panel) st.setPanel(null)
+      else if (phaseRef.current === 'game' || phaseRef.current === 'race') setPhase('start')
+      window.history.pushState({ v: 'velgrim' }, '')
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
   return (
     <div id="wrap">
       {phase === 'game' && <div ref={canvasRef} className="canvas-host" />}
@@ -127,7 +147,7 @@ export default function App() {
 
       {phase === 'boot' && <BootSplash onDone={() => setPhase('start')} />}
       {phase === 'start' && <StartScreen onPlay={play} onSpectate={spectate} onNew={startGame} canContinue={hasSave()} loading={false} />}
-      {phase === 'race' && <RaceScreen onChoose={chooseRace} />}
+      {phase === 'race' && <RaceScreen onChoose={chooseRace} onBack={() => setPhase('start')} />}
       {phase === 'game' && loading && <GameLoader />}
     </div>
   )
