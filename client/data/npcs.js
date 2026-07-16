@@ -82,15 +82,12 @@ const LOCHPORT = [
 ]
 
 // La granja (mapa abierto con edificios estampados) queda como alternativa (?map=).
+// Granja de Black Oak (realm 1, gathering lv1-3): puesto de frontera, NO un segundo pueblo.
+// Un obelisco de recall + un guardia + el buhonero ambulante. Los Tres Guardianes son seña de
+// identidad de Triston: no se repiten acá.
 const FARM = [
   { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', name_en: 'Obelisk of Return', landmark: true, x: 58, y: 50, dir: 7,
     lines: ['La piedra está tibia. Los que caen afuera, vuelven acá.'] },
-  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, x: 56, y: 51, dir: 0,
-    lines: ['Ofrendá oro a la llama y arderás más fuerte hoy.'] },
-  { sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', name_en: 'Guardian of Ice', landmark: true, x: 60, y: 51, dir: 0,
-    lines: ['El hielo no odia. Solo espera.'] },
-  { sprite: 'statue_guardian_wind', name: 'Guardián del Viento', name_en: 'Guardian of Wind', landmark: true, x: 58, y: 48, dir: 0,
-    lines: ['El viento lleva los nombres de los que no volvieron.'] },
   { sprite: 'knight', name: 'Guardia Bram', name_en: 'Guard Bram', portrait: 'male07.png', x: 63, y: 53, dir: 1,
     lines: ['Ojos duros, vigilante. Afuera no perdona.'] },
   { sprite: 'peddler_goblin', name: 'Nix', name_en: 'Nix', portrait: 'goblin.png', x: 61, y: 57, dir: 4,

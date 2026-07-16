@@ -447,6 +447,7 @@ html, body, #root {
 /* piedra oscura + borde de latón + texto pergamino serif (estética Flare) */
 .interact-btn {
   pointer-events: auto; font-family: Georgia, serif; font-size: 14px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px;
   letter-spacing: 0.02em; color: var(--parch);
   background: linear-gradient(180deg, #2a2320 0%, #17120e 60%, #0d0a08 100%);
   border: 1px solid var(--gold); border-radius: 4px; padding: 8px 18px; cursor: pointer;

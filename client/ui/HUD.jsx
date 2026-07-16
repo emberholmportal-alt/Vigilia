@@ -11,6 +11,17 @@ import { raceName } from '../i18n.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 
+// Íconos SVG para los botones de interacción (sin emojis). Heredan el color del texto.
+const Svg = (props) => (
+  <svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="none" stroke="currentColor"
+       strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />
+)
+const IcPortal = () => <Svg><circle cx="12" cy="12" r="8.5" /><path d="M12 5.5a6.5 6.5 0 1 1-6 4" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /></Svg>
+const IcTalk = () => <Svg><path d="M20 4H4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3v4l5-4h8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1Z" /></Svg>
+const IcTrade = () => <Svg><ellipse cx="12" cy="6.5" rx="7" ry="2.8" /><path d="M5 6.5v5c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8v-5" /><path d="M5 11.5v5c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8v-5" /></Svg>
+const IcPick = () => <Svg><path d="M4.5 19.5 13 11" /><path d="M6 8.5c4-2.2 9-1 12 4" /><path d="M9.5 5c2.4 3 5 5.6 8 7" /></Svg>
+const IcHerb = () => <Svg><path d="M12 21v-9" /><path d="M12 13c-3.2 0-5.3-2-5.3-5.3 3.2 0 5.3 2 5.3 5.3Z" /><path d="M12 11c3.2 0 5.3-2 5.3-5.3-3.2 0-5.3 2-5.3 5.3Z" /></Svg>
+
 // Aviso breve que aparece arriba de la barra y se va solo.
 function Toast() {
   const toast = useGameStore((s) => s.toast)
@@ -116,21 +127,21 @@ export default function HUD({ onExitSpectate }) {
         {nearbyPortal && (
           <div className="interact-wrap">
             <button className="interact-btn portal-btn" onClick={openWaypoints}>
-              🌀 {t('portal_use')}
+              <IcPortal /> {t('portal_use')}
             </button>
           </div>
         )}
         {nearby && (
           <div className="interact-wrap">
             <button className="interact-btn" onClick={requestInteract}>
-              {nearby.shop ? '🛒 ' + t('trade_with', { name: nearby.name }) : '💬 ' + t('talk_with', { name: nearby.name })}
+              {nearby.shop ? <IcTrade /> : <IcTalk />} {nearby.shop ? t('trade_with', { name: nearby.name }) : t('talk_with', { name: nearby.name })}
             </button>
           </div>
         )}
         {nearbyNode && !nearby && (
           <div className="interact-wrap">
             <button className="interact-btn gather-btn" onClick={requestGather}>
-              {nearbyNode.skill === 'excavacion' ? '⛏️ ' : '🌿 '}{t('gather_action', { name: nearbyNode.name })}
+              {nearbyNode.skill === 'excavacion' ? <IcPick /> : <IcHerb />} {t('gather_action', { name: nearbyNode.name })}
             </button>
           </div>
         )}
