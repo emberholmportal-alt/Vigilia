@@ -8,6 +8,7 @@ import { walletSignIn, loadSession, clearSession } from '../net/wallet.js'
 import { deviceAuth } from '../net/online.js'
 import HowToPlay from './HowToPlay.jsx'
 import Docs from './Docs.jsx'
+import Embers from './Embers.jsx'
 
 const LOGO = (import.meta.env.BASE_URL || '/') + 'velgrinlogo.png'
 const short = (a) => (a ? a.slice(0, 4) + '…' + a.slice(-4) : '')
@@ -68,11 +69,13 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
   }
 
   return (
-    <div className="start">
+    <div className="start menu-scene">
+      <Embers />
       <div className="start-inner">
         <img className="start-logo" src={LOGO} alt="Velgrim" />
         <p className="tagline">{t('start_tag')}</p>
 
+        <div className="start-panel">
         {ONLINE && stats && (
           <div className="counters">
             <span className="counter"><i className="dot on" /> <b>{stats.online}</b> {t('players_online')}</span>
@@ -112,6 +115,7 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
         <div className="htp-links">
           <button className="htp-link" onClick={() => setShowGuide(true)}>{t('how_to_play')}</button>
           <button className="htp-link" onClick={() => setShowDocs(true)}>{t('docs_link')}</button>
+        </div>
         </div>
 
         <p className="attribution">

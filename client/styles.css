@@ -248,11 +248,14 @@ html, body, #root {
 /* conexión de billetera (Solana) en la pantalla de inicio */
 .wallet-box { margin: 0 0 18px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .wallet-btn {
-  font-family: Georgia, serif; font-size: 14px; letter-spacing: 0.04em; color: #14111a;
-  background: radial-gradient(circle at 40% 30%, #b98cf0, #8a5ad0);
-  border: 1px solid #6a44a8; border-radius: 7px; padding: 10px 22px; cursor: pointer;
-  box-shadow: 0 2px 10px rgba(138, 90, 208, 0.4); -webkit-tap-highlight-color: transparent;
+  font-family: 'BonaNova', Georgia, serif; font-size: 13px; letter-spacing: 0.05em; color: #d9c9f0;
+  background: linear-gradient(180deg, #241a30, #150f1c 60%, #0d0912);
+  border: 1px solid #5b3f83; border-radius: 5px; padding: 9px 20px; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(160,120,220,0.18);
+  text-shadow: 0 1px 2px #000; transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
+.wallet-btn:hover { border-color: #9a72d6; color: #efe4ff; box-shadow: 0 2px 14px rgba(140,90,208,0.3), inset 0 1px 0 rgba(160,120,220,0.3); }
 .wallet-btn:disabled { opacity: 0.6; cursor: default; }
 .wallet-btn:not(:disabled):active { transform: scale(0.97); }
 .wallet-on {
@@ -269,7 +272,7 @@ html, body, #root {
 .wallet-disc:active { transform: scale(0.97); }
 .wallet-addr { color: #bfe0ff; font-family: 'Courier New', monospace; }
 .wallet-err { color: #d98a6a; font-family: Georgia, serif; font-size: 11px; margin: 2px 0 0; max-width: 300px; }
-.wallet-hint { color: var(--dim); font-family: Georgia, serif; font-size: 11px; font-style: italic; margin: 2px 0 0; }
+.wallet-hint { color: var(--dim); font-family: 'BonaNova', Georgia, serif; font-size: 11px; font-style: italic; margin: 2px 0 0; }
 
 /* splash de arranque: logo + barra de carga estilo Flare */
 .boot {
@@ -1439,3 +1442,151 @@ html, body, #root {
 /* variante recolectar: acento verde */
 .gather-btn { color: #cde6b0; border-color: #4f7d3b;
   box-shadow: 0 3px 10px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.45), inset 0 1px 0 rgba(120,200,90,0.28); }
+
+/* ============================================================================
+   Reskin de menús estilo Diablo II — arte de Flare (CC-BY-SA): fondo pintado
+   (badlands), tomo (book.png), fuente Bona Nova SC. Aplica a StartScreen y
+   RaceScreen. Todo self-hosted (sin CDN).
+   ============================================================================ */
+@font-face { font-family: 'BonaNova'; src: url('/assets/fonts/BonaNovaSC-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'BonaNova'; src: url('/assets/fonts/BonaNovaSC-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'BonaNova'; src: url('/assets/fonts/BonaNovaSC-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+
+/* --- Escena atmosférica compartida --- */
+.menu-scene {
+  position: absolute; inset: 0; overflow: hidden; display: grid; place-items: center; padding: 24px;
+  background:
+    radial-gradient(120% 90% at 50% 10%, rgba(0,0,0,0.10), rgba(6,5,8,0.70) 60%, rgba(4,3,6,0.94) 100%),
+    linear-gradient(180deg, rgba(6,5,8,0.30), rgba(6,5,8,0.82)),
+    url('/assets/menu/bg_badlands.png') center 22% / cover no-repeat,
+    var(--obsidian);
+}
+.menu-scene::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  box-shadow: inset 0 0 220px 70px rgba(0,0,0,0.9);
+  background: radial-gradient(120% 80% at 50% 44%, transparent 52%, rgba(0,0,0,0.55));
+}
+
+/* --- Brasas flotantes --- */
+.embers { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
+.embers i {
+  position: absolute; bottom: -12px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, #ffcf8a 0%, #e0842f 55%, rgba(194,85,31,0) 76%);
+  box-shadow: 0 0 6px 1px rgba(224,132,47,0.55);
+  animation-name: emberRise; animation-iteration-count: infinite; animation-timing-function: linear;
+}
+@keyframes emberRise {
+  0% { transform: translate3d(0,0,0); opacity: 0; }
+  8% { opacity: 0.85; }
+  85% { opacity: 0.4; }
+  100% { transform: translate3d(var(--drift), -100vh, 0); opacity: 0; }
+}
+
+/* --- Botón ornamentado (cabezales dorados estilo Flare) --- */
+.enter {
+  font-family: 'BonaNova', Georgia, serif; font-size: 16px; letter-spacing: 0.08em; font-weight: 700;
+  color: var(--parch); background: linear-gradient(180deg, #2a2320, #17120e 55%, #0c0a08);
+  border: 1px solid #6b5320; border-radius: 3px; padding: 13px 34px; cursor: pointer; position: relative;
+  clip-path: none; text-shadow: 0 1px 2px #000;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(201,162,39,0.18);
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.05s;
+}
+.enter::before, .enter::after {
+  content: ''; position: absolute; top: 50%; transform: translateY(-50%); width: 9px; height: 54%;
+  background: linear-gradient(180deg, #e6c85a, #a9861d); opacity: 0.85;
+}
+.enter::before { left: 5px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+.enter::after { right: 5px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.enter:hover { border-color: var(--gold); color: #f6e6a8; box-shadow: 0 3px 16px rgba(201,162,39,0.28), inset 0 1px 0 rgba(201,162,39,0.32); }
+.enter:hover::before, .enter:hover::after { opacity: 1; }
+.enter:active { transform: translateY(1px); }
+.enter:disabled { opacity: 0.5; cursor: default; }
+.enter.primary, .enter.play-now {
+  color: #1a1206; background: linear-gradient(180deg, #f0d165, #c9a227 55%, #a9861d);
+  border-color: #8a6f1e; text-shadow: 0 1px 0 rgba(255,244,200,0.4);
+}
+.enter.primary:hover, .enter.play-now:hover { background: linear-gradient(180deg, #f8de7e, #d6ad2c 55%, #b8922a); color: #140d03; }
+.enter.primary::before, .enter.primary::after,
+.enter.play-now::before, .enter.play-now::after { background: linear-gradient(180deg, #3a2c10, #1a1206); opacity: 0.9; }
+.enter.secondary { opacity: 0.92; }
+
+/* --- StartScreen: panel de acciones sobre la escena --- */
+.start.menu-scene { background:
+    radial-gradient(120% 90% at 50% 10%, rgba(0,0,0,0.10), rgba(6,5,8,0.70) 60%, rgba(4,3,6,0.94) 100%),
+    linear-gradient(180deg, rgba(6,5,8,0.30), rgba(6,5,8,0.82)),
+    url('/assets/menu/bg_badlands.png') center 22% / cover no-repeat, var(--obsidian); }
+.start-inner { position: relative; z-index: 3; max-width: 460px; }
+.start-logo { filter: drop-shadow(0 6px 24px rgba(0,0,0,0.8)) drop-shadow(0 0 22px rgba(194,85,31,0.22)); }
+.tagline { font-family: 'BonaNova', Georgia, serif; color: #cdbfa6; font-style: italic; letter-spacing: 0.03em; font-size: 15px; text-shadow: 0 1px 3px #000; }
+.start-panel {
+  position: relative; margin: 4px auto 0; padding: 20px 24px 18px; max-width: 420px;
+  background: linear-gradient(180deg, rgba(22,17,24,0.80), rgba(10,8,12,0.90));
+  border: 1px solid #5a4a2a; border-radius: 6px;
+  box-shadow: 0 12px 44px rgba(0,0,0,0.6), inset 0 1px 0 rgba(201,162,39,0.14), inset 0 0 0 1px rgba(201,162,39,0.06);
+}
+.start-panel::before, .start-panel::after {
+  content: ''; position: absolute; width: 14px; height: 14px; border: 2px solid var(--gold); opacity: 0.55;
+}
+.start-panel::before { top: 5px; left: 5px; border-right: 0; border-bottom: 0; }
+.start-panel::after { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
+.attribution { position: relative; z-index: 3; }
+
+/* --- RaceScreen: TOMO abierto (char-select) --- */
+.race.menu-scene { display: grid; place-items: center; padding: 20px; }
+.tome {
+  position: relative; z-index: 3; width: min(94vw, 900px); aspect-ratio: 1137 / 700;
+  background: url('/assets/menu/book.png') center / 100% 100% no-repeat;
+  display: grid; grid-template-columns: 1fr 1fr;
+  filter: drop-shadow(0 18px 50px rgba(0,0,0,0.7));
+}
+.tome-page { position: relative; display: flex; flex-direction: column; align-items: center; color: #3a2c1c; overflow: hidden; padding: 6.5% 6% 7.5%; }
+.tome-left { padding-left: 7.5%; padding-right: 4.5%; }
+.tome-right { padding-left: 4.5%; padding-right: 7.5%; }
+.tome-title { font-family: 'BonaNova', serif; font-size: clamp(15px, 2.1vw, 25px); color: #5c3a16; letter-spacing: 0.04em; margin: 0 0 5%; text-align: center; }
+.race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6%; width: 100%; }
+.race-card {
+  display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 9px 4px; cursor: pointer;
+  background: rgba(70,45,20,0.05); border: 1px solid rgba(90,60,30,0.35); border-radius: 6px;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.race-face {
+  width: clamp(42px, 6vw, 70px); aspect-ratio: 1; background-size: cover; background-position: center top;
+  border-radius: 50%; border: 2px solid #7a5a2a; box-shadow: 0 2px 6px rgba(0,0,0,0.4); filter: sepia(0.18) contrast(1.02);
+}
+.race-card b { font-family: 'BonaNova', serif; font-size: clamp(12px, 1.4vw, 16px); color: #3a2410; }
+.race-arch { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b4a26; }
+.race-card:hover { border-color: #b8862e; background: rgba(120,80,30,0.10); }
+.race-card.on { border-color: var(--gold); background: rgba(201,162,39,0.16); box-shadow: 0 0 14px rgba(201,162,39,0.4), inset 0 0 0 1px var(--gold); }
+.race-card.on .race-face { border-color: var(--gold); box-shadow: 0 0 12px rgba(201,162,39,0.6); filter: none; }
+.race-hero { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 3%; }
+.race-hero-face { width: clamp(60px, 9vw, 104px); aspect-ratio: 1; background-size: cover; background-position: center top; border-radius: 50%; border: 3px solid #7a5a2a; box-shadow: 0 3px 12px rgba(0,0,0,0.5), 0 0 16px rgba(201,162,39,0.25); }
+.race-hero-name { font-family: 'BonaNova', serif; font-size: clamp(18px, 2.4vw, 28px); color: #5c2f10; margin-top: 6px; }
+.race-hero-arch { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #7a4a20; }
+.tome-right .race-mods { color: #8a5a12; font-size: clamp(12px, 1.4vw, 15px); font-weight: 700; margin: 3% 0 2%; text-align: center; }
+.tome-right .race-fantasy { color: #5a4632; font-style: italic; font-size: clamp(12px, 1.4vw, 15px); text-align: center; margin: 0 0 4%; max-width: 90%; }
+.tome-right .name-input {
+  background: rgba(255,250,235,0.55); border: 1px solid #8a6a3a; color: #3a2410; max-width: 220px;
+  margin: 0 auto 4%; border-radius: 3px; font-family: 'BonaNova', serif;
+}
+.tome-right .name-input::placeholder { color: #8a7250; }
+.tome-right .name-input:focus { outline: none; border-color: var(--ember); background: rgba(255,250,235,0.72); }
+.confirm { margin-top: auto; }
+
+/* --- Mobile / portrait: el tomo landscape no entra; usamos una página de pergamino --- */
+@media (max-width: 760px), (orientation: portrait) {
+  .tome {
+    aspect-ratio: auto; width: min(96vw, 460px); grid-template-columns: 1fr; background: none;
+    border: 1px solid #6b5320; border-radius: 8px; padding: 18px 16px 20px;
+    background-image: linear-gradient(180deg, #efe6cf, #e2d4b4);
+    box-shadow: 0 14px 44px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(90,60,30,0.4);
+  }
+  .tome-page { padding: 0; }
+  .tome-left { margin-bottom: 14px; }
+  .tome-title { margin-bottom: 12px; }
+  .race-grid { gap: 8px; }
+  .confirm { margin-top: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .embers i { animation: none; opacity: 0; }
+}
