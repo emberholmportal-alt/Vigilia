@@ -1482,33 +1482,59 @@ html, body, #root {
   100% { transform: translate3d(var(--drift), -100vh, 0); opacity: 0; }
 }
 
-/* --- Botón ornamentado (cabezales dorados estilo Flare) --- */
+/* --- Botón ornamentado: placa de metal biselada con cabezales de flecha (estilo Flare) --- */
+.entry { align-items: center; }
 .enter {
-  font-family: 'BonaNova', Georgia, serif; font-size: 16px; letter-spacing: 0.08em; font-weight: 700;
-  color: var(--parch); background: linear-gradient(180deg, #2a2320, #17120e 55%, #0c0a08);
-  border: 1px solid #6b5320; border-radius: 3px; padding: 13px 34px; cursor: pointer; position: relative;
-  clip-path: none; text-shadow: 0 1px 2px #000;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(201,162,39,0.18);
-  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.05s;
+  font-family: 'BonaNova', Georgia, serif; font-size: 16px; letter-spacing: 0.09em; font-weight: 700;
+  color: var(--parch); cursor: pointer; position: relative; clip-path: none; text-shadow: 0 1px 2px #000;
+  min-width: 210px; min-height: 52px; padding: 14px 42px; border-radius: 5px; border: 1px solid #6b5320;
+  display: inline-flex; align-items: center; justify-content: center; text-align: center;
+  background:
+    linear-gradient(180deg, rgba(255,238,196,0.10), rgba(255,238,196,0) 42%),
+    linear-gradient(180deg, #322a26 0%, #1b1510 52%, #0c0a08 100%);
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.55),
+    inset 0 0 0 1px rgba(201,162,39,0.28),
+    inset 0 1px 0 rgba(255,224,150,0.22),
+    inset 0 -8px 14px rgba(0,0,0,0.45);
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.05s, background 0.15s;
 }
+/* cabezales de flecha (doble punta) a los costados */
 .enter::before, .enter::after {
-  content: ''; position: absolute; top: 50%; transform: translateY(-50%); width: 9px; height: 54%;
-  background: linear-gradient(180deg, #e6c85a, #a9861d); opacity: 0.85;
+  content: ''; position: absolute; top: 50%; transform: translateY(-50%); width: 12px; height: 58%;
+  background: linear-gradient(180deg, #f0d475, #a9861d 60%, #7a5f14);
+  box-shadow: 0 0 4px rgba(230,200,90,0.5); opacity: 0.9;
 }
-.enter::before { left: 5px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
-.enter::after { right: 5px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
-.enter:hover { border-color: var(--gold); color: #f6e6a8; box-shadow: 0 3px 16px rgba(201,162,39,0.28), inset 0 1px 0 rgba(201,162,39,0.32); }
+.enter::before { left: 7px; clip-path: polygon(100% 0, 22% 50%, 100% 100%, 62% 50%); }
+.enter::after { right: 7px; clip-path: polygon(0 0, 78% 50%, 0 100%, 38% 50%); }
+.enter:hover {
+  border-color: var(--gold); color: #f8ecbe; transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(201,162,39,0.30), inset 0 0 0 1px rgba(201,162,39,0.45), inset 0 1px 0 rgba(255,224,150,0.32), inset 0 -8px 14px rgba(0,0,0,0.4);
+}
 .enter:hover::before, .enter:hover::after { opacity: 1; }
 .enter:active { transform: translateY(1px); }
 .enter:disabled { opacity: 0.5; cursor: default; }
+/* Variante primaria: placa dorada pulida (PLAY NOW / Encarnar) */
 .enter.primary, .enter.play-now {
-  color: #1a1206; background: linear-gradient(180deg, #f0d165, #c9a227 55%, #a9861d);
-  border-color: #8a6f1e; text-shadow: 0 1px 0 rgba(255,244,200,0.4);
+  color: #1c1305; border-color: #8a6f1e; text-shadow: 0 1px 0 rgba(255,246,210,0.5);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 45%),
+    linear-gradient(180deg, #f4d76e 0%, #d3ad30 50%, #a9861d 100%);
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.5),
+    inset 0 0 0 1px rgba(90,66,14,0.5),
+    inset 0 1px 0 rgba(255,250,220,0.6),
+    inset 0 -7px 12px rgba(120,90,20,0.4);
 }
-.enter.primary:hover, .enter.play-now:hover { background: linear-gradient(180deg, #f8de7e, #d6ad2c 55%, #b8922a); color: #140d03; }
+.enter.primary:hover, .enter.play-now:hover {
+  color: #140d03; background:
+    linear-gradient(180deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 45%),
+    linear-gradient(180deg, #fbe487 0%, #dcb638 50%, #b8922a 100%);
+}
 .enter.primary::before, .enter.primary::after,
-.enter.play-now::before, .enter.play-now::after { background: linear-gradient(180deg, #3a2c10, #1a1206); opacity: 0.9; }
-.enter.secondary { opacity: 0.92; }
+.enter.play-now::before, .enter.play-now::after { background: linear-gradient(180deg, #3a2c10, #1a1206); box-shadow: none; opacity: 0.92; }
+/* Secundaria: MISMO tamaño que la primaria, en cuero (no desalineada) */
+.enter.secondary { font-size: 16px; padding: 14px 42px; margin-top: 0; opacity: 1; }
 
 /* --- StartScreen: panel de acciones sobre la escena --- */
 .start.menu-scene { background:
@@ -1536,13 +1562,17 @@ html, body, #root {
 .tome {
   position: relative; z-index: 3; width: min(94vw, 900px); aspect-ratio: 1137 / 700;
   background: url('/assets/menu/book.png') center / 100% 100% no-repeat;
-  display: grid; grid-template-columns: 1fr 1fr;
   filter: drop-shadow(0 18px 50px rgba(0,0,0,0.7));
 }
-.tome-page { position: relative; display: flex; flex-direction: column; align-items: center; color: #3a2c1c; overflow: hidden; padding: 6.5% 6% 7.5%; }
-.tome-left { padding-left: 7.5%; padding-right: 4.5%; }
-.tome-right { padding-left: 4.5%; padding-right: 7.5%; }
-.tome-title { font-family: 'BonaNova', serif; font-size: clamp(15px, 2.1vw, 25px); color: #5c3a16; letter-spacing: 0.04em; margin: 0 0 5%; text-align: center; }
+/* Páginas posicionadas EXACTO sobre el pergamino (medido de book.png):
+   izq x12–47%, der x52–89%, ambas y8–92%. Con inset para no pisar las cantoneras. */
+.tome-page {
+  position: absolute; top: 9%; height: 82%; color: #3a2c1c; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.tome-left { left: 12.5%; width: 33.5%; justify-content: flex-start; }
+.tome-right { left: 52.5%; width: 35.5%; justify-content: flex-start; }
+.tome-title { font-family: 'BonaNova', serif; font-size: clamp(15px, 2vw, 24px); color: #5c3a16; letter-spacing: 0.03em; margin: 0 0 6%; text-align: center; flex: 0 0 auto; }
 .race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6%; width: 100%; }
 .race-card {
   display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 9px 4px; cursor: pointer;
@@ -1575,12 +1605,12 @@ html, body, #root {
 /* --- Mobile / portrait: el tomo landscape no entra; usamos una página de pergamino --- */
 @media (max-width: 760px), (orientation: portrait) {
   .tome {
-    aspect-ratio: auto; width: min(96vw, 460px); grid-template-columns: 1fr; background: none;
+    aspect-ratio: auto; width: min(96vw, 460px); background: none;
     border: 1px solid #6b5320; border-radius: 8px; padding: 18px 16px 20px;
     background-image: linear-gradient(180deg, #efe6cf, #e2d4b4);
     box-shadow: 0 14px 44px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(90,60,30,0.4);
   }
-  .tome-page { padding: 0; }
+  .tome-page { position: static; top: auto; left: auto; width: auto; height: auto; padding: 0; }
   .tome-left { margin-bottom: 14px; }
   .tome-title { margin-bottom: 12px; }
   .race-grid { gap: 8px; }
