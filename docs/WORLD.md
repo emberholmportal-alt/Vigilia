@@ -3,9 +3,10 @@
 ## Premisa
 
 Empyrea cayó. Los muertos no descansan, los duendes bajaron de las minas y algo antiguo
-respira en el Laberinto de Hierro. **Black Oak City** es lo último que queda en pie: la
-última ciudad con murallas, con fragua encendida y con gremios que todavía mandan gente a
-morir afuera.
+respira en el Laberinto de Hierro. **Triston** es lo último que queda en pie: la última
+ciudad con murallas, con fragua encendida y con gremios que todavía mandan gente a morir
+afuera. (**Black Oak City**, mucho más grande, queda como zona de nivel alto y futuro gran
+hub cuando el mundo crezca; ver ESCENARIOS.md.)
 
 Vos sos un **vigilante**: alguien a quien la ciudad le paga para que salga cuando nadie más
 quiere salir.

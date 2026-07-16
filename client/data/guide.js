@@ -17,6 +17,7 @@ export const HOW_TO_PLAY = {
         'Tocá el suelo para caminar; tocá un enemigo para atacarlo.',
         'M1 es tu golpe normal (usa tu arma); M2 es tu habilidad especial, y elegís cuál va ahí. El servidor decide el daño: nadie hace trampa.',
       ],
+      tip: 'Sin arma peleás a puños y hacés poco daño: equipate algo antes de salir.',
     },
     {
       icon: 'Fist', title: 'Las seis acciones',
@@ -46,6 +47,7 @@ export const HOW_TO_PLAY = {
         'Si caés afuera, tu carga queda en una tumba en el lugar exacto. Volvé a buscarla… si podés.',
         'Morir otra vez antes de recuperarla suma una tumba nueva. Triston es refugio: adentro no te pasa nada.',
       ],
+      warn: 'Bancá lo valioso en Triston y viajá liviano a las zonas duras: lo que llevás encima es lo que podés perder.',
     },
     {
       icon: 'Shield', title: 'Gremios',
@@ -76,6 +78,7 @@ export const HOW_TO_PLAY = {
         'Tap the ground to walk; tap an enemy to attack it.',
         'M1 is your normal strike (uses your weapon); M2 is your special ability, and you choose which one goes there. The server decides the damage: no one cheats.',
       ],
+      tip: 'Without a weapon you fight with fists and do little damage: equip something before heading out.',
     },
     {
       icon: 'Fist', title: 'The six actions',
@@ -105,6 +108,7 @@ export const HOW_TO_PLAY = {
         'If you fall out in the wilds, your load stays in a grave on the exact spot. Go back for it… if you can.',
         'Dying again before you recover it leaves a new grave. Triston is a refuge: inside, nothing touches you.',
       ],
+      warn: 'Bank your valuables in Triston and travel light to the hard zones: what you carry is what you can lose.',
     },
     {
       icon: 'Shield', title: 'Guilds',

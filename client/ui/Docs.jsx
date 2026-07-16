@@ -1,19 +1,19 @@
-// Overlay "Documentación / Docs": referencia profunda por categorías (El Mundo, Razas,
-// Escenarios, Sistemas, Economía, Roadmap). Bilingüe (toggle propio), estética del juego.
-// Contenido en data/docs.js. Reusa el marco visual de How to Play (.htp-*).
+// Overlay "Documentación / Docs": wiki con sidebar (grupos → temas) + contenido. Bilingüe,
+// con el chrome estilo Flare (marco tallado, título dorado, X roja). Contenido en data/docs.js.
 import { useState } from 'react'
 import { useGameStore } from '../store.js'
 import { DOCS } from '../data/docs.js'
-import * as Icons from './Icon.jsx'
 
+const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 const TITLE = { es: 'Documentación', en: 'Docs' }
-const SUB = { es: 'El mundo de Velgrim y sus reglas, en detalle.', en: 'The world of Velgrim and its rules, in detail.' }
 const CLOSE = { es: 'Cerrar', en: 'Close' }
 
 function Block({ b }) {
   if (b.h) return <h4 className="docs-h">{b.h}</h4>
   if (b.p) return <p className="docs-p">{b.p}</p>
   if (b.list) return <ul className="docs-list">{b.list.map((it, i) => <li key={i}>{it}</li>)}</ul>
+  if (b.tip) return <div className="docs-note tip"><span>✦</span><p>{b.tip}</p></div>
+  if (b.warn) return <div className="docs-note warn"><span>!</span><p>{b.warn}</p></div>
   if (b.table) return (
     <div className="docs-table-wrap">
       <table className="docs-table">
@@ -28,40 +28,47 @@ function Block({ b }) {
 export default function Docs({ onClose }) {
   const lang = useGameStore((s) => s.lang) === 'es' ? 'es' : 'en'
   const setLang = useGameStore((s) => s.setLang)
-  const cats = DOCS[lang] || DOCS.en
-  const [sel, setSel] = useState(0)
-  const cat = cats[Math.min(sel, cats.length - 1)]
+  const groups = (DOCS[lang] || DOCS.en).groups
+  const [sel, setSel] = useState('intro')
+
+  // topic elegido (busca en todos los grupos)
+  let topic = null
+  for (const g of groups) { const t = g.topics.find((x) => x.id === sel); if (t) { topic = t; break } }
+  if (!topic) topic = groups[0].topics[0]
 
   return (
-    <div className="htp-backdrop" onClick={onClose}>
-      <div className="htp-panel docs-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="htp-head">
-          <div className="htp-titles">
-            <h2>{TITLE[lang]}</h2>
-            <p>{SUB[lang]}</p>
-          </div>
-          <div className="htp-lang">
+    <div className="gframe-backdrop" onClick={onClose}>
+      <div className="gframe docs-frame" onClick={(e) => e.stopPropagation()}>
+        <button className="gframe-x" style={{ backgroundImage: `url(${UI}button_x.png)` }} onClick={onClose} aria-label="close" />
+        <div className="gframe-head">
+          <h2 className="gframe-title">{TITLE[lang]}</h2>
+          <div className="gframe-lang">
             <button className={lang === 'es' ? 'on' : ''} onClick={() => setLang('es')}>ES</button>
             <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')}>EN</button>
           </div>
         </div>
 
-        <div className="docs-tabs">
-          {cats.map((c, i) => {
-            const Ic = Icons[c.icon] || Icons.Scroll
-            return (
-              <button key={c.id} className={'docs-tab' + (i === sel ? ' on' : '')} onClick={() => setSel(i)}>
-                <Ic /> <span>{c.title}</span>
-              </button>
-            )
-          })}
+        <div className="docs-layout">
+          <nav className="docs-nav">
+            {groups.map((g) => (
+              <div className="docs-nav-group" key={g.title}>
+                <div className="docs-nav-title">{g.title}</div>
+                {g.topics.map((tp) => (
+                  <button key={tp.id} className={'docs-nav-item' + (tp.id === sel ? ' on' : '')} onClick={() => setSel(tp.id)}>
+                    {tp.title}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </nav>
+
+          <article className="docs-article">
+            <h3 className="docs-topic-title">{topic.title}</h3>
+            {topic.blocks.map((b, i) => <Block key={i} b={b} />)}
+          </article>
         </div>
 
-        <div className="htp-body docs-content">
-          {cat.blocks.map((b, i) => <Block key={i} b={b} />)}
-        </div>
-
-        <button className="htp-close" onClick={onClose}>{CLOSE[lang]}</button>
+        <button className="gframe-close" onClick={onClose}>{CLOSE[lang]}</button>
       </div>
     </div>
   )
