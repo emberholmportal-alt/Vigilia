@@ -6,12 +6,14 @@ const params = new URLSearchParams(typeof location !== 'undefined' ? location.se
 const host = typeof location !== 'undefined' ? location.hostname : 'localhost'
 const isLocal = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(host)
 
-// Servidor autoritativo en Render. Se puede sobreescribir con VITE_WS_URL (build) o ?ws= (URL).
-const PROD_WS = 'wss://velgrim-static.onrender.com'
+// Servidor autoritativo en Render. Se sobreescribe con VITE_WS_URL (horneado en el build; ver
+// render.yaml) o con ?ws= en la URL. El fallback DEBE apuntar al web service del server
+// (velgrim-server), no al sitio estático. En local, al mismo puerto que usa `npm run server` (8787).
+const PROD_WS = 'wss://velgrim-server.onrender.com'
 export const WS_URL =
   (import.meta.env && import.meta.env.VITE_WS_URL) ||
   params.get('ws') ||
-  (isLocal ? `ws://${host}:8790` : PROD_WS)
+  (isLocal ? `ws://${host}:8787` : PROD_WS)
 
 // Online: en producción (no localhost) va por defecto; en local, opt-in con ?online=1 o VITE_WS_URL.
 export const ONLINE =
