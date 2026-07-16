@@ -17,6 +17,7 @@ import { ABILITY_BY_ID } from '../data/abilities.js'
 import { tt, zoneName, getLang, itemName, npcName, npcLines } from '../i18n.js'
 import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
+import { ZONE_LORE } from '../data/zonelore.js'
 import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCousin, enemyAbility } from '../data/bestiary.js'
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
@@ -296,8 +297,13 @@ export class Game {
     this.store.setSafeZone(this._safeZone)
     this.store.setMinimap(this._buildMinimap(world.map))
     this.store.logMessage({ channel: 'mundo', text: tt('arrived_at', { zone: title }) })
-    // Llegar a una zona la descubre como waypoint (llegás donde apareciste).
-    this.store.discoverZone(mapName, spawn.x, spawn.y, title)
+    // Llegar a una zona la descubre como waypoint (llegás donde apareciste). Devuelve true si es
+    // la PRIMERA vez: ahí tiramos la línea de lore de la zona (una sola vez, en tono de mundo).
+    const firstTime = this.store.discoverZone(mapName, spawn.x, spawn.y, title)
+    if (firstTime) {
+      const lore = ZONE_LORE[mapName]
+      if (lore) this.store.logMessage({ channel: 'mundo', text: lore[getLang()] || lore.en })
+    }
     this._refreshWaypoints()
     // Quest "Los Tres Nombres": ciertas ruinas revelan un nombre olvidado al llegar.
     const revealed = this.store.revealForZone(mapName)

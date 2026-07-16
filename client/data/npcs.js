@@ -151,26 +151,34 @@ const TRISTON = [
   { sprite: 'peddler_goblin', name: 'Nix el Buhonero', name_en: 'Nix the Peddler', portrait: 'goblin.png', x: 61, y: 51, dir: 6, shop: true,
     lines: ['¡Psst! Reliquias raras, precios de robo.',
             'Para vos, robo doble.',
-            'No preguntes de dónde salió. Preguntá cuánto vale.'],
+            'No preguntes de dónde salió. Preguntá cuánto vale.',
+            'Los míos no dejamos las minas por oro, vigilante. Salimos corriendo. Preguntate de qué.'],
     lines_en: ['Psst! Rare relics, thieving prices.',
                'For you, double the thieving.',
-               "Don't ask where it came from. Ask what it's worth."] },
+               "Don't ask where it came from. Ask what it's worth.",
+               "My kind didn't leave the mines for gold, watcher. We ran. Ask yourself from what."] },
   { sprite: 'knight', name: 'Guardia Bram', name_en: 'Guard Bram', portrait: 'male07.png', x: 64, y: 57, dir: 1,
     lines: ['Ojos duros, vigilante. Afuera no perdona.',
-            'Anoche hubo tambores del lado de las minas.'],
+            'Anoche hubo tambores del lado de las minas. No eran duendes: los duendes no marcan el paso.',
+            'Cada zona más honda cobra un peaje distinto. Primero el oro. Después el nombre.'],
     lines_en: ['Hard eyes, watcher. The wilds do not forgive.',
-               'There were drums by the mines last night.'] },
+               'There were drums by the mines last night. Not goblins: goblins do not keep the beat.',
+               'Each deeper zone charges a different toll. First your gold. Then your name.'] },
   { sprite: 'guild_man', name: 'Halvard', name_en: 'Halvard', portrait: 'male01.png', x: 56, y: 58, dir: 5, guild: true,
     lines: ['Los gremios reclutan de nuevo.',
-            'Quinientos de oro y una sigla de tres letras.'],
+            'Quinientos de oro y una sigla de tres letras.',
+            'Alguien tiene que organizar a los que salen. El muro de los Guardianes nos protege, pero no nos da de comer.'],
     lines_en: ['The guilds are recruiting again.',
-               'Five hundred gold and a three-letter tag.'] },
+               'Five hundred gold and a three-letter tag.',
+               "Someone has to organize those who go out. The Guardians' wall protects us, but it does not feed us."] },
   // Herrero: repara el equipo por oro (zona de la fragua/yunque). Sprite HERESY con idle animado.
   { sprite: 'peasant_man2', name: 'Herrero Dorn', name_en: 'Dorn the Smith', portrait: 'male16.png', x: 70, y: 52, dir: 5, smith: true,
     lines: ['El acero se cansa como los hombres.',
-            'Tráemelo antes de que se quiebre del todo.'],
+            'Tráemelo antes de que se quiebre del todo.',
+            'Con mastite de las cuevas te levanto un filo que corta lo que ya está muerto. Nada barato.'],
     lines_en: ['Steel tires just like men do.',
-               'Bring it to me before it breaks for good.'] },
+               'Bring it to me before it breaks for good.',
+               'With mastite from the caves I can raise you an edge that cuts what is already dead. Nothing cheap.'] },
   // Obelisco de Retorno: en el camposanto (junto a la cripta de la iglesia). Si usaste una
   // Piedra de Retorno en el mundo, este obelisco te devuelve al punto anclado (mecánica de
   // portal de Diablo). Sin partículas mágicas (noParticles): queda como piedra sobria.
@@ -180,9 +188,11 @@ const TRISTON = [
   // bruja de HERESY, en su lugar (87,18).
   { sprite: 'witch_adriana', name: 'Yara la Bruja', name_en: 'Yara the Witch', portrait: 'female04.png', x: 87, y: 18, dir: 0, alchemy: true,
     lines: ['Pociones de vida y de maná, y pergaminos para volver. Nada más… nada menos.',
-            'La botella vacía y el aloe los junta cualquiera. El jugo lo saco yo.'],
+            'La botella vacía y el aloe los junta cualquiera. El jugo lo saco yo.',
+            'Desde la Caída los muertos no descansan. Ninguna poción arregla eso; sólo te compra tiempo.'],
     lines_en: ['Health and mana potions, and scrolls to return. Nothing more… nothing less.',
-               'Anyone can gather an empty bottle and aloe. Wringing the juice — that I do.'] },
+               'Anyone can gather an empty bottle and aloe. Wringing the juice — that I do.',
+               'Since the Fall the dead do not rest. No potion fixes that; it only buys you time.'] },
   // Udana la Vidente: da y CIERRA la quest de los Tres Nombres. Con los tres nombres, ella misma
   // los pronuncia y los sellos ceden (antes lo hacía el Guardián de Fuego, ya quitado). Diálogo
   // condicional por banderas; el nodo con los tres nombres setea q3_finish (recompensa incluida).
@@ -207,12 +217,26 @@ const TRISTON = [
         lines_en: ['Three mages sealed themselves in the ruins, turned to stone and silence.',
                    'Seek their three names and bring them to me. When I speak them, the seals will give way.'] },
     ] },
-  // Aldeanos de ambiente: unos pocos pobladores repartidos por la plaza (los cerdos viven en la
-  // granja del norte, ya en el mapa). Mismos sprites que los NPCs con nombre (mismo tamaño y con
-  // idle animado), sin nombre ni diálogo — sólo dan vida sin amontonar. Direcciones variadas.
-  { sprite: 'peasant_man1', x: 58, y: 44, dir: 6, critter: true },
-  { sprite: 'peasant_woman1', x: 67, y: 47, dir: 6, critter: true },
-  { sprite: 'peasant_man2', x: 48, y: 48, dir: 4, critter: true },
+  // Aldeanos con nombre: tejen la historia de a pedazos al hablarles. El viejo Garrick vio la
+  // Caída; Wren teme lo que respira en el Laberinto; Tomas cuenta lo de las minas. Los otros dos
+  // quedan de ambiente (critter: sin nombre ni diálogo), para dar vida sin amontonar.
+  { sprite: 'peasant_man1', name: 'Tomas', name_en: 'Tomas', portrait: 'male03.png', x: 58, y: 44, dir: 6,
+    lines: ['Mi hermano salió a cazar duendes a las minas. Volvió su bota. Nada más.',
+            'En las minas abandonadas hay algo que no es duende. Todos lo saben. Nadie va.'],
+    lines_en: ['My brother went to hunt goblins in the mines. His boot came back. Nothing else.',
+               'In the abandoned mines there is something that is not a goblin. Everyone knows. No one goes.'] },
+  { sprite: 'peasant_woman1', name: 'Wren', name_en: 'Wren', portrait: 'female02.png', x: 67, y: 47, dir: 6,
+    lines: ['Cerrá la puerta al anochecer. Lo que camina de noche no golpea antes de entrar.',
+            'Mi abuela decía que algo respira bajo el Laberinto de Hierro. Yo antes me reía.'],
+    lines_en: ['Close your door at dusk. What walks at night does not knock before coming in.',
+               'My grandmother said something breathes beneath the Iron Labyrinth. I used to laugh.'] },
+  { sprite: 'peasant_man2', name: 'el viejo Garrick', name_en: 'Old Garrick', portrait: 'male18.png', x: 48, y: 48, dir: 4,
+    lines: ['Yo vi las torres de Empyrea encendidas, pibe. Y vi cómo se apagaron, una por una.',
+            'Dicen que fueron los Tres, que rompieron su propio sello. Yo no digo nada.',
+            'Cuidá tu nombre allá afuera. Es lo último que te queda.'],
+    lines_en: ['I saw the towers of Empyrea lit, boy. And I saw them go out, one by one.',
+               'They say it was the Three, that they broke their own seal. I say nothing.',
+               'Guard your name out there. It is the last thing you have left.'] },
   { sprite: 'peasant_woman2', x: 74, y: 51, dir: 7, critter: true },
   { sprite: 'peasant_man1', x: 68, y: 54, dir: 1, critter: true },
 ]
