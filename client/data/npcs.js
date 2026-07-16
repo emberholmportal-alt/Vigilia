@@ -217,6 +217,25 @@ const TRISTON = [
         lines_en: ['Three mages sealed themselves in the ruins, turned to stone and silence.',
                    'Seek their three names and bring them to me. When I speak them, the seals will give way.'] },
     ] },
+  // Los Tres Guardianes: las estatuas que velan la plaza de Triston. Son el corazón del lore
+  // (los tres archimagos de Empyrea, sellados en piedra). Cada uno habla con su voz —Vesuvvio
+  // (fuego), Scathelocke (hielo), Grisbon (viento)—. La ofrenda del buff del día se hace en el
+  // Obelisco; estos son puramente lore + ambiente.
+  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, x: 60, y: 48, dir: 0,
+    lines: ['Fui el Fuego de Empyrea. Vesuvvio, me llamaban, cuando aún tenía voz.',
+            'Mi nombre arde sellado en las Minas de Perdición. No lo traigas de vuelta sin estar seguro.'],
+    lines_en: ['I was the Fire of Empyrea. Vesuvvio, they called me, when I still had a voice.',
+               'My name burns sealed in the Perdition Mines. Do not bring it back unless you are certain.'] },
+  { sprite: 'statue_guardian_wind', name: 'Guardián del Viento', name_en: 'Guardian of Wind', landmark: true, x: 62, y: 46, dir: 0,
+    lines: ['El viento lleva los nombres de los que no volvieron.',
+            'Grisbon fui, y llevé las órdenes de un confín al otro. Ahora sólo llevo silencio.'],
+    lines_en: ['The wind carries the names of those who did not return.',
+               'Grisbon I was, and I carried orders from one edge of the realm to the other. Now I carry only silence.'] },
+  { sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', name_en: 'Guardian of Ice', landmark: true, x: 64, y: 48, dir: 0,
+    lines: ['El hielo no odia. Sólo espera.',
+            'Scathelocke guardaba las verdades del reino. Ahora me guardo a mí misma, dormida en la piedra.'],
+    lines_en: ['Ice does not hate. It only waits.',
+               'Scathelocke kept the truths of the kingdom. Now I keep myself, asleep in the stone.'] },
   // Aldeanos con nombre: tejen la historia de a pedazos al hablarles. El viejo Garrick vio la
   // Caída; Wren teme lo que respira en el Laberinto; Tomas cuenta lo de las minas. Los otros dos
   // quedan de ambiente (critter: sin nombre ni diálogo), para dar vida sin amontonar.
