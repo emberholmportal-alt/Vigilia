@@ -340,6 +340,7 @@ const DICT = {
   guild_inv_full: { es: 'Tu inventario está lleno', en: 'Your inventory is full' },
   how_to_play: { es: 'Cómo Jugar', en: 'How to Play' },
   docs_link: { es: 'Documentación', en: 'Docs' },
+  wallet_optional: { es: 'Opcional — podés jugar sin billetera por ahora.', en: 'Optional — you can play without a wallet for now.' },
   spec_hint: { es: 'Arrastrá para mirar · WASD/flechas', en: 'Drag to look · WASD/arrows' },
   // billetera (Solana)
   wallet_connect: { es: 'Conectar billetera', en: 'Connect wallet' },

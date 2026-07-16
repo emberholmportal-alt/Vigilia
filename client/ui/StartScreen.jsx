@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useT } from './useT.js'
 import { net, ONLINE, fetchStats } from '../net/net.js'
 import { walletSignIn, loadSession, clearSession } from '../net/wallet.js'
+import { deviceAuth } from '../net/online.js'
 import HowToPlay from './HowToPlay.jsx'
 import Docs from './Docs.jsx'
 
@@ -52,14 +53,18 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
   }
   function disconnect() { clearSession(); setWallet(null) }
 
-  // PLAY NOW: online exige billetera (para elegir raza / cargar tu personaje). Offline, directo.
+  // PLAY NOW: no exige billetera. Si ya conectaste una, se usa esa identidad; si no, entrás con
+  // una cuenta de dispositivo (deviceAuth). La wallet queda opcional hasta que exista el token $VEL.
   async function handlePlay() {
     if (!ONLINE) { onPlay(null); return }
     setBusy(true); setErr(null)
-    const r = await ensureWallet().catch(() => ({ ok: false }))
-    setBusy(false)
-    if (!r.ok) { setErr(r.error === 'no-wallet' ? t('wallet_none') : t('wallet_fail')); return }
-    onPlay(r.char)
+    try {
+      await net.connect()
+      const auth = await deviceAuth(net)   // wallet si ya está; si no, cuenta de dispositivo
+      setBusy(false)
+      if (auth.wallet) setWallet(auth.wallet)
+      onPlay(auth.ok ? auth.char : null)
+    } catch { setBusy(false); onPlay(null) }
   }
 
   return (
@@ -83,9 +88,12 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
                 <button className="wallet-disc" onClick={disconnect}>🔌 {t('wallet_disconnect')}</button>
               </div>
             ) : (
-              <button className="wallet-btn" onClick={connect} disabled={busy}>
-                {busy ? t('wallet_connecting') : '🔗 ' + t('wallet_connect')}
-              </button>
+              <>
+                <button className="wallet-btn" onClick={connect} disabled={busy}>
+                  {busy ? t('wallet_connecting') : '🔗 ' + t('wallet_connect')}
+                </button>
+                <p className="wallet-hint">{t('wallet_optional')}</p>
+              </>
             )}
             {err && <p className="wallet-err">{err}</p>}
           </div>
