@@ -28,3 +28,13 @@ export const Fist = (p) => <S {...p}><path d="M7 11V7.5a1.5 1.5 0 0 1 3 0V11" />
 export const Gear = (p) => <S {...p}><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></S>
 // Ojo (modo espectador / mirón)
 export const Eye = (p) => <S {...p}><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.6" /></S>
+// Portal / obelisco (viajar, despertar)
+export const Portal = (p) => <S {...p}><path d="M12 2c3.5 0 6 4 6 9s-2.5 11-6 11-6-6-6-11 2.5-9 6-9Z" /><path d="M6.5 9h11M6 14h12" /></S>
+// Ciclo (el loop de juego)
+export const Loop = (p) => <S {...p}><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8" /><path d="M20 4v4h-4" /><path d="M20 12a8 8 0 0 1-13.7 5.6L4 16" /><path d="M4 20v-4h4" /></S>
+// Botas (viajar entre zonas)
+export const Boots = (p) => <S {...p}><path d="M8 3v9c0 1-.5 2-2 3s-3 2-3 4h9v-3" /><path d="M12 12h3c1.5 0 3 1 3.5 3l1 3H12" /><path d="M8 12h4" /></S>
+// Tumba (la muerte deja tu carga)
+export const Grave = (p) => <S {...p}><path d="M7 21V9a5 5 0 0 1 10 0v12Z" /><path d="M10 8h4M12 6v6" /><path d="M4 21h16" /></S>
+// Moneda (economía / oro / $VEL)
+export const Coin = (p) => <S {...p}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.8" /></S>

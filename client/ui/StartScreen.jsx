@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useT } from './useT.js'
 import { net, ONLINE, fetchStats } from '../net/net.js'
 import { walletSignIn, loadSession, clearSession } from '../net/wallet.js'
+import HowToPlay from './HowToPlay.jsx'
 
 const LOGO = (import.meta.env.BASE_URL || '/') + 'velgrinlogo.png'
 const short = (a) => (a ? a.slice(0, 4) + '…' + a.slice(-4) : '')
@@ -15,6 +16,7 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
   const [stats, setStats] = useState(null)
+  const [showGuide, setShowGuide] = useState(false)
 
   // Contadores en vivo (online / mensuales) desde el server.
   useEffect(() => {
@@ -97,6 +99,8 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
         </div>
         {!ONLINE && canContinue && <button className="new-link" onClick={onNew}>{t('start_new')}</button>}
 
+        <button className="htp-link" onClick={() => setShowGuide(true)}>{t('how_to_play')}</button>
+
         <p className="attribution">
           {t('start_credit')}
           <br />
@@ -105,6 +109,7 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
           </a>
         </p>
       </div>
+      {showGuide && <HowToPlay onClose={() => setShowGuide(false)} />}
     </div>
   )
 }
