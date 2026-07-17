@@ -94,7 +94,9 @@ export class Enemy {
     this.d = d
     const tex = await Assets.load(BASE + 'assets/enemies/' + this.def.sprite + '.png')
       .catch(() => Assets.load(BASE + 'assets/' + d.src))
-    this.sprite.texture = new Texture({ source: tex.source, frame: new Rectangle(0, 0, d.cell[0], d.cell[1]) })
+    // Wrapper de Texture PROPIO (mutamos su frame por tick). Se guarda para liberarlo al morir.
+    this._ownTex = new Texture({ source: tex.source, frame: new Rectangle(0, 0, d.cell[0], d.cell[1]) })
+    this.sprite.texture = this._ownTex
     this.sprite.anchor.set(d.anchor[0] / d.cell[0], d.anchor[1] / d.cell[1])
     this._hpY = -(d.anchor[1] + 8)
     this._syncWorld()
@@ -425,5 +427,13 @@ export class Enemy {
     this.hpBar.roundRect(-w / 2, this._hpY, w, h, 2).fill({ color: 0x14111a, alpha: 0.9 }).stroke({ color: 0x000000, width: 1 })
     this.hpBar.roundRect(-w / 2 + 1, this._hpY + 1, (w - 2) * pct, h - 2, 1).fill({ color: pct > 0.4 ? 0xb23b3b : 0xd06b2a })
     this.hpBar.visible = true
+  }
+
+  // Libera el wrapper de Texture propio (NO la source compartida del atlas) y destruye la vista.
+  // Sin esto, cada enemigo muerto dejaba su wrapper colgado en el heap (con spawn/kill constante,
+  // acumula en una sesión larga).
+  destroy() {
+    if (this._ownTex) { this._ownTex.destroy(false); this._ownTex = null }
+    this.view.destroy({ children: true })
   }
 }

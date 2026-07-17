@@ -82,5 +82,8 @@ export class RemotePlayer {
     this.view.zIndex = this.tx + this.ty
   }
 
-  destroy() { this.view.destroy({ children: true }) }
+  destroy() {
+    this.paperdoll?.freeTextures()   // libera los wrappers de sus capas (churn en multiplayer)
+    this.view.destroy({ children: true })
+  }
 }

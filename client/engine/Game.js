@@ -492,6 +492,15 @@ export class Game {
   // Destruye todo lo específico del mapa (para reconstruir en otro). La app, el input y
   // la cortina de fundido sobreviven.
   _teardownWorld() {
+    // Liberar los wrappers de Texture POR-INSTANCIA antes del destroy en bloque (que usa
+    // texture:false y no los tocaría). Sólo el wrapper propio, nunca la source compartida del
+    // atlas. Cubre lo que se destruye en bloque al cambiar de mapa (una fuga por mapa si no).
+    const freeOwn = (o) => { if (o && o._ownTex) { o._ownTex.destroy(false); o._ownTex = null } }
+    for (const e of this.enemies || []) freeOwn(e)
+    for (const n of this.npcs || []) freeOwn(n)
+    for (const nd of this.nodes || []) freeOwn(nd)
+    for (const p of this.portals || []) { if (p.pad && p.pad.texture) p.pad.texture.destroy(false) }
+    for (const ad of this._animDecor || []) { if (ad.tex) ad.tex.destroy(false) }
     if (this.worldContainer) { this.worldContainer.destroy({ children: true, texture: false }); this.worldContainer = null }
     this.npcs = []
     this.enemies = []
@@ -1276,7 +1285,7 @@ export class Game {
     const node = this._netNodes && this._netNodes.get(m.n)
     if (!node) return
     node.deplete()
-    node.view.destroy({ children: true })
+    node.destroy()
     this.nodes = this.nodes.filter((x) => x !== node)
     this._netNodes.delete(m.n)
     if (this._pendingNode === node) this._pendingNode = null
@@ -1458,7 +1467,7 @@ export class Game {
     const ok = await e.load()
     if (this.destroyed || !ok) return
     // pudo llegar la muerte mientras cargaba el sprite
-    if (this._netDeadPending && this._netDeadPending.has(data.i)) { this._netDeadPending.delete(data.i); e.view.destroy({ children: true }); return }
+    if (this._netDeadPending && this._netDeadPending.has(data.i)) { this._netDeadPending.delete(data.i); e.destroy(); return }
     e.netInit(data.i)
     e.eliteContract = elite
     e.tx = data.x; e.ty = data.y; e.hp = data.hp; e._syncWorld()
@@ -1723,7 +1732,7 @@ export class Game {
       if (e.pendingHit > 0) dmgToPlayer += Math.max(1, e.pendingHit - defense)
     }
     this.enemies = this.enemies.filter((e) => {
-      if (e.remove) { e.view.destroy({ children: true }); return false }
+      if (e.remove) { this._netEnemies?.delete(e.eid); e.destroy(); return false }
       return true
     })
 

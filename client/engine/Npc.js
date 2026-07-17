@@ -64,9 +64,10 @@ export class Npc {
     // tienen 1 fila; si `dir` supera las filas, la celda cae fuera del sheet y el NPC desaparece.
     // Clampeamos con módulo para que hablarle (que le cambia la dirección) no lo borre.
     this._rows = Math.max(1, Math.round(tex.source.height / d.cell[1]))
-    this.sprite.texture = new Texture({
+    this._ownTex = new Texture({
       source: tex.source, frame: new Rectangle(0, 0, d.cell[0], d.cell[1]),
     })
+    this.sprite.texture = this._ownTex
     this.sprite.anchor.set(d.anchor[0] / d.cell[0], d.anchor[1] / d.cell[1])
 
     const headY = -(d.anchor[1] + 6)

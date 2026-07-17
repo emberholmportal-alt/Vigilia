@@ -114,6 +114,9 @@ export class Paperdoll {
       // Textura propia por sprite; mutamos su frame por tick.
       const s = this.sprites[type]
       if (!s.texture || s._layerName !== name) {
+        // Al recambiar la capa (cambio de equipo), liberar el wrapper anterior antes de crear el
+        // nuevo. El guard `_layerName` asegura que sólo destruimos wrappers propios (no EMPTY).
+        if (s._layerName && s.texture) s.texture.destroy(false)
         s.texture = new Texture({ source, frame: new Rectangle(0, 0, def.cell[0], def.cell[1]) })
         s._layerName = name
       }
@@ -238,5 +241,19 @@ export class Paperdoll {
       s.texture.updateUvs()
       s.visible = true
     }
+  }
+
+  // Libera los wrappers de Texture propios de cada capa (no la source compartida). Se usa al
+  // destruir al dueño (jugador remoto que se va) sin destruir la vista (la maneja el caller).
+  freeTextures() {
+    for (const type of TYPES) {
+      const s = this.sprites[type]
+      if (s && s._layerName && s.texture) { s.texture.destroy(false); s._layerName = '' }
+    }
+  }
+
+  destroy() {
+    this.freeTextures()
+    this.view.destroy({ children: true })
   }
 }
