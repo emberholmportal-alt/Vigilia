@@ -985,7 +985,7 @@ export class Game {
   _tapGroundItem(gi) {
     if (this._spectator || gi.picked) return
     this.player.walkTo(gi.tx, gi.ty)
-    if (!gi.isGold) this._pendingPickup = gi
+    if (!gi.isGold) { this._pendingPickup = gi; this._pickupTries = 0 }
   }
 
   // Recoge una pila de oro (al pasarle por encima): suma el oro y la saca del suelo.
@@ -1174,6 +1174,7 @@ export class Game {
 
   _targetEnemy(e) {
     if (this._dead || e.dead || this.store.isSpectator()) return   // el mirón no ataca
+    this._pendingPickup = null   // atacar cancela el "ir a recoger" pendiente
     this._target = e
     this.player.walkTo(Math.round(e.tx), Math.round(e.ty))
     this._retargetT = 0.3
@@ -1872,6 +1873,7 @@ export class Game {
       const tx = Math.round(t.x)
       const ty = Math.round(t.y)
       if (this._spectator) return   // el mirón mueve la cámara arrastrando, no tocando (ver abajo)
+      this._pendingPickup = null    // tocar el suelo/enemigo cancela el "ir a recoger" pendiente
       // Clic izquierdo sobre (o CERCA de) un enemigo vivo = atacarlo. El tap directo al sprite ya
       // lo maneja Enemy.onTap; esto rescata el caso común de errarle a un enemigo en movimiento
       // (antes caía al piso y caminaba en vez de atacar).
@@ -2055,11 +2057,23 @@ export class Game {
         // Oro: se recoge al pasarle por encima (auto). Ítems: SÓLO por click (abajo).
         if (gi.isGold && Math.abs(px - gi.tx) <= 0.9 && Math.abs(py - gi.ty) <= 0.9) this._pickupGold(gi)
       }
-      // Ítem clickeado: recogerlo al llegar cerca.
-      if (this._pendingPickup && !this.player.moving) {
+      // Ítem clickeado: caminar hasta él y recogerlo al llegar. Robusto: si el jugador se detiene
+      // antes de llegar (pathfinding corto), reintenta caminar; sólo se cancela al recogerlo, al
+      // dar otra orden (mover/atacar), o tras varios intentos fallidos.
+      if (this._pendingPickup) {
         const gi = this._pendingPickup
-        if (!gi.picked && Math.abs(px - gi.tx) <= 1.4 && Math.abs(py - gi.ty) <= 1.4) this._pickup(gi)
-        this._pendingPickup = null
+        if (gi.picked || !this.groundItems.includes(gi)) {
+          this._pendingPickup = null; this._pickupTries = 0
+        } else if (!this.player.moving) {
+          if (Math.abs(px - gi.tx) <= 1.6 && Math.abs(py - gi.ty) <= 1.6) {
+            this._pickup(gi)   // si el inventario está lleno queda en el piso; igual soltamos el pendiente
+            this._pendingPickup = null; this._pickupTries = 0
+          } else {
+            this._pickupTries = (this._pickupTries || 0) + 1
+            if (this._pickupTries <= 4) this.player.walkTo(gi.tx, gi.ty)
+            else { this._pendingPickup = null; this._pickupTries = 0 }
+          }
+        }
       }
       this.groundItems = this.groundItems.filter((g) => !g.picked)
     }
