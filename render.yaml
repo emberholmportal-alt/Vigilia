@@ -31,9 +31,9 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
-      # Debe ser la URL WSS del server de arriba (verificá el hostname real en Render).
+      # URL WSS del web service del server (nombre real en Render: "Velgrim-static").
       - key: VITE_WS_URL
-        value: wss://velgrim-server.onrender.com
+        value: wss://velgrim-static.onrender.com
     routes:
       - type: rewrite
         source: /*

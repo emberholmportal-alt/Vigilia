@@ -9,7 +9,7 @@ const isLocal = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(host)
 // Servidor autoritativo en Render. Se sobreescribe con VITE_WS_URL (horneado en el build; ver
 // render.yaml) o con ?ws= en la URL. El fallback DEBE apuntar al web service del server
 // (velgrim-server), no al sitio estático. En local, al mismo puerto que usa `npm run server` (8787).
-const PROD_WS = 'wss://velgrim-server.onrender.com'
+const PROD_WS = 'wss://velgrim-static.onrender.com'
 export const WS_URL =
   (import.meta.env && import.meta.env.VITE_WS_URL) ||
   params.get('ws') ||
