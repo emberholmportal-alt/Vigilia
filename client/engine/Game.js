@@ -242,6 +242,7 @@ export class Game {
     if (ONLINE) await this._initOnline()
     this.groundItems = []
     this._pendingChest = null
+    this._pendingPickup = null
     this._buildChests(renderer, iso, world.map, grid)
     // Barriles/cajas rompibles: clutter destructible que suelta algo de botín. Instanciado por
     // jugador (no compartido) para no meter netcode: andan igual offline y online, en todo mapa.
@@ -850,15 +851,21 @@ export class Game {
 
   _addBarrel(x, y, grid) {
     const iso = this.iso, renderer = this.renderer
+    const wx = iso.toWorldX(x, y), wy = iso.toWorldY(x, y)
+    // Brillo tenue en el piso para que el barril se note como interactuable (como los cofres).
+    const glow = new Graphics()
+    glow.ellipse(0, 0, iso.wHalf * 0.5, iso.hHalf * 0.5).fill({ color: 0xc98a3a, alpha: 0.22 })
+    glow.x = wx; glow.y = wy; glow.zIndex = x + y - 1
+    renderer.groundLayer.addChild(glow)
     const sp = new Sprite(this._barrelTex)
     sp.anchor.set(0.5, 0.82)
-    sp.x = iso.toWorldX(x, y); sp.y = iso.toWorldY(x, y); sp.zIndex = x + y
+    sp.x = wx; sp.y = wy; sp.zIndex = x + y
     sp.scale.set((this._eScale || 1) * 1.5)
     sp.eventMode = 'static'
     sp.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
     renderer.objectLayer.addChild(sp)
     if (x >= 0 && x < grid.w && y >= 0 && y < grid.h) grid.blocked[y * grid.w + x] = 1
-    const barrel = { x, y, sp, broken: false }
+    const barrel = { x, y, sp, glow, broken: false }
     sp.on('pointertap', (e) => { e.stopPropagation(); this._tapBarrel(barrel) })
     this.barrels.push(barrel)
     return barrel
@@ -876,6 +883,7 @@ export class Game {
     if (b.x >= 0 && b.x < this._grid.w && b.y >= 0 && b.y < this._grid.h) this._grid.blocked[b.y * this._grid.w + b.x] = 0
     const wx = b.sp.x, wy = b.sp.y
     b.sp.destroy()
+    if (b.glow) b.glow.destroy()
     this.barrels = this.barrels.filter((x) => x !== b)
     if (this._pendingBarrel === b) this._pendingBarrel = null
     playSfx('swing.ogg')
@@ -883,7 +891,7 @@ export class Game {
     const mf = this.store.getStats()?.itemFind || 0
     const lvl = Math.max(1, Math.min(16, this.store.getPlayerLevel?.() || 1))
     const roll = rollMonsterDrop(lvl, false, mf)
-    if (roll.gold > 0) { this.store.addGold(roll.gold); this._floatText(wx, wy - 20, `+${roll.gold}`, '#e6c85a') }
+    if (roll.gold > 0) this._dropGold(b.x, b.y, roll.gold)
     if (roll.drops.length) this._dropItems(b.x, b.y, roll.drops)
   }
 
@@ -909,7 +917,7 @@ export class Game {
     this.store.addSkillXp('saqueo', 14)
     this.store.addXp(10)
     this.store.missionProgress('chest', 1)
-    if (m.gold > 0) this.store.addGold(m.gold)
+    if (m.gold > 0) this._dropGold(m.x, m.y, m.gold)
     if (m.drops && m.drops.length) this._dropItems(m.x, m.y, m.drops)
   }
 
@@ -933,7 +941,7 @@ export class Game {
     this.store.missionProgress('chest', 1)
 
     const roll = rollLoot(chest.loot)
-    if (roll.gold > 0) this.store.addGold(roll.gold)
+    if (roll.gold > 0) this._dropGold(chest.x, chest.y, roll.gold)
     this._dropItems(chest.x, chest.y, roll.drops)
   }
 
@@ -946,10 +954,38 @@ export class Game {
       if (!item) return
       const [tx, ty] = tiles[i] || [cx, cy]
       const gi = new GroundItem(this.iso, tx, ty, item, d.qty, RARITY_COLOR[item.rarity])
-      gi.onTap((g) => { if (!this._spectator) this.player.walkTo(g.tx, g.ty) }) // caminar hacia él; se recoge al pasar
+      gi.onTap((g) => this._tapGroundItem(g))   // los ítems se recogen por CLICK (no al pasar por arriba)
       this.renderer.objectLayer.addChild(gi.view)
       this.groundItems.push(gi)
     })
+  }
+
+  // Suelta una PILA de oro VISIBLE en el suelo (Diablo). Se recoge al pasarle por encima.
+  _dropGold(cx, cy, amount) {
+    if (!(amount > 0)) return
+    const [tx, ty] = this._scatterTiles(cx, cy, 1)[0] || [cx, cy]
+    const gi = new GroundItem(this.iso, tx, ty, { gold: amount, icon: 0 }, 1, '#e6c85a')
+    gi.onTap((g) => this._tapGroundItem(g))
+    this.renderer.objectLayer.addChild(gi.view)
+    this.groundItems.push(gi)
+  }
+
+  // Click en un loot del suelo: el jugador camina hasta él. El oro se recoge al pasar; los ítems,
+  // al llegar (quedan marcados como "pendientes de recoger").
+  _tapGroundItem(gi) {
+    if (this._spectator || gi.picked) return
+    this.player.walkTo(gi.tx, gi.ty)
+    if (!gi.isGold) this._pendingPickup = gi
+  }
+
+  // Recoge una pila de oro (al pasarle por encima): suma el oro y la saca del suelo.
+  _pickupGold(gi) {
+    if (gi.picked) return
+    this.store.addGold(gi.gold)
+    this._floatText(gi.view.x, gi.view.y - 16, `+${gi.gold}`, '#e6c85a')
+    playSfx('flying_loot.ogg')
+    gi.picked = true
+    gi.destroy()
   }
 
   // Tiles caminables alrededor del cofre para repartir el loot (sin repetir).
@@ -1376,10 +1412,7 @@ export class Game {
     const boss = !!e.def.boss, lvl = Math.max(1, Math.min(16, e.level || 1))
     const mf = this.store.getStats()?.itemFind || 0
     const roll = rollMonsterDrop(lvl, boss, mf)
-    if (roll.gold > 0) {
-      this.store.addGold(roll.gold)
-      this._floatText(e.view.x, e.view.y + e._hpY - 16, `+${roll.gold}`, '#e6c85a')
-    }
+    if (roll.gold > 0) this._dropGold(Math.round(e.tx), Math.round(e.ty), roll.gold)
     if (roll.drops.length) this._dropItems(Math.round(e.tx), Math.round(e.ty), roll.drops)
     if (this._target === e) this._target = null
   }
@@ -1440,8 +1473,9 @@ export class Game {
     const boss = enemyStats(m.sprite, m.lv).boss, lvl = Math.max(1, Math.min(16, m.lv || 1))
     const mf = this.store.getStats()?.itemFind || 0
     const roll = rollMonsterDrop(lvl, boss, mf)
-    if (roll.gold > 0) { this.store.addGold(roll.gold); this._floatText(fx, fy - 16, `+${roll.gold}`, '#e6c85a') }
-    if (roll.drops.length && e) this._dropItems(Math.round(e.tx), Math.round(e.ty), roll.drops)
+    const gx = e ? Math.round(e.tx) : Math.round(this.player.tx), gy = e ? Math.round(e.ty) : Math.round(this.player.ty)
+    if (roll.gold > 0) this._dropGold(gx, gy, roll.gold)
+    if (roll.drops.length) this._dropItems(gx, gy, roll.drops)
   }
 
   // El servidor nos avisa que un enemigo nos pegó (ya restó nuestra defensa).
@@ -2008,7 +2042,14 @@ export class Game {
       for (const gi of this.groundItems) {
         if (gi.picked) continue
         gi.update(dt)
-        if (Math.abs(px - gi.tx) <= 0.75 && Math.abs(py - gi.ty) <= 0.75) this._pickup(gi)
+        // Oro: se recoge al pasarle por encima (auto). Ítems: SÓLO por click (abajo).
+        if (gi.isGold && Math.abs(px - gi.tx) <= 0.9 && Math.abs(py - gi.ty) <= 0.9) this._pickupGold(gi)
+      }
+      // Ítem clickeado: recogerlo al llegar cerca.
+      if (this._pendingPickup && !this.player.moving) {
+        const gi = this._pendingPickup
+        if (!gi.picked && Math.abs(px - gi.tx) <= 1.4 && Math.abs(py - gi.ty) <= 1.4) this._pickup(gi)
+        this._pendingPickup = null
       }
       this.groundItems = this.groundItems.filter((g) => !g.picked)
     }

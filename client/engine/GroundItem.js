@@ -42,20 +42,34 @@ export class GroundItem {
     this.glow.ellipse(0, 0, iso.wHalf * 0.38, iso.hHalf * 0.34).fill({ color: this.tint, alpha: 0.18 })
     this.view.addChild(this.glow)
 
-    // ícono apoyado en el suelo (chico, casi sin flotar) con leve inclinación.
-    const tex = _iconsTex
-    const col = item.icon % COLS, row = (item.icon / COLS) | 0
-    this.sprite = new Sprite(new Texture({
-      source: tex.source, frame: new Rectangle(col * ICON, row * ICON, ICON, ICON),
-    }))
-    this.sprite.anchor.set(0.5, 0.9)
-    this.sprite.scale.set(0.82)
-    this.sprite.rotation = -0.18
-    this.sprite.y = -3
-    this.view.addChild(this.sprite)
+    // Oro: pila de monedas apoyada en el piso (Diablo), sin ícono del atlas. Se ve en el suelo.
+    if (item.gold) {
+      this.isGold = true
+      this.gold = item.gold
+      const coins = new Graphics()
+      for (const [ox, oy, r] of [[-5, 0, 4], [4, 1, 4], [0, -3, 4], [-2, -6, 3], [3, -5, 3], [-1, 3, 3]]) {
+        coins.circle(ox, -4 + oy, r).fill({ color: 0xf0d165 })
+      }
+      coins.stroke({ color: 0x8a6f1e, width: 0.8, alpha: 0.9 })
+      this.coins = coins
+      this.view.addChild(coins)
+    } else {
+      // ícono apoyado en el suelo (chico, casi sin flotar) con leve inclinación.
+      const tex = _iconsTex
+      const col = item.icon % COLS, row = (item.icon / COLS) | 0
+      this.sprite = new Sprite(new Texture({
+        source: tex.source, frame: new Rectangle(col * ICON, row * ICON, ICON, ICON),
+      }))
+      this.sprite.anchor.set(0.5, 0.9)
+      this.sprite.scale.set(0.82)
+      this.sprite.rotation = -0.18
+      this.sprite.y = -3
+      this.view.addChild(this.sprite)
+    }
 
-    // etiqueta con el nombre del ítem (color de rareza), como el loot de Diablo. Incluye ×qty.
-    const label = itemName(item, getLang()) + (this.qty > 1 ? ' ×' + this.qty : '')
+    // etiqueta: nombre del ítem (color de rareza) o "N oro". Como el loot de Diablo. Incluye ×qty.
+    const label = item.gold ? (item.gold + ' ' + (getLang() === 'en' ? 'gold' : 'oro'))
+      : (itemName(item, getLang()) + (this.qty > 1 ? ' ×' + this.qty : ''))
     this.label = new Text({
       text: label, style: {
         fontFamily: 'Georgia, serif', fontSize: 11, fill: '#' + this.tint.toString(16).padStart(6, '0'),
@@ -75,7 +89,8 @@ export class GroundItem {
   update(dt) {
     this._t += dt
     // apenas respira (apoyado en el piso), con un brillo suave de rareza.
-    this.sprite.y = -3 + Math.sin(this._t * 2) * 0.8
+    if (this.sprite) this.sprite.y = -3 + Math.sin(this._t * 2) * 0.8
+    else if (this.coins) this.coins.y = Math.sin(this._t * 2) * 0.6
     this.glow.alpha = 0.14 + 0.08 * (0.5 + 0.5 * Math.sin(this._t * 2))
   }
 

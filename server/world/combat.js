@@ -121,7 +121,7 @@ let nidSeq = 1
 let cidSeq = 1
 const key = (map, ch) => map + ':' + ch
 
-const AGGRO = 8          // tiles a los que el enemigo detecta al jugador
+const AGGRO = 6          // tiles a los que el enemigo detecta al jugador (bajado: menos enjambre para novatos)
 const MELEE = 1.4        // alcance cuerpo a cuerpo
 const RANGED_REACH = 6   // alcance de arqueros/magos
 const SPEED = 2.3        // tiles por segundo
@@ -140,8 +140,8 @@ const CHEST_REACH = 2.4  // tiles: alcance para abrir un cofre
 // clusters garantizan acción apenas entrás, sin tocar los 56 JSON. Compartidos por canal (regla 2).
 const NEAR_RADIUS = 16   // tiles: radio máximo desde la entrada donde garantizamos contenido
 const NEAR_MIN = 5       // tiles: radio mínimo (no spawnear encima del jugador)
-const NEAR_CLUSTERS = 4  // grupitos de enemigos cerca de la entrada
-const NEAR_PER = [2, 3]  // enemigos por grupo cercano
+const NEAR_CLUSTERS = 3  // grupitos de enemigos cerca de la entrada (bajado: menos enjambre)
+const NEAR_PER = [1, 2]  // enemigos por grupo cercano
 const NEAR_CHESTS = 2    // cofres garantizados cerca de la entrada
 
 // Respawn que escala con la población del canal: más jugadores farmeando la misma zona compartida
