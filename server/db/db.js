@@ -328,3 +328,120 @@ export async function setDeposit(guildId, { gold, items }) {
   file.guildDeposit[guildId] = { gold: gold | 0, items: items || [] }
   flush()
 }
+
+// --- Movimientos de oro ATÓMICOS entre el personaje (JSONB) y el gremio/depósito -------------
+// El oro del personaje y el del gremio/depósito son filas distintas; moverlos con dos escrituras
+// sueltas puede perder o duplicar oro si algo falla en el medio. En Postgres se hace en UNA
+// transacción con SELECT ... FOR UPDATE (lockea las filas); en el backend de archivo, bajo los
+// locks + un solo flush (dev). Devuelven { ok, gold, ... } o { ok:false, error }.
+async function _txReadChar(c, accountId) {
+  const r = await c.query('SELECT data FROM characters WHERE account_id=$1 FOR UPDATE', [accountId])
+  if (!r.rows[0]) return null
+  return { data: r.rows[0].data || {}, gold: Math.floor(Number(r.rows[0].data?.gold) || 0) }
+}
+const _txWriteCharGold = (c, accountId, data, gold) =>
+  c.query('UPDATE characters SET data=$2, updated_at=now() WHERE account_id=$1', [accountId, { ...data, gold: Math.floor(gold) }])
+const _txUpsertDeposit = (c, guildId, gold, items) =>
+  c.query(`INSERT INTO guild_deposit (guild_id, gold, items) VALUES ($1,$2,$3)
+           ON CONFLICT (guild_id) DO UPDATE SET gold=$2, items=$3`, [guildId, gold | 0, JSON.stringify(items || [])])
+
+// Donar: personaje -> pozo del gremio (donated += amt, nivel recalculado por levelFn).
+export async function txDonate(accountId, guildId, amt, levelFn) {
+  amt = Math.floor(amt)
+  if (pg) {
+    const c = await pg.connect()
+    try {
+      await c.query('BEGIN')
+      const ch = await _txReadChar(c, accountId)
+      if (!ch) { await c.query('ROLLBACK'); return { ok: false, error: 'sin personaje' } }
+      if (ch.gold < amt) { await c.query('ROLLBACK'); return { ok: false, error: 'no tenés tanto oro' } }
+      await _txWriteCharGold(c, accountId, ch.data, ch.gold - amt)
+      const gr = await c.query('SELECT donated, level FROM guilds WHERE id=$1 FOR UPDATE', [guildId])
+      if (!gr.rows[0]) { await c.query('ROLLBACK'); return { ok: false, error: 'ese gremio no existe' } }
+      const prevLevel = gr.rows[0].level
+      const newLevel = levelFn((Number(gr.rows[0].donated) || 0) + amt)
+      const ug = await c.query('UPDATE guilds SET donated=donated+$2, level=$3 WHERE id=$1 RETURNING *', [guildId, amt, newLevel])
+      await c.query('COMMIT')
+      return { ok: true, gold: ch.gold - amt, guild: ug.rows[0], leveledUp: newLevel > prevLevel }
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e } finally { c.release() }
+  }
+  return withGuildLock(guildId, () => withAccountLock(accountId, async () => {
+    const ch = file.chars[accountId]
+    if (!ch) return { ok: false, error: 'sin personaje' }
+    const gold = Math.floor(Number(ch.data?.gold) || 0)
+    if (gold < amt) return { ok: false, error: 'no tenés tanto oro' }
+    const g = file.guilds.find((x) => x.id === guildId)
+    if (!g) return { ok: false, error: 'ese gremio no existe' }
+    ch.data.gold = gold - amt
+    const prevLevel = g.level
+    g.donated = (Number(g.donated) || 0) + amt
+    g.level = levelFn(g.donated)
+    flush()
+    return { ok: true, gold: gold - amt, guild: { ...g }, leveledUp: g.level > prevLevel }
+  }))
+}
+
+// Depositar: personaje -> banco del gremio (guild_deposit.gold += amt).
+export async function txDepositGold(accountId, guildId, amt) {
+  amt = Math.floor(amt)
+  if (pg) {
+    const c = await pg.connect()
+    try {
+      await c.query('BEGIN')
+      const ch = await _txReadChar(c, accountId)
+      if (!ch) { await c.query('ROLLBACK'); return { ok: false, error: 'sin personaje' } }
+      if (ch.gold < amt) { await c.query('ROLLBACK'); return { ok: false, error: 'no tenés tanto oro' } }
+      await _txWriteCharGold(c, accountId, ch.data, ch.gold - amt)
+      const dr = await c.query('SELECT gold, items FROM guild_deposit WHERE guild_id=$1 FOR UPDATE', [guildId])
+      const items = dr.rows[0]?.items || []
+      const nd = { gold: (Number(dr.rows[0]?.gold) || 0) + amt, items }
+      await _txUpsertDeposit(c, guildId, nd.gold, items)
+      await c.query('COMMIT')
+      return { ok: true, gold: ch.gold - amt, deposit: nd }
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e } finally { c.release() }
+  }
+  return withGuildLock(guildId, () => withAccountLock(accountId, async () => {
+    const ch = file.chars[accountId]
+    if (!ch) return { ok: false, error: 'sin personaje' }
+    const gold = Math.floor(Number(ch.data?.gold) || 0)
+    if (gold < amt) return { ok: false, error: 'no tenés tanto oro' }
+    ch.data.gold = gold - amt
+    const dep = file.guildDeposit[guildId] || { gold: 0, items: [] }
+    const nd = { gold: (Number(dep.gold) || 0) + amt, items: dep.items || [] }
+    file.guildDeposit[guildId] = nd; flush()
+    return { ok: true, gold: gold - amt, deposit: nd }
+  }))
+}
+
+// Retirar: banco del gremio -> personaje (guild_deposit.gold -= amt).
+export async function txWithdrawGold(accountId, guildId, amt) {
+  amt = Math.floor(amt)
+  if (pg) {
+    const c = await pg.connect()
+    try {
+      await c.query('BEGIN')
+      const dr = await c.query('SELECT gold, items FROM guild_deposit WHERE guild_id=$1 FOR UPDATE', [guildId])
+      const curGold = Number(dr.rows[0]?.gold) || 0
+      if (curGold < amt) { await c.query('ROLLBACK'); return { ok: false, error: 'el depósito no tiene tanto oro' } }
+      const ch = await _txReadChar(c, accountId)
+      if (!ch) { await c.query('ROLLBACK'); return { ok: false, error: 'sin personaje' } }
+      await _txWriteCharGold(c, accountId, ch.data, ch.gold + amt)
+      const items = dr.rows[0]?.items || []
+      const nd = { gold: curGold - amt, items }
+      await _txUpsertDeposit(c, guildId, nd.gold, items)
+      await c.query('COMMIT')
+      return { ok: true, gold: ch.gold + amt, deposit: nd }
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e } finally { c.release() }
+  }
+  return withGuildLock(guildId, () => withAccountLock(accountId, async () => {
+    const dep = file.guildDeposit[guildId] || { gold: 0, items: [] }
+    if ((Number(dep.gold) || 0) < amt) return { ok: false, error: 'el depósito no tiene tanto oro' }
+    const ch = file.chars[accountId]
+    if (!ch) return { ok: false, error: 'sin personaje' }
+    const gold = Math.floor(Number(ch.data?.gold) || 0)
+    ch.data.gold = gold + amt
+    const nd = { gold: (Number(dep.gold) || 0) - amt, items: dep.items || [] }
+    file.guildDeposit[guildId] = nd; flush()
+    return { ok: true, gold: gold + amt, deposit: nd }
+  }))
+}

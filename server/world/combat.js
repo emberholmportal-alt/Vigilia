@@ -134,6 +134,7 @@ const GATHER_REACH = 2.4 // tiles: alcance para juntar un nodo
 const CHEST_RESPAWN = 90 // segundos base para que un cofre saqueado reaparezca (escala con la gente)
 const MIN_CHEST_RESPAWN = 30 // piso del respawn de cofres con el canal lleno
 const CHEST_REACH = 2.4  // tiles: alcance para abrir un cofre
+const WORLD_GC_MS = 120000 // ms que un canal puede estar vacío antes de liberar su mundo (memoria)
 
 // Densidad cerca del punto de entrada. Los mapas de Flare son enormes (hasta 100×100) y te dejan
 // en un borde, con los spawners repartidos por todo el mapa: al llegar ves un desierto. Estos
@@ -246,7 +247,7 @@ export function ensureWorld(map, ch) {
     const el = spawnElite(md, con.elite, con.id)
     if (el) enemies.set(el.i, el)
   }
-  worlds.set(k, { map, ch, md, enemies, dead: [], nodes, nodeDead: [], chests, chestDead: [] })
+  worlds.set(k, { map, ch, md, enemies, dead: [], nodes, nodeDead: [], chests, chestDead: [], emptySince: 0 })
 }
 
 // Snapshot completo de los enemigos de un canal (para el que recién entra).
@@ -398,7 +399,16 @@ function step() {
   for (const w of worlds.values()) {
     if (!w) continue
     const players = ctx.playersIn(w.map, w.ch)
-    if (!players.length) continue      // canal vacío: se pausa
+    if (!players.length) {
+      // canal vacío: se pausa la simulación y, tras WORLD_GC_MS, se libera el mundo (enemigos,
+      // nodos, cofres, listas de respawn) para no acumular memoria por cada (mapa,canal) visitado.
+      // Al volver a entrar, ensureWorld lo reconstruye fresco. Borrar la entrada actual del Map
+      // durante el for-of es seguro en JS.
+      if (!w.emptySince) w.emptySince = t
+      else if (t - w.emptySince > WORLD_GC_MS) worlds.delete(key(w.map, w.ch))
+      continue
+    }
+    w.emptySince = 0
     // reponer muertos
     if (w.dead.length && w.enemies.size < MAX_PER_MAP) {
       const still = []

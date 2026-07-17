@@ -2,20 +2,26 @@
 // tokens de sesión en memoria. El servidor es autoritativo: sin token válido no se juega.
 // (Los tokens viven en memoria: al reiniciar el server, los clientes vuelven a loguearse.)
 import crypto from 'node:crypto'
+import { promisify } from 'node:util'
 import { findAccount, createAccount } from '../db/db.js'
 
 const tokens = new Map() // token -> { accountId, username }
 
+// scrypt ASÍNCRONO (libpthread pool): la versión Sync bloqueaba el único hilo del server ~decenas
+// de ms por login/registro, congelando la simulación de combate y todas las conexiones. Con la
+// async, el hash corre fuera del event loop.
+const scrypt = promisify(crypto.scrypt)
+
 // scrypt: hash = "salt:derivada" en hex. Comparación en tiempo constante.
-function hashPassword(password) {
+async function hashPassword(password) {
   const salt = crypto.randomBytes(16)
-  const dk = crypto.scryptSync(password, salt, 32)
+  const dk = await scrypt(password, salt, 32)
   return salt.toString('hex') + ':' + dk.toString('hex')
 }
-function verifyPassword(password, stored) {
+async function verifyPassword(password, stored) {
   const [saltHex, hashHex] = String(stored).split(':')
   if (!saltHex || !hashHex) return false
-  const dk = crypto.scryptSync(password, Buffer.from(saltHex, 'hex'), 32)
+  const dk = await scrypt(password, Buffer.from(saltHex, 'hex'), 32)
   const a = Buffer.from(hashHex, 'hex')
   return a.length === dk.length && crypto.timingSafeEqual(a, dk)
 }
@@ -43,7 +49,7 @@ export async function register(username, password) {
   const err = validate(username, password)
   if (err) return { ok: false, error: err }
   if (await findAccount(username)) return { ok: false, error: 'ese usuario ya existe' }
-  const account = await createAccount(username.trim(), hashPassword(password))
+  const account = await createAccount(username.trim(), await hashPassword(password))
   return { ok: true, token: newToken(account), username: account.username }
 }
 
@@ -51,7 +57,7 @@ export async function register(username, password) {
 export async function login(username, password) {
   if (typeof username !== 'string' || typeof password !== 'string') return { ok: false, error: 'datos inválidos' }
   const account = await findAccount(username)
-  if (!account || !verifyPassword(password, account.pass_hash)) return { ok: false, error: 'usuario o contraseña incorrectos' }
+  if (!account || !(await verifyPassword(password, account.pass_hash))) return { ok: false, error: 'usuario o contraseña incorrectos' }
   return { ok: true, token: newToken(account), username: account.username }
 }
 

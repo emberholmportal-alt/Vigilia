@@ -188,19 +188,12 @@ export async function donate(accountId, amount) {
   if (amt <= 0) return { ok: false, error: 'monto inválido' }
   const mem = await db.getGuildMembership(accountId)
   if (!mem) return { ok: false, error: 'no estás en un gremio' }
-  const g = await db.getGuild(mem.guild_id)
-  if (!g) return { ok: false, error: 'ese gremio no existe' }
-  // Descuenta el oro de forma atómica (lee+escribe bajo el lock de la cuenta) ANTES de acreditar
-  // al gremio, así dos operaciones del SERVIDOR no se pisan entre sí. OJO: esto NO evita que un
-  // autosave del cliente con oro viejo pise el descuento (el `save` sigue confiando en el oro del
-  // cliente) — cerrar eso requiere economía server-autoritativa (quitar el oro del save), pendiente
-  // junto con la $VEL.
-  const paid = await db.updateCharacterGold(accountId, (gold) => gold >= amt ? gold - amt : null)
-  if (!paid.ok) return { ok: false, error: 'no tenés tanto oro' }
-  const newDonated = (Number(g.donated) || 0) + amt
-  const newLevel = levelForDonated(newDonated)
-  const updated = await db.addGuildDonation(g.id, amt, newLevel)
-  return { ok: true, guild: pubGuild(updated), gold: paid.gold, leveledUp: newLevel > g.level }
+  // Descuento del personaje + crédito al gremio en UNA transacción (dos filas): un crash en el
+  // medio ya no puede perder ni duplicar el oro. (OJO: no evita que un autosave del cliente con
+  // oro viejo pise el descuento — eso es economía server-autoritativa, pendiente con la $VEL.)
+  const r = await db.txDonate(accountId, mem.guild_id, amt, levelForDonated)
+  if (!r.ok) return r
+  return { ok: true, guild: pubGuild(r.guild), gold: r.gold, leveledUp: r.leveledUp }
 }
 
 // ---------- Depósito del Gremio (banco compartido, desbloquea a nivel 4) ----------
@@ -231,14 +224,8 @@ export async function depositGold(accountId, amount) {
   if (amt <= 0) return { ok: false, error: 'monto inválido' }
   const gd = await depositGuard(accountId)
   if (gd.error) return { ok: false, error: gd.error }
-  return db.withGuildLock(gd.g.id, async () => {
-    const paid = await db.updateCharacterGold(accountId, (gold) => gold >= amt ? gold - amt : null)
-    if (!paid.ok) return { ok: false, error: 'no tenés tanto oro' }
-    const dep = await db.getDeposit(gd.g.id)
-    const nd = { gold: (Number(dep.gold) || 0) + amt, items: dep.items || [] }
-    await db.setDeposit(gd.g.id, nd)
-    return { ok: true, gold: paid.gold, deposit: nd }
-  })
+  // Personaje -> banco del gremio en una transacción (sin pérdida por crash entre las dos filas).
+  return db.txDepositGold(accountId, gd.g.id, amt)
 }
 
 // Retirar oro: sale del depósito y vuelve al oro del personaje. Bajo el lock del gremio para que
@@ -248,17 +235,8 @@ export async function withdrawGold(accountId, amount) {
   if (amt <= 0) return { ok: false, error: 'monto inválido' }
   const gd = await depositGuard(accountId)
   if (gd.error) return { ok: false, error: gd.error }
-  return db.withGuildLock(gd.g.id, async () => {
-    const dep = await db.getDeposit(gd.g.id)
-    if ((Number(dep.gold) || 0) < amt) return { ok: false, error: 'el depósito no tiene tanto oro' }
-    // Acreditar al jugador PRIMERO y validar: si falla, el depósito no se toca (nada de oro
-    // perdido ni de devolver gold:undefined). Debitar el depósito recién con la acreditación ok.
-    const res = await db.updateCharacterGold(accountId, (gold) => gold + amt)
-    if (!res.ok) return { ok: false, error: res.error || 'no se pudo acreditar el oro' }
-    const nd = { gold: (Number(dep.gold) || 0) - amt, items: dep.items || [] }
-    await db.setDeposit(gd.g.id, nd)
-    return { ok: true, gold: res.gold, deposit: nd }
-  })
+  // Banco del gremio -> personaje en una transacción (sin pérdida por crash entre las dos filas).
+  return db.txWithdrawGold(accountId, gd.g.id, amt)
 }
 
 // Depositar un ítem: el cliente manda el ítem (dueño de su inventario); el server lo guarda en
