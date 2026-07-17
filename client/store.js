@@ -127,6 +127,7 @@ export const useGameStore = create((set, get) => ({
   belt: [null, null, null, null], // cinturón (slots usables = capacidad del cinturón equipado)
   equippedBelt: null,             // ítem de cinturón equipado (define cuántos slots hay)
   panel: null,              // 'inventory' | 'character' | 'shop' | null
+  lootLabels: false,        // mostrar todas las etiquetas de loot del suelo (botón/Alt, estilo Diablo)
   shopStock: [],            // stock del mercader (rota por día)
   shopVendor: '',           // nombre del mercader abierto
   nearby: null,             // {name, shop} — NPC cercano interactuable (lo escribe el loop)
@@ -477,6 +478,7 @@ export const useGameStore = create((set, get) => ({
   setGold: (gold) => set({ gold }),
   setPanel: (panel) => set({ panel }),
   togglePanel: (p) => set((s) => ({ panel: s.panel === p ? null : p })),
+  toggleLootLabels: () => set((s) => ({ lootLabels: !s.lootLabels })),
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
@@ -1156,6 +1158,7 @@ export const storeApi = {
   recoverGrave: (id) => useGameStore.getState().recoverGrave(id),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
+  getLootLabels: () => useGameStore.getState().lootLabels,
   isSpectator: () => useGameStore.getState().spectator,
   getSaveBlob: () => { const s = useGameStore.getState(); return { name: s.playerName, race: s.race?.id, char: snapshot(s) } },
   showToast: (t) => useGameStore.getState().showToast(t),

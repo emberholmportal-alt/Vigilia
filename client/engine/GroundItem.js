@@ -78,10 +78,26 @@ export class GroundItem {
     })
     this.label.anchor.set(0.5, 1)
     this.label.y = -22
+    // Fondo tipo "pastilla" oscura detrás del nombre, para leerlo sobre el pasto (como Diablo).
+    this.labelBg = new Graphics()
+    const pad = 5, lw = this.label.width + pad * 2, lh = 16
+    this.labelBg.roundRect(-lw / 2, -lh - 5, lw, lh, 4).fill({ color: 0x0a090c, alpha: 0.72 })
+    this.labelBg.stroke({ color: this.tint, width: 1, alpha: 0.5 })
+    this.labelBg.y = -18
+    this.view.addChild(this.labelBg)
     this.view.addChild(this.label)
+    // Ocultas por defecto (Diablo): se revelan con Alt / botón / al acercarse.
+    this.label.visible = false
+    this.labelBg.visible = false
 
     this.view.eventMode = 'static'
     this.view.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
+  }
+
+  // Muestra u oculta el nombre del loot (revelar todo con Alt, o cuando el jugador está cerca).
+  setReveal(v) {
+    if (this.label) this.label.visible = v
+    if (this.labelBg) this.labelBg.visible = v
   }
 
   onTap(cb) { this.view.on('pointertap', (e) => { e.stopPropagation(); cb(this) }) }

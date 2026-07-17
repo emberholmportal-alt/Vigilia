@@ -64,6 +64,8 @@ export default function HUD({ onExitSpectate }) {
   const nearbyNode = useGameStore((s) => s.nearbyNode)
   const requestGather = useGameStore((s) => s.requestGather)
   const togglePanel = useGameStore((s) => s.togglePanel)
+  const lootLabels = useGameStore((s) => s.lootLabels)
+  const toggleLootLabels = useGameStore((s) => s.toggleLootLabels)
   const openMissions = useGameStore((s) => s.openMissions)
   const missions = useGameStore((s) => s.missions)
   const useBelt = useGameStore((s) => s.useBelt)
@@ -146,6 +148,9 @@ export default function HUD({ onExitSpectate }) {
             </button>
           </div>
         )}
+        <button className={'loot-toggle' + (lootLabels ? ' on' : '')} onClick={toggleLootLabels} title={t('loot_labels')}>
+          <Eye /> {t('loot_labels')}
+        </button>
         <MenuRow onPanel={togglePanel} />
         <BuffBar />
         <div className="globe-row">

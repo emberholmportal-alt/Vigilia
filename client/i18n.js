@@ -342,6 +342,7 @@ const DICT = {
   docs_link: { es: 'Documentación', en: 'Docs' },
   wallet_optional: { es: 'Opcional — podés jugar sin billetera por ahora.', en: 'Optional — you can play without a wallet for now.' },
   back: { es: 'Volver', en: 'Back' },
+  loot_labels: { es: 'Loot', en: 'Loot' },
   spec_hint: { es: 'Arrastrá para mirar · WASD/flechas', en: 'Drag to look · WASD/arrows' },
   // billetera (Solana)
   wallet_connect: { es: 'Conectar billetera', en: 'Connect wallet' },

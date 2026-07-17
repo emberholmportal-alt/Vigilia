@@ -1889,6 +1889,13 @@ export class Game {
     app.stage.on('pointertap', onTap)
     this._onTap = onTap
 
+    // Alt (desktop): revela TODAS las etiquetas de loot del suelo mientras se mantiene (como Diablo).
+    this._onAltDown = (e) => { if (e.key === 'Alt' || e.code === 'AltLeft' || e.code === 'AltRight') { this._altHeld = true; e.preventDefault() } }
+    this._onAltUp = (e) => { if (e.key === 'Alt' || e.code === 'AltLeft' || e.code === 'AltRight') this._altHeld = false }
+    window.addEventListener('keydown', this._onAltDown)
+    window.addEventListener('keyup', this._onAltUp)
+    window.addEventListener('blur', this._onAltUp)   // soltar Alt si la ventana pierde foco
+
     // Click DERECHO (estilo Diablo): acción directa sobre lo que hay bajo el cursor
     // (enemigo -> atacar, cadáver -> inspeccionar). Bloqueamos el menú del navegador.
     this._onContext = (e) => e.preventDefault()
@@ -2051,9 +2058,14 @@ export class Game {
     // Loot en el suelo: bob + recoger al caminarle encima.
     if (this.groundItems.length) {
       const px = this.player.tx, py = this.player.ty
+      const revealLoot = this._altHeld || !!this.store.getLootLabels?.()   // Alt (desktop) o botón (mobile)
       for (const gi of this.groundItems) {
         if (gi.picked) continue
         gi.update(dt)
+        // Etiquetas de loot (estilo Diablo): ocultas por defecto; se revelan con Alt (desktop),
+        // con el botón de loot (mobile) o cuando el jugador está cerca (≤4 tiles).
+        const near = Math.abs(px - gi.tx) <= 4 && Math.abs(py - gi.ty) <= 4
+        gi.setReveal(revealLoot || near)
         // Oro: se recoge al pasarle por encima (auto). Ítems: SÓLO por click (abajo).
         if (gi.isGold && Math.abs(px - gi.tx) <= 0.9 && Math.abs(py - gi.ty) <= 0.9) this._pickupGold(gi)
       }
@@ -2274,6 +2286,8 @@ export class Game {
     window.removeEventListener('resize', this._onResize)
     if (this._onKeyDown) window.removeEventListener('keydown', this._onKeyDown)
     if (this._onKeyUp) window.removeEventListener('keyup', this._onKeyUp)
+    if (this._onAltDown) window.removeEventListener('keydown', this._onAltDown)
+    if (this._onAltUp) { window.removeEventListener('keyup', this._onAltUp); window.removeEventListener('blur', this._onAltUp) }
     if (this._onContext && this.app?.canvas) this.app.canvas.removeEventListener('contextmenu', this._onContext)
     if (this.weather) { this.weather.destroy(); this.weather = null }
     if (this.dayNight) { this.dayNight.destroy(); this.dayNight = null }
