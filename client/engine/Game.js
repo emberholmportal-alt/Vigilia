@@ -243,6 +243,11 @@ export class Game {
     this.groundItems = []
     this._pendingChest = null
     this._buildChests(renderer, iso, world.map, grid)
+    // Barriles/cajas rompibles: clutter destructible que suelta algo de botín. Instanciado por
+    // jugador (no compartido) para no meter netcode: andan igual offline y online, en todo mapa.
+    this.barrels = []
+    this._pendingBarrel = null
+    await this._buildBarrels(renderer, iso, world.map, grid, spawn)
 
     // Enemigos + estado de combate.
     this.enemies = []
@@ -824,6 +829,62 @@ export class Game {
     hot.on('pointertap', (e) => { e.stopPropagation(); this._tapChest(chest) })
     this.chests.push(chest)
     return chest
+  }
+
+  // --- Barriles / cajas rompibles --------------------------------------------
+  // Clutter destructible: un sprite de caja de Flare que, al romperse, suelta algo de botín.
+  // Instanciado por jugador (no compartido) → sin netcode, andan igual offline y online.
+  async _buildBarrels(renderer, iso, map, grid, spawn) {
+    const BASE = import.meta.env.BASE_URL || '/'
+    if (!this._barrelTex) { try { this._barrelTex = await Assets.load(BASE + 'assets/decor/barrel.png') } catch { this._barrelTex = null } }
+    if (!this._barrelTex || this.destroyed) return
+    const n = 6 + randInt([0, 6])   // 6–12 por mapa
+    const used = new Set()
+    for (let i = 0; i < n; i++) {
+      const t = this._randomWalkable(grid, spawn, used)
+      if (!t) continue
+      if (Math.abs(t.x - spawn.x) + Math.abs(t.y - spawn.y) < 3) continue   // no encima del spawn
+      this._addBarrel(t.x, t.y, grid)
+    }
+  }
+
+  _addBarrel(x, y, grid) {
+    const iso = this.iso, renderer = this.renderer
+    const sp = new Sprite(this._barrelTex)
+    sp.anchor.set(0.5, 0.82)
+    sp.x = iso.toWorldX(x, y); sp.y = iso.toWorldY(x, y); sp.zIndex = x + y
+    sp.scale.set((this._eScale || 1) * 1.5)
+    sp.eventMode = 'static'
+    sp.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
+    renderer.objectLayer.addChild(sp)
+    if (x >= 0 && x < grid.w && y >= 0 && y < grid.h) grid.blocked[y * grid.w + x] = 1
+    const barrel = { x, y, sp, broken: false }
+    sp.on('pointertap', (e) => { e.stopPropagation(); this._tapBarrel(barrel) })
+    this.barrels.push(barrel)
+    return barrel
+  }
+
+  _tapBarrel(b) {
+    if (this._spectator || b.broken || this._dead) return
+    this.player.walkTo(b.x, b.y)   // A* enruta a un tile adyacente (el barril bloquea el suyo)
+    this._pendingBarrel = b
+  }
+
+  _breakBarrel(b) {
+    if (b.broken) return
+    b.broken = true
+    if (b.x >= 0 && b.x < this._grid.w && b.y >= 0 && b.y < this._grid.h) this._grid.blocked[b.y * this._grid.w + b.x] = 0
+    const wx = b.sp.x, wy = b.sp.y
+    b.sp.destroy()
+    this.barrels = this.barrels.filter((x) => x !== b)
+    if (this._pendingBarrel === b) this._pendingBarrel = null
+    playSfx('swing.ogg')
+    // Botín modesto (como un enemigo débil): oro + a veces un consumible/pieza.
+    const mf = this.store.getStats()?.itemFind || 0
+    const lvl = Math.max(1, Math.min(16, this.store.getPlayerLevel?.() || 1))
+    const roll = rollMonsterDrop(lvl, false, mf)
+    if (roll.gold > 0) { this.store.addGold(roll.gold); this._floatText(wx, wy - 20, `+${roll.gold}`, '#e6c85a') }
+    if (roll.drops.length) this._dropItems(b.x, b.y, roll.drops)
   }
 
   // --- cofres autoritativos del servidor (online) ----------------------------
@@ -1904,6 +1965,14 @@ export class Game {
         else this._openChest(c)
       }
       this._pendingChest = null
+    }
+
+    // Romper el barril pendiente al llegar cerca.
+    if (this._pendingBarrel && !this.player.moving) {
+      const b = this._pendingBarrel
+      const near = Math.abs(this.player.tx - b.x) <= 1.6 && Math.abs(this.player.ty - b.y) <= 1.6
+      if (near && !b.broken) this._breakBarrel(b)
+      this._pendingBarrel = null
     }
 
     // Nodos de recursos: bob + juntar al llegar al nodo apuntado.
