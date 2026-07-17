@@ -2,7 +2,7 @@
 // tenemos, y define stats por nivel y el nombre en español. 25 enemigos reales de Flare.
 
 const SPRITES = new Set([
-  'antlion', 'antlion_armored', 'antlion_small', 'cursed_grave', 'fire_ant', 'goblin',
+  'antlion', 'antlion_armored', 'antlion_small', 'fire_ant', 'goblin',
   'goblin_elite', 'goblin_elite_runner', 'goblin_runner', 'hobgoblin', 'hobgoblin_archer',
   'ice_ant', 'minotaur', 'skeleton', 'skeleton_archer', 'skeleton_knight_boss', 'skeleton_mage',
   'skeleton_mage_boss', 'skeleton_weak', 'wyvern', 'wyvern_air', 'wyvern_fire', 'wyvern_water',
@@ -14,13 +14,15 @@ const ALIAS = {
   goblin_spearman: 'hobgoblin', goblin_chief: 'goblin_elite',
   antlion_hatchling: 'antlion_small', antlion_burster: 'antlion_armored', antlion_ice: 'ice_ant',
   minotaur_necromancer: 'minotaur', skeleton_knight: 'skeleton_knight_boss',
+  // 'cursed_grave' (cruz de piedra) no gusta: los spawners que la piden dan un esqueleto.
+  cursed_grave: 'skeleton', forgotten_grave: 'skeleton',
 }
 
 // Categorías de bioma -> lista de sprites posibles (Flare elige uno al azar).
 const BIOME = {
   grassland: ['goblin', 'goblin_runner'],
   dungeon: ['skeleton', 'skeleton_weak', 'zombie'],
-  undead: ['skeleton', 'skeleton_weak', 'zombie', 'skeleton_archer', 'cursed_grave'],
+  undead: ['skeleton', 'skeleton_weak', 'zombie', 'skeleton_archer', 'skeleton_mage'],
   snowplains: ['ice_ant', 'skeleton_weak'],
   antlion: ['antlion', 'antlion_small', 'antlion_armored'],
 }

@@ -839,13 +839,23 @@ export class Game {
     const BASE = import.meta.env.BASE_URL || '/'
     if (!this._barrelTex) { try { this._barrelTex = await Assets.load(BASE + 'assets/decor/barrel.png') } catch { this._barrelTex = null } }
     if (!this._barrelTex || this.destroyed) return
-    const n = 6 + randInt([0, 6])   // 6–12 por mapa
+    // Los agrupamos CERCA del punto de llegada (anillo 3–16 tiles) para que el jugador los
+    // encuentre — antes se esparcían por todo el mapa y eran imposibles de hallar.
+    const n = 7 + randInt([0, 4])   // 7–11 cerca de la entrada
     const used = new Set()
     for (let i = 0; i < n; i++) {
-      const t = this._randomWalkable(grid, spawn, used)
-      if (!t) continue
-      if (Math.abs(t.x - spawn.x) + Math.abs(t.y - spawn.y) < 3) continue   // no encima del spawn
-      this._addBarrel(t.x, t.y, grid)
+      for (let tries = 0; tries < 30; tries++) {
+        const ang = Math.random() * Math.PI * 2
+        const r = 3 + Math.random() * 13
+        const x = Math.round(spawn.x + Math.cos(ang) * r), y = Math.round(spawn.y + Math.sin(ang) * r)
+        if (x < 1 || y < 1 || x >= grid.w - 1 || y >= grid.h - 1) continue
+        const key = y * grid.w + x
+        if (used.has(key) || !grid.isWalkable(x, y)) continue
+        if (Math.abs(x - spawn.x) + Math.abs(y - spawn.y) < 3) continue   // no encima del spawn
+        used.add(key)
+        this._addBarrel(x, y, grid)
+        break
+      }
     }
   }
 
