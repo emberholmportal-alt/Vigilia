@@ -64,9 +64,10 @@ export class GroundItem {
       // ícono apoyado en el suelo (chico, casi sin flotar) con leve inclinación.
       const tex = _iconsTex
       const col = item.icon % COLS, row = (item.icon / COLS) | 0
-      this.sprite = new Sprite(new Texture({
-        source: tex.source, frame: new Rectangle(col * ICON, row * ICON, ICON, ICON),
-      }))
+      // Wrapper propio, guardado en `_ownTex` para que el teardown del mapa lo libere igual que
+      // las demás entidades (el loot que quedó en el suelo al cambiar de mapa, si no, leakeaba).
+      this._ownTex = new Texture({ source: tex.source, frame: new Rectangle(col * ICON, row * ICON, ICON, ICON) })
+      this.sprite = new Sprite(this._ownTex)
       this.sprite.anchor.set(0.5, 0.9)
       this.sprite.scale.set(0.82)
       this.sprite.rotation = -0.18
@@ -123,8 +124,9 @@ export class GroundItem {
 
   destroy() {
     // Libera el wrapper de Texture por-instancia (NO la source compartida de icons.png) para no
-    // acumular texturas en el heap al recoger/vencer mucho loot en una sesión larga.
-    if (this.sprite && this.sprite.texture) this.sprite.texture.destroy(false)
+    // acumular texturas en el heap al recoger/vencer mucho loot en una sesión larga. Idempotente
+    // (null tras liberar) para no chocar con la liberación del teardown.
+    if (this._ownTex) { this._ownTex.destroy(false); this._ownTex = null }
     this.view.destroy({ children: true })
   }
 }

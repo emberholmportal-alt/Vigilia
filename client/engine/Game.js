@@ -499,8 +499,14 @@ export class Game {
     for (const e of this.enemies || []) freeOwn(e)
     for (const n of this.npcs || []) freeOwn(n)
     for (const nd of this.nodes || []) freeOwn(nd)
+    for (const gi of this.groundItems || []) freeOwn(gi)   // loot que quedó en el suelo al cambiar de mapa
     for (const p of this.portals || []) { if (p.pad && p.pad.texture) p.pad.texture.destroy(false) }
     for (const ad of this._animDecor || []) { if (ad.tex) ad.tex.destroy(false) }
+    // Paperdolls: se crea un Player y un Map de remotos nuevos en cada _buildWorld, así que los
+    // viejos se van con el destroy en bloque; hay que liberar sus wrappers de capa antes (~7 por
+    // paperdoll). El player se leakeaba en CADA cambio de mapa; los remotos, en co-op.
+    this.player?.paperdoll?.freeTextures()
+    if (this.remotes) for (const r of this.remotes.values()) r.paperdoll?.freeTextures()
     if (this.worldContainer) { this.worldContainer.destroy({ children: true, texture: false }); this.worldContainer = null }
     this.npcs = []
     this.enemies = []

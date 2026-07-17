@@ -190,8 +190,11 @@ export async function donate(accountId, amount) {
   if (!mem) return { ok: false, error: 'no estás en un gremio' }
   const g = await db.getGuild(mem.guild_id)
   if (!g) return { ok: false, error: 'ese gremio no existe' }
-  // Descuenta el oro atómico ANTES de acreditar al gremio: sin la ventana de interleave, un
-  // autosave del cliente ya no puede "devolver" el oro donado (duplicándolo en la práctica).
+  // Descuenta el oro de forma atómica (lee+escribe bajo el lock de la cuenta) ANTES de acreditar
+  // al gremio, así dos operaciones del SERVIDOR no se pisan entre sí. OJO: esto NO evita que un
+  // autosave del cliente con oro viejo pise el descuento (el `save` sigue confiando en el oro del
+  // cliente) — cerrar eso requiere economía server-autoritativa (quitar el oro del save), pendiente
+  // junto con la $VEL.
   const paid = await db.updateCharacterGold(accountId, (gold) => gold >= amt ? gold - amt : null)
   if (!paid.ok) return { ok: false, error: 'no tenés tanto oro' }
   const newDonated = (Number(g.donated) || 0) + amt
@@ -248,9 +251,12 @@ export async function withdrawGold(accountId, amount) {
   return db.withGuildLock(gd.g.id, async () => {
     const dep = await db.getDeposit(gd.g.id)
     if ((Number(dep.gold) || 0) < amt) return { ok: false, error: 'el depósito no tiene tanto oro' }
+    // Acreditar al jugador PRIMERO y validar: si falla, el depósito no se toca (nada de oro
+    // perdido ni de devolver gold:undefined). Debitar el depósito recién con la acreditación ok.
+    const res = await db.updateCharacterGold(accountId, (gold) => gold + amt)
+    if (!res.ok) return { ok: false, error: res.error || 'no se pudo acreditar el oro' }
     const nd = { gold: (Number(dep.gold) || 0) - amt, items: dep.items || [] }
     await db.setDeposit(gd.g.id, nd)
-    const res = await db.updateCharacterGold(accountId, (gold) => gold + amt)
     return { ok: true, gold: res.gold, deposit: nd }
   })
 }

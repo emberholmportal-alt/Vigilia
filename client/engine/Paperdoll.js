@@ -113,6 +113,10 @@ export class Paperdoll {
       const def = this.manifest.layers[name]
       // Textura propia por sprite; mutamos su frame por tick.
       const s = this.sprites[type]
+      // El dueño (p. ej. un jugador remoto) puede haberse destruido mientras cargábamos la capa
+      // (setEquipment corre sin await del constructor). Si el sprite ya está destruido, cortamos:
+      // asignarle textura sería un use-after-free y crearía un wrapper que nadie liberaría.
+      if (!s || s.destroyed) return
       if (!s.texture || s._layerName !== name) {
         // Al recambiar la capa (cambio de equipo), liberar el wrapper anterior antes de crear el
         // nuevo. El guard `_layerName` asegura que sólo destruimos wrappers propios (no EMPTY).
