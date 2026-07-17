@@ -154,11 +154,8 @@ export class Game {
     const renderer = new MapRenderer(iso, world.map, world.tileset)
     this.renderer = renderer
 
-    // Atlas del tileset en un canvas para leer alpha por-pixel (oclusión precisa).
-    this._masks = new Map()
+    // Alpha por-tile de la oclusión de edificios (atenuar los que tapan al jugador).
     this._occAlpha = new Map()
-    this._atlasCtx = null
-    this._loadOcclusionAtlas(world.tileset.atlasSrc)
 
     // Zoom consistente entre mapas: apuntamos a un ancho de tile en pantalla parejo
     // (~83px, el de Triston) sin importar si el tileset trae tiles de 64 o 96px.
@@ -531,9 +528,7 @@ export class Game {
     this._pickupTries = 0
     this._pendingHit = null
     this.particles = null
-    this._masks?.clear()
     this._occAlpha?.clear()
-    this._atlasCtx = null
   }
 
   // Viaja a otro mapa (portal). Pantalla de carga temática (con lore) mientras reconstruye
@@ -1049,75 +1044,51 @@ export class Game {
     return true
   }
 
-  // Carga el atlas del tileset en un canvas 2D para poder leer su alpha por-pixel.
-  async _loadOcclusionAtlas(src) {
-    try {
-      const img = new Image()
-      img.decoding = 'async'
-      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = src })
-      if (this.destroyed) return
-      const cv = document.createElement('canvas')
-      cv.width = img.naturalWidth; cv.height = img.naturalHeight
-      const ctx = cv.getContext('2d', { willReadFrequently: true })
-      ctx.drawImage(img, 0, 0)
-      this._atlasCtx = ctx
-    } catch { this._atlasCtx = null }
-  }
-
-  // Máscara de alpha (Uint8) de un tile de edificio, extraída del atlas una sola vez.
-  _maskFor(s) {
-    const key = s.texture.uid
-    let m = this._masks.get(key)
-    if (m !== undefined) return m
-    m = null
-    try {
-      const f = s.texture.frame
-      const raw = this._atlasCtx.getImageData(f.x, f.y, f.width, f.height).data
-      const a = new Uint8Array(f.width * f.height)
-      for (let i = 0; i < a.length; i++) a[i] = raw[i * 4 + 3]
-      m = { w: f.width | 0, h: f.height | 0, a }
-    } catch { m = null }
-    this._masks.set(key, m)
-    return m
-  }
-
-  // ¿El sprite `s` (edificio, con máscara `m`) tapa de verdad al personaje en (viewX, feetY)?
-  // Muestrea la silueta del personaje (pies, torso, cabeza) contra el alpha del edificio: sólo
-  // si un pixel opaco del edificio cae sobre el cuerpo, está tapado. Nunca se atenúa de lejos.
-  _coversChar(m, s, viewX, feetY) {
-    const lx = Math.round(viewX - s.x)
-    if (lx < 0 || lx >= m.w) return false
-    // puntos a lo largo del alto del personaje (mundo px; hacia arriba es negativo)
-    for (const dy of [-6, -32, -58, -80]) {
-      const ly = Math.round(feetY + dy - s.y)
-      if (ly < 0 || ly >= m.h) continue
-      if (m.a[ly * m.w + lx] > 60) return true
+  // Cullea por VISIBILIDAD las entidades fuera de cámara (enemigos, NPCs, tumbas, nodos, remotos).
+  // `view.x/y` están en pixel de mundo; pantalla = mundo*zoom + offset. Margen generoso porque los
+  // sprites están anclados a los pies y se extienden hacia arriba. No toca al jugador (siempre on).
+  _cullEntities() {
+    const z = this.camera.zoom, ox = this.camera.offsetX, oy = this.camera.offsetY
+    const W = this.app.screen.width, H = this.app.screen.height
+    const MX = 180, MY = 240
+    const vis = (v) => {
+      if (!v) return
+      const sx = v.x * z + ox, sy = v.y * z + oy
+      v.visible = sx >= -MX && sx <= W + MX && sy >= -MY && sy <= H + MY
     }
-    return false
+    for (const e of this.enemies) vis(e.view)
+    for (const n of this.npcs) vis(n.view)
+    if (this.graves) for (const m of this.graves) { if (!m.taken) vis(m.view) }
+    if (this.nodes) for (const nd of this.nodes) vis(nd.view)
+    if (this.remotes) for (const r of this.remotes.values()) vis(r.view)
   }
 
-  // Atenúa un EDIFICIO sólo cuando su pixel opaco realmente tapa al personaje (lo cubre
-  // por detrás). Excluye cercas, árboles, barriles y props del suelo por tamaño.
+  // Atenúa un EDIFICIO cuando tapa al personaje (queda dibujado por delante y su rectángulo cubre
+  // el cuerpo). Excluye cercas, árboles, barriles y props del suelo por tamaño. Usa cobertura por
+  // bounding-box (robusta y predecible); la versión pixel-perfect anterior no atenuaba nunca.
   _updateOcclusion() {
-    return   // desactivado: la transparencia de edificios no estaba funcionando bien (queda opaco)
     const p = this.player
-    if (!p || !this._atlasCtx) return
+    if (!p || this._spectator) return
     const iso = this.iso
     const pd = p.tx + p.ty                         // profundidad del jugador (x+y)
     const bldMinW = iso.tileW * 2.5                // sólo sprites grandes (edificios)
     const bldMinH = iso.tileH * 2.5
-    // Sólo se atenúan los edificios que tapan al JUGADOR (los NPCs no hacen que las casas se
-    // vuelvan translúcidas: si un NPC queda detrás de un edificio, se lo reubica a un tile visible).
+    const px = p.view.x, feet = p.view.y           // punto del personaje: x central, y en los pies
+    const HEAD = 78                                // alto aprox. del cuerpo (pies -> cabeza) en px
+    // Sólo se atenúan los edificios que tapan al JUGADOR (los NPCs no vuelven translúcidas las casas).
     const occ = this._occAlpha || (this._occAlpha = new Map()) // alpha por tile (persiste entre rebuilds)
     this.renderer.eachVisibleObject((s) => {
       let hide = false
       const tw = s.texture ? s.texture.width : s.width
       const th = s.texture ? s.texture.height : s.height
       if (s.zIndex > pd && tw >= bldMinW && th >= bldMinH) {   // edificio dibujado por encima del jugador
-        const m = this._maskFor(s)
-        if (m) hide = this._coversChar(m, s, p.view.x, p.view.y)
+        // ¿El cuerpo del personaje (x central, franja pies..cabeza) cae dentro del rectángulo
+        // dibujado del edificio (top-left en s.x,s.y, tamaño tw×th)? sprites con anchor (0,0).
+        const inX = px >= s.x && px <= s.x + tw
+        const inY = feet >= s.y && (feet - HEAD) <= s.y + th
+        hide = inX && inY
       }
-      const target = hide ? 0.3 : 1
+      const target = hide ? 0.32 : 1
       let a = occ.get(s._ti); if (a === undefined) a = 1
       a += (target - a) * 0.28                      // desvanecido suave, por tile
       if (a > 0.999) a = 1
@@ -2278,6 +2249,11 @@ export class Game {
     // Posicionar el mundo según la cámara.
     this.worldContainer.x = this.camera.offsetX
     this.worldContainer.y = this.camera.offsetY
+
+    // Culling de ENTIDADES fuera de cámara: Pixi no cullea solo (regla del proyecto). visible=false
+    // saca al sprite del render y del hit-test. La IA/posición sigue corriendo (para que estén bien
+    // al reaparecer); esto ahorra el draw call de todo lo que está fuera de pantalla.
+    this._cullEntities()
 
     // Culling de tiles.
     this.renderer.update(this.camera)
