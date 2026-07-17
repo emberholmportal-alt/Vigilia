@@ -3,23 +3,9 @@
 // Varios patrullan. Direcciones: 0=SW 1=W 2=NW 3=N 4=NE 5=E 6=SE 7=S
 
 const LOCHPORT = [
-  // --- monumento: Obelisco de Retorno + los Tres Guardianes (WORLD.md) ---
-  {
-    sprite: 'return_obelisk1', name: 'Obelisco de Retorno', name_en: 'Obelisk of Return', landmark: true, x: 37, y: 24, dir: 7,
-    lines: ['La piedra está tibia. Los que caen afuera, vuelven acá.'],
-  },
-  {
-    sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, x: 35, y: 25, dir: 0,
-    lines: ['Ofrendá oro a la llama y arderás más fuerte hoy.'],
-  },
-  {
-    sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', name_en: 'Guardian of Ice', landmark: true, x: 39, y: 25, dir: 0,
-    lines: ['El hielo no odia. Solo espera.'],
-  },
-  {
-    sprite: 'statue_guardian_wind', name: 'Guardián del Viento', name_en: 'Guardian of Wind', landmark: true, x: 37, y: 22, dir: 0,
-    lines: ['El viento lleva los nombres de los que no volvieron.'],
-  },
+  // El Obelisco de Retorno y los Tres Guardianes NO van acá: son seña de identidad de Triston
+  // (el pueblo principal) y no se repiten (igual que en la granja). Antes se duplicaban como
+  // props sin funcionar (sin `obelisk:true`); quitados para respetar la regla del mundo.
 
   // --- portales (destino por definir): flanquean la plaza al oeste y al este ---
   {
@@ -93,17 +79,10 @@ const FARM = [
 ]
 
 // Greenwood Point (pueblo del mod noname): hub con edificios reales. Cada NPC de servicio
-// se ubica FRENTE a un edificio; los landmarks (obelisco/guardianes) en la plaza (51,51).
+// se ubica FRENTE a un edificio. El obelisco/guardianes son de Triston y no se repiten acá.
 const GREENWOOD = [
-  // monumento en la plaza
-  { sprite: 'return_obelisk1', name: 'Obelisco de Retorno', name_en: 'Obelisk of Return', landmark: true, x: 51, y: 49, dir: 7,
-    lines: ['La piedra está tibia. Los que caen afuera, vuelven acá.'] },
-  { sprite: 'statue_guardian_fire', name: 'Guardián de Fuego', name_en: 'Guardian of Fire', landmark: true, x: 49, y: 50, dir: 0,
-    lines: ['Ofrendá oro a la llama y arderás más fuerte hoy.'] },
-  { sprite: 'statue_guardian_ice', name: 'Guardián de Hielo', name_en: 'Guardian of Ice', landmark: true, x: 53, y: 50, dir: 0,
-    lines: ['El hielo no odia. Solo espera.'] },
-  { sprite: 'statue_guardian_wind', name: 'Guardián del Viento', name_en: 'Guardian of Wind', landmark: true, x: 51, y: 47, dir: 0,
-    lines: ['El viento lleva los nombres de los que no volvieron.'] },
+  // El Obelisco de Retorno y los Tres Guardianes NO van acá (seña de identidad de Triston):
+  // antes se duplicaban como props sin funcionar; quitados para respetar la regla del mundo.
 
   // portales (flanquean el pueblo)
   { sprite: 'return_obelisk2', name: 'Portal del Oeste', name_en: 'West Portal', landmark: true, portal: true, glow: 0xb060ff,

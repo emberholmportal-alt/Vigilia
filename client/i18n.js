@@ -1,4 +1,4 @@
-// i18n: español (por defecto) / inglés. El idioma vive en el store (reactivo en React) y
+// i18n: inglés (por defecto) / español. El idioma vive en el store (reactivo en React) y
 // también en un módulo local `_lang` para que el motor y el store lean sin ciclo de imports.
 // Los componentes usan el hook useT (ui/useT.js); el motor/store usan tt().
 

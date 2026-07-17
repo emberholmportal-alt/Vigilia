@@ -496,6 +496,7 @@ export class Game {
     this.npcs = []
     this.enemies = []
     this._netEnemies = new Map()
+    this._netDeadPending = null   // muertes netcode que llegaron antes que el spawn: no cruzan de mapa
     this.groundItems = []
     this.chests = []
     this._floaters = []
@@ -952,7 +953,9 @@ export class Game {
   _openChest(chest) {
     chest.opened = true
     if (chest.glow) { chest.glow.destroy(); chest.glow = null }
-    if (chest.hot) { chest.hot.eventMode = 'none'; chest.hot.cursor = 'default' }
+    // Destruir el hotspot (no sólo desactivarlo): es un Graphics con zIndex 1e6 que si no queda
+    // colgado en objectLayer hasta el cambio de mapa. Igual que la ruta online (_onCopen).
+    if (chest.hot) { chest.hot.destroy(); chest.hot = null }
     playSfx('wood_open.ogg')
 
     // Abrir un cofre es la acción de Saqueo (+XP de skill y de jugador).

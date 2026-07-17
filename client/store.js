@@ -464,7 +464,7 @@ export const useGameStore = create((set, get) => ({
   muted: false,
   toggleMute: () => set((s) => { const m = !s.muted; setMuted(m); return { muted: m } }),
 
-  // --- idioma (ES por defecto; se guarda aparte del save) ---
+  // --- idioma (EN por defecto; se guarda aparte del save) ---
   lang: loadLang(),
   setLang: (l) => { const lang = l === 'en' ? 'en' : 'es'; setLangGlobal(lang); saveLang(lang); set({ lang }) },
   toggleLang: () => get().setLang(get().lang === 'en' ? 'es' : 'en'),
