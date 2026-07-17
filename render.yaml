@@ -5,13 +5,11 @@
 # un Blueprint). Se mantiene en línea con producción para que un re-provisionamiento no rompa nada:
 #   · El nombre del server define su hostname; DEBE coincidir con VITE_WS_URL del cliente (que se
 #     hornea en el build). Si cambiás uno, cambiá el otro.
-#   · Los planes reflejan producción: el server es Starter (no duerme). El Postgres free EXPIRA a
-#     los ~90 días (pérdida de datos): para producción usá un plan pago de la base.
+#   · Los planes reflejan producción: server y base en Starter (pagos: no duermen ni expiran).
 databases:
   - name: velgrim-db
     databaseName: velgrim
-    # ⚠️ 'free' expira ~90 días y borra la base. Producción debería pinnear un plan pago.
-    plan: free
+    plan: starter   # pago: no expira (a diferencia de free, que borra la base a los ~90 días)
 
 services:
   # --- Servidor autoritativo (WebSocket + HTTP) ---
