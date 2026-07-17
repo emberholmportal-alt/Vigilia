@@ -21,8 +21,11 @@ const http_server = http.createServer(async (req, res) => {
   res.setHeader('access-control-allow-origin', '*')
   const path = (req.url || '').split('?')[0]
   if (path === '/health' || path === '/healthz') {
+    // `rev` = commit desplegado (Render inyecta RENDER_GIT_COMMIT). Permite verificar desde afuera
+    // que el server tomó el último push, sin adivinar.
+    const rev = (process.env.RENDER_GIT_COMMIT || 'dev').slice(0, 7)
     res.writeHead(200, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ ok: true, players: rooms.playerCount(), db: db.usingPostgres() ? 'postgres' : 'file' }))
+    res.end(JSON.stringify({ ok: true, rev, players: rooms.playerCount(), db: db.usingPostgres() ? 'postgres' : 'file' }))
     return
   }
   if (path === '/stats') {
