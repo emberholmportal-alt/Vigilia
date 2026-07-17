@@ -320,13 +320,21 @@ export function setStats(pid, s) {
   if (!s || typeof s !== 'object') return
   pstats.set(pid, {
     dmgMin: clampNum(s.dmgMin, 500), dmgMax: clampNum(s.dmgMax, 500),
-    dmgMul: clampNum(s.dmgMul, 8) || 1, str: clampNum(s.str, 999),
-    crit: clampNum(s.crit, 100), defense: clampNum(s.defense, 3000),
+    // Techos ACOTADOS a una build legítima con margen: un cliente hackeado no puede mandar
+    // crit=100 (crit garantizado ×2) ni dmgMul=8 para one-shotear el mundo compartido.
+    dmgMul: clampNum(s.dmgMul, 4) || 1, str: clampNum(s.str, 999),
+    crit: clampNum(s.crit, 60), defense: clampNum(s.defense, 3000),
     reach: clampNum(s.reach, 8) || 1.6,
     weaponKind: (s.weaponKind === 'ranged' || s.weaponKind === 'mental') ? s.weaponKind : 'melee',
   })
 }
-export function dropPlayer(pid) { pstats.delete(pid) }
+export function dropPlayer(pid) { pstats.delete(pid); patkAt.delete(pid) }
+
+// Cadencia de ataque autoritativa: el cooldown vivía sólo en el cliente (cosmético), así que un
+// cliente scripteado podía mandar 'atk' en loop y borrar los enemigos del canal. El swing legítimo
+// más rápido es 0.65s (client/engine/Game.js); ponemos un piso de 0.5s con margen para el jitter.
+const patkAt = new Map()          // playerId -> próximo instante permitido (ms)
+const MIN_PLAYER_ATK_CD = 500     // ms entre golpes aceptados del jugador
 
 // Golpe jugador -> enemigo (pedido por el cliente). El server tira el daño con las stats del
 // jugador y valida el alcance. Devuelve nada; difunde el resultado.
@@ -342,6 +350,11 @@ export function playerAttack(pid, eid) {
   const reach = (st.reach || (st.weaponKind && st.weaponKind !== 'melee' ? RANGED_REACH : MELEE)) + 0.6
   const dx = pl.x - e.x, dy = pl.y - e.y
   if (dx * dx + dy * dy > reach * reach) return   // fuera de alcance: no valida
+  // Cadencia autoritativa: descarta golpes más rápidos que el piso (anti spam/scripting). Sólo
+  // consume el cooldown cuando el golpe es válido y está en alcance (un whiff no lo resetea).
+  const tnow = now()
+  if (tnow < (patkAt.get(pid) || 0)) return
+  patkAt.set(pid, tnow + MIN_PLAYER_ATK_CD)
   const { dmg, crit } = rollPlayerDamage(st)
   e.hp -= dmg
   ctx.broadcast(pl.map, pl.ch, { t: 'edmg', i: e.i, hp: Math.max(0, e.hp), dmg, crit, by: pid })

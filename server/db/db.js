@@ -83,6 +83,41 @@ function flush() {
   try { fs.writeFileSync(DATA_FILE, JSON.stringify(file)) } catch (e) { console.error('[db] flush', e.message) }
 }
 
+// --- Serialización de escrituras por clave (cuenta / gremio) --------------------------------
+// El oro y el stash tienen VARIOS escritores concurrentes: el autosave del cliente (blob entero),
+// las donaciones/depósitos del gremio (descuento server) y los depósitos compartidos entre
+// miembros. Sin coordinar, dos operaciones se pisan en la ventana entre el `await` de lectura y
+// el de escritura -> se duplica o se corrompe oro/ítems. Esta cola serializa las escrituras por
+// clave (una cuenta, un gremio) sin bloquear el resto del servidor.
+const _locks = new Map()   // clave -> cola (promesa "tail" que nunca rechaza)
+export function withLock(key, fn) {
+  const prev = _locks.get(key) || Promise.resolve()
+  const next = prev.then(fn, fn)                  // corre fn cuando el anterior se asienta
+  const tail = next.then(() => {}, () => {})      // cola que nunca rechaza (mantiene la cadena viva)
+  _locks.set(key, tail)
+  tail.then(() => { if (_locks.get(key) === tail) _locks.delete(key) })   // limpia si nadie encoló detrás
+  return next
+}
+export const withAccountLock = (accountId, fn) => withLock('a:' + accountId, fn)
+export const withGuildLock = (guildId, fn) => withLock('g:' + guildId, fn)
+
+// Mutación ATÓMICA del oro del personaje bajo el lock de la cuenta. `apply(gold)` recibe el oro
+// actual y devuelve el nuevo, o null/negativo para abortar (p.ej. saldo insuficiente). Así el
+// descuento de gremios no puede interleaveearse con un autosave del cliente. Devuelve
+// { ok, gold, error? }.
+export function updateCharacterGold(accountId, apply) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return { ok: false, error: 'sin personaje' }
+    const cur = Math.floor(Number(ch.data?.gold) || 0)
+    const nextGold = apply(cur)
+    if (nextGold == null || !Number.isFinite(nextGold) || nextGold < 0) return { ok: false, error: 'oro insuficiente', gold: cur }
+    const data = { ...(ch.data || {}), gold: Math.floor(nextGold) }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return { ok: true, gold: Math.floor(nextGold) }
+  })
+}
+
 // Cuenta por nombre de usuario (case-insensitive). Devuelve {id, username, pass_hash} o null.
 export async function findAccount(username) {
   const u = String(username).toLowerCase()
@@ -149,18 +184,24 @@ export async function loadCharacter(accountId) {
 // (la única fuente de verdad del oro), no del cliente. Ver server/systems/guilds.js.
 
 // Sólo el oro del blob del personaje, para validar donaciones sin cargar todo. Devuelve número.
+// (`Math.floor(Number())` en vez de `| 0`: `| 0` trunca a int32 y envuelve a negativo con oro
+// ≥ 2.147.483.648, rompiendo los chequeos `oro < monto`.)
 export async function getCharacterGold(accountId) {
   const ch = await loadCharacter(accountId)
-  return ch?.data?.gold | 0
+  return Math.floor(Number(ch?.data?.gold) || 0)
 }
 
 // Escribe el oro del blob del personaje (descuento de fundación/donación), preservando el resto.
+// Bajo el lock de la cuenta para no pisarse con el autosave del cliente. Para descuentos
+// condicionados al saldo usá `updateCharacterGold` (lee y escribe atómico).
 export async function setCharacterGold(accountId, gold) {
-  const ch = await loadCharacter(accountId)
-  if (!ch) return false
-  const data = { ...(ch.data || {}), gold: gold | 0 }
-  await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
-  return true
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), gold: Math.floor(Number(gold) || 0) }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
 }
 
 export async function findGuildByTag(tag) {

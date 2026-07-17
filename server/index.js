@@ -90,7 +90,10 @@ wss.on('connection', (ws) => {
 
         case 'save': {
           if (!conn.accountId) return send({ t: 'saved', ok: false, error: 'no autenticado' })
-          await db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data: m.char })
+          // Bajo el lock de la cuenta: serializa el autosave del blob contra los descuentos de oro
+          // del servidor (gremios), que si no se pisan en la ventana entre lectura y escritura.
+          await db.withAccountLock(conn.accountId, () =>
+            db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data: m.char }))
           return send({ t: 'saved', ok: true })
         }
 

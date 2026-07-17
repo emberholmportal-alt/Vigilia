@@ -500,12 +500,19 @@ export class Game {
     this.chests = []
     this._floaters = []
     this._projectiles = []
+    // Los telegraphs/anillos de habilidad son hijos del worldContainer (ya destruido arriba con
+    // children:true). Hay que vaciar la lista o el primer tick del mapa nuevo opera sobre Graphics
+    // destruidos (doble-destroy). Igual que _floaters/_projectiles.
+    this._effects = []
     this.nodes = []
     this._netNodes = new Map()
     this._pendingNode = null
     this.portals = []
     this._target = null
     this._pendingChest = null
+    this._pendingBarrel = null
+    this._pendingPickup = null
+    this._pickupTries = 0
     this._pendingHit = null
     this.particles = null
     this._masks?.clear()
@@ -710,6 +717,7 @@ export class Game {
   // Tocar un NPC: el jugador se acerca, el NPC te mira y se abre la caja de diálogo.
   _talkTo(npc) {
     if (this._spectator || npc.def.critter) return   // el mirón / los animales no hablan
+    this._pendingPickup = null   // hablar cancela un "ir a recoger" pendiente (no tironear de vuelta)
     this.player.walkTo(npc.tx, npc.ty) // A* enruta a un tile adyacente (el suyo está bloqueado)
     const pv = this.iso.toWorld(this.player.tx, this.player.ty)
     const nv = this.iso.toWorld(npc.tx, npc.ty)
@@ -883,6 +891,7 @@ export class Game {
 
   _tapBarrel(b) {
     if (this._spectator || b.broken || this._dead) return
+    this._pendingPickup = null   // otra orden cancela un "ir a recoger" pendiente
     this.player.walkTo(b.x, b.y)   // A* enruta a un tile adyacente (el barril bloquea el suyo)
     this._pendingBarrel = b
   }
@@ -934,6 +943,7 @@ export class Game {
   // Tocar un cofre: caminar hasta él; se abre al llegar (en el tick).
   _tapChest(chest) {
     if (this._spectator || chest.opened) return
+    this._pendingPickup = null   // otra orden cancela un "ir a recoger" pendiente
     this.player.walkTo(chest.x, chest.y) // A* enruta a un tile adyacente si está bloqueado
     this._pendingChest = chest
   }
@@ -1224,6 +1234,7 @@ export class Game {
   // Tocar un nodo: el jugador camina hasta él y junta al llegar.
   _gatherNode(node) {
     if (this._spectator || node.depleted || this._dead) return
+    this._pendingPickup = null   // otra orden cancela un "ir a recoger" pendiente
     this._pendingNode = node
     this.player.walkTo(node.tx, node.ty)
   }
@@ -2061,11 +2072,19 @@ export class Game {
       const revealLoot = this._altHeld || !!this.store.getLootLabels?.()   // Alt (desktop) o botón (mobile)
       for (const gi of this.groundItems) {
         if (gi.picked) continue
-        gi.update(dt)
+        gi.update(dt)   // bob + envejecimiento (para el despawn)
+        if (gi.expired) { gi.picked = true; gi.destroy(); continue }   // loot ignorado: se fue
+        // Culling: el loot fuera de cámara no se dibuja ni se testea al puntero (visible=false lo
+        // saca del render y del hit-test de Pixi). La distancia en tiles al jugador aproxima "en
+        // cámara" porque la cámara lo sigue.
+        const onCam = (Math.abs(px - gi.tx) + Math.abs(py - gi.ty)) <= 22
+        gi.view.visible = onCam
         // Etiquetas de loot (estilo Diablo): ocultas por defecto; se revelan con Alt (desktop),
         // con el botón de loot (mobile) o cuando el jugador está cerca (≤4 tiles).
-        const near = Math.abs(px - gi.tx) <= 4 && Math.abs(py - gi.ty) <= 4
-        gi.setReveal(revealLoot || near)
+        if (onCam) {
+          const near = Math.abs(px - gi.tx) <= 4 && Math.abs(py - gi.ty) <= 4
+          gi.setReveal(revealLoot || near)
+        }
         // Oro: se recoge al pasarle por encima (auto). Ítems: SÓLO por click (abajo).
         if (gi.isGold && Math.abs(px - gi.tx) <= 0.9 && Math.abs(py - gi.ty) <= 0.9) this._pickupGold(gi)
       }

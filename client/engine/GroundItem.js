@@ -5,6 +5,11 @@ import { itemName, getLang } from '../i18n.js'
 
 const BASE = import.meta.env.BASE_URL || '/'
 const ICON = 32, COLS = 8
+// Despawn del loot ignorado (Diablo): se desvanece tras un rato para no acumular sprites en el
+// suelo (presupuesto de 60fps en móvil). El oro casi siempre se recoge al pasar; esto atrapa lo
+// que el jugador deja atrás y nunca vuelve a buscar.
+const TTL = 100    // segundos que un loot vive en el suelo
+const FADE = 8     // segundos finales en los que se desvanece
 
 let _iconsTex = null
 export async function loadIcons() {
@@ -26,6 +31,8 @@ export class GroundItem {
     this.tint = hex(rarityColor)
     this._t = Math.random() * Math.PI * 2 // fase del bob (variada por ítem)
     this.picked = false
+    this.age = 0            // segundos en el suelo (para el despawn)
+    this.expired = false
 
     this.view = new Container()
     this.view.x = iso.toWorldX(tx, ty)
@@ -104,11 +111,20 @@ export class GroundItem {
 
   update(dt) {
     this._t += dt
+    this.age += dt
     // apenas respira (apoyado en el piso), con un brillo suave de rareza.
     if (this.sprite) this.sprite.y = -3 + Math.sin(this._t * 2) * 0.8
     else if (this.coins) this.coins.y = Math.sin(this._t * 2) * 0.6
     this.glow.alpha = 0.14 + 0.08 * (0.5 + 0.5 * Math.sin(this._t * 2))
+    // Despawn: se desvanece en los últimos segundos y luego se marca vencido (lo saca el Game).
+    if (this.age > TTL - FADE) this.view.alpha = Math.max(0, (TTL - this.age) / FADE)
+    if (this.age >= TTL) this.expired = true
   }
 
-  destroy() { this.view.destroy({ children: true }) }
+  destroy() {
+    // Libera el wrapper de Texture por-instancia (NO la source compartida de icons.png) para no
+    // acumular texturas en el heap al recoger/vencer mucho loot en una sesión larga.
+    if (this.sprite && this.sprite.texture) this.sprite.texture.destroy(false)
+    this.view.destroy({ children: true })
+  }
 }

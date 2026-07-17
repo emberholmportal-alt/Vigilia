@@ -152,14 +152,14 @@ export async function create(accountId, { name, tag, color }) {
   const c = validColor(color)
   if (await db.findGuildByName(n)) return { ok: false, error: 'ya existe un gremio con ese nombre' }
   if (await db.findGuildByTag(t)) return { ok: false, error: 'ya existe un gremio con esa sigla' }
-  const gold = await db.getCharacterGold(accountId)
-  if (gold < FOUND_COST) return { ok: false, error: `necesitás ${FOUND_COST} de oro para fundar` }
-  const newGold = gold - FOUND_COST
-  await db.setCharacterGold(accountId, newGold)
+  // Cobra el costo de forma atómica (lee+descuenta bajo el lock de la cuenta): no se puede fundar
+  // dos gremios con el mismo oro por dos pedidos simultáneos.
+  const paid = await db.updateCharacterGold(accountId, (gold) => gold >= FOUND_COST ? gold - FOUND_COST : null)
+  if (!paid.ok) return { ok: false, error: `necesitás ${FOUND_COST} de oro para fundar` }
   const g = await db.createGuild({ name: n, tag: t, color: c, founder: accountId })
   await db.setGuildMembership(accountId, g.id, 'founder')
   invalidateGuildCache(accountId)
-  return { ok: true, guild: pubGuild(g), gold: newGold, role: 'founder' }
+  return { ok: true, guild: pubGuild(g), gold: paid.gold, role: 'founder' }
 }
 
 // Unirse a un gremio por id o sigla.
@@ -188,16 +188,16 @@ export async function donate(accountId, amount) {
   if (amt <= 0) return { ok: false, error: 'monto inválido' }
   const mem = await db.getGuildMembership(accountId)
   if (!mem) return { ok: false, error: 'no estás en un gremio' }
-  const gold = await db.getCharacterGold(accountId)
-  if (gold < amt) return { ok: false, error: 'no tenés tanto oro' }
   const g = await db.getGuild(mem.guild_id)
   if (!g) return { ok: false, error: 'ese gremio no existe' }
-  const newGold = gold - amt
-  await db.setCharacterGold(accountId, newGold)
+  // Descuenta el oro atómico ANTES de acreditar al gremio: sin la ventana de interleave, un
+  // autosave del cliente ya no puede "devolver" el oro donado (duplicándolo en la práctica).
+  const paid = await db.updateCharacterGold(accountId, (gold) => gold >= amt ? gold - amt : null)
+  if (!paid.ok) return { ok: false, error: 'no tenés tanto oro' }
   const newDonated = (Number(g.donated) || 0) + amt
   const newLevel = levelForDonated(newDonated)
   const updated = await db.addGuildDonation(g.id, amt, newLevel)
-  return { ok: true, guild: pubGuild(updated), gold: newGold, leveledUp: newLevel > g.level }
+  return { ok: true, guild: pubGuild(updated), gold: paid.gold, leveledUp: newLevel > g.level }
 }
 
 // ---------- Depósito del Gremio (banco compartido, desbloquea a nivel 4) ----------
@@ -221,34 +221,38 @@ export async function depositView(accountId) {
   return { ok: true, deposit: { gold: Number(dep.gold) || 0, items: dep.items || [] } }
 }
 
-// Depositar oro: sale del oro persistido del personaje y entra al pozo del depósito.
+// Depositar oro: sale del oro persistido del personaje y entra al pozo del depósito. Bajo el lock
+// del gremio: dos miembros depositando a la vez no se pisan la fila del depósito compartido.
 export async function depositGold(accountId, amount) {
   const amt = Math.floor(Number(amount) || 0)
   if (amt <= 0) return { ok: false, error: 'monto inválido' }
   const gd = await depositGuard(accountId)
   if (gd.error) return { ok: false, error: gd.error }
-  const gold = await db.getCharacterGold(accountId)
-  if (gold < amt) return { ok: false, error: 'no tenés tanto oro' }
-  await db.setCharacterGold(accountId, gold - amt)
-  const dep = await db.getDeposit(gd.g.id)
-  const nd = { gold: (Number(dep.gold) || 0) + amt, items: dep.items || [] }
-  await db.setDeposit(gd.g.id, nd)
-  return { ok: true, gold: gold - amt, deposit: nd }
+  return db.withGuildLock(gd.g.id, async () => {
+    const paid = await db.updateCharacterGold(accountId, (gold) => gold >= amt ? gold - amt : null)
+    if (!paid.ok) return { ok: false, error: 'no tenés tanto oro' }
+    const dep = await db.getDeposit(gd.g.id)
+    const nd = { gold: (Number(dep.gold) || 0) + amt, items: dep.items || [] }
+    await db.setDeposit(gd.g.id, nd)
+    return { ok: true, gold: paid.gold, deposit: nd }
+  })
 }
 
-// Retirar oro: sale del depósito y vuelve al oro del personaje.
+// Retirar oro: sale del depósito y vuelve al oro del personaje. Bajo el lock del gremio para que
+// dos retiros simultáneos no lean el mismo saldo y dupliquen el oro del pozo.
 export async function withdrawGold(accountId, amount) {
   const amt = Math.floor(Number(amount) || 0)
   if (amt <= 0) return { ok: false, error: 'monto inválido' }
   const gd = await depositGuard(accountId)
   if (gd.error) return { ok: false, error: gd.error }
-  const dep = await db.getDeposit(gd.g.id)
-  if ((Number(dep.gold) || 0) < amt) return { ok: false, error: 'el depósito no tiene tanto oro' }
-  const gold = await db.getCharacterGold(accountId)
-  await db.setCharacterGold(accountId, gold + amt)
-  const nd = { gold: (Number(dep.gold) || 0) - amt, items: dep.items || [] }
-  await db.setDeposit(gd.g.id, nd)
-  return { ok: true, gold: gold + amt, deposit: nd }
+  return db.withGuildLock(gd.g.id, async () => {
+    const dep = await db.getDeposit(gd.g.id)
+    if ((Number(dep.gold) || 0) < amt) return { ok: false, error: 'el depósito no tiene tanto oro' }
+    const nd = { gold: (Number(dep.gold) || 0) - amt, items: dep.items || [] }
+    await db.setDeposit(gd.g.id, nd)
+    const res = await db.updateCharacterGold(accountId, (gold) => gold + amt)
+    return { ok: true, gold: res.gold, deposit: nd }
+  })
 }
 
 // Depositar un ítem: el cliente manda el ítem (dueño de su inventario); el server lo guarda en
@@ -257,13 +261,15 @@ export async function depositItem(accountId, item) {
   if (!item || typeof item !== 'object') return { ok: false, error: 'ítem inválido' }
   const gd = await depositGuard(accountId)
   if (gd.error) return { ok: false, error: gd.error }
-  const dep = await db.getDeposit(gd.g.id)
-  const items = dep.items || []
-  if (items.length >= DEPOSIT_MAX_ITEMS) return { ok: false, error: 'el depósito está lleno' }
-  items.push(item)
-  const nd = { gold: Number(dep.gold) || 0, items }
-  await db.setDeposit(gd.g.id, nd)
-  return { ok: true, deposit: nd }
+  return db.withGuildLock(gd.g.id, async () => {
+    const dep = await db.getDeposit(gd.g.id)
+    const items = dep.items || []
+    if (items.length >= DEPOSIT_MAX_ITEMS) return { ok: false, error: 'el depósito está lleno' }
+    items.push(item)
+    const nd = { gold: Number(dep.gold) || 0, items }
+    await db.setDeposit(gd.g.id, nd)
+    return { ok: true, deposit: nd }
+  })
 }
 
 // Retirar un ítem por índice: el server lo saca del depósito y lo devuelve; el cliente lo mete
@@ -272,11 +278,15 @@ export async function withdrawItem(accountId, index) {
   const i = index | 0
   const gd = await depositGuard(accountId)
   if (gd.error) return { ok: false, error: gd.error }
-  const dep = await db.getDeposit(gd.g.id)
-  const items = dep.items || []
-  if (i < 0 || i >= items.length) return { ok: false, error: 'ese ítem no está' }
-  const [item] = items.splice(i, 1)
-  const nd = { gold: Number(dep.gold) || 0, items }
-  await db.setDeposit(gd.g.id, nd)
-  return { ok: true, item, deposit: nd }
+  // Bajo el lock del gremio: dos retiros del mismo índice a la vez no pueden llevarse el ítem
+  // duplicado (leerían el mismo array antes de escribir).
+  return db.withGuildLock(gd.g.id, async () => {
+    const dep = await db.getDeposit(gd.g.id)
+    const items = dep.items || []
+    if (i < 0 || i >= items.length) return { ok: false, error: 'ese ítem no está' }
+    const [item] = items.splice(i, 1)
+    const nd = { gold: Number(dep.gold) || 0, items }
+    await db.setDeposit(gd.g.id, nd)
+    return { ok: true, item, deposit: nd }
+  })
 }
