@@ -47,14 +47,44 @@ function SpectatorBar({ onExit, t }) {
   )
 }
 
+// Leaf: telemetría (fps + zona). Aislada para que el refresco de fps (cada 0.5s) no re-renderice
+// el HUD entero. "React no toca el loop": lo que cambia seguido vive en su propia hoja.
+function Telemetry() {
+  const fps = useGameStore((s) => s.fps)
+  const mapTitle = useGameStore((s) => s.mapTitle)
+  return (
+    <div className="telemetry">
+      <span className={fps >= 55 ? 'ok' : fps >= 40 ? 'warn' : 'bad'}>{fps} fps</span>
+      <span className="dim2">{mapTitle}</span>
+    </div>
+  )
+}
+
+// Leaf: globos de vida/maná. Suscriben SÓLO hp/mp (primitivos) para que la regen constante no
+// re-renderice el HUD completo (ActionBar, misiones, etc.), sino nada más el orbe que cambió.
+function HpGlobe() {
+  const hp = useGameStore((s) => s.stats?.hp ?? 0)
+  const hpMax = useGameStore((s) => s.stats?.hpMax ?? 1)
+  return <Globe type="hp" value={hp} max={hpMax} label={`${hp}/${hpMax}`} />
+}
+function MpGlobe() {
+  const mp = useGameStore((s) => s.stats?.mp ?? 0)
+  const mpMax = useGameStore((s) => s.stats?.mpMax ?? 1)
+  return <Globe type="mp" value={mp} max={mpMax} label={`${mp}/${mpMax}`} />
+}
+
 export default function HUD({ onExitSpectate }) {
   const spectator = useGameStore((s) => s.spectator)
-  const mapTitle = useGameStore((s) => s.mapTitle)
   const playerName = useGameStore((s) => s.playerName)
-  const fps = useGameStore((s) => s.fps)
   const gold = useGameStore((s) => s.gold)
   const race = useGameStore((s) => s.race)
-  const stats = useGameStore((s) => s.stats)
+  // Sólo los atributos LENTOS del stat block (cambian al subir de nivel/equipar, no por frame).
+  // hp/mp/fps viven en sus hojas (arriba) para no re-renderizar todo el HUD con la regen.
+  const level = useGameStore((s) => s.stats?.level ?? 1)
+  const str = useGameStore((s) => s.stats?.str ?? 0)
+  const dex = useGameStore((s) => s.stats?.dex ?? 0)
+  const intel = useGameStore((s) => s.stats?.int ?? 0)
+  const vit = useGameStore((s) => s.stats?.vit ?? 0)
   const belt = useGameStore((s) => s.belt)
   const xp = useGameStore((s) => s.xp)
   const nearby = useGameStore((s) => s.nearby)
@@ -73,7 +103,6 @@ export default function HUD({ onExitSpectate }) {
   const beltCap = beltCapacityOf(equippedBelt)
   const t = useT()
 
-  const s = stats || { level: 1, str: 0, dex: 0, int: 0, vit: 0, hp: 0, hpMax: 1, mp: 0, mpMax: 1 }
   const prog = playerProgress(xp || 0)
 
   // El mirón sólo observa: HUD mínimo (barra de espectador + título de zona), sin orbes,
@@ -83,10 +112,7 @@ export default function HUD({ onExitSpectate }) {
       <>
         <SpectatorBar onExit={onExitSpectate} t={t} />
         <div className="hud">
-          <div className="telemetry">
-            <span className={fps >= 55 ? 'ok' : fps >= 40 ? 'warn' : 'bad'}>{fps} fps</span>
-            <span className="dim2">{mapTitle}</span>
-          </div>
+          <Telemetry />
         </div>
       </>
     )
@@ -98,17 +124,14 @@ export default function HUD({ onExitSpectate }) {
         <button className="who" onClick={() => togglePanel('character')} title={t('view_character')}>
           <b>{playerName} {race ? '· ' + raceName(race, t.lang) : ''}</b>
           <div className="attrs">
-            <span>{t('lv')} {s.level}</span>
-            <span>{t('abbr_str')} {s.str}</span>
-            <span>{t('abbr_dex')} {s.dex}</span>
-            <span>{t('abbr_int')} {s.int}</span>
-            <span>{t('abbr_vit')} {s.vit}</span>
+            <span>{t('lv')} {level}</span>
+            <span>{t('abbr_str')} {str}</span>
+            <span>{t('abbr_dex')} {dex}</span>
+            <span>{t('abbr_int')} {intel}</span>
+            <span>{t('abbr_vit')} {vit}</span>
           </div>
         </button>
-        <div className="telemetry">
-          <span className={fps >= 55 ? 'ok' : fps >= 40 ? 'warn' : 'bad'}>{fps} fps</span>
-          <span className="dim2">{mapTitle}</span>
-        </div>
+        <Telemetry />
         <div className="hud-right">
           {(() => {
             const claimable = (missions || []).filter((m) => m.progress >= m.target && !m.claimed).length
@@ -154,13 +177,13 @@ export default function HUD({ onExitSpectate }) {
         <MenuRow onPanel={togglePanel} />
         <BuffBar />
         <div className="globe-row">
-          <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
+          <HpGlobe />
           <ActionBar belt={belt} gold={gold} onUseBelt={useBelt} beltCap={beltCap} />
           <DesktopBar belt={belt} onPanel={togglePanel} onUseBelt={useBelt} beltCap={beltCap} />
-          <Globe type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} />
+          <MpGlobe />
         </div>
 
-        <div className="xp-strip" title={t('xp_of', { lv: s.level, into: prog.into, need: prog.need })}
+        <div className="xp-strip" title={t('xp_of', { lv: level, into: prog.into, need: prog.need })}
              style={{ backgroundImage: `url(${UI}bar_xp_background.png)` }}>
           <div className="xp-strip-fill" style={{ width: `${prog.pct * 96}%`, backgroundImage: `url(${UI}bar_xp.png)` }} />
         </div>

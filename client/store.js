@@ -96,7 +96,9 @@ export const useGameStore = create((set, get) => ({
   setMapTitle: (mapTitle) => set({ mapTitle }),
   setDebug: (debug) => set({ debug }),
   setMinimap: (minimap) => set({ minimap }),
-  setPlayerTile: (playerTile) => set({ playerTile }),
+  // Guarda de igualdad como setNearby*: el loop llama esto ~12×/s pero el tile es entero y rara
+  // vez cambia; sin la guarda, React re-renderiza el Minimap en cada llamada aunque estés quieto.
+  setPlayerTile: (playerTile) => set((s) => (s.playerTile?.x === playerTile?.x && s.playerTile?.y === playerTile?.y ? {} : { playerTile })),
 
   // --- personaje ---
   race: null,

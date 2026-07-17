@@ -91,7 +91,9 @@ const ABILITIES = {
 }
 export const enemyAbility = (sprite) => ABILITIES[sprite] || null
 
-const BOSS = /boss|minotaur|elite$/
+// "elite" en cualquier parte del nombre (no sólo al final): el élite de contrato diario
+// `goblin_elite_runner` terminaba en "runner" y se colaba como mob común (sin bonus de jefe).
+const BOSS = /boss|minotaur|elite/
 export function enemyStats(sprite, level = 1) {
   level = Math.max(1, level | 0)
   const boss = BOSS.test(sprite)

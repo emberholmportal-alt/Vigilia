@@ -1,18 +1,25 @@
 # Blueprint de Render para Velgrim: PostgreSQL + servidor (web service) + cliente (static site).
 # Deploy: en Render -> New + -> Blueprint -> elegí este repo. Render crea las 3 cosas.
-# OJO con el orden del cliente: VITE_WS_URL se hornea en el build, así que debe apuntar a la
-# URL real del server (verificá el hostname que te da Render y actualizalo si difiere).
+#
+# IMPORTANTE — este archivo NO está sincronizado con el deploy vivo (Render sólo lo lee al aplicar
+# un Blueprint). Se mantiene en línea con producción para que un re-provisionamiento no rompa nada:
+#   · El nombre del server define su hostname; DEBE coincidir con VITE_WS_URL del cliente (que se
+#     hornea en el build). Si cambiás uno, cambiá el otro.
+#   · Los planes reflejan producción: el server es Starter (no duerme). El Postgres free EXPIRA a
+#     los ~90 días (pérdida de datos): para producción usá un plan pago de la base.
 databases:
   - name: velgrim-db
     databaseName: velgrim
+    # ⚠️ 'free' expira ~90 días y borra la base. Producción debería pinnear un plan pago.
     plan: free
 
 services:
   # --- Servidor autoritativo (WebSocket + HTTP) ---
+  # El nombre genera el hostname velgrim-static.onrender.com, que es al que apunta VITE_WS_URL.
   - type: web
-    name: velgrim-server
+    name: velgrim-static
     runtime: node
-    plan: free
+    plan: starter          # Starter = no duerme (cold starts romperían las conexiones WS)
     buildCommand: npm install
     startCommand: npm run server
     healthCheckPath: /health
@@ -26,12 +33,13 @@ services:
 
   # --- Cliente (sitio estático de Vite) ---
   - type: web
-    name: velgrim-client
+    name: vigilia
     runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
-      # URL WSS del web service del server (nombre real en Render: "Velgrim-static").
+      # URL WSS del web service del server. DEBE coincidir con el `name` del server de arriba
+      # (velgrim-static -> wss://velgrim-static.onrender.com). Se hornea en el build de Vite.
       - key: VITE_WS_URL
         value: wss://velgrim-static.onrender.com
     routes:
