@@ -389,6 +389,12 @@ export class Game {
     net.on('cloot', (m) => this._onCloot(m))
     net.on('gold', (m) => this._onGold(m))   // oro autoritativo del server (faucet kill/cofre)
     net.on('inv', (m) => this.store.mirrorInv(m.inv))   // bag autoritativo del server (Fase A.2)
+    // Trade P2P (Kintara #3): pedido / apertura / estado / cierre / cancelación -> store.
+    net.on('trade_req', (m) => this.store.onTradeReq(m))
+    net.on('trade_open', (m) => this.store.onTradeOpen(m))
+    net.on('trade_state', (m) => this.store.onTradeState(m))
+    net.on('trade_done', () => this.store.onTradeDone())
+    net.on('trade_cancel', (m) => this.store.onTradeCancel(m))
     // Muerte / reaparición de otros jugadores (co-op).
     net.on('pdied', (m) => { const r = this.remotes?.get(m.id); if (r) r.setDead(true) })
     net.on('palive', (m) => { const r = this.remotes?.get(m.id); if (r) { r.setTarget(m.x, m.y, m.dir); r.tx = m.x; r.ty = m.y; r.setDead(false) } })
@@ -452,8 +458,16 @@ export class Game {
     if (!p || p.id === this._selfId || !this.remotes || this.remotes.has(p.id) || !this._manifest) return
     const r = new RemotePlayer(this.iso, this._manifest, p)
     r.view.scale.set(this._playerScale || 1)
+    r.onTap((rp) => this._tapRemote(rp))   // tocar a otro jugador -> proponer intercambio
     this.renderer.objectLayer.addChild(r.view)
     this.remotes.set(p.id, r)
+  }
+  // Tocar a un jugador cercano propone un intercambio (el server valida la cercanía).
+  _tapRemote(rp) {
+    if (this._spectator || this._dead || !rp) return
+    const dx = (this.player.tx - rp.tx), dy = (this.player.ty - rp.ty)
+    if (dx * dx + dy * dy > 6 * 6) { this.store.showToast(tt('trade_too_far')); return }
+    this.store.requestTrade(rp.id, rp.name)
   }
   _removeRemote(id) {
     const r = this.remotes?.get(id)

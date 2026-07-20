@@ -199,6 +199,7 @@ export function leave(id) {
   if (observers.delete(id)) return
   const p = players.get(id)
   if (!p) return
+  tradeCancel(id)                // si estaba en un intercambio, se cancela (nadie se queda colgado)
   persistGold(p)                 // guarda el oro autoritativo antes de soltar la sesión
   players.delete(id)
   combat.dropPlayer(id)
@@ -554,6 +555,107 @@ export function playerAlive(id, x, y, dir) {
   p.dead = false
   if (x != null) { p.x = x; p.y = y; if (dir != null) p.dir = dir }
   broadcast(p.map, p.ch, { t: 'palive', id, x: p.x, y: p.y, dir: p.dir }, id)
+}
+
+// --- Trade P2P (ítems + oro, swap ATÓMICO server-side) -------------------------------------------
+// Dos jugadores cercanos intercambian. Cada uno ofrece ítems del bag (por índice) + oro; con doble
+// confirmación el server valida posesión y hace el swap SINCRÓNICO (atómico: sin await, no se
+// interleavea con otra sesión). Cualquier cambio de oferta resetea ambas confirmaciones.
+const TRADE_REACH = 6      // tiles: hay que estar cerca para comerciar
+const trades = new Map()   // tid -> { a, b, offer:{[pid]:{items:Set<idx>, gold}}, ok:{[pid]:bool} }
+let tradeSeq = 1
+const tradeOf = (pid) => { for (const [tid, t] of trades) if (t.a === pid || t.b === pid) return { tid, t }; return null }
+const nearP = (a, b) => !!a && !!b && a.map === b.map && a.ch === b.ch && ((a.x - b.x) ** 2 + (a.y - b.y) ** 2) <= TRADE_REACH * TRADE_REACH
+
+function offerView(p, off) {
+  const items = []
+  for (const idx of off.items) { const it = p.inv[idx]; if (it) items.push({ index: idx, id: it.id, count: it.count || 1, dur: it.dur, upgrade: it.upgrade }) }
+  return { items, gold: off.gold || 0 }
+}
+function pushTradeState(t) {
+  const A = players.get(t.a), B = players.get(t.b); if (!A || !B) return
+  const va = offerView(A, t.offer[t.a]), vb = offerView(B, t.offer[t.b])
+  A.send({ t: 'trade_state', you: va, them: vb, youOk: t.ok[t.a], themOk: t.ok[t.b] })
+  B.send({ t: 'trade_state', you: vb, them: va, youOk: t.ok[t.b], themOk: t.ok[t.a] })
+}
+function endTrade(tid, A, B, msg) { trades.delete(tid); if (A) A.send({ t: 'trade_cancel', reason: msg }); if (B) B.send({ t: 'trade_cancel', reason: msg }) }
+// Mete un registro en un array de bag (copia de simulación): apila si corresponde, si no al 1er hueco
+// dentro de la capacidad. Devuelve true/false (sin tocar el bag real).
+function simAdd(inv, cap, rec) {
+  if (isStack(rec.id)) { const at = inv.findIndex((x) => x && x.id === rec.id); if (at >= 0) { inv[at] = { ...inv[at], count: (inv[at].count || 1) + (rec.count || 1) }; return true } }
+  let free = -1; for (let i = 0; i < cap; i++) if (inv[i] == null) { free = i; break }
+  if (free < 0) return false
+  const nr = { id: rec.id }; if (rec.count && rec.count > 1) nr.count = rec.count; if (rec.dur != null) nr.dur = rec.dur; if (rec.upgrade) nr.upgrade = rec.upgrade
+  inv[free] = nr; return true
+}
+
+export function tradeRequest(fromId, toId) {
+  const a = players.get(fromId), b = players.get(toId)
+  if (!a || !b || fromId === toId) return { ok: false, error: 'jugador inválido' }
+  if (!nearP(a, b)) return { ok: false, error: 'está muy lejos' }
+  if (tradeOf(fromId) || tradeOf(toId)) return { ok: false, error: 'ya hay un intercambio en curso' }
+  b.send({ t: 'trade_req', from: fromId, name: a.name })
+  return { ok: true }
+}
+export function tradeAccept(toId, fromId) {
+  const a = players.get(fromId), b = players.get(toId)
+  if (!a || !b) return { ok: false, error: 'jugador inválido' }
+  if (!nearP(a, b)) return { ok: false, error: 'está muy lejos' }
+  if (tradeOf(fromId) || tradeOf(toId)) return { ok: false, error: 'ocupado' }
+  const tid = tradeSeq++
+  const t = { a: fromId, b: toId, offer: { [fromId]: { items: new Set(), gold: 0 }, [toId]: { items: new Set(), gold: 0 } }, ok: { [fromId]: false, [toId]: false } }
+  trades.set(tid, t)
+  a.send({ t: 'trade_open', with: { id: toId, name: b.name } })
+  b.send({ t: 'trade_open', with: { id: fromId, name: a.name } })
+  pushTradeState(t)
+  return { ok: true }
+}
+export function tradeOffer(pid, items, gold) {
+  const found = tradeOf(pid); if (!found) return { ok: false }
+  const p = players.get(pid); if (!p) return { ok: false }
+  const off = found.t.offer[pid]
+  off.items = new Set((Array.isArray(items) ? items : []).map((i) => i | 0).filter((i) => i >= 0 && i < p.inv.length && p.inv[i]))
+  off.gold = Math.max(0, Math.min(p.gold, Math.floor(Number(gold) || 0)))
+  found.t.ok[found.t.a] = false; found.t.ok[found.t.b] = false   // cambiar la oferta resetea ambas confirmaciones
+  pushTradeState(found.t)
+  return { ok: true }
+}
+export function tradeConfirm(pid) {
+  const found = tradeOf(pid); if (!found) return { ok: false }
+  const t = found.t
+  t.ok[pid] = true
+  if (t.ok[t.a] && t.ok[t.b]) return executeTrade(found.tid, t)
+  pushTradeState(t)
+  return { ok: true }
+}
+export function tradeCancel(pid) { const found = tradeOf(pid); if (found) endTrade(found.tid, players.get(found.t.a), players.get(found.t.b), 'cancelado') }
+
+// Swap ATÓMICO: valida ambas ofertas contra el estado ACTUAL (posesión + oro + capacidad del
+// receptor, simulando en copias) y sólo si TODO entra, aplica junto. Sin await -> no se interleavea.
+function executeTrade(tid, t) {
+  const A = players.get(t.a), B = players.get(t.b)
+  if (!A || !B) { endTrade(tid, A, B, 'se fue un jugador'); return { ok: false } }
+  if (!nearP(A, B)) { endTrade(tid, A, B, 'está muy lejos'); return { ok: false } }
+  const oa = t.offer[t.a], ob = t.offer[t.b]
+  const grab = (p, off) => { const recs = []; for (const idx of off.items) { const it = p.inv[idx]; if (!it) return null; recs.push(it) } if (p.gold < (off.gold || 0)) return null; return recs }
+  const aItems = grab(A, oa), bItems = grab(B, ob)
+  if (!aItems || !bItems) { endTrade(tid, A, B, 'cambió el inventario'); return { ok: false } }
+  // simular el swap en copias (sacar lo ofrecido, meter lo recibido) — valida capacidad de ambos
+  const simA = A.inv.slice(), simB = B.inv.slice()
+  for (const idx of oa.items) simA[idx] = null
+  for (const idx of ob.items) simB[idx] = null
+  const capA = A.invCap || INV_MAX, capB = B.invCap || INV_MAX
+  for (const rec of aItems) if (!simAdd(simB, capB, rec)) { endTrade(tid, A, B, 'inventario lleno'); return { ok: false } }
+  for (const rec of bItems) if (!simAdd(simA, capA, rec)) { endTrade(tid, A, B, 'inventario lleno'); return { ok: false } }
+  // COMMIT (atómico)
+  A.inv = simA; B.inv = simB
+  A.gold += (ob.gold || 0) - (oa.gold || 0)
+  B.gold += (oa.gold || 0) - (ob.gold || 0)
+  A._invDirty = B._invDirty = true; A._goldDirty = B._goldDirty = true
+  trades.delete(tid)
+  A.send({ t: 'trade_done' }); A.send({ t: 'inv', inv: A.inv }); A.send({ t: 'gold', gold: A.gold, reason: 'trade' })
+  B.send({ t: 'trade_done' }); B.send({ t: 'inv', inv: B.inv }); B.send({ t: 'gold', gold: B.gold, reason: 'trade' })
+  return { ok: true }
 }
 
 // Inyecta en la simulación de combate cómo consultar/avisar a los jugadores (sin acoplar módulos).

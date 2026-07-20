@@ -560,6 +560,23 @@ export const useGameStore = create((set, get) => ({
   setPanel: (panel) => set({ panel }),
   togglePanel: (p) => set((s) => ({ panel: s.panel === p ? null : p })),
 
+  // --- trade P2P (ítems + oro; el server hace el swap atómico) ---
+  tradeReq: null,            // { from, name } — pedido entrante (prompt)
+  trade: null,               // { withId, withName, youIdx:[bagIndices], youGold, them:{items,gold}, youOk, themOk }
+  requestTrade: (playerId, name) => { if (isOnline()) { net.tradeReq(playerId); get().showToast(tt('trade_sent', { name: name || '' })) } },
+  onTradeReq: (m) => { if (!get().trade) set({ tradeReq: { from: m.from, name: m.name } }) },   // sólo si no estoy ya en uno
+  acceptTradeReq: () => { const r = get().tradeReq; if (r) { net.tradeAccept(r.from); set({ tradeReq: null }) } },
+  declineTradeReq: () => set({ tradeReq: null }),
+  onTradeOpen: (m) => set({ tradeReq: null, trade: { withId: m.with?.id, withName: m.with?.name || '', youIdx: [], youGold: 0, them: { items: [], gold: 0 }, youOk: false, themOk: false } }),
+  onTradeState: (m) => set((s) => (s.trade ? { trade: { ...s.trade, them: m.them || { items: [], gold: 0 }, youOk: !!m.youOk, themOk: !!m.themOk } } : {})),
+  onTradeDone: () => { if (get().trade) { set({ trade: null }); get().showToast(tt('trade_done')) } },
+  onTradeCancel: (m) => { if (get().trade || get().tradeReq) { set({ trade: null, tradeReq: null }); get().showToast(m?.reason ? tt('trade_cancelled_r', { r: m.reason }) : tt('trade_cancelled')) } },
+  // Toggle de un ítem del bag en mi oferta (por índice) + reenvía la oferta al server.
+  toggleTradeItem: (idx) => { const t = get().trade; if (!t) return; const has = t.youIdx.includes(idx); const youIdx = has ? t.youIdx.filter((i) => i !== idx) : [...t.youIdx, idx]; set({ trade: { ...t, youIdx, youOk: false } }); net.tradeOffer(youIdx, t.youGold) },
+  setTradeGold: (g) => { const t = get().trade; if (!t) return; const youGold = Math.max(0, Math.min(get().gold, Math.floor(Number(g) || 0))); set({ trade: { ...t, youGold, youOk: false } }); net.tradeOffer(t.youIdx, youGold) },
+  confirmTrade: () => { if (get().trade) net.tradeConfirm() },
+  cancelTrade: () => { if (get().trade) { net.tradeCancel(); set({ trade: null }) } },
+
   // --- bienvenida (1 vez por personaje) ---
   showWelcome: false,        // el modal de bienvenida está visible (lo dispara initCharacter la 1ª vez)
   // Cierra la bienvenida y la marca vista (persiste en questFlags._welcome, así no vuelve a salir).
@@ -1378,4 +1395,11 @@ export const storeApi = {
   getSaveBlob: () => { const s = useGameStore.getState(); return { name: s.playerName, race: s.race?.id, char: snapshot(s) } },
   showToast: (t) => useGameStore.getState().showToast(t),
   logMessage: (m) => useGameStore.getState().logMessage(m),
+  // Trade P2P (Kintara #3): el loop de Pixi enruta los eventos de red y el tap a un jugador.
+  requestTrade: (id, name) => useGameStore.getState().requestTrade(id, name),
+  onTradeReq: (m) => useGameStore.getState().onTradeReq(m),
+  onTradeOpen: (m) => useGameStore.getState().onTradeOpen(m),
+  onTradeState: (m) => useGameStore.getState().onTradeState(m),
+  onTradeDone: () => useGameStore.getState().onTradeDone(),
+  onTradeCancel: (m) => useGameStore.getState().onTradeCancel(m),
 }

@@ -75,6 +75,8 @@ class Net {
         else if (m.t === 'gold') this._emit('gold', m)
         // inventario AUTORITATIVO del servidor (bag) — push con el bag nuevo (loot/compra/venta/uso)
         else if (m.t === 'inv') this._emit('inv', m)
+        // trade P2P: pedido entrante, apertura, estado (ofertas + confirmaciones), cierre, cancelación
+        else if (m.t === 'trade_req' || m.t === 'trade_open' || m.t === 'trade_state' || m.t === 'trade_done' || m.t === 'trade_cancel') this._emit(m.t, m)
         // muerte / reaparición de otros jugadores (co-op)
         else if (m.t === 'pdied' || m.t === 'palive') this._emit(m.t, m)
         // equipo visible de otro jugador (cambió su gear)
@@ -131,6 +133,12 @@ class Net {
   async bagConsume(id, qty) { this._send({ t: 'bag_consume', id, qty }); return this._once('bagack') }
   async bagDump() { this._send({ t: 'bag_dump' }); return this._once('bagack') }
   async craftReq(out) { this._send({ t: 'craft', out }); return this._once('craftack') }   // alquimia autoritativa (server valida receta+materiales)
+  // Trade P2P (los eventos llegan por on('trade_*'); el server hace el swap atómico).
+  tradeReq(to) { this._send({ t: 'trade_req', to }) }
+  tradeAccept(from) { this._send({ t: 'trade_accept', from }) }
+  tradeOffer(items, gold) { this._send({ t: 'trade_offer', items, gold }) }   // items = índices del bag
+  tradeConfirm() { this._send({ t: 'trade_confirm' }) }
+  tradeCancel() { this._send({ t: 'trade_cancel' }) }
   async spendReq(amount, reason) { this._send({ t: 'spend', amount, reason }); return this._once('spendack') }
   async claimMissionReq(id) { this._send({ t: 'claimmission', id }); return this._once('claimack') }
   async claimQuestReq(id) { this._send({ t: 'claimquest', id }); return this._once('claimack') }

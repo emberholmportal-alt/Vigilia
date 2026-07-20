@@ -8,6 +8,7 @@ export class RemotePlayer {
   constructor(iso, manifest, p) {
     this.iso = iso
     this.id = p.id
+    this.name = p.name || 'Viajero'
     this.tx = p.x; this.ty = p.y
     this.dir = p.dir ?? 7
     this._tgx = this.tx; this._tgy = this.ty   // objetivo de interpolación
@@ -36,8 +37,14 @@ export class RemotePlayer {
     this.paperdoll.setDirection(this.dir)
     this._ready = this.paperdoll.setEquipment(p.gfx || {})   // equipo real del jugador remoto
     if (p.dead) this.setDead(true)                           // se unió mientras estaba caído
+    // Tappable: tocar a otro jugador abre la opción de comerciar (P2P).
+    this.view.eventMode = 'static'
+    this.view.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
     this._sync()
   }
+
+  // El Game engancha acá para iniciar un intercambio al tocar a este jugador.
+  onTap(cb) { this.view.on('pointertap', (e) => { e.stopPropagation(); cb(this) }) }
 
   // Cambió el equipo del jugador remoto: reaplica sus capas de paperdoll.
   setGfx(gfx) { this.paperdoll.setEquipment(gfx || {}) }

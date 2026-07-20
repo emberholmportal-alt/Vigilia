@@ -272,6 +272,27 @@ wss.on('connection', (ws) => {
           if (conn.playerId == null) return
           return send({ t: 'craftack', ...rooms.craftRecipe(conn.playerId, m.out) })
         }
+        // ---------- Trade P2P (ítems + oro, swap atómico) ----------
+        case 'trade_req': {   // pedir intercambio a un jugador cercano
+          if (conn.playerId == null) return
+          return send({ t: 'tradeack', op: 'req', ...rooms.tradeRequest(conn.playerId, m.to) })
+        }
+        case 'trade_accept': {   // aceptar el pedido de intercambio (abre la ventana para ambos)
+          if (conn.playerId == null) return
+          return send({ t: 'tradeack', op: 'accept', ...rooms.tradeAccept(conn.playerId, m.from) })
+        }
+        case 'trade_offer': {    // setear mi oferta (ítems por índice del bag + oro); resetea confirmaciones
+          if (conn.playerId == null) return
+          return void rooms.tradeOffer(conn.playerId, m.items, m.gold)
+        }
+        case 'trade_confirm': {  // confirmar; si ambos confirman, el server hace el swap atómico
+          if (conn.playerId == null) return
+          return void rooms.tradeConfirm(conn.playerId)
+        }
+        case 'trade_cancel': {   // cancelar el intercambio en curso
+          if (conn.playerId == null) return
+          return void rooms.tradeCancel(conn.playerId)
+        }
         // ---------- Bag autoritativo: transferencias entre el bag y equipo/cinturón/tumba/forja ----------
         case 'bag_take': {   // sacar un ítem del bag por índice (equipar / mandar al cinturón)
           if (conn.playerId == null) return

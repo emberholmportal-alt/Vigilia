@@ -8,6 +8,7 @@ import { net, ONLINE } from './net/net.js'
 import HUD from './ui/HUD.jsx'
 import StartScreen from './ui/StartScreen.jsx'
 import Welcome from './ui/Welcome.jsx'
+import Trade from './ui/Trade.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
 import Inventory from './ui/Inventory.jsx'
 import Character from './ui/Character.jsx'
@@ -145,6 +146,7 @@ export default function App() {
       {phase === 'game' && !loading && !error && <DialogueBox />}
       {phase === 'game' && waypointOpen && <Waypoints />}
       {phase === 'game' && !loading && !error && showWelcome && <Welcome />}
+      {phase === 'game' && !loading && !error && <Trade />}
       {phase === 'game' && <ZoneLoader />}
       {error && <div className="error">Error: {error}</div>}
 
