@@ -10,6 +10,7 @@ import { register, login, session, logout } from './systems/auth.js'
 import * as wallet from './systems/wallet.js'
 import * as guilds from './systems/guilds.js'
 import * as rooms from './world/rooms.js'
+import * as market from './systems/market.js'
 import { startingKit, startingLedger } from '../shared/starterkit.js'
 
 const PORT = process.env.PORT || 8787
@@ -18,6 +19,9 @@ const PORT = process.env.PORT || 8787
 const WALLET_REQUIRED = process.env.WALLET_REQUIRED === '1' || process.env.WALLET_REQUIRED === 'true'
 
 await db.init()
+// Mercado: barrido periódico de publicaciones vencidas (devuelven el ítem al vendedor). El browse
+// también barre, pero esto cubre listados vencidos sin nadie mirando.
+setInterval(() => { market.sweepExpired(Date.now()).catch(() => {}) }, 5 * 60 * 1000)
 
 // HTTP mínimo: health, /stats (contadores para el landing) y una raíz informativa. CORS abierto
 // para que el static site (otro origen) pueda leer /stats.
@@ -292,6 +296,26 @@ wss.on('connection', (ws) => {
         case 'trade_cancel': {   // cancelar el intercambio en curso
           if (conn.playerId == null) return
           return void rooms.tradeCancel(conn.playerId)
+        }
+        // ---------- Mercado (casa de subastas, precio fijo, global) ----------
+        case 'market_browse': {  // ver los listados activos
+          return send({ t: 'market', op: 'browse', ...(await market.browse()) })
+        }
+        case 'market_mine': {    // mis publicaciones
+          if (!conn.accountId) return send({ t: 'market', op: 'mine', ok: false, error: 'no autenticado' })
+          return send({ t: 'market', op: 'mine', ...(await market.mine(conn.accountId)) })
+        }
+        case 'market_list': {    // publicar un ítem del bag (por índice) a precio fijo
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'market', op: 'list', ...(await market.list(conn.playerId, conn.accountId, rooms.nameOf(conn.playerId), m.index, m.price)) })
+        }
+        case 'market_buy': {     // comprar un listado (el server cobra, entrega y acredita al vendedor)
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'market', op: 'buy', ...(await market.buy(conn.playerId, conn.accountId, m.id)) })
+        }
+        case 'market_cancel': {  // retirar mi publicación (recupero el ítem)
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'market', op: 'cancel', ...(await market.cancel(conn.playerId, conn.accountId, m.id)) })
         }
         // ---------- Bag autoritativo: transferencias entre el bag y equipo/cinturón/tumba/forja ----------
         case 'bag_take': {   // sacar un ítem del bag por índice (equipar / mandar al cinturón)

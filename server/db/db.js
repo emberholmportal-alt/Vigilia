@@ -60,6 +60,15 @@ export async function init() {
         guild_id INTEGER PRIMARY KEY REFERENCES guilds(id) ON DELETE CASCADE,
         gold BIGINT DEFAULT 0,
         items JSONB DEFAULT '[]'::jsonb
+      );
+      CREATE TABLE IF NOT EXISTS market_listings (
+        id SERIAL PRIMARY KEY,
+        seller INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+        seller_name TEXT,
+        item JSONB NOT NULL,
+        price BIGINT NOT NULL,
+        created_at BIGINT NOT NULL,
+        expires_at BIGINT NOT NULL
       );`)
     console.log('[db] PostgreSQL conectado')
     return
@@ -73,6 +82,8 @@ export async function init() {
   if (!file.guilds) file.guilds = []                 // [{id,name,tag,color,level,donated,founder,contract_week,contract_progress}]
   if (!file.guildMembers) file.guildMembers = {}     // account_id -> {guild_id, role}
   if (!file.guildDeposit) file.guildDeposit = {}     // guild_id -> {gold, items:[]}
+  if (!file.market) file.market = []                 // [{id, seller, seller_name, item, price, created_at, expires_at}]
+  if (file.marketSeq == null) file.marketSeq = file.market.reduce((m, l) => Math.max(m, l.id), 0) + 1
   if (file.guildSeq == null) file.guildSeq = file.guilds.reduce((m, g) => Math.max(m, g.id), 0) + 1
   seq = file.accounts.reduce((m, a) => Math.max(m, a.id), 0) + 1
   console.log('[db] Sin DATABASE_URL: usando archivo local (' + DATA_FILE + ')')
@@ -351,6 +362,40 @@ export async function setDeposit(guildId, { gold, items }) {
   }
   file.guildDeposit[guildId] = { gold: gold | 0, items: items || [] }
   flush()
+}
+
+// --- Mercado (casa de subastas, precio fijo, global) ---
+// Todos los listados activos (los vencidos los limpia el barrido del sistema de mercado).
+export async function marketAll() {
+  if (pg) { const r = await pg.query('SELECT id, seller, seller_name, item, price, created_at, expires_at FROM market_listings ORDER BY id DESC'); return r.rows.map((l) => ({ ...l, price: Number(l.price), created_at: Number(l.created_at), expires_at: Number(l.expires_at) })) }
+  return file.market.slice().reverse()
+}
+export async function marketBySeller(accountId) {
+  if (pg) { const r = await pg.query('SELECT id, seller, seller_name, item, price, created_at, expires_at FROM market_listings WHERE seller=$1', [accountId]); return r.rows.map((l) => ({ ...l, price: Number(l.price), created_at: Number(l.created_at), expires_at: Number(l.expires_at) })) }
+  return file.market.filter((l) => l.seller === accountId)
+}
+export async function marketAdd({ seller, sellerName, item, price, createdAt, expiresAt }) {
+  if (pg) { const r = await pg.query('INSERT INTO market_listings (seller, seller_name, item, price, created_at, expires_at) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id', [seller, sellerName || '', JSON.stringify(item), price | 0, createdAt, expiresAt]); return r.rows[0].id }
+  const id = file.marketSeq++; file.market.push({ id, seller, seller_name: sellerName || '', item, price: price | 0, created_at: createdAt, expires_at: expiresAt }); flush(); return id
+}
+// Reclama (saca+devuelve) un listado de forma ATÓMICA. Si dos compradores corren, sólo uno lo obtiene.
+export async function marketClaim(id) {
+  if (pg) { const r = await pg.query('DELETE FROM market_listings WHERE id=$1 RETURNING id, seller, seller_name, item, price, created_at, expires_at', [id | 0]); const l = r.rows[0]; return l ? { ...l, price: Number(l.price), created_at: Number(l.created_at), expires_at: Number(l.expires_at) } : null }
+  const i = file.market.findIndex((l) => l.id === (id | 0)); if (i < 0) return null; const [l] = file.market.splice(i, 1); flush(); return l
+}
+// Agrega un ítem al inventario (bag) persistido de un personaje OFFLINE (devolución de vencidos).
+// Al primer hueco libre dentro de las 55 celdas; si no entra, se pierde (raro: bag lleno + offline).
+export async function addToCharacterInventory(accountId, rec) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId); if (!ch) return false
+    const inv = Array.isArray(ch.data?.inventory) ? ch.data.inventory.slice() : []
+    while (inv.length < 55) inv.push(null)
+    let at = inv.findIndex((x) => x == null); if (at < 0) return false
+    inv[at] = rec
+    const data = { ...(ch.data || {}), inventory: inv }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
 }
 
 // --- Movimientos de oro ATÓMICOS entre el personaje (JSONB) y el gremio/depósito -------------

@@ -441,6 +441,53 @@ export function goldOf(accountId) {
   for (const p of players.values()) if (p.accountId === accountId) return p.gold
   return null
 }
+
+// --- Mercado: el ítem sale del bag al escrow del listado (server) y vuelve por grant server-side.
+// Ni el ledger _out ni el cliente deciden nada: es todo autoritativo (como loot/compra/venta).
+export function takeForListing(id, index) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const rec = invRemoveAt(p, index | 0, 999999)   // el listado se lleva la pila entera del slot
+  if (!rec) return { ok: false, error: 'no tenés ese ítem' }
+  p._invDirty = true; p.send({ t: 'inv', inv: p.inv })
+  return { ok: true, item: rec, inv: p.inv }
+}
+export function giveFromMarket(id, rec) {
+  const p = players.get(id); if (!p || !rec) return { ok: false }
+  const meta = {}; if (rec.dur != null) meta.dur = rec.dur; if (rec.upgrade) meta.upgrade = rec.upgrade
+  if (!invGrant(p, rec.id, rec.count || 1, meta)) return { ok: false, error: 'inventario lleno' }
+  p._invDirty = true; p.send({ t: 'inv', inv: p.inv })
+  return { ok: true, inv: p.inv }
+}
+export function playerGold(id) { const p = players.get(id); return p ? p.gold : null }
+export function hasBagRoom(id) {
+  const p = players.get(id); if (!p) return false
+  const cap = p.invCap || INV_MAX
+  for (let i = 0; i < cap; i++) if (p.inv[i] == null) return true
+  return false
+}
+export function chargeGold(id, amount) {
+  const p = players.get(id); if (!p) return { ok: false }
+  amount = Math.max(0, Math.floor(amount) || 0)
+  if (p.gold < amount) return { ok: false, error: 'no tenés tanto oro', gold: p.gold }
+  p.gold -= amount; p._goldDirty = true; p.send({ t: 'gold', gold: p.gold, reason: 'market' })
+  return { ok: true, gold: p.gold }
+}
+// Acredita oro a una cuenta si está ONLINE (empuja el saldo). Devuelve true si la encontró (online);
+// false si offline (el caller persiste al blob). Idem para devolver un ítem a un vendedor online.
+export function creditAccountGold(accountId, amount, reason) {
+  amount = Math.floor(amount) || 0
+  for (const p of players.values()) if (p.accountId === accountId) { p.gold += amount; p._goldDirty = true; p.send({ t: 'gold', gold: p.gold, add: amount > 0 ? amount : 0, reason }); return true }
+  return false
+}
+export function giveItemToAccount(accountId, rec) {
+  for (const p of players.values()) if (p.accountId === accountId) { const meta = {}; if (rec.dur != null) meta.dur = rec.dur; if (rec.upgrade) meta.upgrade = rec.upgrade; if (invGrant(p, rec.id, rec.count || 1, meta)) { p._invDirty = true; p.send({ t: 'inv', inv: p.inv }); return true } return false }
+  return null   // offline (distinto de false = online pero bag lleno)
+}
+export function playerIdOfAccount(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return p.id
+  return null
+}
+export function nameOf(id) { const p = players.get(id); return p ? p.name : '' }
 // Persiste el oro autoritativo al personaje (al salir). setCharacterGold preserva el resto del blob.
 async function persistGold(p) {
   if (!p || !p.accountId) return

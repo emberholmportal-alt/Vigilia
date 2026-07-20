@@ -29,6 +29,7 @@ export default function Vendor() {
   const buyItem = useGameStore((s) => s.buyItem)
   const sellItem = useGameStore((s) => s.sellItem)
   const setPanel = useGameStore((s) => s.setPanel)
+  const openMarket = useGameStore((s) => s.openMarket)
   const t = useT()
 
   const [tab, setTab] = useState('buy') // 'buy' | 'sell'
@@ -60,6 +61,7 @@ export default function Vendor() {
         <div className="shop-tabs" style={{ top: (82 / PH * 100) + '%' }}>
           <button className={tab === 'buy' ? 'on' : ''} onClick={() => pick('buy')}>{t('buy')}</button>
           <button className={tab === 'sell' ? 'on' : ''} onClick={() => pick('sell')}>{t('sell')}</button>
+          <button className="shop-market-btn" onClick={openMarket} title={t('market_open')}>🏛 {t('market_title')}</button>
         </div>
 
         {list.map((it, i) => {

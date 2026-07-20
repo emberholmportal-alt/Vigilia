@@ -9,6 +9,7 @@ import HUD from './ui/HUD.jsx'
 import StartScreen from './ui/StartScreen.jsx'
 import Welcome from './ui/Welcome.jsx'
 import Trade from './ui/Trade.jsx'
+import Market from './ui/Market.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
 import Inventory from './ui/Inventory.jsx'
 import Character from './ui/Character.jsx'
@@ -141,6 +142,7 @@ export default function App() {
       {phase === 'game' && panel === 'smith' && <Blacksmith />}
       {phase === 'game' && panel === 'alchemy' && <Alchemy />}
       {phase === 'game' && panel === 'guild' && <Guild />}
+      {phase === 'game' && panel === 'market' && <Market />}
       {phase === 'game' && panel === 'missions' && <Missions />}
       {phase === 'game' && panel === 'mousebind' && <MouseBind />}
       {phase === 'game' && !loading && !error && <DialogueBox />}

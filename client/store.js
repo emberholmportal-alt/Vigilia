@@ -577,6 +577,50 @@ export const useGameStore = create((set, get) => ({
   confirmTrade: () => { if (get().trade) net.tradeConfirm() },
   cancelTrade: () => { if (get().trade) { net.tradeCancel(); set({ trade: null }) } },
 
+  // --- mercado (casa de subastas, precio fijo, global) ---
+  marketListings: [],        // listados activos (browse)
+  marketMine: [],            // mis publicaciones
+  marketBusy: false,
+  marketError: '',
+  openMarket: () => { set({ panel: 'market', marketError: '' }); get().refreshMarket(); get().refreshMyListings() },
+  refreshMarket: async () => {
+    if (!isOnline()) { set({ marketListings: [] }); return }
+    set({ marketBusy: true })
+    const r = await net.marketBrowse().catch(() => null)
+    set({ marketListings: r?.ok ? r.listings : [], marketBusy: false })
+  },
+  refreshMyListings: async () => {
+    if (!isOnline()) { set({ marketMine: [] }); return }
+    const r = await net.marketMine().catch(() => null)
+    set({ marketMine: r?.ok ? r.listings : [] })
+  },
+  // Publicar un ítem del bag (por índice) a precio fijo. El server lo saca del bag (escrow).
+  marketListItem: async (bagIndex, price) => {
+    if (!isOnline()) return { ok: false }
+    const r = await net.marketList(bagIndex, price).catch(() => null)
+    if (!r || !r.ok) { set({ marketError: r?.error || 'no se pudo publicar' }); get().showToast(r?.error || tt('market_fail')); return { ok: false } }
+    if (r.inv) get()._mirrorInv(r.inv)
+    set({ marketError: '' }); get().showToast(tt('market_listed')); get().refreshMyListings()
+    return { ok: true }
+  },
+  marketBuy: async (id) => {
+    if (!isOnline()) return { ok: false }
+    const r = await net.marketBuy(id).catch(() => null)
+    if (!r || !r.ok) { get().showToast(r?.error || tt('market_fail')); get().refreshMarket(); return { ok: false } }
+    if (r.inv) get()._mirrorInv(r.inv)
+    if (typeof r.gold === 'number') set({ gold: r.gold })
+    get().showToast(tt('market_bought')); get().refreshMarket()
+    return { ok: true }
+  },
+  marketCancel: async (id) => {
+    if (!isOnline()) return { ok: false }
+    const r = await net.marketCancel(id).catch(() => null)
+    if (!r || !r.ok) { get().showToast(r?.error || tt('market_fail')); return { ok: false } }
+    if (r.inv) get()._mirrorInv(r.inv)
+    get().showToast(tt('market_cancelled')); get().refreshMyListings()
+    return { ok: true }
+  },
+
   // --- bienvenida (1 vez por personaje) ---
   showWelcome: false,        // el modal de bienvenida está visible (lo dispara initCharacter la 1ª vez)
   // Cierra la bienvenida y la marca vista (persiste en questFlags._welcome, así no vuelve a salir).

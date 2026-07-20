@@ -36,9 +36,9 @@ class Net {
 
   on(evt, cb) { (this._handlers[evt] ||= new Set()).add(cb); return () => this._handlers[evt]?.delete(cb) }
   _emit(evt, msg) { const h = this._handlers[evt]; if (h) for (const cb of h) cb(msg) }
-  _once(type, ms = 6000) {
+  _once(type, ms = 6000, op = null) {
     return new Promise((res, rej) => {
-      const w = { type, res }
+      const w = { type, op, res }
       this._onceWaiters.push(w)
       setTimeout(() => { const i = this._onceWaiters.indexOf(w); if (i >= 0) { this._onceWaiters.splice(i, 1); rej(new Error('timeout ' + type)) } }, ms)
     })
@@ -59,9 +59,11 @@ class Net {
       }
       this.ws.onmessage = (e) => {
         let m; try { m = JSON.parse(e.data) } catch { return }
-        // resolver RPC pendientes por tipo
+        // resolver RPC pendientes por tipo (y por `op` si el waiter lo pide — p.ej. el mercado
+        // responde varios op bajo el mismo t:'market').
         for (let i = 0; i < this._onceWaiters.length; i++) {
-          if (this._onceWaiters[i].type === m.t) { const w = this._onceWaiters.splice(i, 1)[0]; w.res(m); break }
+          const w = this._onceWaiters[i]
+          if (w.type === m.t && (w.op == null || w.op === m.op)) { this._onceWaiters.splice(i, 1); w.res(m); break }
         }
         // eventos de presencia
         if (m.t === 'present' || m.t === 'join' || m.t === 'move' || m.t === 'leave' || m.t === 'chat') this._emit(m.t, m)
@@ -139,6 +141,12 @@ class Net {
   tradeOffer(items, gold) { this._send({ t: 'trade_offer', items, gold }) }   // items = índices del bag
   tradeConfirm() { this._send({ t: 'trade_confirm' }) }
   tradeCancel() { this._send({ t: 'trade_cancel' }) }
+  // Mercado (casa de subastas, precio fijo). Todas responden t:'market' con su `op`.
+  async marketBrowse() { this._send({ t: 'market_browse' }); return this._once('market', 6000, 'browse') }
+  async marketMine() { this._send({ t: 'market_mine' }); return this._once('market', 6000, 'mine') }
+  async marketList(index, price) { this._send({ t: 'market_list', index, price }); return this._once('market', 6000, 'list') }
+  async marketBuy(id) { this._send({ t: 'market_buy', id }); return this._once('market', 6000, 'buy') }
+  async marketCancel(id) { this._send({ t: 'market_cancel', id }); return this._once('market', 6000, 'cancel') }
   async spendReq(amount, reason) { this._send({ t: 'spend', amount, reason }); return this._once('spendack') }
   async claimMissionReq(id) { this._send({ t: 'claimmission', id }); return this._once('claimack') }
   async claimQuestReq(id) { this._send({ t: 'claimquest', id }); return this._once('claimack') }
