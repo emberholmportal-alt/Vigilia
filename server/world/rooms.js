@@ -25,6 +25,14 @@ const CHANNEL_CAP = Number(process.env.CHANNEL_CAP || 50)   // tope de jugadores
 const AOI_RADIUS = Number(process.env.AOI_RADIUS || 24)     // radio de interés, en tiles
 const AOI_R2 = AOI_RADIUS * AOI_RADIUS
 
+// Anti-teleport (autoridad de posición): el server clampea cada `move` a la velocidad legítima
+// máxima en vez de confiar en las coords del cliente. Para un jugador legítimo el clamp es un no-op
+// (correr ≈ 6.3 tiles/s, muy por debajo del tope); un teleport queda reducido a moverse a velocidad
+// normal (cero ventaja para farmear cofres/nodos por alcance). No hay snap-back: no rompe el feel.
+const MOVE_TILES_PER_SEC = Number(process.env.MOVE_TILES_PER_SEC || 12)   // ~1.9× correr (headroom para buffs/latencia)
+const MOVE_BASE_SLACK = 4        // tiles de gracia por movimiento (redondeo/jitter/primer envío)
+const MOVE_DT_CAP_MS = 2000      // tope del dt acumulable (no dejar que una pausa larga habilite un salto enorme)
+
 const players = new Map()    // id -> { id, name, race, map, ch, x, y, dir, send }
 const observers = new Map()  // id -> { id, map, ch, send }  (mirones: ven pero no son vistos)
 let seq = 1
@@ -134,7 +142,10 @@ export function move(id, map, x, y, dir) {
   if (!p) return null
   if (map && map !== p.map) {
     const oldMap = p.map, oldCh = p.ch
+    // Cambio de mapa (portal, server-acknowledged): la posición se acepta tal cual; el anti-teleport
+    // sólo aplica DENTRO de un mapa. Reseteamos el reloj para no clampear el 1er move del mapa nuevo.
     p.map = map; p.ch = pickChannel(map, p.ch); p.x = x; p.y = y; if (dir != null) p.dir = dir
+    p._lastMoveAt = 0
     broadcast(oldMap, oldCh, { t: 'leave', id }, id)
     const present = inChannel(map, p.ch).filter((o) => o.id !== id).map(pub)
     broadcast(map, p.ch, { t: 'join', player: pub(p) }, id)
@@ -144,8 +155,18 @@ export function move(id, map, x, y, dir) {
     const cs = combat.chestSnapshot(map, p.ch); if (cs && cs.length) p.send({ t: 'cspawn', cs })
     return { channel: p.ch, present }
   }
-  p.x = x; p.y = y; if (dir != null) p.dir = dir
-  broadcastAoI(p.map, p.ch, x, y, { t: 'move', id, x, y, dir: p.dir }, id)
+  // Anti-teleport: clampeá el salto al máximo plausible según el tiempo transcurrido. Legítimo =
+  // no-op (dist <= presupuesto); teleport = arrastrado hacia el destino a velocidad normal.
+  const nowMs = Date.now()
+  const dt = p._lastMoveAt ? Math.min(MOVE_DT_CAP_MS, nowMs - p._lastMoveAt) : MOVE_DT_CAP_MS
+  const budget = MOVE_TILES_PER_SEC * (dt / 1000) + MOVE_BASE_SLACK
+  const dx = x - p.x, dy = y - p.y
+  const dist = Math.hypot(dx, dy)
+  let nx = x, ny = y
+  if (dist > budget && dist > 0) { const k = budget / dist; nx = p.x + dx * k; ny = p.y + dy * k }   // clamp hacia el destino
+  p._lastMoveAt = nowMs
+  p.x = nx; p.y = ny; if (dir != null) p.dir = dir
+  broadcastAoI(p.map, p.ch, nx, ny, { t: 'move', id, x: nx, y: ny, dir: p.dir }, id)
   return null
 }
 
