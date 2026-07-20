@@ -18,6 +18,7 @@ import * as db from '../db/db.js'
 import { priceOf, sellValueOf, itemById } from '../../shared/items.js'
 import { dailyMissions, todayStr } from '../../shared/missions.js'
 import { rollLoot } from '../../shared/loot.js'
+import { recipeByOut } from '../../shared/alchemy.js'
 
 const GRAVE_FRACTION = 0.25   // fracción del oro que soltás al morir (coincide con GRAVE_GOLD_FRACTION del cliente)
 
@@ -102,7 +103,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, inv = null } = {}) {
+export function join(send, { name, race, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, inv = null, outSeed = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -124,6 +125,13 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator,
   // lo mutan las funciones de abajo (loot otorgado por el server + ops validadas). Se guarda como
   // registros mínimos {id, count?, dur?, upgrade?} (el cliente reconstruye el ítem completo por id).
   p.inv = normalizeInv(inv)
+  // Ledger "checkout" (anti-mint del bag_give): cuenta cuántas unidades de cada id el jugador tiene
+  // LEGÍTIMAMENTE fuera del bag (equipo/cinturón/tumbas — semilla del blob) o sacó del bag esta sesión
+  // (bag_take). `bag_give` sólo puede devolver ítems contabilizados acá, así no se inyectan ítems de
+  // la nada para venderlos. (Residual: el blob de equipo aún es client-side; la autoridad completa de
+  // equipo/cinturón/tumbas es Fase A.3 — esto acota el mint casual sin ese sistema.)
+  p._out = new Map()
+  if (Array.isArray(outSeed)) for (const oid of outSeed) { if (itemById(oid)) p._out.set(oid, (p._out.get(oid) || 0) + 1) }
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
@@ -322,6 +330,16 @@ export function useItem(id, index) {
   p._invDirty = true
   return { ok: true, id: it.id, inv: p.inv }
 }
+// --- Ledger "checkout" del bag (anti-mint de bag_give) -------------------------------------------
+function outInc(p, itemId, n = 1) { if (!p._out) p._out = new Map(); p._out.set(itemId, (p._out.get(itemId) || 0) + Math.max(1, n | 0)) }
+function outTake(p, itemId, n = 1) { const have = (p._out && p._out.get(itemId)) || 0; n = Math.max(1, n | 0); if (have < n) return false; p._out.set(itemId, have - n); return true }
+// El cliente sacó un ítem del bag hacia un store client-side (equipar/cinturón): queda "afuera",
+// contabilizado para poder devolverlo después. Lo llama el handler bag_take (NO el depósito de gremio).
+export function noteCheckout(id, itemId, qty = 1) { const p = players.get(id); if (p) outInc(p, itemId, qty) }
+// ¿Puede el cliente devolver este ítem al bag? (está contabilizado como "afuera"). Lo consume si sí.
+// Cierra "inyectar un ítem cualquiera por bag_give para venderlo". Lo llama el handler bag_give.
+export function canReturn(id, itemId, qty = 1) { const p = players.get(id); return p ? outTake(p, itemId, qty) : false }
+
 // Saca un ítem del bag por índice y lo DEVUELVE (para depositarlo en el gremio / equiparlo / etc.):
 // valida posesión. El caller decide qué hacer con el registro devuelto. Devuelve { ok, item }.
 export function takeItemAt(id, index, qty = 1) {
@@ -353,7 +371,7 @@ export function consumeItems(id, itemId, qty) {
 export function dumpBag(id) {
   const p = players.get(id); if (!p) return { ok: false }
   const items = []
-  for (let i = 0; i < p.inv.length; i++) { const x = p.inv[i]; if (x) { items.push(x); p.inv[i] = null } }
+  for (let i = 0; i < p.inv.length; i++) { const x = p.inv[i]; if (x) { items.push(x); outInc(p, x.id, x.count || 1); p.inv[i] = null } }   // van a la tumba (afuera): contabilizados para recuperarlos
   p._invDirty = true
   return { ok: true, items, inv: p.inv }
 }
@@ -364,6 +382,32 @@ export function giveItem(id, rec) {
   if (!invGrant(p, rec.id, rec.count || 1, meta)) return { ok: false, error: 'bag lleno' }
   p._invDirty = true
   return { ok: true, inv: p.inv }
+}
+// Craftear una poción de alquimia AUTORITATIVO: el server valida la receta (shared), exige y consume
+// los materiales del bag, y otorga la poción (faucet server-side, NO por bag_give). Cierra "craftear
+// sin materiales" y el mint por bag_give del resultado. Devuelve { ok, out, inv } o error.
+export function craftRecipe(id, outId) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const r = recipeByOut(outId)
+  if (!r) return { ok: false, error: 'receta inválida' }
+  // Posesión TOTAL de todos los materiales antes de tocar nada.
+  for (const [mid, qty] of r.ins) {
+    let have = 0
+    for (const x of p.inv) if (x && x.id === mid) have += (x.count || 1)
+    if (have < qty) return { ok: false, error: 'no tenés materiales' }
+  }
+  // Consumir cada material.
+  for (const [mid, qty] of r.ins) {
+    let left = qty
+    for (let i = 0; i < p.inv.length && left > 0; i++) {
+      const x = p.inv[i]; if (!x || x.id !== mid) continue
+      const c = x.count || 1; const take = Math.min(c, left); left -= take
+      p.inv[i] = c - take > 0 ? { ...x, count: c - take } : null
+    }
+  }
+  if (!invGrant(p, r.out, 1)) return { ok: false, error: 'inventario lleno' }
+  p._invDirty = true
+  return { ok: true, out: r.out, inv: p.inv }
 }
 // Comprar un ítem al mercader: el COSTO lo computa el server desde el precio real.
 export function buyItem(id, itemId) {

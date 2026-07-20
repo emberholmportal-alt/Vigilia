@@ -165,13 +165,21 @@ wss.on('connection', (ws) => {
           db.touchAccount(conn.accountId).catch(() => {})   // actividad (jugadores mensuales)
           if (conn.playerId != null) rooms.leave(conn.playerId)
           // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
-          let gold = 0, inv = null
+          let gold = 0, inv = null, outSeed = null
           if (!m.spectator) {
             const ch = await db.loadCharacter(conn.accountId)
             gold = Math.floor(Number(ch?.data?.gold) || 0)
             inv = ch?.data?.inventory || null
+            // Semilla del ledger "checkout": los ítems que el personaje tiene FUERA del bag (equipo,
+            // cinturón, tumbas) según el blob. Son los que legítimamente puede devolver por bag_give.
+            const d = ch?.data || {}
+            outSeed = []
+            for (const it of Object.values(d.equipment || {})) if (it && it.id) outSeed.push(it.id)
+            for (const b of (d.belt || [])) if (b && b.id) for (let k = 0; k < (b.count || 1); k++) outSeed.push(b.id)
+            if (d.equippedBelt && d.equippedBelt.id) outSeed.push(d.equippedBelt.id)
+            for (const g of (d.graves || [])) for (const it of (g.items || [])) if (it && it.id) for (let k = 0; k < (it.count || 1); k++) outSeed.push(it.id)
           }
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, inv })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, inv, outSeed })
           conn.playerId = id
           send({ t: 'present', you: id, players: present, map: m.map, channel })
           if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + bag
@@ -223,13 +231,24 @@ wss.on('connection', (ws) => {
           if (conn.playerId == null) return
           return send({ t: 'buyack', ...rooms.buyItem(conn.playerId, m.id) })
         }
+        case 'craft': {      // craftear alquimia; el server valida la receta + materiales y otorga la poción
+          if (conn.playerId == null) return
+          return send({ t: 'craftack', ...rooms.craftRecipe(conn.playerId, m.out) })
+        }
         // ---------- Bag autoritativo: transferencias entre el bag y equipo/cinturón/tumba/forja ----------
         case 'bag_take': {   // sacar un ítem del bag por índice (equipar / mandar al cinturón)
           if (conn.playerId == null) return
-          return send({ t: 'bagack', op: 'take', ...rooms.takeItemAt(conn.playerId, m.index, m.qty || 1) })
+          const r = rooms.takeItemAt(conn.playerId, m.index, m.qty || 1)
+          if (r.ok && r.item) rooms.noteCheckout(conn.playerId, r.item.id, r.item.count || 1)   // queda "afuera": se podrá devolver
+          return send({ t: 'bagack', op: 'take', ...r })
         }
         case 'bag_give': {   // devolver un ítem al bag (desequipar / retirar de tumba / rollback)
           if (conn.playerId == null) return
+          // Anti-mint: sólo se puede devolver un ítem contabilizado como "afuera" (equipo/cinturón/tumba
+          // del blob, o sacado del bag esta sesión). Inyectar un ítem cualquiera para venderlo => rechazo.
+          if (!m.item || !rooms.canReturn(conn.playerId, m.item.id, m.item.count || 1)) {
+            return send({ t: 'bagack', op: 'give', ok: false, error: 'ítem no autorizado' })
+          }
           return send({ t: 'bagack', op: 'give', ...rooms.giveItem(conn.playerId, m.item) })
         }
         case 'bag_consume': {   // consumir N materiales del bag (forja / alquimia) — valida posesión

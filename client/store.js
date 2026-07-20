@@ -725,16 +725,11 @@ export const useGameStore = create((set, get) => ({
 
   // Mete un ítem al inventario. Los apilables (poción/crafting/scroll) se acumulan en
   // una celda con `count`; el resto va a un hueco libre. Devuelve true si entró.
-  // Online el bag es autoritativo del server: se le pide que lo otorgue y el mirror llega en el
-  // ack (bagGive). Devolvemos true optimista; si el bag estaba lleno, el server no lo mete y el
-  // mirror no cambia (se pierde, igual que un loot con la bolsa llena). Offline: lógica local.
+  // Online el bag es AUTORITATIVO del server y todas las entradas de ítems online son iniciadas por
+  // el server (loot/compra/craft/tumba empujan 'inv' o devuelven el bag). El cliente NUNCA inyecta un
+  // ítem al bag por su cuenta (eso sería un mint). addItem online es un no-op seguro. Offline: local.
   addItem: (item, qty = 1) => {
-    if (isOnline()) {
-      const rec = get()._recOf(item); if (!rec) return false
-      if (qty > 1 && STACK_SLOTS.has(item.slot)) rec.count = qty
-      net.bagGive(rec).then((r) => { if (r && r.inv) get()._mirrorInv(r.inv) }).catch(() => {})
-      return true
-    }
+    if (isOnline()) return true   // los faucets online los otorga el server; nada que hacer acá
     const s = get()
     const inv = s.inventory.slice()
     const stackable = STACK_SLOTS.has(item.slot)
@@ -1155,20 +1150,14 @@ export const useGameStore = create((set, get) => ({
   craftAlchemy: async (recipe) => {
     const s = get()
     const countOf0 = (id) => s.inventory.reduce((n, it) => n + (it && it.id === id ? (it.count || 1) : 0), 0)
-    // Online: el server consume los materiales del bag autoritativo (bagConsume, valida posesión) y
-    // otorga la poción (bagGive). Espejamos el bag de cada ack. Cierra "craftear sin materiales".
+    // Online: un solo RPC AUTORITATIVO — el server valida la receta (shared), consume los materiales
+    // del bag y otorga la poción como faucet (no por bag_give, que sólo devuelve ítems ya poseídos).
     if (isOnline()) {
       for (const [id, qty] of recipe.ins) { if (countOf0(id) < qty) return { ok: false, reason: 'materiales' } }
-      let inv = null
-      for (const [id, qty] of recipe.ins) {
-        const r = await net.bagConsume(id, qty).catch(() => null)
-        if (!r || !r.ok) { if (inv) get()._mirrorInv(inv); return { ok: false, reason: 'materiales' } }
-        inv = r.inv
-      }
+      const r = await net.craftReq(recipe.out).catch(() => null)
+      if (!r || !r.ok) return { ok: false, reason: 'materiales' }
+      if (r.inv) get()._mirrorInv(r.inv)
       const outItem = itemById(recipe.out)
-      const g = await net.bagGive({ id: recipe.out }).catch(() => null)
-      if (g && g.inv) inv = g.inv
-      if (inv) get()._mirrorInv(inv)
       get().addSkillXp('alquimia', 10)
       get().showToast(tt('brewed', { name: itemName(outItem) }))
       get().logMessage({ channel: 'sistema', text: tt('alchemy_log', { name: itemName(outItem) }) })

@@ -125,6 +125,7 @@ class Net {
   async bagGive(item) { this._send({ t: 'bag_give', item }); return this._once('bagack') }
   async bagConsume(id, qty) { this._send({ t: 'bag_consume', id, qty }); return this._once('bagack') }
   async bagDump() { this._send({ t: 'bag_dump' }); return this._once('bagack') }
+  async craftReq(out) { this._send({ t: 'craft', out }); return this._once('craftack') }   // alquimia autoritativa (server valida receta+materiales)
   async spendReq(amount, reason) { this._send({ t: 'spend', amount, reason }); return this._once('spendack') }
   async claimMissionReq(id) { this._send({ t: 'claimmission', id }); return this._once('claimack') }
   async claimQuestReq(id) { this._send({ t: 'claimquest', id }); return this._once('claimack') }
