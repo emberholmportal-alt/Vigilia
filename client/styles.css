@@ -552,9 +552,13 @@ html, body, #root {
 }
 .ab-coin {
   width: 15px; height: 15px; border-radius: 50%; flex: 0 0 auto;
+  display: inline-block; vertical-align: -0.15em;
   background: radial-gradient(circle at 35% 30%, #ffe89a, #c9a227 60%, #8a6a12);
   box-shadow: 0 0 0 1px #5a4410, inset 0 -2px 3px rgba(0, 0, 0, 0.4);
 }
+/* Monto de oro reusable: moneda dorada + número (sin emoji, en todo el sitio) */
+.gold-amt { display: inline-flex; align-items: center; gap: 5px; }
+.gold-amt .gold-n { font-family: Georgia, serif; color: var(--gold); font-variant-numeric: tabular-nums; }
 /* fila de botones de menú, centrada arriba de la barra (así no la tapan los globos) */
 .menu-row {
   display: flex; justify-content: center; gap: 6px;

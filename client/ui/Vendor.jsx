@@ -6,6 +6,7 @@ import { useGameStore, equipSlotFor, sellValue } from '../store.js'
 import { RARITY_COLOR } from '../data/items.js'
 import { armorDefense, itemAffinity } from '../data/stats.js'
 import ItemIcon from './ItemIcon.jsx'
+import { Gold } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const hasAbsorb = (it) => !!(it.stats?.absorb_max || it.stats?.absorb_min)
@@ -56,12 +57,12 @@ export default function Vendor() {
                 onClick={() => setPanel(null)} />
 
         <div className="shop-title" style={{ top: (24 / PH * 100) + '%' }}>{vendor}</div>
-        <div className="shop-gold" style={{ top: (56 / PH * 100) + '%' }}>{gold} {t('gold')}</div>
+        <div className="shop-gold" style={{ top: (56 / PH * 100) + '%' }}><Gold n={gold} /></div>
 
         <div className="shop-tabs" style={{ top: (82 / PH * 100) + '%' }}>
           <button className={tab === 'buy' ? 'on' : ''} onClick={() => pick('buy')}>{t('buy')}</button>
           <button className={tab === 'sell' ? 'on' : ''} onClick={() => pick('sell')}>{t('sell')}</button>
-          <button className="shop-market-btn" onClick={openMarket} title={t('market_open')}>🏛 {t('market_title')}</button>
+          <button className="shop-market-btn" onClick={openMarket} title={t('market_open')}>{t('market_title')}</button>
         </div>
 
         {list.map((it, i) => {

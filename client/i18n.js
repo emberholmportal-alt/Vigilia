@@ -35,8 +35,8 @@ const DICT = {
   config: { es: 'Configuración', en: 'Settings' },
   sound: { es: 'Sonido', en: 'Sound' },
   language: { es: 'Idioma', en: 'Language' },
-  sound_on: { es: '🔊 Activado', en: '🔊 On' },
-  sound_off: { es: '🔇 Silenciado', en: '🔇 Muted' },
+  sound_on: { es: 'Activado', en: 'On' },
+  sound_off: { es: 'Silenciado', en: 'Muted' },
   // inventario / tooltip
   level_n: { es: 'Nivel {n}', en: 'Level {n}' },
   spaces: { es: 'Espacios', en: 'Slots' },
@@ -325,7 +325,7 @@ const DICT = {
   online_off: { es: 'Modo sin conexión', en: 'Offline mode' },
   online_lost: { es: 'Conexión perdida, reconectando…', en: 'Connection lost, reconnecting…' },
   online_back: { es: 'Reconectado al mundo', en: 'Reconnected to the world' },
-  your_grave: { es: '☠ Tu tumba', en: '☠ Your grave' },
+  your_grave: { es: 'Tu tumba', en: 'Your grave' },
   channel_on: { es: 'Canal {n}', en: 'Channel {n}' },
 
   // --- gremios (Casa de Gremios, WORLD.md) ---

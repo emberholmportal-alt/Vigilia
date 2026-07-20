@@ -7,7 +7,7 @@ import { RARITY_COLOR, isDurable, durabilityMax } from '../data/items.js'
 import { inventoryCapacity } from '../data/progression.js'
 import { armorDefense, upgradeLevel, itemAffinity } from '../data/stats.js'
 import ItemIcon from './ItemIcon.jsx'
-import { Lock } from './Icon.jsx'
+import { Lock, Gold } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const hasAbsorb = (it) => !!(it.stats?.absorb_max || it.stats?.absorb_min)
@@ -109,7 +109,7 @@ export default function Inventory() {
         })}
 
         {/* oro */}
-        <div className="inv-gold" style={{ top: (823 / PH * 100) + '%' }}>{gold} {t('gold')}</div>
+        <div className="inv-gold" style={{ top: (823 / PH * 100) + '%' }}><Gold n={gold} /></div>
 
         {selItem && (
           <Tooltip item={selItem} pos={sel.pos} t={t}

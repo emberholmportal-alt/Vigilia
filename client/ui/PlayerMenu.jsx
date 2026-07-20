@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useT } from './useT.js'
 import { useGameStore } from '../store.js'
 import { RACES } from '../data/characters.js'
+import { Swap, Stats } from './Icon.jsx'
 
 export default function PlayerMenu() {
   const t = useT()
@@ -36,13 +37,13 @@ export default function PlayerMenu() {
             <div className="pm-hpbar"><i style={{ width: hpPct + '%' }} /></div>
             <div className="pm-actions">
               <button className="pm-btn" onClick={() => setView('menu')}>← {t('pm_back')}</button>
-              <button className="pm-btn primary" disabled={!pm.near} onClick={doTrade}>🤝 {t('pm_trade')}</button>
+              <button className="pm-btn primary" disabled={!pm.near} onClick={doTrade}><Swap /> {t('pm_trade')}</button>
             </div>
           </div>
         ) : (
           <div className="pm-actions col">
-            <button className="pm-btn primary" disabled={!pm.near} onClick={doTrade}>🤝 {t('pm_trade')}</button>
-            <button className="pm-btn" onClick={() => setView('stats')}>📊 {t('pm_stats')}</button>
+            <button className="pm-btn primary" disabled={!pm.near} onClick={doTrade}><Swap /> {t('pm_trade')}</button>
+            <button className="pm-btn" onClick={() => setView('stats')}><Stats /> {t('pm_stats')}</button>
             {!pm.near && <p className="pm-far">{t('trade_too_far')}</p>}
           </div>
         )}

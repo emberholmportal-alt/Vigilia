@@ -7,6 +7,7 @@ import { useGameStore } from '../store.js'
 import { itemName } from '../i18n.js'
 import { itemById } from '../data/items.js'
 import ItemIcon from './ItemIcon.jsx'
+import { Gold } from './Icon.jsx'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 
@@ -40,8 +41,8 @@ export default function Market() {
         <button className="gframe-x" style={{ backgroundImage: `url(${UI}button_x.png)` }} onClick={close} aria-label="close" />
         <div className="gframe-head">
           <div>
-            <h2 className="gframe-title">🏛 {t('market_title')}</h2>
-            <p className="gframe-sub">{t('market_commission')} · 💰 {gold}</p>
+            <h2 className="gframe-title">{t('market_title')}</h2>
+            <p className="gframe-sub">{t('market_commission')} · <Gold n={gold} /></p>
           </div>
         </div>
 
@@ -60,7 +61,7 @@ export default function Market() {
                   <span className="market-row-name">{nameOf(l.item.id)}{l.item.count > 1 ? ' ×' + l.item.count : ''}</span>
                   <span className="market-row-sub">{t('market_seller')}: {l.seller || '—'}</span>
                 </div>
-                <span className="market-row-price">💰 {l.price}</span>
+                <span className="market-row-price"><Gold n={l.price} /></span>
                 <button className="market-buy" disabled={gold < l.price} onClick={() => buy(l.id)}>{t('market_buy')}</button>
               </div>
             )) : <p className="market-empty">{t('market_empty')}</p>
@@ -72,7 +73,7 @@ export default function Market() {
                 <ItemIcon icon={itemById(l.item.id)?.icon} size={34} count={l.item.count} />
                 <div className="market-row-info">
                   <span className="market-row-name">{nameOf(l.item.id)}{l.item.count > 1 ? ' ×' + l.item.count : ''}</span>
-                  <span className="market-row-sub">💰 {l.price}</span>
+                  <span className="market-row-sub"><Gold n={l.price} /></span>
                 </div>
                 <button className="market-cancel" onClick={() => cancel(l.id)}>{t('market_cancel')}</button>
               </div>

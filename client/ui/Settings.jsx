@@ -4,6 +4,7 @@ import { useGameStore } from '../store.js'
 import { useT } from './useT.js'
 import { ONLINE } from '../net/net.js'
 import { loadSession, clearSession } from '../net/wallet.js'
+import { Sound, Mute, Plug } from './Icon.jsx'
 
 const short = (a) => (a ? a.slice(0, 4) + '…' + a.slice(-4) : '')
 
@@ -26,7 +27,7 @@ export default function Settings() {
         <div className="settings-row">
           <span>{t('sound')}</span>
           <button className={'settings-toggle' + (muted ? '' : ' on')} onClick={toggleMute}>
-            {muted ? t('sound_off') : t('sound_on')}
+            {muted ? <><Mute /> {t('sound_off')}</> : <><Sound /> {t('sound_on')}</>}
           </button>
         </div>
         <div className="settings-row">
@@ -40,7 +41,7 @@ export default function Settings() {
           <div className="settings-row">
             <span>{t('wallet_connected')} <b className="wallet-addr">{short(wallet)}</b></span>
             <button className="wallet-disc" onClick={() => { clearSession(); setWallet(null) }}>
-              🔌 {t('wallet_disconnect')}
+              <Plug /> {t('wallet_disconnect')}
             </button>
           </div>
         )}

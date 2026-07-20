@@ -38,7 +38,7 @@ export default function Minimap() {
         })}
         {(graves || []).map((g, i) => {
           const pos = proj(g.x, g.y)
-          return <span key={'g' + i} className="mm-grave" title="☠" style={{ left: `${pos.left}%`, top: `${pos.top}%` }} />
+          return <span key={'g' + i} className="mm-grave" style={{ left: `${pos.left}%`, top: `${pos.top}%` }} />
         })}
         <span className="mm-dot" style={{ left: `${me.left}%`, top: `${me.top}%` }} />
       </div>

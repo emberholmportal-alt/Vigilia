@@ -1588,7 +1588,7 @@ export class Game {
     g.scale.set(0.25)
     this.renderer.objectLayer.addChild(g)
     ;(this._effects ||= []).push({ g, life: ab.windup || 0.75, max: ab.windup || 0.75, telegraph: true })
-    this._floatText(en.view.x, en.view.y + (en._hpY || -40), '⚠', '#ff5a3a')
+    this._floatText(en.view.x, en.view.y + (en._hpY || -40), '!', '#ff5a3a')
   }
 
   // Un nigromante invoca un esbirro débil en un tile caminable cercano.

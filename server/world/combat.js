@@ -350,14 +350,19 @@ const MIN_PLAYER_ATK_CD = 500     // ms entre golpes aceptados del jugador
 
 // Golpe jugador -> enemigo (pedido por el cliente). El server tira el daño con las stats del
 // jugador y valida el alcance. Devuelve nada; difunde el resultado.
+// PvP DESHABILITADO a propósito: los jugadores NO pueden atacarse entre sí (ni matarse ni robarse
+// ítems). El objetivo de un golpe se resuelve SIEMPRE contra `w.enemies` — nunca contra otro
+// jugador. No agregar targets de jugador acá ni un modo PvP sin decisión de diseño explícita.
+const PVP_ENABLED = false
 export function playerAttack(pid, eid) {
   if (!ctx) return
   const pl = ctx.getPlayer(pid)
   if (!pl) return
   const w = worlds.get(key(pl.map, pl.ch))
   if (!w) return
-  const e = w.enemies.get(eid)
+  const e = w.enemies.get(eid)   // sólo enemigos: un id de jugador jamás está en este mapa (PvP off)
   if (!e || e.hp <= 0) return
+  if (PVP_ENABLED) { /* candado muerto: no hay ruta de daño jugador→jugador */ }
   const st = pstats.get(pid) || {}
   const reach = (st.reach || (st.weaponKind && st.weaponKind !== 'melee' ? RANGED_REACH : MELEE)) + 0.6
   const dx = pl.x - e.x, dy = pl.y - e.y

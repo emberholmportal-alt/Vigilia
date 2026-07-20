@@ -6,6 +6,7 @@ import { useGameStore } from '../store.js'
 import { itemName } from '../i18n.js'
 import { itemById } from '../data/items.js'
 import ItemIcon from './ItemIcon.jsx'
+import { Gold, Swap } from './Icon.jsx'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 
@@ -28,7 +29,7 @@ export default function Trade() {
     return (
       <div className="gframe-backdrop">
         <div className="gframe trade-req" onClick={(e) => e.stopPropagation()}>
-          <p className="trade-req-msg">🤝 {t('trade_req_msg', { name: tradeReq.name })}</p>
+          <p className="trade-req-msg"><Swap /> {t('trade_req_msg', { name: tradeReq.name })}</p>
           <div className="trade-actions">
             <button className="welcome-guide" onClick={decline}>{t('trade_decline')}</button>
             <button className="gframe-close" onClick={accept}>{t('trade_accept')}</button>
@@ -60,7 +61,7 @@ export default function Trade() {
               {!youItems.length && <span className="trade-empty">{t('trade_empty')}</span>}
             </div>
             <div className="trade-gold-row">
-              <span>{t('trade_gold')}</span>
+              <span className="trade-gold-lbl"><Gold /> {t('trade_gold')}</span>
               <input type="number" min="0" max={gold} value={trade.youGold} onChange={(e) => setGold(e.target.value)} />
               <span className="trade-gold-max">/ {gold}</span>
             </div>
@@ -77,7 +78,7 @@ export default function Trade() {
               ))}
               {!themItems.length && <span className="trade-empty">{t('trade_empty')}</span>}
             </div>
-            <div className="trade-gold-row"><span>{t('trade_gold')}</span> <b>{trade.them?.gold || 0}</b></div>
+            <div className="trade-gold-row"><span className="trade-gold-lbl"><Gold /> {t('trade_gold')}</span> <b>{trade.them?.gold || 0}</b></div>
             <div className={'trade-ok' + (trade.themOk ? ' on' : '')}>{trade.themOk ? t('trade_them_ok') : t('trade_waiting_them')}</div>
           </div>
         </div>

@@ -38,3 +38,27 @@ export const Boots = (p) => <S {...p}><path d="M8 3v9c0 1-.5 2-2 3s-3 2-3 4h9v-3
 export const Grave = (p) => <S {...p}><path d="M7 21V9a5 5 0 0 1 10 0v12Z" /><path d="M10 8h4M12 6v6" /><path d="M4 21h16" /></S>
 // Moneda (economía / oro / $VEL)
 export const Coin = (p) => <S {...p}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.8" /></S>
+// Trueque / intercambio (dos flechas cruzadas)
+export const Swap = (p) => <S {...p}><path d="M4 8h13l-3-3M20 16H7l3 3" /></S>
+// Barras / estadísticas (ver stats de otro jugador)
+export const Stats = (p) => <S {...p}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></S>
+// Globo / mundo (selección de servidor)
+export const Globe = (p) => <S {...p}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18" /></S>
+// Sonido activado
+export const Sound = (p) => <S {...p}><path d="M4 9v6h4l5 4V5L8 9z" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8 8 0 0 1 0 12" /></S>
+// Sonido silenciado
+export const Mute = (p) => <S {...p}><path d="M4 9v6h4l5 4V5L8 9z" /><path d="M22 9l-5 6M17 9l5 6" /></S>
+// Enchufe / conexión (billetera)
+export const Plug = (p) => <S {...p}><path d="M9 3v6M15 3v6M6 9h12v2a6 6 0 0 1-12 0zM12 17v4" /></S>
+// Alijo / bodega (baúl de guardado en el pueblo)
+export const Stash = (p) => <S {...p}><rect x="3" y="7" width="18" height="13" rx="1.5" /><path d="M3 12h18" /><path d="M8 7V5a4 4 0 0 1 8 0v2" /><path d="M10.5 12h3v3h-3z" fill="currentColor" stroke="none" /></S>
+
+// Moneda de oro (visual dorada, no emoji). `n` = cantidad opcional al lado.
+export function Gold({ n, size = 15 }) {
+  return (
+    <span className="gold-amt">
+      <span className="ab-coin" style={{ width: size, height: size }} aria-hidden="true" />
+      {n != null && <span className="gold-n">{n}</span>}
+    </span>
+  )
+}

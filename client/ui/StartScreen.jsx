@@ -10,6 +10,7 @@ import { deviceAuth } from '../net/online.js'
 import HowToPlay from './HowToPlay.jsx'
 import Docs from './Docs.jsx'
 import Embers from './Embers.jsx'
+import { Globe, Plug, Eye } from './Icon.jsx'
 
 const LOGO = (import.meta.env.BASE_URL || '/') + 'velgrinlogo.png'
 const short = (a) => (a ? a.slice(0, 4) + '…' + a.slice(-4) : '')
@@ -98,7 +99,7 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
             <div className="server-list">
               {SERVERS.map((sv) => (
                 <button key={sv.id} className={'server-item' + (sv.id === serverId ? ' on' : '')} onClick={() => chooseServer(sv.id)}>
-                  <span className="server-name">🌐 {sv.name}</span>
+                  <span className="server-name"><Globe /> {sv.name}</span>
                   <span className="server-region">{sv.region}</span>
                   {sv.id === serverId && stats && <span className="server-pop"><i className="dot on" /> {stats.online}</span>}
                 </button>
@@ -112,13 +113,13 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
           <div className="wallet-box">
             {wallet ? (
               <div className="wallet-on">
-                <span>🟢 {t('wallet_connected')}: <b>{short(wallet)}</b></span>
-                <button className="wallet-disc" onClick={disconnect}>🔌 {t('wallet_disconnect')}</button>
+                <span><i className="dot on" /> {t('wallet_connected')}: <b>{short(wallet)}</b></span>
+                <button className="wallet-disc" onClick={disconnect}><Plug /> {t('wallet_disconnect')}</button>
               </div>
             ) : (
               <>
                 <button className="wallet-btn" onClick={connect} disabled={busy}>
-                  {busy ? t('wallet_connecting') : '🔗 ' + t('wallet_connect')}
+                  {busy ? t('wallet_connecting') : t('wallet_connect')}
                 </button>
                 <p className="wallet-hint">{WALLET_REQUIRED ? t('wallet_required_hint') : t('wallet_optional')}</p>
               </>
@@ -129,10 +130,10 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
 
         <div className="entry">
           <button className="enter play-now" onClick={handlePlay} disabled={loading || busy}>
-            {busy ? t('wallet_connecting') : loading ? t('loading') : '▶ ' + t('play_now')}
+            {busy ? t('wallet_connecting') : loading ? t('loading') : t('play_now')}
           </button>
           <button className="enter secondary" onClick={onSpectate} disabled={loading}>
-            👁 {t('spectate')}
+            <Eye /> {t('spectate')}
           </button>
         </div>
         {!ONLINE && canContinue && <button className="new-link" onClick={onNew}>{t('start_new')}</button>}
