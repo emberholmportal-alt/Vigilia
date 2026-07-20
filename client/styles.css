@@ -992,6 +992,19 @@ html, body, #root {
   text-align: center; color: var(--gold); font-family: Georgia, serif; font-size: 13px;
   text-shadow: 0 1px 2px #000;
 }
+/* Celdas del cinturón (3×3 bajo el muñeco): el área del panel está vacía, así que traen
+   el sprite de piedra de Flare. Mayor especificidad que .inv-cell (que pone background:none). */
+.inv-cell.inv-belt-cell {
+  border-radius: 3px;
+  background: var(--slot-bg) center / 100% 100% no-repeat;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+.inv-cell.inv-belt-cell.on { background-image: var(--slot-on); }
+.inv-belt-label {
+  position: absolute; transform: translateY(-50%);
+  font-family: 'BonaNova', Georgia, serif; font-size: 12px; letter-spacing: 0.05em;
+  color: var(--gold); text-shadow: 0 1px 2px #000; opacity: 0.9;
+}
 
 /* hoja de personaje (panel character.png) */
 .char-title {

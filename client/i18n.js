@@ -15,6 +15,8 @@ const DICT = {
   settings: { es: 'Ajustes', en: 'Settings' },
   gold: { es: 'oro', en: 'gold' },
   gold_word: { es: 'Oro', en: 'Gold' },
+  belt: { es: 'Cinturón', en: 'Belt' },
+  belt_empty: { es: 'Ranura de cinturón vacía', en: 'Empty belt slot' },
   buy: { es: 'Comprar', en: 'Buy' },
   sell: { es: 'Vender', en: 'Sell' },
   sold_out: { es: 'Agotado', en: 'Sold out' },

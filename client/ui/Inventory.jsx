@@ -2,7 +2,7 @@
 // exactas de menus/inventory.txt. Ítems superpuestos sobre los marcos ya dibujados,
 // tooltip al tocar (nombre/nivel/slot/stats/precio) y oro. Look idéntico a Flare.
 import { useState } from 'react'
-import { useGameStore, equipSlotFor, beltEligible } from '../store.js'
+import { useGameStore, equipSlotFor, beltEligible, beltCapacityOf } from '../store.js'
 import { RARITY_COLOR, isDurable, durabilityMax } from '../data/items.js'
 import { inventoryCapacity } from '../data/progression.js'
 import { armorDefense, upgradeLevel, itemAffinity } from '../data/stats.js'
@@ -21,6 +21,9 @@ const EQUIP_POS = {
   hands: [376, 136], artifact: [552, 136], ring: [376, 224], ring2: [552, 224], main: [376, 312], off: [552, 312],
 }
 const CARRIED = { x: 32, y: 64, cols: 5 }
+// Cinturón como grilla 3×3 en el área libre bajo el muñeco de armadura (los slots activos = capacidad
+// del cinturón equipado; el resto quedan bloqueados, igual que la bolsa). Coords del panel de Flare.
+const BELT = { x: 392, y: 452, cols: 3, rows: 3 }
 const EQUIP_ORDER = ['head', 'chest', 'legs', 'feet', 'hands', 'artifact', 'ring', 'ring2', 'main', 'off']
 
 // Estilo para centrar algo en un slot (coords de Flare, en % del panel).
@@ -36,6 +39,9 @@ function slotStyle(x, y) {
 export default function Inventory() {
   const inventory = useGameStore((s) => s.inventory)
   const equipment = useGameStore((s) => s.equipment)
+  const belt = useGameStore((s) => s.belt)
+  const equippedBelt = useGameStore((s) => s.equippedBelt)
+  const useBelt = useGameStore((s) => s.useBelt)
   const gold = useGameStore((s) => s.gold)
   const equipFromInventory = useGameStore((s) => s.equipFromInventory)
   const unequip = useGameStore((s) => s.unequip)
@@ -102,6 +108,26 @@ export default function Inventory() {
                     style={slotStyle(x, y)}
                     title={locked ? t('locked_hint') : undefined}
                     onClick={() => !locked && it && setSel({ src: 'inv', i, pos: [x, y] })}>
+              {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
+              {locked && <span className="inv-lock"><Lock /></span>}
+            </button>
+          )
+        })}
+
+        {/* cinturón: grilla 3×3 bajo el muñeco (slots activos = capacidad del cinturón equipado) */}
+        <div className="inv-belt-label" style={{ left: (BELT.x / PW * 100) + '%', top: ((BELT.y - 26) / PH * 100) + '%' }}>{t('belt')}</div>
+        {Array.from({ length: BELT.cols * BELT.rows }).map((_, i) => {
+          const col = i % BELT.cols, row = (i / BELT.cols) | 0
+          const x = BELT.x + col * SLOT, y = BELT.y + row * SLOT
+          const beltCap = beltCapacityOf(equippedBelt)
+          const locked = i >= beltCap
+          const it = !locked ? belt[i] : null
+          return (
+            <button key={'belt' + i} disabled={locked}
+                    className={'inv-cell inv-belt-cell' + (locked ? ' locked' : '')}
+                    style={slotStyle(x, y)}
+                    title={locked ? t('locked_hint') : (it ? undefined : t('belt_empty'))}
+                    onClick={() => !locked && it && useBelt(i)}>
               {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
               {locked && <span className="inv-lock"><Lock /></span>}
             </button>
