@@ -20,6 +20,23 @@ const isOnline = () => ONLINE && net.connected
 const FORGE_MAX = 5        // nivel máximo de mejora por pieza
 const SEAL_CHEST_COST = 6  // sellos por cofre de sellos (loot box premium)
 const GRAVE_GOLD_FRACTION = 0.25 // fracción del oro que dejás en la tumba al morir
+
+// Registro mínimo de un ítem (para tumbas/snapshots): id + count/dur/upgrade si aplican.
+const graveRec = (it) => {
+  if (!it) return null
+  const r = { id: it.id }
+  if (it.count && it.count > 1) r.count = it.count
+  if (it.dur != null) r.dur = it.dur
+  if (it.upgrade) r.upgrade = it.upgrade
+  return r
+}
+// Snapshot de la armadura puesta + el cinturón, para dibujar el ataúd al morir. Es sólo VISUAL:
+// ni la armadura ni el cinturón se pierden (sólo cae la bolsa + una fracción del oro).
+const graveLoadoutSnapshot = (s) => {
+  const equip = {}
+  for (const k in (s.equipment || {})) { const r = graveRec(s.equipment[k]); if (r) equip[k] = r }
+  return { equip, belt: (s.belt || []).map(graveRec) }
+}
 import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
 import { tt, setLangGlobal, itemName, raceName, questName } from './i18n.js'
@@ -1156,7 +1173,8 @@ export const useGameStore = create((set, get) => ({
       if (dump && dump.inv) get()._mirrorInv(dump.inv)
       if (!items.length && goldDrop <= 0) return false
       const id = (get()._graveId || 0) + 1
-      set({ graves: [...(get().graves || []), { id, zone, tx, ty, items, gold: goldDrop }], _graveId: id })
+      const snap = graveLoadoutSnapshot(s)   // armadura + cinturón (visual del ataúd; no se pierden)
+      set({ graves: [...(get().graves || []), { id, zone, tx, ty, items, gold: goldDrop, ...snap }], _graveId: id })
       saveGame(get())
       return true
     }
@@ -1174,10 +1192,15 @@ export const useGameStore = create((set, get) => ({
     const goldDrop = Math.floor((s.gold || 0) * GRAVE_GOLD_FRACTION)
     if (!items.length && goldDrop <= 0) return false
     const id = (s._graveId || 0) + 1
-    set({ inventory: inv, gold: s.gold - goldDrop, graves: [...(s.graves || []), { id, zone, tx, ty, items, gold: goldDrop }], _graveId: id })
+    const snap = graveLoadoutSnapshot(s)   // armadura + cinturón (visual del ataúd; no se pierden)
+    set({ inventory: inv, gold: s.gold - goldDrop, graves: [...(s.graves || []), { id, zone, tx, ty, items, gold: goldDrop, ...snap }], _graveId: id })
     saveGame(get())
     return true
   },
+  // Modal de la tumba (ataúd): armadura + cinturón + bolsa. Se abre al acceder a la tumba.
+  graveModal: null,
+  openGraveModal: (id) => { const g = (get().graves || []).find((x) => x.id === id); if (g) set({ graveModal: id }) },
+  closeGraveModal: () => set({ graveModal: null }),
   // Recupera una tumba: devuelve el oro y mete los ítems al inventario (respeta capacidad).
   // Devuelve true si entró TODO (y borra la tumba); false si el inventario se llenó (queda
   // la tumba con lo que no entró).
@@ -1437,6 +1460,7 @@ export const storeApi = {
   createGrave: (zone, tx, ty) => useGameStore.getState().createGrave(zone, tx, ty),
   getGravesInZone: (zone) => useGameStore.getState().getGravesInZone(zone),
   recoverGrave: (id) => useGameStore.getState().recoverGrave(id),
+  openGraveModal: (id) => useGameStore.getState().openGraveModal(id),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
   getLootLabels: () => useGameStore.getState().lootLabels,

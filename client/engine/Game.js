@@ -2149,15 +2149,23 @@ export class Game {
       this.groundItems = this.groundItems.filter((g) => !g.picked)
     }
 
-    // Tumbas: bob + recuperar la carga al caminarles encima.
+    // Tumbas: bob + abrir el modal del ataúd (armadura + cinturón + bolsa) al llegarle encima.
+    // La recuperación se hace desde el modal ("Retirar todo"); acá reconciliamos las que ya no
+    // existen en el store (recuperadas) para sacarlas del canvas.
     if (this.graves && this.graves.length) {
       const px = this.player.tx, py = this.player.ty
+      const alive = new Set((this.store.getGravesInZone ? this.store.getGravesInZone(this.mapName) : []).map((g) => g.id))
+      let changed = false
       for (const m of this.graves) {
         if (m.taken) continue
+        if (!alive.has(m.grave.id)) { m.taken = true; m.destroy(); changed = true; continue }
         m.update(dt)
-        if (Math.abs(px - m.tx) <= 0.9 && Math.abs(py - m.ty) <= 0.9) this._recoverGrave(m)
+        const near = Math.abs(px - m.tx) <= 0.9 && Math.abs(py - m.ty) <= 0.9
+        if (near) { if (!m._opened) { m._opened = true; this.store.openGraveModal(m.grave.id) } }
+        else m._opened = false
       }
       this.graves = this.graves.filter((m) => !m.taken)
+      if (changed) this._publishGraves()
     }
 
     // Online: interpolar a los jugadores remotos + difundir mi posición (throttle ~8Hz).
