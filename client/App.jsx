@@ -12,6 +12,7 @@ import Trade from './ui/Trade.jsx'
 import Market from './ui/Market.jsx'
 import PlayerMenu from './ui/PlayerMenu.jsx'
 import GraveModal from './ui/GraveModal.jsx'
+import Stash from './ui/Stash.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
 import Inventory from './ui/Inventory.jsx'
 import Character from './ui/Character.jsx'
@@ -53,7 +54,7 @@ export default function App() {
                     belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills, discovered: s.discovered,
                     missions: s.missions, missionsDate: s.missionsDate, seals: s.seals,
                     attrAlloc: s.attrAlloc, skillRanks: s.skillRanks, questFlags: s.questFlags,
-                    specialAbility: s.specialAbility, graves: s.graves })
+                    specialAbility: s.specialAbility, graves: s.graves, stash: s.stash })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
@@ -145,6 +146,7 @@ export default function App() {
       {phase === 'game' && panel === 'alchemy' && <Alchemy />}
       {phase === 'game' && panel === 'guild' && <Guild />}
       {phase === 'game' && panel === 'market' && <Market />}
+      {phase === 'game' && panel === 'stash' && <Stash />}
       {phase === 'game' && panel === 'missions' && <Missions />}
       {phase === 'game' && panel === 'mousebind' && <MouseBind />}
       {phase === 'game' && !loading && !error && <DialogueBox />}

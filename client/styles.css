@@ -325,9 +325,27 @@ html, body, #root {
 }
 .grave-grid { display: grid; gap: 6px; justify-content: start; }
 .grave-cell {
-  width: 46px; height: 46px; border-radius: 3px; display: grid; place-items: center; position: relative;
+  width: 46px; height: 46px; border: 0; padding: 0; border-radius: 3px; cursor: pointer;
+  display: grid; place-items: center; position: relative;
   background: var(--slot-bg) center / 100% 100% no-repeat; box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
 }
+.grave-cell:disabled { cursor: default; }
+.grave-cell:not(:disabled):active { filter: brightness(1.2); }
+
+/* Alijo personal (cofre del pueblo): dos grillas — alijo + bolsa */
+.stash-frame { max-width: 560px; }
+.stash-cols { display: flex; gap: 16px; padding: 6px 20px 4px; flex-wrap: wrap; }
+.stash-col { flex: 1; min-width: 220px; }
+.stash-col h3 {
+  margin: 0 0 8px; font-family: 'BonaNova', Georgia, serif; font-size: 14px; letter-spacing: 0.03em;
+  color: var(--gold); border-bottom: 1px solid rgba(156, 122, 46, 0.22); padding-bottom: 5px;
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.stash-count { font-size: 12px; color: #c2b189; font-variant-numeric: tabular-nums; }
+.stash-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; justify-content: start; max-height: 40vh; overflow-y: auto; align-content: start; }
+.stash-grid.bag { grid-template-columns: repeat(5, 1fr); }
+.stash-hint { color: #8a7c5e; font-size: 11px; font-style: italic; margin: 8px 0 4px; }
+.stash-empty { color: #8a7c5e; font-style: italic; font-size: 12px; padding: 16px 0; }
 .grave-gold { display: flex; justify-content: center; padding: 4px 0 2px; }
 .grave-actions { display: flex; justify-content: center; padding: 8px 0 14px; }
 .grave-actions .gframe-close:disabled { opacity: 0.5; cursor: default; }

@@ -26,6 +26,7 @@ import { DayNight } from './DayNight.js'
 import { Fauna } from './Fauna.js'
 import { GroundItem, loadIcons, iconsTexture } from './GroundItem.js'
 import { Grave } from './Grave.js'
+import { StashChest } from './StashChest.js'
 import { RemotePlayer } from './RemotePlayer.js'
 import { net, ONLINE } from '../net/net.js'
 import { deviceAuth } from '../net/online.js'
@@ -265,6 +266,10 @@ export class Game {
     // Tumbas: si moriste en esta zona, tu carga te espera acá para recuperarla.
     this.graves = []
     this._spawnGraves(renderer, mapName)
+
+    // Alijo personal: sólo en el pueblo. Cofre privado (lo ve/accede sólo su dueño).
+    this.stashChest = null
+    this._spawnStashChest(renderer, grid, spawn, mapName)
 
     // Nodos de recursos (hierbas + vetas de cristal) para juntar/minar.
     this.nodes = []
@@ -1689,6 +1694,25 @@ export class Game {
     this._publishGraves()
   }
 
+  // Alijo personal en el pueblo: un cofre privado cerca del spawn. Se busca un tile caminable
+  // junto al spawn para no taparlo ni quedar dentro de una colisión.
+  _spawnStashChest(renderer, grid, spawn, mapName) {
+    if (mapName !== TOWN_MAP) return
+    // Candidatos alrededor del spawn (un par de tiles a un costado), el 1º caminable gana.
+    const cand = [[3, 0], [0, 3], [3, 3], [-3, 0], [0, -3], [2, 2], [4, 0]]
+    let tx = spawn.x, ty = spawn.y, found = false
+    for (const [dx, dy] of cand) {
+      const x = spawn.x + dx, y = spawn.y + dy
+      if (grid.isWalkable(x, y)) { tx = x; ty = y; found = true; break }
+    }
+    if (!found) return
+    const chest = new StashChest(this.iso, tx, ty)
+    chest.view.scale.set(this._eScale)
+    chest.onTap((c) => { if (!this._spectator) this.player.walkTo(c.tx, c.ty) })   // caminar hacia él; se abre al llegar
+    renderer.objectLayer.addChild(chest.view)
+    this.stashChest = chest
+  }
+
   // Publica al HUD las tumbas de este mapa, para marcarlas en el minimapa.
   _publishGraves() {
     this.store.setGraveTiles((this.graves || []).filter((m) => !m.taken).map((m) => ({ x: m.tx, y: m.ty })))
@@ -2168,6 +2192,15 @@ export class Game {
       if (changed) this._publishGraves()
     }
 
+    // Alijo personal: bob + abrir el modal al llegarle encima (una vez por acercamiento).
+    if (this.stashChest) {
+      const c = this.stashChest
+      c.update(dt)
+      const near = Math.abs(this.player.tx - c.tx) <= 0.9 && Math.abs(this.player.ty - c.ty) <= 0.9
+      if (near) { if (!c._opened) { c._opened = true; this.store.openStash() } }
+      else c._opened = false
+    }
+
     // Online: interpolar a los jugadores remotos + difundir mi posición (throttle ~8Hz).
     if (this._online) {
       if (this.remotes) for (const r of this.remotes.values()) r.update(dt)
@@ -2429,6 +2462,8 @@ const HUB_SPAWN = {
 // dibuja personajes CHICOS respecto de sus edificios; nuestro héroe (fantasycore) es más
 // grande, así que lo achicamos para que encaje con los aldeanos y la escala del pueblo.
 const ENTITY_SCALE = { triston: 0.66 }
+// El pueblo (hub): acá va el alijo personal, y acá no hay cofres/rompibles de loot.
+const TOWN_MAP = 'triston'
 
 // El héroe con equipo pesado se dibuja un pelín más alto que los aldeanos; lo achicamos
 // un poco MÁS que a los NPCs para que coincidan bien.

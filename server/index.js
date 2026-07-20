@@ -11,6 +11,7 @@ import * as wallet from './systems/wallet.js'
 import * as guilds from './systems/guilds.js'
 import * as rooms from './world/rooms.js'
 import * as market from './systems/market.js'
+import * as stash from './systems/stash.js'
 import { startingKit, startingLedger } from '../shared/starterkit.js'
 
 const PORT = process.env.PORT || 8787
@@ -195,6 +196,28 @@ wss.on('connection', (ws) => {
           const give = rooms.giveItem(conn.playerId, out.item)
           if (!give.ok) { await guilds.depositItem(conn.accountId, out.item); return send({ t: 'guild_dep', error: 'bag lleno' }) }   // rollback al stash
           return send({ t: 'guild_dep', ...out, inv: rooms.invOf(conn.accountId) })
+        }
+        case 'stash_view': {   // ver el alijo privado (sólo el dueño)
+          if (!conn.accountId) return send({ t: 'stash', error: 'no autenticado' })
+          return send({ t: 'stash', ...(await stash.view(conn.accountId)) })
+        }
+        case 'stash_in': {     // depositar: saca el ítem del bag autoritativo (por índice) y lo guarda
+          if (!conn.accountId) return send({ t: 'stash', error: 'no autenticado' })
+          if (conn.playerId == null) return send({ t: 'stash', error: 'sin sesión' })
+          const taken = rooms.takeItemAt(conn.playerId, m.index)
+          if (!taken.ok) return send({ t: 'stash', error: taken.error || 'no tenés ese ítem' })
+          const dep = await stash.depositItem(conn.accountId, taken.item)
+          if (!dep.ok) { rooms.giveItem(conn.playerId, taken.item); return send({ t: 'stash', ...dep }) }   // rollback al bag
+          return send({ t: 'stash', ...dep, inv: rooms.invOf(conn.accountId) })
+        }
+        case 'stash_out': {    // retirar: saca del alijo y lo mete en el bag autoritativo
+          if (!conn.accountId) return send({ t: 'stash', error: 'no autenticado' })
+          if (conn.playerId == null) return send({ t: 'stash', error: 'sin sesión' })
+          const out = await stash.withdrawItem(conn.accountId, m.index)
+          if (!out.ok) return send({ t: 'stash', ...out })
+          const give = rooms.giveItem(conn.playerId, out.item)
+          if (!give.ok) { await stash.depositItem(conn.accountId, out.item); return send({ t: 'stash', error: 'bag lleno' }) }   // rollback al alijo
+          return send({ t: 'stash', ...out, inv: rooms.invOf(conn.accountId) })
         }
 
         case 'join': {

@@ -69,6 +69,10 @@ export async function init() {
         price BIGINT NOT NULL,
         created_at BIGINT NOT NULL,
         expires_at BIGINT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS player_stash (
+        account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+        items JSONB DEFAULT '[]'::jsonb
       );`)
     console.log('[db] PostgreSQL conectado')
     return
@@ -83,6 +87,7 @@ export async function init() {
   if (!file.guildMembers) file.guildMembers = {}     // account_id -> {guild_id, role}
   if (!file.guildDeposit) file.guildDeposit = {}     // guild_id -> {gold, items:[]}
   if (!file.market) file.market = []                 // [{id, seller, seller_name, item, price, created_at, expires_at}]
+  if (!file.stash) file.stash = {}                   // account_id -> items[] (alijo privado)
   if (file.marketSeq == null) file.marketSeq = file.market.reduce((m, l) => Math.max(m, l.id), 0) + 1
   if (file.guildSeq == null) file.guildSeq = file.guilds.reduce((m, g) => Math.max(m, g.id), 0) + 1
   seq = file.accounts.reduce((m, a) => Math.max(m, a.id), 0) + 1
@@ -361,6 +366,26 @@ export async function setDeposit(guildId, { gold, items }) {
     return
   }
   file.guildDeposit[guildId] = { gold: gold | 0, items: items || [] }
+  flush()
+}
+
+// --- Alijo privado por cuenta (personal, sólo el dueño) ---
+export async function getStash(accountId) {
+  if (pg) {
+    const r = await pg.query('SELECT items FROM player_stash WHERE account_id=$1', [accountId])
+    return (r.rows[0] && r.rows[0].items) || []
+  }
+  return file.stash[accountId] || []
+}
+export async function setStash(accountId, items) {
+  if (pg) {
+    await pg.query(
+      `INSERT INTO player_stash (account_id, items) VALUES ($1,$2)
+       ON CONFLICT (account_id) DO UPDATE SET items=$2`,
+      [accountId, JSON.stringify(items || [])])
+    return
+  }
+  file.stash[accountId] = items || []
   flush()
 }
 

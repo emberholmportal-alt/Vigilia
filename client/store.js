@@ -643,6 +643,64 @@ export const useGameStore = create((set, get) => ({
     return { ok: true }
   },
 
+  // --- alijo privado (cofre personal del pueblo) ---
+  // Online: autoritativo (el server guarda los ítems por cuenta, escrow). Offline: array local `stash`
+  // persistido en el save. En ambos casos, `stashItems` es lo que muestra el modal.
+  stash: [],                 // offline: registros guardados; se persiste en el save
+  stashItems: [],            // lo que muestra el modal (online: del server; offline: espejo de `stash`)
+  stashMax: 20,
+  stashBusy: false,
+  openStash: () => { set({ panel: 'stash' }); get().refreshStash() },
+  refreshStash: async () => {
+    if (isOnline()) {
+      set({ stashBusy: true })
+      const r = await net.stashView().catch(() => null)
+      set({ stashItems: r?.ok ? r.items : [], stashMax: r?.max || 20, stashBusy: false })
+    } else {
+      set({ stashItems: (get().stash || []).slice(), stashMax: 20 })
+    }
+  },
+  // Depositar un ítem del bag (por índice) en el alijo. Online: el server lo saca del bag (escrow).
+  stashDeposit: async (bagIndex) => {
+    if (isOnline()) {
+      const r = await net.stashIn(bagIndex).catch(() => null)
+      if (!r || !r.ok) { get().showToast(r?.error || tt('stash_full')); return { ok: false } }
+      if (r.inv) get()._mirrorInv(r.inv)
+      set({ stashItems: r.items || [], stashMax: r.max || 20 })
+      return { ok: true }
+    }
+    // Offline: mover de inventory[bagIndex] al array local.
+    const s = get()
+    const it = s.inventory[bagIndex]; if (!it) return { ok: false }
+    if ((s.stash || []).length >= 20) { get().showToast(tt('stash_full')); return { ok: false } }
+    const rec = graveRec(it)
+    const inv = s.inventory.slice(); inv[bagIndex] = null
+    const stash = [...(s.stash || []), rec]
+    set({ inventory: inv, stash, stashItems: stash.slice() })
+    saveGame(get())
+    return { ok: true }
+  },
+  // Retirar un ítem del alijo (por índice) al bag. Respeta capacidad.
+  stashWithdraw: async (stashIndex) => {
+    if (isOnline()) {
+      const r = await net.stashOut(stashIndex).catch(() => null)
+      if (!r || !r.ok) { get().showToast(r?.error || tt('stash_fail')); return { ok: false } }
+      if (r.inv) get()._mirrorInv(r.inv)
+      set({ stashItems: r.items || [], stashMax: r.max || 20 })
+      return { ok: true }
+    }
+    // Offline: mover del array local al inventory (si hay lugar).
+    const s = get()
+    const rec = (s.stash || [])[stashIndex]; if (!rec) return { ok: false }
+    const base = itemById(rec.id); if (!base) return { ok: false }
+    const it = { ...base }; if (rec.count > 1) it.count = rec.count; if (rec.dur != null) it.dur = rec.dur; if (rec.upgrade) it.upgrade = rec.upgrade
+    if (!get().addItem(it, rec.count || 1)) { get().showToast(tt('inv_full')); return { ok: false } }
+    const stash = (s.stash || []).slice(); stash.splice(stashIndex, 1)
+    set({ stash, stashItems: stash.slice() })
+    saveGame(get())
+    return { ok: true }
+  },
+
   // --- bienvenida (1 vez por personaje) ---
   showWelcome: false,        // el modal de bienvenida está visible (lo dispara initCharacter la 1ª vez)
   // Cierra la bienvenida y la marca vista (persiste en questFlags._welcome, así no vuelve a salir).
@@ -655,7 +713,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined, graves = null, spectator = false }) => {
+  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined, graves = null, stash = null, spectator = false }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -676,6 +734,7 @@ export const useGameStore = create((set, get) => ({
       race, gold, stats: st, xp, skills: skills || emptySkills(),
       attrAlloc: alloc, skillRanks: ranks, questFlags: questFlags || {}, specialAbility: special,
       graves: graves || [], _graveId: (graves || []).reduce((m, g) => Math.max(m, g.id || 0), 0),
+      stash: stash || [],
       spectator: !!spectator,
       inventory: inv, equipment: equip, belt: b, equippedBelt,
       discovered: discovered || {},
@@ -1461,6 +1520,7 @@ export const storeApi = {
   getGravesInZone: (zone) => useGameStore.getState().getGravesInZone(zone),
   recoverGrave: (id) => useGameStore.getState().recoverGrave(id),
   openGraveModal: (id) => useGameStore.getState().openGraveModal(id),
+  openStash: () => useGameStore.getState().openStash(),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
   getLootLabels: () => useGameStore.getState().lootLabels,

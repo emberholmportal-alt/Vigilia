@@ -171,6 +171,10 @@ class Net {
   async guildDepGold(dir, amount) { this._send({ t: 'guild_dep_gold', dir, amount }); return this._once('guild_dep') }
   async guildDepItemIn(index) { this._send({ t: 'guild_dep_item_in', index }); return this._once('guild_dep') }
   async guildDepItemOut(index) { this._send({ t: 'guild_dep_item_out', index }); return this._once('guild_dep') }
+  // Alijo privado (personal). Responden `t:'stash'`. Secuenciales, sin op.
+  async stashView() { this._send({ t: 'stash_view' }); return this._once('stash') }
+  async stashIn(index) { this._send({ t: 'stash_in', index }); return this._once('stash') }
+  async stashOut(index) { this._send({ t: 'stash_out', index }); return this._once('stash') }
   close() { this._wantOpen = false; if (this._reconnectT) { clearTimeout(this._reconnectT); this._reconnectT = null } try { this.ws?.close() } catch {} }
 }
 

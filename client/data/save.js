@@ -50,6 +50,7 @@ export function unpackSave(s) {
       questFlags: s.questFlags || null,
       specialAbility: s.specialAbility ?? undefined,
       graves: s.graves || null,
+      stash: s.stash || null,
   }
 }
 
@@ -78,6 +79,7 @@ export function snapshot(state) {
     questFlags: state.questFlags || {},
     specialAbility: state.specialAbility ?? null,
     graves: state.graves || [],
+    stash: state.stash || [],
   }
 }
 
