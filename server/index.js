@@ -10,6 +10,7 @@ import { register, login, session, logout } from './systems/auth.js'
 import * as wallet from './systems/wallet.js'
 import * as guilds from './systems/guilds.js'
 import * as rooms from './world/rooms.js'
+import { startingKit, startingLedger } from '../shared/starterkit.js'
 
 const PORT = process.env.PORT || 8787
 
@@ -114,7 +115,18 @@ wss.on('connection', (ws) => {
             else if (ed) data.inventory = ed.inventory || []
             if (led != null) data._outLedger = led
             else if (ed) { if (ed._outLedger && typeof ed._outLedger === 'object') data._outLedger = ed._outLedger; else delete data._outLedger }
-            else delete data._outLedger   // creación: sin ledger todavía (se grandfatherea en el 1er join)
+            // CREACIÓN (personaje inexistente): el server ASIGNA el kit inicial canónico (oro/equipo/
+            // inventario/cinturón + ledger), ignorando el blob del cliente. Cierra "crearse con oro/
+            // equipo falso". El ledger canónico se persiste ya, así el 1er join no grandfatherea.
+            if (!ed) {
+              const kit = startingKit(m.race)
+              data.gold = kit.gold
+              data.inventory = kit.inventory
+              data.equipment = kit.equipment
+              data.belt = kit.belt
+              data.equippedBelt = null
+              data._outLedger = startingLedger(m.race)
+            }
             await db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data })
           })
           return send({ t: 'saved', ok: true })

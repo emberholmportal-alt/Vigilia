@@ -15,6 +15,9 @@ export const RECALL_STONE = { id: 90010, name: 'Pergamino de Retorno', slot: 'sc
 export const ITEMS = data.items.concat(BELTS, [RECALL_STONE])
 const byId = new Map(ITEMS.map((i) => [i.id, i]))
 export const itemById = (id) => byId.get(id)
+// Helpers compartidos (los usa el server para armar el kit inicial autoritativo). Espejan los del cliente.
+export const itemsBySlot = (slot) => ITEMS.filter((i) => i.slot === slot)
+export const itemByGfx = (gfx) => ITEMS.find((i) => i.gfx === gfx)
 
 // Precio base (compra al mercader) y valor de venta (25% del precio, igual que el cliente).
 const SELL_RATIO = 0.25
