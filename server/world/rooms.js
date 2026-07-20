@@ -103,7 +103,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, inv = null, outSeed = null } = {}) {
+export function join(send, { name, race, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, inv = null, outSeed = null, ledger = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -126,12 +126,19 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator,
   // registros mínimos {id, count?, dur?, upgrade?} (el cliente reconstruye el ítem completo por id).
   p.inv = normalizeInv(inv)
   // Ledger "checkout" (anti-mint del bag_give): cuenta cuántas unidades de cada id el jugador tiene
-  // LEGÍTIMAMENTE fuera del bag (equipo/cinturón/tumbas — semilla del blob) o sacó del bag esta sesión
-  // (bag_take). `bag_give` sólo puede devolver ítems contabilizados acá, así no se inyectan ítems de
-  // la nada para venderlos. (Residual: el blob de equipo aún es client-side; la autoridad completa de
-  // equipo/cinturón/tumbas es Fase A.3 — esto acota el mint casual sin ese sistema.)
+  // LEGÍTIMAMENTE fuera del bag (equipo/cinturón/tumbas) o sacó del bag esta sesión (bag_take).
+  // `bag_give` sólo puede devolver ítems contabilizados acá — no se inyectan ítems de la nada.
+  // (Fase A.3) El ledger es AUTORITATIVO del server y PERSISTE en el personaje: si viene el ledger
+  // guardado, se carga de ahí (el cliente no puede inflarlo tamperando el blob de equipo). Sólo la
+  // PRIMERA vez (personaje sin ledger guardado) se hace grandfather desde el equipo/cinturón/tumbas
+  // del blob; a partir de ahí el server lo dueña. Cierra el mint por save manipulado.
   p._out = new Map()
-  if (Array.isArray(outSeed)) for (const oid of outSeed) { if (itemById(oid)) p._out.set(oid, (p._out.get(oid) || 0) + 1) }
+  if (ledger && typeof ledger === 'object') {
+    for (const k of Object.keys(ledger)) { const oid = k | 0, c = ledger[k] | 0; if (c > 0 && itemById(oid)) p._out.set(oid, c) }
+  } else if (Array.isArray(outSeed)) {   // grandfather (una vez): semilla desde el blob
+    for (const oid of outSeed) { if (itemById(oid)) p._out.set(oid, (p._out.get(oid) || 0) + 1) }
+    p._ledgerDirty = true   // persistir el ledger inicial para que la próxima sesión ya sea server-owned
+  }
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
@@ -331,8 +338,14 @@ export function useItem(id, index) {
   return { ok: true, id: it.id, inv: p.inv }
 }
 // --- Ledger "checkout" del bag (anti-mint de bag_give) -------------------------------------------
-function outInc(p, itemId, n = 1) { if (!p._out) p._out = new Map(); p._out.set(itemId, (p._out.get(itemId) || 0) + Math.max(1, n | 0)) }
-function outTake(p, itemId, n = 1) { const have = (p._out && p._out.get(itemId)) || 0; n = Math.max(1, n | 0); if (have < n) return false; p._out.set(itemId, have - n); return true }
+function outInc(p, itemId, n = 1) { if (!p._out) p._out = new Map(); p._out.set(itemId, (p._out.get(itemId) || 0) + Math.max(1, n | 0)); p._ledgerDirty = true }
+function outTake(p, itemId, n = 1) { const have = (p._out && p._out.get(itemId)) || 0; n = Math.max(1, n | 0); if (have < n) return false; p._out.set(itemId, have - n); p._ledgerDirty = true; return true }
+// Ledger "checkout" server-owned de una cuenta con sesión (o null): objeto {id: cuenta} para persistir
+// y que el handler `save` lo pise en el blob (el cliente no puede inflar lo que puede devolver).
+export function ledgerOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) { const o = {}; if (p._out) for (const [k, v] of p._out) if (v > 0) o[k] = v; return o }
+  return null
+}
 // El cliente sacó un ítem del bag hacia un store client-side (equipar/cinturón): queda "afuera",
 // contabilizado para poder devolverlo después. Lo llama el handler bag_take (NO el depósito de gremio).
 export function noteCheckout(id, itemId, qty = 1) { const p = players.get(id); if (p) outInc(p, itemId, qty) }
@@ -432,6 +445,7 @@ async function persistGold(p) {
   if (!p || !p.accountId) return
   if (p._goldDirty) { p._goldDirty = false; try { await db.setCharacterGold(p.accountId, p.gold) } catch {} }
   if (p._invDirty) { p._invDirty = false; try { await db.setCharacterInventory(p.accountId, p.inv) } catch {} }
+  if (p._ledgerDirty) { p._ledgerDirty = false; try { await db.setCharacterLedger(p.accountId, ledgerOf(p.accountId)) } catch {} }
 }
 
 // --- Faucets secundarios (computados por el server desde datos COMPARTIDOS) ------------------

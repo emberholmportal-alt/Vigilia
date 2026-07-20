@@ -96,13 +96,27 @@ wss.on('connection', (ws) => {
           // El ORO y el INVENTARIO son autoritativos del servidor (Fase A/A.2): si hay sesión
           // activa, sus valores pisan el blob del cliente (un save hackeado no puede setear oro ni
           // ítems). El resto (xp, equipo, etc.) sigue viniendo del cliente. Bajo el lock de la cuenta.
+          // Los campos AUTORITATIVOS (oro, inventario, ledger) nunca se toman del blob del cliente para
+          // un personaje EXISTENTE: vienen de la sesión viva (autoritativo) o, si no hay sesión, se
+          // PRESERVAN del personaje persistido. Así un save sin sesión (autenticado pero sin join) no
+          // puede pisarlos. Sólo en la CREACIÓN (personaje inexistente) se aceptan los valores del
+          // cliente (kit inicial). Cierra el bypass "guardar sin entrar al mundo".
           const g = rooms.goldOf(conn.accountId)
           const inv = rooms.invOf(conn.accountId)
+          const led = rooms.ledgerOf(conn.accountId)
           const data = { ...(m.char || {}) }
-          if (g != null) data.gold = g
-          if (inv != null) data.inventory = inv
-          await db.withAccountLock(conn.accountId, () =>
-            db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data }))
+          await db.withAccountLock(conn.accountId, async () => {
+            const existing = await db.loadCharacter(conn.accountId)
+            const ed = existing?.data || null
+            if (g != null) data.gold = g
+            else if (ed) data.gold = Math.floor(Number(ed.gold) || 0)
+            if (inv != null) data.inventory = inv
+            else if (ed) data.inventory = ed.inventory || []
+            if (led != null) data._outLedger = led
+            else if (ed) { if (ed._outLedger && typeof ed._outLedger === 'object') data._outLedger = ed._outLedger; else delete data._outLedger }
+            else delete data._outLedger   // creación: sin ledger todavía (se grandfatherea en el 1er join)
+            await db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data })
+          })
           return send({ t: 'saved', ok: true })
         }
 
@@ -165,21 +179,25 @@ wss.on('connection', (ws) => {
           db.touchAccount(conn.accountId).catch(() => {})   // actividad (jugadores mensuales)
           if (conn.playerId != null) rooms.leave(conn.playerId)
           // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
-          let gold = 0, inv = null, outSeed = null
+          let gold = 0, inv = null, outSeed = null, ledger = null
           if (!m.spectator) {
             const ch = await db.loadCharacter(conn.accountId)
             gold = Math.floor(Number(ch?.data?.gold) || 0)
             inv = ch?.data?.inventory || null
-            // Semilla del ledger "checkout": los ítems que el personaje tiene FUERA del bag (equipo,
-            // cinturón, tumbas) según el blob. Son los que legítimamente puede devolver por bag_give.
             const d = ch?.data || {}
-            outSeed = []
-            for (const it of Object.values(d.equipment || {})) if (it && it.id) outSeed.push(it.id)
-            for (const b of (d.belt || [])) if (b && b.id) for (let k = 0; k < (b.count || 1); k++) outSeed.push(b.id)
-            if (d.equippedBelt && d.equippedBelt.id) outSeed.push(d.equippedBelt.id)
-            for (const g of (d.graves || [])) for (const it of (g.items || [])) if (it && it.id) for (let k = 0; k < (it.count || 1); k++) outSeed.push(it.id)
+            // Ledger "checkout" AUTORITATIVO (Fase A.3): si el personaje ya tiene ledger guardado, se
+            // carga de ahí (server-owned, el cliente no lo puede inflar). Si NO (personaje viejo, 1ª vez),
+            // se grandfatherea desde el equipo/cinturón/tumbas del blob y se persiste desde entonces.
+            ledger = (d._outLedger && typeof d._outLedger === 'object') ? d._outLedger : null
+            if (!ledger) {
+              outSeed = []
+              for (const it of Object.values(d.equipment || {})) if (it && it.id) outSeed.push(it.id)
+              for (const b of (d.belt || [])) if (b && b.id) for (let k = 0; k < (b.count || 1); k++) outSeed.push(b.id)
+              if (d.equippedBelt && d.equippedBelt.id) outSeed.push(d.equippedBelt.id)
+              for (const g of (d.graves || [])) for (const it of (g.items || [])) if (it && it.id) for (let k = 0; k < (it.count || 1); k++) outSeed.push(it.id)
+            }
           }
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, inv, outSeed })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, inv, outSeed, ledger })
           conn.playerId = id
           send({ t: 'present', you: id, players: present, map: m.map, channel })
           if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + bag

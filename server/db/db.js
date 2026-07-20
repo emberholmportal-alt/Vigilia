@@ -216,6 +216,18 @@ export async function setCharacterInventory(accountId, inv) {
   })
 }
 
+// Escribe el ledger "checkout" AUTORITATIVO del server (Fase A.3): objeto {id: cuenta} de lo que el
+// jugador tiene fuera del bag y puede devolver. Persistirlo evita que un save manipulado lo infle.
+export async function setCharacterLedger(accountId, ledger) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), _outLedger: (ledger && typeof ledger === 'object') ? ledger : {} }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
+}
+
 export async function findGuildByTag(tag) {
   const t = String(tag).toUpperCase()
   if (pg) return (await pg.query('SELECT * FROM guilds WHERE upper(tag)=$1', [t])).rows[0] || null
