@@ -137,9 +137,10 @@ export const DOCS = {
           {
             id: 'death', title: 'La muerte y las tumbas',
             blocks: [
-              { p: 'Si tu vida llega a cero afuera, caés y dejás una tumba en el lugar exacto con tu carga (inventario y parte del oro). Reapareces en el Obelisco de Retorno de la zona, con una penalidad de oro.' },
-              { p: 'Volvé a la tumba a recuperar lo tuyo… si podés. Si morís de nuevo antes de recuperarla, se suma una tumba nueva —y el riesgo crece.' },
-              { warn: 'En Triston no te pasa nada: es refugio. El peligro es sólo afuera. Bancá lo valioso y viajá liviano a las zonas duras.' },
+              { p: 'Si tu vida llega a cero afuera, caés y dejás una tumba en el lugar exacto. Cae tu BOLSA y una parte del oro; la armadura que llevás puesta y el cinturón NO se pierden. Reapareces en el Obelisco de Retorno de la zona.' },
+              { p: 'Al llegarle a la tumba se abre el ataúd: un panel que muestra, en columna, tu armadura, tu cinturón y la bolsa. Con "Retirar todo" recuperás la carga (si la bolsa no entra entera, lo que sobra queda en la tumba).' },
+              { p: 'Si morís de nuevo antes de recuperarla, se suma una tumba nueva —y el riesgo crece.' },
+              { warn: 'En Triston no te pasa nada: es refugio, y por ahora ningún jugador puede atacarte para robarte. El peligro es sólo afuera. Dejá lo valioso en tu alijo y viajá liviano.' },
             ],
           },
         ],
@@ -168,8 +169,18 @@ export const DOCS = {
               { h: 'Equipo' },
               { p: 'Diez slots: cabeza, torso, piernas, manos, pies, arma (main), secundaria/escudo (off), DOS anillos y un amuleto. Los siete primeros se ven en el paperdoll y cambian tu aspecto al instante; los anillos y el amuleto dan stats pero no se ven.' },
               { h: 'Cinturón' },
-              { p: 'El cinturón guarda consumibles usables en combate (pociones, pergaminos). Arranca con 2 huecos y se agranda con un ítem de cinturón equipado.' },
+              { p: 'El cinturón guarda consumibles usables en combate (pociones, pergaminos). Arranca con 2 huecos y se agranda con un ítem de cinturón equipado. En el panel se ve como una grilla 3×3 justo debajo del muñeco de armadura; tocás un slot para usar lo que tenga.' },
               { tip: 'Tocá un ítem para ver su tooltip con stats y la comparación contra lo que tenés puesto (+4 def / −2 des), antes de decidir si lo equipás.' },
+            ],
+          },
+          {
+            id: 'stash', title: 'El alijo',
+            blocks: [
+              { p: 'El alijo es tu cofre personal en Triston: un guardado privado que SÓLO vos ves y abrís. Sirve para dejar ítems que no querés llevar encima —justo lo que no querés perder si morís.' },
+              { p: 'Lo encontrás plantado cerca de la plaza. Caminás hasta él y se abre un panel con dos lados: el alijo y tu bolsa. Tocás un ítem de la bolsa para guardarlo, o uno del alijo para retirarlo.' },
+              { h: 'Cómo funciona por dentro' },
+              { p: 'El alijo es autoritativo del servidor: los ítems guardados viven en el servidor ligados a tu cuenta, no en tu bolsa. Por eso no se pueden duplicar ni perder, y siguen ahí aunque cierres el juego o mueras. Arranca con 20 huecos.' },
+              { tip: 'Antes de una salida peligrosa, dejá en el alijo el botín valioso: si caés, tu tumba sólo se lleva lo que tenías en la bolsa.' },
             ],
           },
           {
@@ -303,6 +314,17 @@ export const DOCS = {
             id: 'seals', title: 'Sellos',
             blocks: [
               { p: 'Los fragmentos de sello salen de las misiones diarias y de las ofrendas. Son una moneda aparte del oro: se gastan en cofres de sello (loot de mejor calidad) sin tocar el token.' },
+            ],
+          },
+          {
+            id: 'trade', title: 'Comercio entre jugadores',
+            blocks: [
+              { p: 'El oro y los ítems circulan entre jugadores por dos vías, las dos validadas por el servidor.' },
+              { h: 'Intercambio cara a cara' },
+              { p: 'Tocá a otro jugador cercano y elegí "Comerciar". Se abre una ventana con tu oferta y la del otro: cada uno pone ítems y oro. Recién se cierra cuando LOS DOS confirman, y el servidor hace el cambio de forma atómica (todo o nada), validando que cada parte tenga lo que ofrece. No hay forma de estafar ni de quedarse con las dos puntas.' },
+              { h: 'Mercado de jugadores' },
+              { p: 'Desde el mercader entrás al Mercado: publicás un ítem a precio fijo en oro y otro lo compra aunque no estés conectado. Mientras está en venta, el ítem queda en custodia del servidor (no lo tenés en la bolsa). Hay una comisión chica sobre la venta, y los listados vencen solos si nadie los compra (te devuelven el ítem).' },
+              { warn: 'Por ahora el mercado es sólo en ORO. El cambio a token llega recién cuando exista $VEL.' },
             ],
           },
           {
@@ -490,9 +512,10 @@ export const DOCS = {
           {
             id: 'death', title: 'Death & graves',
             blocks: [
-              { p: 'If your health hits zero in the wilds, you fall and leave a grave on the exact spot with your load (inventory and some gold). You respawn at the zone Obelisk of Return, with a gold penalty.' },
-              { p: 'Go back to the grave to recover what is yours… if you can. If you die again before recovering it, a new grave is added —and the risk grows.' },
-              { warn: 'In Triston nothing happens to you: it is a refuge. Danger is only outside. Bank your valuables and travel light to the hard zones.' },
+              { p: 'If your health hits zero in the wilds, you fall and leave a grave on the exact spot. Your BAG and part of your gold drop; the armor you are wearing and your belt are NOT lost. You respawn at the zone Obelisk of Return.' },
+              { p: 'Reach the grave and the coffin opens: a panel showing, in a column, your armor, your belt and the bag. "Take all" recovers the load (if the bag does not fit whole, the rest stays in the grave).' },
+              { p: 'If you die again before recovering it, a new grave is added —and the risk grows.' },
+              { warn: 'In Triston nothing happens to you: it is a refuge, and for now no player can attack you to rob you. Danger is only outside. Leave your valuables in your stash and travel light.' },
             ],
           },
         ],
@@ -521,8 +544,18 @@ export const DOCS = {
               { h: 'Gear' },
               { p: 'Ten slots: head, chest, legs, hands, feet, weapon (main), off-hand/shield (off), TWO rings and an amulet. The first seven show on the paperdoll and change your look instantly; rings and amulet give stats but are not shown.' },
               { h: 'Belt' },
-              { p: 'The belt holds combat consumables (potions, scrolls). It starts with 2 slots and grows with an equipped belt item.' },
+              { p: 'The belt holds combat consumables (potions, scrolls). It starts with 2 slots and grows with an equipped belt item. In the panel it shows as a 3×3 grid right below the armor paperdoll; tap a slot to use whatever it holds.' },
               { tip: 'Tap an item to see its tooltip with stats and the comparison against what you have on (+4 def / −2 dex), before deciding to equip it.' },
+            ],
+          },
+          {
+            id: 'stash', title: 'The stash',
+            blocks: [
+              { p: 'The stash is your personal chest in Triston: a private store that ONLY you can see and open. It is for items you do not want to carry —exactly what you do not want to lose if you die.' },
+              { p: 'You find it planted near the square. Walk up to it and a panel opens with two sides: the stash and your bag. Tap a bag item to store it, or a stash item to take it back.' },
+              { h: 'How it works underneath' },
+              { p: 'The stash is server-authoritative: stored items live on the server tied to your account, not in your bag. That is why they cannot be duplicated or lost, and stay there even if you close the game or die. It starts with 20 slots.' },
+              { tip: 'Before a dangerous run, leave your valuable loot in the stash: if you fall, your grave only takes what was in your bag.' },
             ],
           },
           {
@@ -656,6 +689,17 @@ export const DOCS = {
             id: 'seals', title: 'Seals',
             blocks: [
               { p: 'Seal fragments come from daily quests and offerings. They are a currency apart from gold: spend them on seal chests (higher-quality loot) without touching the token.' },
+            ],
+          },
+          {
+            id: 'trade', title: 'Player trading',
+            blocks: [
+              { p: 'Gold and items flow between players two ways, both validated by the server.' },
+              { h: 'Face-to-face trade' },
+              { p: 'Tap a nearby player and pick "Trade". A window opens with your offer and theirs: each side puts up items and gold. It only closes when BOTH confirm, and the server performs the swap atomically (all or nothing), checking each side owns what it offers. There is no way to scam or to keep both ends.' },
+              { h: 'Player market' },
+              { p: 'From the merchant you enter the Market: list an item for a fixed gold price and someone can buy it even while you are offline. While it is for sale, the item is held in the server’s custody (not in your bag). There is a small commission on the sale, and listings expire on their own if no one buys them (the item is returned to you).' },
+              { warn: 'For now the market is gold-only. The switch to a token comes only once $VEL exists.' },
             ],
           },
           {
