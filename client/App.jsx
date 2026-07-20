@@ -7,6 +7,7 @@ import { loadGame, hasSave, unpackSave } from './data/save.js'
 import { net, ONLINE } from './net/net.js'
 import HUD from './ui/HUD.jsx'
 import StartScreen from './ui/StartScreen.jsx'
+import Welcome from './ui/Welcome.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
 import Inventory from './ui/Inventory.jsx'
 import Character from './ui/Character.jsx'
@@ -36,6 +37,7 @@ export default function App() {
   const gameRef = useRef(null)
   const panel = useGameStore((s) => s.panel)
   const waypointOpen = useGameStore((s) => s.waypointOpen)
+  const showWelcome = useGameStore((s) => s.showWelcome)
   const initCharacter = useGameStore((s) => s.initCharacter)
   const t = useT()
 
@@ -142,6 +144,7 @@ export default function App() {
       {phase === 'game' && panel === 'mousebind' && <MouseBind />}
       {phase === 'game' && !loading && !error && <DialogueBox />}
       {phase === 'game' && waypointOpen && <Waypoints />}
+      {phase === 'game' && !loading && !error && showWelcome && <Welcome />}
       {phase === 'game' && <ZoneLoader />}
       {error && <div className="error">Error: {error}</div>}
 

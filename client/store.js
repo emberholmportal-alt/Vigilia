@@ -559,6 +559,15 @@ export const useGameStore = create((set, get) => ({
   },
   setPanel: (panel) => set({ panel }),
   togglePanel: (p) => set((s) => ({ panel: s.panel === p ? null : p })),
+
+  // --- bienvenida (1 vez por personaje) ---
+  showWelcome: false,        // el modal de bienvenida está visible (lo dispara initCharacter la 1ª vez)
+  // Cierra la bienvenida y la marca vista (persiste en questFlags._welcome, así no vuelve a salir).
+  dismissWelcome: () => {
+    const questFlags = { ...get().questFlags, _welcome: true }
+    set({ showWelcome: false, questFlags })
+    saveGame(get())
+  },
   toggleLootLabels: () => set((s) => ({ lootLabels: !s.lootLabels })),
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
@@ -591,6 +600,8 @@ export const useGameStore = create((set, get) => ({
       staminaMax: st.staminaMax, stamina: st.staminaMax,
     })
     get().ensureMissions()   // carga/renueva las misiones del día (conserva progreso si es hoy)
+    // Bienvenida: la mostramos una vez por personaje (mirón nunca). La bandera vive en questFlags.
+    if (!spectator && !(questFlags && questFlags._welcome)) set({ showWelcome: true })
     saveGame(get())
   },
 
