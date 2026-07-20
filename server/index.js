@@ -19,6 +19,25 @@ const PORT = process.env.PORT || 8787
 // cuenta es la billetera. Se enciende con WALLET_REQUIRED=1 (render.yaml). Apagado en dev/local (tests).
 const WALLET_REQUIRED = process.env.WALLET_REQUIRED === '1' || process.env.WALLET_REQUIRED === 'true'
 
+// Grandfather del ledger "checkout" para personajes VIEJOS sin ledger persistido (migración A.3).
+// El blob (equipo/cinturón/tumbas) es controlado por el cliente, así que NO se puede confiar en él
+// para acuñar créditos: se siembra 1 unidad por slot conocido de equipo + cinturón, IGNORANDO los
+// `count` (vector de mint por stacks) y SIN tumbas (vector de ítems arbitrarios), con tope total.
+// Alcanza para que un jugador viejo pueda des-equiparse su equipo real (bag_give), sin permitir
+// fabricar ítems. `itemById` (en rooms.join) descarta ids inexistentes.
+const GF_EQUIP_SLOTS = ['head', 'chest', 'legs', 'feet', 'hands', 'artifact', 'ring', 'ring2', 'main', 'off']
+const GF_BELT_MAX = 8
+const GF_SEED_MAX = 24
+function grandfatherSeed(d) {
+  const seed = []
+  const eq = (d && d.equipment) || {}
+  for (const slot of GF_EQUIP_SLOTS) { const it = eq[slot]; if (it && it.id != null) seed.push(it.id | 0) }
+  const belt = Array.isArray(d && d.belt) ? d.belt : []
+  for (let i = 0; i < belt.length && i < GF_BELT_MAX; i++) { const b = belt[i]; if (b && b.id != null) seed.push(b.id | 0) }
+  if (d && d.equippedBelt && d.equippedBelt.id != null) seed.push(d.equippedBelt.id | 0)
+  return seed.slice(0, GF_SEED_MAX)   // tope duro; sin `count`, sin tumbas
+}
+
 await db.init()
 // Mercado: barrido periódico de publicaciones vencidas (devuelven el ítem al vendedor). El browse
 // también barre, pero esto cubre listados vencidos sin nadie mirando.
@@ -235,13 +254,10 @@ wss.on('connection', (ws) => {
             // carga de ahí (server-owned, el cliente no lo puede inflar). Si NO (personaje viejo, 1ª vez),
             // se grandfatherea desde el equipo/cinturón/tumbas del blob y se persiste desde entonces.
             ledger = (d._outLedger && typeof d._outLedger === 'object') ? d._outLedger : null
-            if (!ledger) {
-              outSeed = []
-              for (const it of Object.values(d.equipment || {})) if (it && it.id) outSeed.push(it.id)
-              for (const b of (d.belt || [])) if (b && b.id) for (let k = 0; k < (b.count || 1); k++) outSeed.push(b.id)
-              if (d.equippedBelt && d.equippedBelt.id) outSeed.push(d.equippedBelt.id)
-              for (const g of (d.graves || [])) for (const it of (g.items || [])) if (it && it.id) for (let k = 0; k < (it.count || 1); k++) outSeed.push(it.id)
-            }
+            // Grandfather sólo la 1ª vez (personaje viejo sin ledger), SANITIZADO: 1 unidad por slot
+            // de equipo/cinturón, sin `count` ni tumbas y con tope. Evita el mint de stackables por un
+            // save manipulado (belt/graves con count enorme) en cuentas sin ledger persistido.
+            if (!ledger) outSeed = grandfatherSeed(d)
           }
           const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, inv, outSeed, ledger })
           conn.playerId = id
