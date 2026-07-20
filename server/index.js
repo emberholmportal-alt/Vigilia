@@ -13,6 +13,9 @@ import * as rooms from './world/rooms.js'
 import { startingKit, startingLedger } from '../shared/starterkit.js'
 
 const PORT = process.env.PORT || 8787
+// Wallet obligatoria (producción): rechaza el alta/login por usuario+contraseña, así la única vía de
+// cuenta es la billetera. Se enciende con WALLET_REQUIRED=1 (render.yaml). Apagado en dev/local (tests).
+const WALLET_REQUIRED = process.env.WALLET_REQUIRED === '1' || process.env.WALLET_REQUIRED === 'true'
 
 await db.init()
 
@@ -56,12 +59,16 @@ wss.on('connection', (ws) => {
         case 'ping': return send({ t: 'pong' })
 
         case 'register': {
+          // Wallet obligatoria (producción): no se crean cuentas por usuario/contraseña — sólo por
+          // billetera. En dev/local (WALLET_REQUIRED apagado) sigue habilitado para tests.
+          if (WALLET_REQUIRED) return send({ t: 'auth', ok: false, error: 'iniciá sesión con tu billetera' })
           const r = await register(m.user, m.pass)
           if (r.ok) { conn.accountId = session(r.token).accountId; conn.username = r.username }
           return send({ t: 'auth', ok: r.ok, token: r.token, username: r.username, error: r.error })
         }
 
         case 'login': {
+          if (WALLET_REQUIRED) return send({ t: 'auth', ok: false, error: 'iniciá sesión con tu billetera' })
           const r = await login(m.user, m.pass)
           if (!r.ok) return send({ t: 'auth', ok: false, error: r.error })
           conn.accountId = session(r.token).accountId

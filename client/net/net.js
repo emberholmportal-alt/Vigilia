@@ -21,6 +21,11 @@ export const ONLINE =
   !!(import.meta.env && import.meta.env.VITE_WS_URL) ||
   !isLocal
 
+// Billetera OBLIGATORIA para jugar en producción (no-localhost). En dev/local queda opcional para
+// poder testear con una cuenta de dispositivo (sin extensión de wallet). El servidor lo refuerza
+// aparte (WALLET_REQUIRED): rechaza el login por contraseña, así no hay bypass.
+export const WALLET_REQUIRED = !isLocal
+
 class Net {
   constructor() {
     this.ws = null

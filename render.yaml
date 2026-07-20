@@ -28,6 +28,12 @@ services:
           property: connectionString
       - key: NODE_VERSION
         value: "22"
+      # Billetera OBLIGATORIA: rechaza el alta/login por usuario+contraseña (la única cuenta es la
+      # wallet). El cliente ya exige wallet en prod por build; esto cierra el bypass del lado server.
+      # OJO: Render sólo lee este archivo al aplicar el Blueprint; para el deploy VIVO hay que setear
+      # WALLET_REQUIRED=1 en el dashboard del server (Environment).
+      - key: WALLET_REQUIRED
+        value: "1"
 
   # --- Cliente (sitio estático de Vite) ---
   - type: web

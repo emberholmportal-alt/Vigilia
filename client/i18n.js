@@ -342,6 +342,7 @@ const DICT = {
   how_to_play: { es: 'Cómo Jugar', en: 'How to Play' },
   docs_link: { es: 'Documentación', en: 'Docs' },
   wallet_optional: { es: 'Opcional — podés jugar sin billetera por ahora.', en: 'Optional — you can play without a wallet for now.' },
+  wallet_required_hint: { es: 'Necesitás una billetera Solana para jugar.', en: 'You need a Solana wallet to play.' },
   back: { es: 'Volver', en: 'Back' },
   loot_labels: { es: 'Loot', en: 'Loot' },
   spec_hint: { es: 'Arrastrá para mirar · WASD/flechas', en: 'Drag to look · WASD/arrows' },
