@@ -66,6 +66,8 @@ class Net {
         else if (m.t === 'nspawn' || m.t === 'ndeplete' || m.t === 'ngather') this._emit(m.t, m)
         // cofres autoritativos (compartidos por canal)
         else if (m.t === 'cspawn' || m.t === 'copen' || m.t === 'cloot') this._emit(m.t, m)
+        // oro AUTORITATIVO del servidor (faucet: kill/cofre/misión) — push con el nuevo saldo
+        else if (m.t === 'gold') this._emit('gold', m)
         // muerte / reaparición de otros jugadores (co-op)
         else if (m.t === 'pdied' || m.t === 'palive') this._emit(m.t, m)
         // equipo visible de otro jugador (cambió su gear)
@@ -109,6 +111,17 @@ class Net {
   attack(eid) { this._send({ t: 'atk', eid }) }              // pedir ataque a un enemigo del server
   gather(nid) { this._send({ t: 'gather', nid }) }           // pedir juntar un nodo de recurso
   openChest(cid) { this._send({ t: 'openchest', cid }) }     // pedir abrir un cofre del server
+
+  // --- Economía: oro autoritativo del servidor (Fase A). Los faucets del mundo (kill/cofre) llegan
+  // por el push 'gold'; estos son los pedidos del cliente (sinks + faucets secundarios) con su ack.
+  async sellReq(id, count) { this._send({ t: 'sell', id, count }); return this._once('sellack') }
+  async buyReq(id) { this._send({ t: 'buy', id }); return this._once('buyack') }
+  async spendReq(amount, reason) { this._send({ t: 'spend', amount, reason }); return this._once('spendack') }
+  async claimMissionReq(id) { this._send({ t: 'claimmission', id }); return this._once('claimack') }
+  async claimQuestReq(id) { this._send({ t: 'claimquest', id }); return this._once('claimack') }
+  async sealChestReq(level) { this._send({ t: 'sealchest', level }); return this._once('sealack') }
+  async dropGraveReq() { this._send({ t: 'dropgrave' }); return this._once('graveack') }
+  async recoverGraveReq() { this._send({ t: 'recovergrave' }); return this._once('graveack') }
   dead() { this._send({ t: 'pdead' }) }                      // avisar que morí (co-op)
   alive(x, y, dir) { this._send({ t: 'palive', x, y, dir }) }  // avisar que reaparecí
 

@@ -14,6 +14,12 @@
 // velocidad/colisión acá mismo sin tocar el protocolo.
 
 import * as combat from './combat.js'
+import * as db from '../db/db.js'
+import { priceOf, sellValueOf } from '../../shared/items.js'
+import { dailyMissions, todayStr } from '../../shared/missions.js'
+import { rollLoot } from '../../shared/loot.js'
+
+const GRAVE_FRACTION = 0.25   // fracción del oro que soltás al morir (coincide con GRAVE_GOLD_FRACTION del cliente)
 
 const CHANNEL_CAP = Number(process.env.CHANNEL_CAP || 50)   // tope de jugadores por canal
 const AOI_RADIUS = Number(process.env.AOI_RADIUS || 24)     // radio de interés, en tiles
@@ -88,7 +94,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, map, x, y, dir = 7, channel, spectator, gfx, accountId } = {}) {
+export function join(send, { name, race, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0 } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -103,7 +109,9 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator,
     return { id, channel: ch, present, spectator: true }
   }
   const ch = pickChannel(map, channel)
-  const p = { id, name: name || 'Vigilante', race: race || null, map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, send }
+  // `gold` es AUTORITATIVO del servidor a partir de acá (Fase A de la economía): se carga del
+  // personaje al entrar y sólo lo mutan las funciones de abajo (faucets del mundo + sinks validados).
+  const p = { id, name: name || 'Vigilante', race: race || null, map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, gold: Math.floor(Number(gold) || 0), send }
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
@@ -151,6 +159,7 @@ export function leave(id) {
   if (observers.delete(id)) return
   const p = players.get(id)
   if (!p) return
+  persistGold(p)                 // guarda el oro autoritativo antes de soltar la sesión
   players.delete(id)
   combat.dropPlayer(id)
   broadcast(p.map, p.ch, { t: 'leave', id }, id)
@@ -164,6 +173,122 @@ export function gather(id, nid) { combat.playerGather(id, nid) }
 export function openChest(id, cid) { combat.playerOpenChest(id, cid) }
 // El cliente envía sus stats de combate (dependen del equipo) para que el server tire el daño.
 export function setStats(id, stats) { combat.setStats(id, stats) }
+
+// --- Oro AUTORITATIVO del servidor (Fase A de la economía) -----------------------------------
+// El servidor es la única fuente de verdad del oro. Los faucets (matar, cofre) los acredita él con
+// montos que él calcula; los sinks (vender/comprar/reparar) los valida contra los precios REALES.
+// El cliente nunca afirma su saldo: pide, el server decide, y le manda el nuevo total ('gold').
+function sendGold(p, add, reason, x, y) {
+  const msg = { t: 'gold', gold: p.gold, add: add | 0, reason }
+  if (x != null) { msg.x = x; msg.y = y }
+  p.send(msg)
+  p._goldDirty = true
+}
+// Acredita oro ganado del mundo (monto ya calculado por el server: kill/cofre).
+export function awardGold(id, amt, reason, x, y) {
+  const p = players.get(id); if (!p || !(amt > 0)) return 0
+  p.gold += Math.floor(amt)
+  sendGold(p, Math.floor(amt), reason || 'earn', x, y)
+  return p.gold
+}
+// Gasta oro (sink genérico: reparar / ofrenda). Falla si no alcanza. El saldo nunca queda negativo.
+export function spendGold(id, amt, reason) {
+  const p = players.get(id); if (!p) return { ok: false }
+  amt = Math.floor(Number(amt) || 0)
+  if (amt <= 0) return { ok: false, error: 'monto inválido' }
+  if (p.gold < amt) return { ok: false, error: 'no tenés tanto oro', gold: p.gold }
+  p.gold -= amt
+  p._goldDirty = true            // el nuevo saldo viaja en el ack del RPC (no se empuja aparte)
+  return { ok: true, gold: p.gold }
+}
+// Vender un ítem al mercader: el VALOR lo computa el server desde el precio real (no el cliente).
+// (Todavía no valida posesión del ítem: eso es autoridad de inventario, la fase siguiente.)
+export function sellItem(id, itemId, count) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const n = Math.max(1, Math.floor(Number(count) || 1))
+  const gain = sellValueOf(itemId) * n
+  p.gold += gain
+  p._goldDirty = true
+  return { ok: true, gold: p.gold, gain }
+}
+// Comprar un ítem al mercader: el COSTO lo computa el server desde el precio real.
+export function buyItem(id, itemId) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const cost = priceOf(itemId)
+  if (cost <= 0) return { ok: false, error: 'ítem inválido' }
+  if (p.gold < cost) return { ok: false, error: 'no tenés tanto oro', gold: p.gold }
+  p.gold -= cost
+  p._goldDirty = true
+  return { ok: true, gold: p.gold, cost }
+}
+// Oro autoritativo actual de una cuenta con sesión activa (o null). Lo usa el handler `save` para
+// no dejar que el blob del cliente pise el oro del server.
+export function goldOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return p.gold
+  return null
+}
+// Persiste el oro autoritativo al personaje (al salir). setCharacterGold preserva el resto del blob.
+async function persistGold(p) {
+  if (!p || !p.accountId || !p._goldDirty) return
+  p._goldDirty = false
+  try { await db.setCharacterGold(p.accountId, p.gold) } catch {}
+}
+
+// --- Faucets secundarios (computados por el server desde datos COMPARTIDOS) ------------------
+// Reclamar una misión diaria: el oro se computa del set determinístico del día (shared/missions),
+// no del cliente, y se acredita UNA vez por día. La COMPLETITUD sigue siendo client-side por ahora
+// (mission-authority es una fase posterior) — esto acota el exploit a las 3 dailies fijas.
+export function claimMission(id, missionId) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const m = dailyMissions().find((x) => x.id === missionId)
+  if (!m) return { ok: false, error: 'misión inválida' }
+  const day = todayStr()
+  if (!p._claimed || p._claimed.day !== day) p._claimed = { day, set: new Set() }
+  if (p._claimed.set.has(missionId)) return { ok: false, error: 'ya reclamada', gold: p.gold }
+  p._claimed.set.add(missionId)
+  const gold = m.gold || 0
+  if (gold > 0) { p.gold += gold; p._goldDirty = true }
+  return { ok: true, gold: p.gold, add: gold }
+}
+// Cofre de sellos: el server tira el loot de la tabla COMPARTIDA (shared/loot) y acredita el ORO.
+// Los ítems van en la respuesta (el cliente los mete al inventario). El costo en SELLOS lo maneja
+// el cliente (los sellos son moneda premium NO-cripto, todavía client-side).
+export function sealChest(id, level) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const lvl = Math.max(4, Math.min(16, Math.floor(Number(level) || 4)))
+  const roll = rollLoot('chest_level_' + lvl) || { gold: 0, drops: [] }
+  const gold = roll.gold || 0
+  if (gold > 0) { p.gold += gold; p._goldDirty = true }
+  return { ok: true, gold: p.gold, add: gold, drops: roll.drops || [] }
+}
+// Al MORIR soltás una fracción de tu oro en una tumba (server-authoritative): el server descuenta y
+// lo guarda como "oro de tumba" pendiente; al recuperar la tumba, te lo devuelve. La granularidad
+// por-tumba de los ÍTEMS la maneja el cliente; para el oro alcanza un pendiente único.
+export function dropGrave(id) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const drop = Math.floor(p.gold * GRAVE_FRACTION)
+  if (drop > 0) { p.gold -= drop; p._grave = (p._grave || 0) + drop; p._goldDirty = true }
+  return { ok: true, gold: p.gold, dropped: drop }
+}
+export function recoverGrave(id) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const g = p._grave || 0
+  if (g > 0) { p.gold += g; p._grave = 0; p._goldDirty = true }
+  return { ok: true, gold: p.gold, recovered: g }
+}
+// Recompensa de quest narrativa (montos fijos; el cliente trackea la bandera de completado). Hay
+// pocas y son de una sola vez, así que el oro se acota a estos valores fijos, una vez cada uno.
+// (Duplica el reward de client/data/quests.js — es 1 entrada; si cambia, tocar los dos.)
+const QUEST_GOLD = { guardianes: 150 }
+export function claimQuest(id, questId) {
+  const p = players.get(id); if (!p) return { ok: false }
+  if (!p._qclaimed) p._qclaimed = new Set()
+  if (p._qclaimed.has(questId)) return { ok: false, error: 'ya reclamada', gold: p.gold }
+  p._qclaimed.add(questId)
+  const gold = QUEST_GOLD[questId] || 0
+  if (gold > 0) { p.gold += gold; p._goldDirty = true }
+  return { ok: true, gold: p.gold, add: gold }
+}
 
 // Equipo visible: el cliente manda sus capas de paperdoll; se guardan y se difunden al canal
 // para que los demás te vean con tu gear (antes se veían todos con el cuerpo base).
@@ -199,6 +324,7 @@ combat.init({
   getPlayer: (id) => players.get(id) || null,
   sendTo: (id, msg) => { const p = players.get(id); if (p) p.send(msg) },
   broadcast: (map, ch, msg) => broadcast(map, ch, msg, null),
+  awardGold: (id, amt, reason, x, y) => awardGold(id, amt, reason, x, y),   // faucets del mundo (kill/cofre)
 })
 combat.start()
 

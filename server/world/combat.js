@@ -182,7 +182,7 @@ function spawnEnemy(map, sp) {
   const st = enemyStats(sprite, level)
   return {
     i: eidSeq++, s: sprite, lv: level, x: tile.x + 0.5, y: tile.y + 0.5, d: 7,
-    hp: st.hpMax, hpm: st.hpMax, dmg: st.damage, xp: st.xp,
+    hp: st.hpMax, hpm: st.hpMax, dmg: st.damage, xp: st.xp, gold: st.gold,
     rng: isRanged(sprite), atkCd: 0, home: { x: tile.x, y: tile.y }, sp,
   }
 }
@@ -198,7 +198,7 @@ function spawnElite(md, sprite, contractId) {
   const hp = Math.round(st.hpMax * 1.6)
   return {
     i: eidSeq++, s: sprite, lv: ELITE_LEVEL, x: t.x + 0.5, y: t.y + 0.5, d: 7,
-    hp, hpm: hp, dmg: Math.round(st.damage * 1.3), xp: st.xp + 40,
+    hp, hpm: hp, dmg: Math.round(st.damage * 1.3), xp: st.xp + 40, gold: Math.round(st.gold * 2.5),
     rng: isRanged(sprite), atkCd: 0, home: { x: t.x, y: t.y }, sp: null,
     el: true, contract: contractId,
   }
@@ -306,7 +306,10 @@ export function playerOpenChest(pid, cid) {
   w.chestDead.push({ x: c.x, y: c.y, loot: c.loot, at: now() + respawnDelay(w, CHEST_RESPAWN, MIN_CHEST_RESPAWN) * 1000 })
   ctx.broadcast(w.map, w.ch, { t: 'copen', c: cid, by: pid })
   const roll = hasLootTable(c.loot) ? rollLoot(c.loot) : { gold: 0, drops: [] }
-  ctx.sendTo(pid, { t: 'cloot', c: cid, x: c.x, y: c.y, gold: roll.gold || 0, drops: roll.drops || [] })
+  // Oro del cofre AUTORITATIVO del server; los ítems siguen instanciados en el cliente. `cloot` ya
+  // no lleva oro (el cliente lo recibe por el mensaje 'gold').
+  if (roll.gold > 0 && ctx.awardGold) ctx.awardGold(pid, roll.gold, 'chest', c.x, c.y)
+  ctx.sendTo(pid, { t: 'cloot', c: cid, x: c.x, y: c.y, drops: roll.drops || [] })
 }
 
 // --- stats de combate del jugador (las envía el cliente) ------------------------------------
@@ -375,7 +378,11 @@ function killEnemy(w, e, killerId) {
   if (e.el) w.dead.push({ el: true, sprite: e.s, contract: e.contract, at: now() + RESPAWN * 3 * 1000 })
   else w.dead.push({ sp: e.sp, at: now() + respawnDelay(w, RESPAWN, MIN_RESPAWN) * 1000 })
   ctx.broadcast(w.map, w.ch, { t: 'edie', i: e.i, by: killerId })
-  // Aviso al matador: XP autoritativa del server; el loot/oro lo tira él local (instanciado).
+  // Oro AUTORITATIVO del servidor (Fase A): lo acredita el server (con una variación ±30% para que
+  // se sienta vivo) y le manda el nuevo total al matador; el cliente sólo muestra la pila cosmética.
+  if (e.gold > 0 && ctx.awardGold) ctx.awardGold(killerId, Math.max(1, Math.round(e.gold * (0.7 + Math.random() * 0.6))), 'kill', e.x, e.y)
+  // Aviso al matador: XP autoritativa del server. El botín de ítems sigue instanciado en el cliente
+  // (la autoridad de inventario es una fase posterior).
   const ek = { t: 'ekill', i: e.i, xp: e.xp, sprite: e.s, lv: e.lv }
   if (e.contract) ek.contract = e.contract   // acredita la misión Contrato del que lo mata
   ctx.sendTo(killerId, ek)

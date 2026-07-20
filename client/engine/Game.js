@@ -387,6 +387,7 @@ export class Game {
     net.on('cspawn', (m) => this._onCspawn(m))
     net.on('copen', (m) => this._onCopen(m))
     net.on('cloot', (m) => this._onCloot(m))
+    net.on('gold', (m) => this._onGold(m))   // oro autoritativo del server (faucet kill/cofre)
     // Muerte / reaparición de otros jugadores (co-op).
     net.on('pdied', (m) => { const r = this.remotes?.get(m.id); if (r) r.setDead(true) })
     net.on('palive', (m) => { const r = this.remotes?.get(m.id); if (r) { r.setTarget(m.x, m.y, m.dir); r.tx = m.x; r.ty = m.y; r.setDead(false) } })
@@ -681,10 +682,11 @@ export class Game {
       this.store.openDialogue({ name: nm, portrait: null, lines: [tt('guardians_wake')] })
       return
     }
-    const res = this.store.deliverOffering()
-    if (!res.ok && res.reason === 'none') {
-      this.store.openDialogue({ name: tt('offering_sleep_name'), portrait: null, lines: [tt('offering_sleep_l1'), tt('offering_sleep_l2')] })
-    }
+    Promise.resolve(this.store.deliverOffering()).then((res) => {
+      if (res && !res.ok && res.reason === 'none') {
+        this.store.openDialogue({ name: tt('offering_sleep_name'), portrait: null, lines: [tt('offering_sleep_l1'), tt('offering_sleep_l2')] })
+      }
+    })
   }
 
   _inspectCorpse(e) {
@@ -921,7 +923,9 @@ export class Game {
     const mf = this.store.getStats()?.itemFind || 0
     const lvl = Math.max(1, Math.min(16, this.store.getPlayerLevel?.() || 1))
     const roll = rollMonsterDrop(lvl, false, mf)
-    if (roll.gold > 0) this._dropGold(b.x, b.y, roll.gold)
+    // Online los barriles NO dan oro (son props del cliente, no los trackea el server: dar oro acá
+    // sería oro no-autoritativo). Offline sí. Los ítems siguen client-side (fase de inventario luego).
+    if (roll.gold > 0 && !this._online) this._dropGold(b.x, b.y, roll.gold)
     if (roll.drops.length) this._dropItems(b.x, b.y, roll.drops)
   }
 
@@ -994,13 +998,23 @@ export class Game {
   }
 
   // Suelta una PILA de oro VISIBLE en el suelo (Diablo). Se recoge al pasarle por encima.
-  _dropGold(cx, cy, amount) {
+  // `cosmetic`=true (online): el server ya acreditó el oro, la pila es SÓLO visual (no re-acredita).
+  _dropGold(cx, cy, amount, cosmetic = false) {
     if (!(amount > 0)) return
     const [tx, ty] = this._scatterTiles(cx, cy, 1)[0] || [cx, cy]
     const gi = new GroundItem(this.iso, tx, ty, { gold: amount, icon: 0 }, 1, '#e6c85a')
+    gi.cosmetic = cosmetic
     gi.onTap((g) => this._tapGroundItem(g))
     this.renderer.objectLayer.addChild(gi.view)
     this.groundItems.push(gi)
+  }
+
+  // Oro AUTORITATIVO del servidor (Fase A): setea el saldo espejo y muestra la pila cosmética +
+  // "+N" donde cayó (kill/cofre). El saldo NUNCA lo decide el cliente online.
+  _onGold(m) {
+    if (typeof m.gold === 'number') this.store.setGold(m.gold)
+    if (m.add > 0 && m.x != null) this._dropGold(m.x, m.y, m.add, true)
+    else if (m.add > 0 && this.player) this._floatText(this.player.view.x, this.player.view.y - 60, `+${m.add}`, '#e6c85a')
   }
 
   // Click en un loot del suelo: el jugador camina hasta él. El oro se recoge al pasar; los ítems,
@@ -1014,7 +1028,7 @@ export class Game {
   // Recoge una pila de oro (al pasarle por encima): suma el oro y la saca del suelo.
   _pickupGold(gi) {
     if (gi.picked) return
-    this.store.addGold(gi.gold)
+    if (!gi.cosmetic) this.store.addGold(gi.gold)   // online la pila es cosmética: el server ya acreditó
     this._floatText(gi.view.x, gi.view.y - 16, `+${gi.gold}`, '#e6c85a')
     playSfx('flying_loot.ogg')
     gi.picked = true
@@ -1485,7 +1499,9 @@ export class Game {
     const mf = this.store.getStats()?.itemFind || 0
     const roll = rollMonsterDrop(lvl, boss, mf)
     const gx = e ? Math.round(e.tx) : Math.round(this.player.tx), gy = e ? Math.round(e.ty) : Math.round(this.player.ty)
-    if (roll.gold > 0) this._dropGold(gx, gy, roll.gold)
+    // Online el ORO lo acredita el server (llega por 'gold' + pila cosmética); acá sólo el oro
+    // offline. Los ítems siguen instanciados en el cliente en ambos casos.
+    if (roll.gold > 0 && !this._online) this._dropGold(gx, gy, roll.gold)
     if (roll.drops.length) this._dropItems(gx, gy, roll.drops)
   }
 
@@ -1649,10 +1665,13 @@ export class Game {
   // Recupera una tumba (vuelca su contenido al inventario). Si el inventario está lleno, la
   // tumba queda con lo que no entró (reintenta con un pequeño cooldown, sin spamear avisos).
   _recoverGrave(m) {
-    if (m._cd > 0) return
-    const ok = this.store.recoverGrave(m.grave.id)
-    if (ok) { m.taken = true; m.destroy(); this._publishGraves() }
-    else { m._cd = 1.8 }   // inventario lleno: reintenta más tarde
+    if (m._cd > 0 || m._recovering) return
+    m._recovering = true   // recoverGrave es async (online pide el oro al server): evitar reentradas
+    Promise.resolve(this.store.recoverGrave(m.grave.id)).then((ok) => {
+      m._recovering = false
+      if (ok) { m.taken = true; m.destroy(); this._publishGraves() }
+      else { m._cd = 1.8 }   // inventario lleno: reintenta más tarde
+    })
   }
 
   _respawn() {

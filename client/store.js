@@ -12,6 +12,11 @@ import { unlockedAbilities } from './data/abilities.js'
 import { net, ONLINE } from './net/net.js'
 import { rollLoot } from '../shared/loot.js'
 
+// Online = build online (VITE_WS_URL o no-localhost) Y socket conectado. Cuando es true, el ORO es
+// autoritativo del servidor (Fase A): los flujos de oro piden al server y espejan el saldo. Cuando
+// es false (server caído / modo pruebas), el oro es local.
+const isOnline = () => ONLINE && net.connected
+
 const FORGE_MAX = 5        // nivel máximo de mejora por pieza
 const SEAL_CHEST_COST = 6  // sellos por cofre de sellos (loot box premium)
 const GRAVE_GOLD_FRACTION = 0.25 // fracción del oro que dejás en la tumba al morir
@@ -410,17 +415,16 @@ export const useGameStore = create((set, get) => ({
   },
 
   // Repara todo el equipo (el herrero cobra oro).
-  repairAll: () => {
-    const s = get()
+  repairAll: async () => {
     const cost = get().repairCost()
     if (cost <= 0) { get().showToast(tt('gear_impeccable')); return { ok: false } }
-    if (s.gold < cost) { get().showToast(tt('no_gold_repair')); return { ok: false } }
-    const eq = { ...s.equipment }
-    for (const sl of Object.keys(eq)) {
-      if (isDurable(eq[sl])) eq[sl] = { ...eq[sl], dur: durabilityMax(eq[sl]) }
-    }
-    set({ equipment: eq, gold: s.gold - cost })
-    get().recomputeStats()
+    if (get().gold < cost) { get().showToast(tt('no_gold_repair')); return { ok: false } }
+    const r = await get()._spend(cost, 'repair', () => {
+      const eq = { ...get().equipment }
+      for (const sl of Object.keys(eq)) if (isDurable(eq[sl])) eq[sl] = { ...eq[sl], dur: durabilityMax(eq[sl]) }
+      set({ equipment: eq }); get().recomputeStats()
+    })
+    if (!r.ok) { get().showToast(tt('no_gold_repair')); return { ok: false } }
     get().showToast(tt('gear_repaired', { n: cost }))
     saveGame(get())
     return { ok: true }
@@ -433,7 +437,7 @@ export const useGameStore = create((set, get) => ({
     return { crystals: 2 + up, gold: 60 + (it.tier || 1) * 10 + up * 50, max: up >= FORGE_MAX }
   },
   // Mejora la pieza del slot dado: +1 a su nivel de forja (más defensa/daño). Gasta materiales.
-  upgradeGear: (slot) => {
+  upgradeGear: async (slot) => {
     const s = get()
     const it = s.equipment[slot]
     if (!isDurable(it)) return { ok: false }
@@ -443,18 +447,19 @@ export const useGameStore = create((set, get) => ({
     const haveCrystal = get().countItem(752)
     if (haveCrystal < c.crystals) { get().showToast(tt('forge_need_crystals', { n: c.crystals })); return { ok: false } }
     if (s.gold < c.gold) { get().showToast(tt('forge_need_gold', { n: c.gold })); return { ok: false } }
-    // consumir cristales del inventario
-    let left = c.crystals
-    const inv = s.inventory.slice()
-    for (let i = 0; i < inv.length && left > 0; i++) {
-      const x = inv[i]; if (!x || x.id !== 752) continue
-      const take = Math.min(x.count || 1, left); left -= take
-      inv[i] = (x.count || 1) - take > 0 ? { ...x, count: (x.count || 1) - take } : null
-    }
-    const eq = { ...s.equipment, [slot]: { ...it, upgrade: up + 1 } }
-    set({ inventory: inv, equipment: eq, gold: s.gold - c.gold })
-    get().addSkillXp('forja', 16)
-    get().recomputeStats()
+    const r = await get()._spend(c.gold, 'forge', () => {
+      // consumir cristales + subir la pieza (efecto local; el inventario aún es client-side)
+      let left = c.crystals
+      const inv = get().inventory.slice()
+      for (let i = 0; i < inv.length && left > 0; i++) {
+        const x = inv[i]; if (!x || x.id !== 752) continue
+        const take = Math.min(x.count || 1, left); left -= take
+        inv[i] = (x.count || 1) - take > 0 ? { ...x, count: (x.count || 1) - take } : null
+      }
+      set({ inventory: inv, equipment: { ...get().equipment, [slot]: { ...it, upgrade: up + 1 } } })
+      get().addSkillXp('forja', 16); get().recomputeStats()
+    })
+    if (!r.ok) { get().showToast(tt('forge_need_gold', { n: c.gold })); return { ok: false } }
     get().showToast(tt('forge_done', { name: itemName(it), n: up + 1 }))
     saveGame(get())
     return { ok: true }
@@ -478,6 +483,18 @@ export const useGameStore = create((set, get) => ({
 
   setRace: (race) => set({ race }),
   setGold: (gold) => set({ gold }),
+
+  // Helper de SINK: online lo cobra el server (spendReq, valida saldo) y espeja el nuevo total;
+  // offline resta local. `apply()` hace el efecto (reparar/mejorar/respec/ofrenda). { ok }.
+  _spend: async (cost, reason, apply) => {
+    if (isOnline()) {
+      const r = await net.spendReq(cost, reason).catch(() => null)
+      if (!r || !r.ok) return { ok: false }
+      apply(); set({ gold: r.gold }); return { ok: true }
+    }
+    if (get().gold < cost) return { ok: false }
+    apply(); set({ gold: get().gold - cost }); return { ok: true }
+  },
   setPanel: (panel) => set({ panel }),
   togglePanel: (p) => set((s) => ({ panel: s.panel === p ? null : p })),
   toggleLootLabels: () => set((s) => ({ lootLabels: !s.lootLabels })),
@@ -583,13 +600,15 @@ export const useGameStore = create((set, get) => ({
   },
   // Reinicia atributos y árbol (devuelve todos los puntos). Cuesta oro.
   respecCost: () => 50 + (get().stats?.level || 1) * 25,
-  respec: () => {
+  respec: async () => {
     const s = get()
     if (attrSpent(s.attrAlloc) === 0 && skillSpent(s.skillRanks) === 0) { get().showToast(tt('respec_nothing')); return { ok: false } }
     const cost = get().respecCost()
     if (s.gold < cost) { get().showToast(tt('respec_no_gold', { n: cost })); return { ok: false } }
-    set({ attrAlloc: { str: 0, dex: 0, int: 0, vit: 0 }, skillRanks: {}, gold: s.gold - cost })
-    get().recomputeStats()
+    const r = await get()._spend(cost, 'respec', () => {
+      set({ attrAlloc: { str: 0, dex: 0, int: 0, vit: 0 }, skillRanks: {} }); get().recomputeStats()
+    })
+    if (!r.ok) { get().showToast(tt('respec_no_gold', { n: cost })); return { ok: false } }
     get().showToast(tt('respec_done', { n: cost }))
     saveGame(get())
     return { ok: true }
@@ -615,6 +634,10 @@ export const useGameStore = create((set, get) => ({
 
   // Agrega oro (loot). El gremio da +oro de botín (ventaja de nivel 1): se aplica el multiplicador.
   addGold: (n) => {
+    // Online el ORO es autoritativo del servidor: los faucets van por sus RPCs (claimMission /
+    // openSealChest / etc.) y el saldo lo setea el ack/push. addGold local queda no-op para no
+    // desincronizar. Offline (modo pruebas) sí acredita local.
+    if (isOnline()) return
     const s = get()
     const mul = (n > 0 && s.stats?.guildGoldMul) || 1
     set({ gold: s.gold + Math.round((n | 0) * mul) })
@@ -837,12 +860,15 @@ export const useGameStore = create((set, get) => ({
     saveGame(get())
   },
   // Reclama la recompensa de una misión completada (XP + oro + sellos). Una sola vez.
-  claimMission: (i) => {
+  claimMission: async (i) => {
     const s = get(); const m = s.missions[i]
     if (!m || m.claimed || m.progress < m.target) return
     const missions = s.missions.slice(); missions[i] = { ...m, claimed: true }
     set({ missions })
-    get().addXp(m.xp); if (m.gold) get().addGold(m.gold); if (m.seals) get().addSeals(m.seals)
+    get().addXp(m.xp); if (m.seals) get().addSeals(m.seals)   // XP y sellos son client-side
+    // Oro: online lo acredita el server (computa el monto del set del día); offline, local.
+    if (isOnline()) { const r = await net.claimMissionReq(m.id).catch(() => null); if (r && r.ok && typeof r.gold === 'number') set({ gold: r.gold }) }
+    else if (m.gold) get().addGold(m.gold)
     get().showToast(tt('mission_reward', { xp: m.xp, gold: m.gold || 0, seals: m.seals || 0 }))
     saveGame(get())
   },
@@ -855,15 +881,17 @@ export const useGameStore = create((set, get) => ({
   },
   // Progreso de una ofrenda: entregar oro (lo llama el obelisco al confirmar). Cobra el oro que
   // falta y completa la misión de tipo 'offering'. Devuelve {ok} o motivo.
-  deliverOffering: () => {
+  deliverOffering: async () => {
     const s = get()
     const i = s.missions.findIndex((m) => m.type === 'offering' && !m.claimed && m.progress < m.target)
     if (i < 0) return { ok: false, reason: 'none' }
     const m = s.missions[i]
     const need = m.target - m.progress
     if (s.gold < need) { get().showToast(tt('offering_need', { n: need })); return { ok: false, reason: 'gold' } }
-    const missions = s.missions.slice(); missions[i] = { ...m, progress: m.target }
-    set({ missions, gold: s.gold - need })
+    const r = await get()._spend(need, 'offering', () => {
+      const missions = get().missions.slice(); missions[i] = { ...missions[i], progress: missions[i].target }; set({ missions })
+    })
+    if (!r.ok) { get().showToast(tt('offering_need', { n: need })); return { ok: false, reason: 'gold' } }
     get().showToast(tt('offering_done'))
     saveGame(get())
     return { ok: true }
@@ -872,29 +900,34 @@ export const useGameStore = create((set, get) => ({
   // Cofre de sellos (sumidero premium): gasta sellos y abre un cofre con loot bueno. Devuelve
   // los ítems que cayeron para que el loop los pinte, o {ok:false} con el motivo.
   sealChestCost: () => SEAL_CHEST_COST,
-  openSealChest: () => {
+  openSealChest: async () => {
     const s = get()
     if ((s.seals || 0) < SEAL_CHEST_COST) { get().showToast(tt('seal_need', { n: SEAL_CHEST_COST })); return { ok: false } }
     const lvl = Math.max(4, Math.min(16, (s.stats?.level || 1) + 2))  // loot un pelín por encima del nivel
-    const roll = rollLoot('chest_level_' + lvl)
-    set({ seals: s.seals - SEAL_CHEST_COST })
-    if (roll.gold) get().addGold(roll.gold)
-    // Los ítems entran al inventario; si está lleno, se avisa.
+    set({ seals: s.seals - SEAL_CHEST_COST })   // los sellos son moneda premium NO-cripto: client-side
+    // Oro + drops: online los computa el server (tabla de loot compartida); offline, roll local.
+    let gold = 0, drops = []
+    if (isOnline()) {
+      const r = await net.sealChestReq(lvl).catch(() => null)
+      if (r && r.ok) { if (typeof r.gold === 'number') set({ gold: r.gold }); gold = r.add || 0; drops = r.drops || [] }
+    } else {
+      const roll = rollLoot('chest_level_' + lvl); gold = roll.gold || 0; drops = roll.drops || []; if (gold) get().addGold(gold)
+    }
     const got = []
-    for (const d of roll.drops) {
+    for (const d of drops) {
       const it = itemById(d.id); if (!it) continue
       if (get().addItem(it, d.qty)) got.push(itemName(it) + (d.qty > 1 ? ' ×' + d.qty : ''))
     }
     get().showToast(got.length ? tt('seal_chest_got', { items: got.join(', ') }) : tt('seal_chest_empty'))
     saveGame(get())
-    return { ok: true, gold: roll.gold, items: got }
+    return { ok: true, gold, items: got }
   },
 
   // --- quests narrativas (banderas de estado, estilo Flare) ---
   questFlags: {},           // { flag: true } — estado del mundo para las quests (persistido)
   hasQuestFlag: (f) => !!get().questFlags[f],
   // Pone una bandera de quest. Si con eso se completa una quest, entrega su recompensa una vez.
-  setQuestFlag: (flag) => {
+  setQuestFlag: async (flag) => {
     const s = get()
     if (!flag || s.questFlags[flag]) return false
     const questFlags = { ...s.questFlags, [flag]: true }
@@ -903,8 +936,10 @@ export const useGameStore = create((set, get) => ({
     if (done) {
       const r = done.reward || {}
       if (r.xp) get().addXp(r.xp)
-      if (r.gold) get().addGold(r.gold)
       if (r.seals) get().addSeals(r.seals)
+      // Oro: online lo acredita el server (monto fijo por quest); offline, local.
+      if (isOnline()) { const rr = await net.claimQuestReq(done.id).catch(() => null); if (rr && rr.ok && typeof rr.gold === 'number') set({ gold: rr.gold }) }
+      else if (r.gold) get().addGold(r.gold)
       get().showToast(tt('quest_done', { name: questName(done) }))
       get().logMessage({ channel: 'sistema', text: tt('quest_reward', { xp: r.xp || 0, gold: r.gold || 0, seals: r.seals || 0 }) })
     } else {
@@ -935,7 +970,7 @@ export const useGameStore = create((set, get) => ({
   getGravesInZone: (zone) => (get().graves || []).filter((g) => g.zone === zone),
   // Al morir: vuelca el inventario + una fracción del oro a una tumba en (zone,tx,ty). El
   // equipo y el cinturón NO se pierden. Devuelve true si dejó algo.
-  createGrave: (zone, tx, ty) => {
+  createGrave: async (zone, tx, ty) => {
     const s = get()
     const inv = s.inventory.slice()
     const items = []
@@ -948,22 +983,31 @@ export const useGameStore = create((set, get) => ({
       items.push(rec)
       inv[i] = null
     }
-    const goldDrop = Math.floor((s.gold || 0) * GRAVE_GOLD_FRACTION)
+    let goldDrop = Math.floor((s.gold || 0) * GRAVE_GOLD_FRACTION)
     if (!items.length && goldDrop <= 0) return false
     const id = (s._graveId || 0) + 1
-    const grave = { id, zone, tx, ty, items, gold: goldDrop }
-    set({ inventory: inv, gold: s.gold - goldDrop, graves: [...(s.graves || []), grave], _graveId: id })
+    // Oro: online el server descuenta la fracción (autoritativo) y guarda el pendiente; usamos su
+    // monto para la tumba. Offline, resta local. Los ÍTEMS siguen en la tumba client-side.
+    if (isOnline()) {
+      const r = await net.dropGraveReq().catch(() => null)
+      if (r && r.ok) { if (typeof r.gold === 'number') set({ gold: r.gold }); goldDrop = r.dropped || 0 } else goldDrop = 0
+      set({ inventory: inv, graves: [...(get().graves || []), { id, zone, tx, ty, items, gold: goldDrop }], _graveId: id })
+    } else {
+      set({ inventory: inv, gold: s.gold - goldDrop, graves: [...(s.graves || []), { id, zone, tx, ty, items, gold: goldDrop }], _graveId: id })
+    }
     saveGame(get())
     return true
   },
   // Recupera una tumba: devuelve el oro y mete los ítems al inventario (respeta capacidad).
   // Devuelve true si entró TODO (y borra la tumba); false si el inventario se llenó (queda
   // la tumba con lo que no entró).
-  recoverGrave: (id) => {
+  recoverGrave: async (id) => {
     const s = get()
     const grave = (s.graves || []).find((g) => g.id === id)
     if (!grave) return true
-    if (grave.gold) set({ gold: get().gold + grave.gold })
+    // Oro: online lo devuelve el server (el pendiente que guardó al morir); offline, local.
+    if (isOnline()) { const r = await net.recoverGraveReq().catch(() => null); if (r && r.ok && typeof r.gold === 'number') set({ gold: r.gold }) }
+    else if (grave.gold) set({ gold: get().gold + grave.gold })
     const leftover = []
     for (const rec of grave.items) {
       const base = itemById(rec.id)
@@ -1020,30 +1064,49 @@ export const useGameStore = create((set, get) => ({
 
   // Compra un ítem del mercado del día (precio completo). Sin límite de stock: el catálogo es
   // compartido y todos pueden comprar los mismos ítems mientras tengan oro.
-  buyItem: (stockIndex) => {
+  // Comprar al mercader. Online: el COSTO lo cobra el server (oro autoritativo) y el saldo llega en
+  // el ack; el ítem se agrega local (inventario aún client-side). Offline: todo local.
+  buyItem: async (stockIndex) => {
     const s = get()
     const item = s.shopStock[stockIndex]
     if (!item) return { ok: false, reason: 'no-item' }
     const price = item.price || 0
-    if (s.gold < price) return { ok: false, reason: 'no-gold' }
     const clean = { ...item }; delete clean.stock
+    if (isOnline()) {
+      const before = get().inventory
+      if (!get().addItem(clean, 1)) return { ok: false, reason: 'full' }   // reservar espacio antes de gastar
+      const r = await net.buyReq(item.id).catch(() => null)
+      if (!r || !r.ok) { set({ inventory: before }); return { ok: false, reason: 'no-gold' } }   // rollback
+      if (typeof r.gold === 'number') set({ gold: r.gold })
+      saveGame(get())
+      return { ok: true }
+    }
+    if (s.gold < price) return { ok: false, reason: 'no-gold' }
     if (!get().addItem(clean, 1)) return { ok: false, reason: 'full' }
     set({ gold: get().gold - price })
     saveGame(get())
     return { ok: true }
   },
 
-  // Vende una unidad de un ítem del inventario al mercader (25% del precio).
-  sellItem: (invIndex) => {
+  // Vende una unidad de un ítem del inventario al mercader (25% del precio). Online: el VALOR lo
+  // computa el server y acredita; acá sólo se saca el ítem del inventario (aún client-side).
+  sellItem: async (invIndex) => {
     const s = get()
     const item = s.inventory[invIndex]
     if (!item) return { ok: false }
+    const removeOne = () => {
+      const inv = get().inventory.slice(); const it = inv[invIndex]; if (!it) return
+      if (it.count && it.count > 1) inv[invIndex] = { ...it, count: it.count - 1 }; else inv[invIndex] = null
+      set({ inventory: inv })
+    }
+    if (isOnline()) {
+      const r = await net.sellReq(item.id, 1).catch(() => null)
+      if (!r || !r.ok) return { ok: false }
+      removeOne(); if (typeof r.gold === 'number') set({ gold: r.gold }); saveGame(get())
+      return { ok: true, gain: r.gain }
+    }
     const gain = sellValue(item)
-    const inv = s.inventory.slice()
-    if (item.count && item.count > 1) inv[invIndex] = { ...item, count: item.count - 1 }
-    else inv[invIndex] = null
-    set({ inventory: inv, gold: s.gold + gain })
-    saveGame(get())
+    removeOne(); set({ gold: get().gold + gain }); saveGame(get())
     return { ok: true, gain }
   },
 
@@ -1109,6 +1172,7 @@ export const storeApi = {
     return { running: s.running, stamina: s.stamina, staminaMax: s.staminaMax }
   },
   addGold: (n) => useGameStore.getState().addGold(n),
+  setGold: (g) => useGameStore.getState().setGold(g),   // espejo del oro autoritativo del server
   addItem: (item, qty) => useGameStore.getState().addItem(item, qty),
   inventoryFull: () => useGameStore.getState().inventory.every((x) => x != null),
   addXp: (n) => useGameStore.getState().addXp(n),

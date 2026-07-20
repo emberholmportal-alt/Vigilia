@@ -93,10 +93,14 @@ wss.on('connection', (ws) => {
 
         case 'save': {
           if (!conn.accountId) return send({ t: 'saved', ok: false, error: 'no autenticado' })
-          // Bajo el lock de la cuenta: serializa el autosave del blob contra los descuentos de oro
-          // del servidor (gremios), que si no se pisan en la ventana entre lectura y escritura.
+          // El ORO es autoritativo del servidor (Fase A): si hay sesión activa, su valor pisa el
+          // del blob del cliente, así un save con oro hackeado no puede setear el saldo. El resto
+          // del blob (inventario, xp, etc.) sigue viniendo del cliente por ahora. Bajo el lock de
+          // la cuenta para serializar contra los descuentos de gremio.
+          const g = rooms.goldOf(conn.accountId)
+          const data = (g == null) ? (m.char || {}) : { ...(m.char || {}), gold: g }
           await db.withAccountLock(conn.accountId, () =>
-            db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data: m.char }))
+            db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data }))
           return send({ t: 'saved', ok: true })
         }
 
@@ -148,9 +152,13 @@ wss.on('connection', (ws) => {
           if (!conn.accountId) return send({ t: 'error', error: 'no autenticado' })
           db.touchAccount(conn.accountId).catch(() => {})   // actividad (jugadores mensuales)
           if (conn.playerId != null) rooms.leave(conn.playerId)
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId })
+          // Oro autoritativo: se carga del personaje al entrar (fuente de verdad server-side).
+          const gold = m.spectator ? 0 : await db.getCharacterGold(conn.accountId)
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold })
           conn.playerId = id
-          return send({ t: 'present', you: id, players: present, map: m.map, channel })
+          send({ t: 'present', you: id, players: present, map: m.map, channel })
+          if (!m.spectator) send({ t: 'gold', gold, reason: 'init' })   // sincroniza el saldo autoritativo
+          return
         }
 
         case 'move': {
@@ -183,6 +191,40 @@ wss.on('connection', (ws) => {
         case 'atk': {        // pedido de ataque a un enemigo (lo valida la simulación)
           if (conn.playerId == null) return
           return rooms.attack(conn.playerId, m.eid)
+        }
+
+        // ---------- Economía: oro autoritativo del servidor (Fase A) ----------
+        case 'sell': {       // vender un ítem al mercader; el VALOR lo computa el server
+          if (conn.playerId == null) return
+          return send({ t: 'sellack', ...rooms.sellItem(conn.playerId, m.id, m.count) })
+        }
+        case 'buy': {        // comprar un ítem al mercader; el COSTO lo computa el server
+          if (conn.playerId == null) return
+          return send({ t: 'buyack', ...rooms.buyItem(conn.playerId, m.id) })
+        }
+        case 'spend': {      // sink genérico: reparar / forjar / respec / ofrenda (el efecto local lo aplica el cliente)
+          if (conn.playerId == null) return
+          return send({ t: 'spendack', reason: m.reason, ...rooms.spendGold(conn.playerId, m.amount, m.reason) })
+        }
+        case 'claimmission': {  // recompensa de misión diaria (oro computado del set del día)
+          if (conn.playerId == null) return
+          return send({ t: 'claimack', ...rooms.claimMission(conn.playerId, m.id) })
+        }
+        case 'sealchest': {  // cofre de sellos: el server tira el loot y acredita el oro
+          if (conn.playerId == null) return
+          return send({ t: 'sealack', ...rooms.sealChest(conn.playerId, m.level) })
+        }
+        case 'claimquest': {  // recompensa de quest narrativa (oro fijo)
+          if (conn.playerId == null) return
+          return send({ t: 'claimack', kind: 'quest', ...rooms.claimQuest(conn.playerId, m.id) })
+        }
+        case 'dropgrave': {  // al morir: soltar la fracción de oro (server-authoritative)
+          if (conn.playerId == null) return
+          return send({ t: 'graveack', kind: 'drop', ...rooms.dropGrave(conn.playerId) })
+        }
+        case 'recovergrave': {  // recuperar el oro de la tumba
+          if (conn.playerId == null) return
+          return send({ t: 'graveack', kind: 'recover', ...rooms.recoverGrave(conn.playerId) })
         }
 
         case 'gather': {     // pedido de juntar un nodo de recurso (lo valida la simulación)
