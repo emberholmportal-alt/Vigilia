@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url'
 import { pickSprite, enemyStats, isRanged, rangedCousin } from '../../shared/bestiary.js'
 import { GATHER } from '../../shared/gather.js'
 import { rollLoot, hasLootTable } from '../../shared/loot.js'
+import { rollMonsterDrop } from '../../shared/drops.js'
 import { todayContract } from '../../shared/missions.js'
 import * as guilds from '../systems/guilds.js'
 
@@ -280,6 +281,8 @@ export function playerGather(pid, nid) {
   w.nodes.delete(nid)
   w.nodeDead.push({ x: nd.x, y: nd.y, at: now() + NODE_RESPAWN * 1000 })
   ctx.broadcast(w.map, w.ch, { t: 'ndeplete', n: nid, by: pid })
+  // El recurso va al bag AUTORITATIVO del server (empuja 'inv'); el cliente sólo aplica la XP de skill.
+  if (ctx.grantLoot) ctx.grantLoot(pid, [{ id: nd.id, qty: 1 }])
   ctx.sendTo(pid, { t: 'ngather', n: nid, id: nd.id, skill: nd.skill })
 }
 
@@ -309,6 +312,8 @@ export function playerOpenChest(pid, cid) {
   // Oro del cofre AUTORITATIVO del server; los ítems siguen instanciados en el cliente. `cloot` ya
   // no lleva oro (el cliente lo recibe por el mensaje 'gold').
   if (roll.gold > 0 && ctx.awardGold) ctx.awardGold(pid, roll.gold, 'chest', c.x, c.y)
+  // Los ítems del cofre van al bag AUTORITATIVO del server (empuja 'inv'); `cloot` es sólo para la animación.
+  if (roll.drops && roll.drops.length && ctx.grantLoot) ctx.grantLoot(pid, roll.drops)
   ctx.sendTo(pid, { t: 'cloot', c: cid, x: c.x, y: c.y, drops: roll.drops || [] })
 }
 
@@ -381,9 +386,13 @@ function killEnemy(w, e, killerId) {
   // Oro AUTORITATIVO del servidor (Fase A): lo acredita el server (con una variación ±30% para que
   // se sienta vivo) y le manda el nuevo total al matador; el cliente sólo muestra la pila cosmética.
   if (e.gold > 0 && ctx.awardGold) ctx.awardGold(killerId, Math.max(1, Math.round(e.gold * (0.7 + Math.random() * 0.6))), 'kill', e.x, e.y)
-  // Aviso al matador: XP autoritativa del server. El botín de ítems sigue instanciado en el cliente
-  // (la autoridad de inventario es una fase posterior).
-  const ek = { t: 'ekill', i: e.i, xp: e.xp, sprite: e.s, lv: e.lv }
+  // Botín de ítems AUTORITATIVO (Fase A.2): el server tira el drop y lo otorga al bag del matador.
+  const boss = /boss|minotaur|elite/.test(e.s)
+  const roll = rollMonsterDrop(e.lv, boss, 0)
+  if (roll.drops.length && ctx.grantLoot) ctx.grantLoot(killerId, roll.drops)
+  // Aviso al matador: XP autoritativa del server + los drops REALES (para la pila cosmética del
+  // cliente; el bag ya lo actualizó el push 'inv'). Así el suelo muestra lo que de verdad cayó.
+  const ek = { t: 'ekill', i: e.i, xp: e.xp, sprite: e.s, lv: e.lv, drops: roll.drops || [] }
   if (e.contract) ek.contract = e.contract   // acredita la misión Contrato del que lo mata
   ctx.sendTo(killerId, ek)
   // Contrato semanal del GREMIO del matador: si la categoría del enemigo matchea, suma al pozo

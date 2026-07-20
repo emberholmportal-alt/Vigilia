@@ -204,6 +204,18 @@ export async function setCharacterGold(accountId, gold) {
   })
 }
 
+// Escribe el inventario (bag) autoritativo del server al blob del personaje, preservando el resto.
+// Bajo el lock de la cuenta para no pisarse con el autosave del cliente.
+export async function setCharacterInventory(accountId, inv) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), inventory: Array.isArray(inv) ? inv : [] }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
+}
+
 export async function findGuildByTag(tag) {
   const t = String(tag).toUpperCase()
   if (pg) return (await pg.query('SELECT * FROM guilds WHERE upper(tag)=$1', [t])).rows[0] || null

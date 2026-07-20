@@ -195,15 +195,19 @@ export const useGameStore = create((set, get) => ({
     saveGame({ ...s, belt })
     return { belt }
   }),
-  // Descuenta un consumible del inventario por índice.
-  consumeInventory: (i) => set((s) => {
-    const it = s.inventory[i]; if (!it) return {}
-    const inv = s.inventory.slice()
-    const cnt = (it.count || 1) - 1
-    inv[i] = cnt > 0 ? { ...it, count: cnt } : null
-    saveGame({ ...s, inventory: inv })
-    return { inventory: inv }
-  }),
+  // Descuenta un consumible del inventario por índice. Online: el server saca 1 del bag autoritativo
+  // (useReq, valida posesión) y espejamos el bag del ack. Offline: local.
+  consumeInventory: (i) => {
+    if (isOnline()) { net.useReq(i).then((r) => { if (r && r.inv) get()._mirrorInv(r.inv) }).catch(() => {}); return }
+    set((s) => {
+      const it = s.inventory[i]; if (!it) return {}
+      const inv = s.inventory.slice()
+      const cnt = (it.count || 1) - 1
+      inv[i] = cnt > 0 ? { ...it, count: cnt } : null
+      saveGame({ ...s, inventory: inv })
+      return { inventory: inv }
+    })
+  },
   // Usar un ítem del inventario (por ahora: Pergamino de Retorno; el resto avisa).
   useInventory: (i) => {
     const it = get().inventory[i]
@@ -328,7 +332,7 @@ export const useGameStore = create((set, get) => ({
 
   // Manda un consumible del inventario al cinturón (se apila si ya hay del mismo; si no,
   // al primer hueco libre). Si el cinturón está lleno avisa con un toast.
-  assignBelt: (invIndex) => {
+  assignBelt: async (invIndex) => {
     const s = get()
     const it = s.inventory[invIndex]
     if (!beltEligible(it)) { get().showToast(tt('belt_only')); return }
@@ -338,10 +342,17 @@ export const useGameStore = create((set, get) => ({
     let bi = belt.findIndex((b, i) => i < cap && b && b.id === it.id)
     if (bi < 0) { for (let i = 0; i < cap; i++) { if (belt[i] == null) { bi = i; break } } }
     if (bi < 0) { get().showToast(tt('belt_full')); return }
+    // Online: el server saca la pila del bag autoritativo (por índice) y la espejamos; el cinturón
+    // es client-side (no entra al bag), así que la pila pasa del bag al cinturón sin duplicar.
+    if (isOnline()) {
+      const taken = await net.bagTake(invIndex, qty).catch(() => null)
+      if (!taken || !taken.ok) return
+      get()._mirrorInv(taken.inv)
+    } else {
+      const inv = s.inventory.slice(); inv[invIndex] = null; set({ inventory: inv })
+    }
     belt[bi] = belt[bi] ? { ...belt[bi], count: (belt[bi].count || 1) + qty } : { ...it, count: qty }
-    const inv = s.inventory.slice()
-    inv[invIndex] = null
-    set({ belt, inventory: inv })
+    set({ belt })
     get().showToast(tt('to_belt'))
     saveGame(get())
   },
@@ -349,14 +360,32 @@ export const useGameStore = create((set, get) => ({
   // Equipa un cinturón (ítem slot 'belt') del inventario: define cuántos slots tiene el
   // cinturón. El anterior vuelve al inventario; si achica la capacidad, los consumibles
   // que sobran vuelven al inventario.
-  equipBelt: (invIndex) => {
+  equipBelt: async (invIndex) => {
     const s = get()
     const it = s.inventory[invIndex]
     if (!it || it.slot !== 'belt') return
+    const cap = beltCapacityOf(it)
+    // Online: el bag es autoritativo del server. Sacamos el cinturón nuevo del bag (bagTake),
+    // devolvemos el anterior (bagGive) y los consumibles que ya no entran vuelven al bag (bagGive).
+    if (isOnline()) {
+      const taken = await net.bagTake(invIndex, 1).catch(() => null)
+      if (!taken || !taken.ok) return
+      let inv = taken.inv
+      const prev = s.equippedBelt
+      if (prev) { const g = await net.bagGive(get()._recOf(prev)).catch(() => null); if (g && g.inv) inv = g.inv }
+      const belt = s.belt.slice()
+      for (let i = cap; i < belt.length; i++) {
+        if (belt[i]) { const g = await net.bagGive(get()._recOf(belt[i])).catch(() => null); if (g && g.inv) inv = g.inv; belt[i] = null }
+      }
+      if (inv) get()._mirrorInv(inv)
+      set({ equippedBelt: { ...it }, belt })
+      get().showToast(tt('belt_equipped', { n: it.beltSlots }))
+      saveGame(get())
+      return
+    }
     const inv = s.inventory.slice()
     const prev = s.equippedBelt
     inv[invIndex] = prev || null
-    const cap = beltCapacityOf(it)
     const belt = s.belt.slice()
     for (let i = cap; i < belt.length; i++) {   // consumibles que ya no entran -> inventario
       if (belt[i]) { const f = inv.findIndex((x) => x == null); if (f >= 0) inv[f] = belt[i]; belt[i] = null }
@@ -448,18 +477,23 @@ export const useGameStore = create((set, get) => ({
     if (haveCrystal < c.crystals) { get().showToast(tt('forge_need_crystals', { n: c.crystals })); return { ok: false } }
     if (s.gold < c.gold) { get().showToast(tt('forge_need_gold', { n: c.gold })); return { ok: false } }
     const r = await get()._spend(c.gold, 'forge', () => {
-      // consumir cristales + subir la pieza (efecto local; el inventario aún es client-side)
-      let left = c.crystals
-      const inv = get().inventory.slice()
-      for (let i = 0; i < inv.length && left > 0; i++) {
-        const x = inv[i]; if (!x || x.id !== 752) continue
-        const take = Math.min(x.count || 1, left); left -= take
-        inv[i] = (x.count || 1) - take > 0 ? { ...x, count: (x.count || 1) - take } : null
+      // Subir la pieza (el equipo es client-side). El consumo de cristales se hace aparte:
+      // online lo saca el server del bag autoritativo (bagConsume); offline, local.
+      if (!isOnline()) {
+        let left = c.crystals
+        const inv = get().inventory.slice()
+        for (let i = 0; i < inv.length && left > 0; i++) {
+          const x = inv[i]; if (!x || x.id !== 752) continue
+          const take = Math.min(x.count || 1, left); left -= take
+          inv[i] = (x.count || 1) - take > 0 ? { ...x, count: (x.count || 1) - take } : null
+        }
+        set({ inventory: inv })
       }
-      set({ inventory: inv, equipment: { ...get().equipment, [slot]: { ...it, upgrade: up + 1 } } })
+      set({ equipment: { ...get().equipment, [slot]: { ...it, upgrade: up + 1 } } })
       get().addSkillXp('forja', 16); get().recomputeStats()
     })
     if (!r.ok) { get().showToast(tt('forge_need_gold', { n: c.gold })); return { ok: false } }
+    if (isOnline()) { const cr = await net.bagConsume(752, c.crystals).catch(() => null); if (cr && cr.inv) get()._mirrorInv(cr.inv) }
     get().showToast(tt('forge_done', { name: itemName(it), n: up + 1 }))
     saveGame(get())
     return { ok: true }
@@ -494,6 +528,34 @@ export const useGameStore = create((set, get) => ({
     }
     if (get().gold < cost) return { ok: false }
     apply(); set({ gold: get().gold - cost }); return { ok: true }
+  },
+
+  // Espejo del bag AUTORITATIVO del server (Fase A.2): hidrata los registros mínimos
+  // {id,count,dur,upgrade} a ítems completos para la UI. Online es la ÚNICA vía por la que cambia
+  // el inventario (loot/venta/compra/uso/depósito/transferencias). No persiste local: el server es
+  // la fuente de verdad y el handler `save` pisa el inventario con el bag del server.
+  _mirrorInv: (serverInv) => {
+    if (!Array.isArray(serverInv)) return
+    const inv = new Array(INVENTORY_SIZE).fill(null)
+    for (let i = 0; i < Math.min(serverInv.length, INVENTORY_SIZE); i++) {
+      const r = serverInv[i]; if (!r) continue
+      const base = itemById(r.id); if (!base) continue
+      const it = { ...base }
+      if (r.count && r.count > 1) it.count = r.count
+      if (r.dur != null) it.dur = r.dur
+      if (r.upgrade) it.upgrade = r.upgrade
+      inv[i] = it
+    }
+    set({ inventory: inv })
+  },
+  // Registro mínimo de un ítem (para mandarlo al bag del server: devolver/depositar).
+  _recOf: (item) => {
+    if (!item) return null
+    const r = { id: item.id }
+    if (item.count && item.count > 1) r.count = item.count
+    if (item.dur != null) r.dur = item.dur
+    if (item.upgrade) r.upgrade = item.upgrade
+    return r
   },
   setPanel: (panel) => set({ panel }),
   togglePanel: (p) => set((s) => ({ panel: s.panel === p ? null : p })),
@@ -615,17 +677,30 @@ export const useGameStore = create((set, get) => ({
   },
 
   // Equipa un ítem del inventario (índice). Lo que ya estaba equipado vuelve al hueco.
-  equipFromInventory: (invIndex) => {
+  equipFromInventory: async (invIndex) => {
     const s = get()
     const item = s.inventory[invIndex]
     if (!item) return
     const slot = equipSlotFor(item, s.equipment)
     if (!slot) return
-    const inv = s.inventory.slice()
+    const prev = s.equipment[slot]
     const equipment = { ...s.equipment }
-    const prev = equipment[slot]
     // Inicializa durabilidad al equipar (si es gear durable y no la trae).
     equipment[slot] = isDurable(item) && item.dur == null ? { ...item, dur: durabilityMax(item) } : item
+    // Online: el bag es autoritativo del server. Sacamos el ítem del bag (bagTake) y devolvemos lo
+    // que estaba equipado (bagGive). El equipo es client-side; así no se duplica al llegar un push.
+    if (isOnline()) {
+      const taken = await net.bagTake(invIndex, 1).catch(() => null)
+      if (!taken || !taken.ok) return
+      let inv = taken.inv
+      if (prev) { const g = await net.bagGive(get()._recOf(prev)).catch(() => null); if (g && g.inv) inv = g.inv }
+      if (inv) get()._mirrorInv(inv)
+      set({ equipment })
+      get().recomputeStats()
+      saveGame(get())
+      return
+    }
+    const inv = s.inventory.slice()
     inv[invIndex] = prev || null
     set({ inventory: inv, equipment })
     get().recomputeStats()   // el equipo cambia -> recalcular defensa/HP/daño
@@ -650,7 +725,16 @@ export const useGameStore = create((set, get) => ({
 
   // Mete un ítem al inventario. Los apilables (poción/crafting/scroll) se acumulan en
   // una celda con `count`; el resto va a un hueco libre. Devuelve true si entró.
+  // Online el bag es autoritativo del server: se le pide que lo otorgue y el mirror llega en el
+  // ack (bagGive). Devolvemos true optimista; si el bag estaba lleno, el server no lo mete y el
+  // mirror no cambia (se pierde, igual que un loot con la bolsa llena). Offline: lógica local.
   addItem: (item, qty = 1) => {
+    if (isOnline()) {
+      const rec = get()._recOf(item); if (!rec) return false
+      if (qty > 1 && STACK_SLOTS.has(item.slot)) rec.count = qty
+      net.bagGive(rec).then((r) => { if (r && r.inv) get()._mirrorInv(r.inv) }).catch(() => {})
+      return true
+    }
     const s = get()
     const inv = s.inventory.slice()
     const stackable = STACK_SLOTS.has(item.slot)
@@ -807,28 +891,25 @@ export const useGameStore = create((set, get) => ({
     set({ guildDepBusy: false })
     get()._applyDepResult(r)
   },
-  // Depositar un ítem del inventario: el server lo guarda y lo sacamos de la bolsa.
+  // Depositar un ítem del inventario: el server lo saca del bag autoritativo (por índice) y lo
+  // guarda en el depósito. Espejamos el bag que devuelve el ack (fuente de verdad).
   depositItem: async (invIndex) => {
     if (!ONLINE || !net.connected) return
-    const s = get()
-    const item = s.inventory[invIndex]
+    const item = get().inventory[invIndex]
     if (!item) return
     set({ guildDepBusy: true })
-    const r = await net.guildDepItemIn(item).catch(() => null)
+    const r = await net.guildDepItemIn(invIndex).catch(() => null)
     set({ guildDepBusy: false })
-    if (get()._applyDepResult(r)) {
-      const inv = get().inventory.slice(); inv[invIndex] = null
-      set({ inventory: inv }); saveGame(get())
-    }
+    if (get()._applyDepResult(r) && r.inv) get()._mirrorInv(r.inv)
   },
-  // Retirar un ítem del depósito: el server nos lo devuelve y lo metemos en la bolsa.
+  // Retirar un ítem del depósito: el server lo saca del stash y lo mete en el bag autoritativo;
+  // espejamos el bag del ack (no lo agregamos local: ya lo hizo el server).
   withdrawItem: async (index) => {
     if (!ONLINE || !net.connected) return
-    if (get().inventory.every((x) => x != null)) { set({ guildError: tt('guild_inv_full') }); return }
     set({ guildDepBusy: true })
     const r = await net.guildDepItemOut(index).catch(() => null)
     set({ guildDepBusy: false })
-    if (get()._applyDepResult(r) && r.item) get().addItem(r.item)
+    if (get()._applyDepResult(r) && r.inv) get()._mirrorInv(r.inv)
   },
 
   // --- misiones diarias ---
@@ -916,7 +997,10 @@ export const useGameStore = create((set, get) => ({
     const got = []
     for (const d of drops) {
       const it = itemById(d.id); if (!it) continue
-      if (get().addItem(it, d.qty)) got.push(itemName(it) + (d.qty > 1 ? ' ×' + d.qty : ''))
+      // Online el server ya otorgó los ítems al bag (y empujó 'inv'); acá sólo armamos el aviso.
+      // Offline los metemos local.
+      if (isOnline()) got.push(itemName(it) + (d.qty > 1 ? ' ×' + d.qty : ''))
+      else if (get().addItem(it, d.qty)) got.push(itemName(it) + (d.qty > 1 ? ' ×' + d.qty : ''))
     }
     get().showToast(got.length ? tt('seal_chest_got', { items: got.join(', ') }) : tt('seal_chest_empty'))
     saveGame(get())
@@ -972,6 +1056,28 @@ export const useGameStore = create((set, get) => ({
   // equipo y el cinturón NO se pierden. Devuelve true si dejó algo.
   createGrave: async (zone, tx, ty) => {
     const s = get()
+    // Online: el bag es autoritativo del server. bagDump lo vacía y nos devuelve los registros
+    // (que van a la tumba client-side) + el oro de la tumba lo descuenta dropGraveReq. Espejamos
+    // el bag vacío. El equipo y el cinturón NO se pierden (no están en el bag).
+    if (isOnline()) {
+      const dump = await net.bagDump().catch(() => null)
+      const items = ((dump && dump.ok && dump.items) || []).map((r) => {
+        const rec = { id: r.id }
+        if (r.count && r.count > 1) rec.count = r.count
+        if (r.dur != null) rec.dur = r.dur
+        if (r.upgrade) rec.upgrade = r.upgrade
+        return rec
+      })
+      const gr = await net.dropGraveReq().catch(() => null)
+      let goldDrop = 0
+      if (gr && gr.ok) { if (typeof gr.gold === 'number') set({ gold: gr.gold }); goldDrop = gr.dropped || 0 }
+      if (dump && dump.inv) get()._mirrorInv(dump.inv)
+      if (!items.length && goldDrop <= 0) return false
+      const id = (get()._graveId || 0) + 1
+      set({ graves: [...(get().graves || []), { id, zone, tx, ty, items, gold: goldDrop }], _graveId: id })
+      saveGame(get())
+      return true
+    }
     const inv = s.inventory.slice()
     const items = []
     for (let i = 0; i < inv.length; i++) {
@@ -983,18 +1089,10 @@ export const useGameStore = create((set, get) => ({
       items.push(rec)
       inv[i] = null
     }
-    let goldDrop = Math.floor((s.gold || 0) * GRAVE_GOLD_FRACTION)
+    const goldDrop = Math.floor((s.gold || 0) * GRAVE_GOLD_FRACTION)
     if (!items.length && goldDrop <= 0) return false
     const id = (s._graveId || 0) + 1
-    // Oro: online el server descuenta la fracción (autoritativo) y guarda el pendiente; usamos su
-    // monto para la tumba. Offline, resta local. Los ÍTEMS siguen en la tumba client-side.
-    if (isOnline()) {
-      const r = await net.dropGraveReq().catch(() => null)
-      if (r && r.ok) { if (typeof r.gold === 'number') set({ gold: r.gold }); goldDrop = r.dropped || 0 } else goldDrop = 0
-      set({ inventory: inv, graves: [...(get().graves || []), { id, zone, tx, ty, items, gold: goldDrop }], _graveId: id })
-    } else {
-      set({ inventory: inv, gold: s.gold - goldDrop, graves: [...(s.graves || []), { id, zone, tx, ty, items, gold: goldDrop }], _graveId: id })
-    }
+    set({ inventory: inv, gold: s.gold - goldDrop, graves: [...(s.graves || []), { id, zone, tx, ty, items, gold: goldDrop }], _graveId: id })
     saveGame(get())
     return true
   },
@@ -1009,13 +1107,22 @@ export const useGameStore = create((set, get) => ({
     if (isOnline()) { const r = await net.recoverGraveReq().catch(() => null); if (r && r.ok && typeof r.gold === 'number') set({ gold: r.gold }) }
     else if (grave.gold) set({ gold: get().gold + grave.gold })
     const leftover = []
-    for (const rec of grave.items) {
-      const base = itemById(rec.id)
-      if (!base) continue
-      const it = { ...base }
-      if (rec.count > 1) it.count = rec.count
-      if (rec.dur != null) it.dur = rec.dur
-      if (!get().addItem(it, rec.count || 1)) leftover.push(rec)
+    if (isOnline()) {
+      // Online: cada ítem vuelve al bag autoritativo (bagGive, respeta capacidad). Lo que no entra
+      // queda en la tumba. Awaiteamos en orden para no pisar el mirror.
+      for (const rec of grave.items) {
+        const g = await net.bagGive(rec).catch(() => null)
+        if (g && g.ok) { if (g.inv) get()._mirrorInv(g.inv) } else leftover.push(rec)
+      }
+    } else {
+      for (const rec of grave.items) {
+        const base = itemById(rec.id)
+        if (!base) continue
+        const it = { ...base }
+        if (rec.count > 1) it.count = rec.count
+        if (rec.dur != null) it.dur = rec.dur
+        if (!get().addItem(it, rec.count || 1)) leftover.push(rec)
+      }
     }
     if (leftover.length) {
       const graves = get().graves.map((g) => (g.id === id ? { ...g, items: leftover, gold: 0 } : g))
@@ -1035,8 +1142,28 @@ export const useGameStore = create((set, get) => ({
 
   // Prepara una receta de alquimia: descuenta los materiales y agrega la poción. Suma a la
   // skill de alquimia. Devuelve {ok} o {ok:false, reason}.
-  craftAlchemy: (recipe) => {
+  craftAlchemy: async (recipe) => {
     const s = get()
+    const countOf0 = (id) => s.inventory.reduce((n, it) => n + (it && it.id === id ? (it.count || 1) : 0), 0)
+    // Online: el server consume los materiales del bag autoritativo (bagConsume, valida posesión) y
+    // otorga la poción (bagGive). Espejamos el bag de cada ack. Cierra "craftear sin materiales".
+    if (isOnline()) {
+      for (const [id, qty] of recipe.ins) { if (countOf0(id) < qty) return { ok: false, reason: 'materiales' } }
+      let inv = null
+      for (const [id, qty] of recipe.ins) {
+        const r = await net.bagConsume(id, qty).catch(() => null)
+        if (!r || !r.ok) { if (inv) get()._mirrorInv(inv); return { ok: false, reason: 'materiales' } }
+        inv = r.inv
+      }
+      const outItem = itemById(recipe.out)
+      const g = await net.bagGive({ id: recipe.out }).catch(() => null)
+      if (g && g.inv) inv = g.inv
+      if (inv) get()._mirrorInv(inv)
+      get().addSkillXp('alquimia', 10)
+      get().showToast(tt('brewed', { name: itemName(outItem) }))
+      get().logMessage({ channel: 'sistema', text: tt('alchemy_log', { name: itemName(outItem) }) })
+      return { ok: true }
+    }
     const inv = s.inventory.slice()
     const countOf = (id) => inv.reduce((n, it) => n + (it && it.id === id ? (it.count || 1) : 0), 0)
     for (const [id, qty] of recipe.ins) { if (countOf(id) < qty) return { ok: false, reason: 'materiales' } }
@@ -1072,13 +1199,13 @@ export const useGameStore = create((set, get) => ({
     if (!item) return { ok: false, reason: 'no-item' }
     const price = item.price || 0
     const clean = { ...item }; delete clean.stock
+    // Online: el server cobra el oro Y otorga el ítem al bag autoritativo (todo en el buyack);
+    // espejamos bag + saldo. Si el bag está lleno o falta oro, el server no cobra ni otorga.
     if (isOnline()) {
-      const before = get().inventory
-      if (!get().addItem(clean, 1)) return { ok: false, reason: 'full' }   // reservar espacio antes de gastar
       const r = await net.buyReq(item.id).catch(() => null)
-      if (!r || !r.ok) { set({ inventory: before }); return { ok: false, reason: 'no-gold' } }   // rollback
+      if (!r || !r.ok) return { ok: false, reason: r?.error === 'inventario lleno' ? 'full' : 'no-gold' }
+      if (r.inv) get()._mirrorInv(r.inv)
       if (typeof r.gold === 'number') set({ gold: r.gold })
-      saveGame(get())
       return { ok: true }
     }
     if (s.gold < price) return { ok: false, reason: 'no-gold' }
@@ -1094,27 +1221,38 @@ export const useGameStore = create((set, get) => ({
     const s = get()
     const item = s.inventory[invIndex]
     if (!item) return { ok: false }
-    const removeOne = () => {
-      const inv = get().inventory.slice(); const it = inv[invIndex]; if (!it) return
-      if (it.count && it.count > 1) inv[invIndex] = { ...it, count: it.count - 1 }; else inv[invIndex] = null
-      set({ inventory: inv })
-    }
+    // Online: el server saca el ítem del bag por índice (valida posesión), computa el valor y
+    // acredita el oro; espejamos el bag + saldo del ack. Cierra "vender lo que no tenés".
     if (isOnline()) {
-      const r = await net.sellReq(item.id, 1).catch(() => null)
+      const r = await net.sellReq(invIndex).catch(() => null)
       if (!r || !r.ok) return { ok: false }
-      removeOne(); if (typeof r.gold === 'number') set({ gold: r.gold }); saveGame(get())
+      if (r.inv) get()._mirrorInv(r.inv)
+      if (typeof r.gold === 'number') set({ gold: r.gold })
       return { ok: true, gain: r.gain }
     }
     const gain = sellValue(item)
-    removeOne(); set({ gold: get().gold + gain }); saveGame(get())
+    const inv = get().inventory.slice(); const it = inv[invIndex]
+    if (it.count && it.count > 1) inv[invIndex] = { ...it, count: it.count - 1 }; else inv[invIndex] = null
+    set({ inventory: inv, gold: get().gold + gain }); saveGame(get())
     return { ok: true, gain }
   },
 
   // Saca lo equipado en un slot y lo manda al primer hueco libre (dentro de la capacidad).
-  unequip: (slot) => {
+  unequip: async (slot) => {
     const s = get()
     const item = s.equipment[slot]
     if (!item) return
+    // Online: el server devuelve el ítem al bag autoritativo (bagGive, respeta capacidad). Si no
+    // hay lugar, no se desequipa. Preserva durabilidad/forja en el registro que vuelve al bag.
+    if (isOnline()) {
+      const g = await net.bagGive(get()._recOf(item)).catch(() => null)
+      if (!g || !g.ok) { get().showToast(tt('inv_full')); return }
+      if (g.inv) get()._mirrorInv(g.inv)
+      set({ equipment: { ...s.equipment, [slot]: null } })
+      get().recomputeStats()
+      saveGame(get())
+      return
+    }
     const inv = s.inventory.slice()
     const cap = inventoryCapacity(s.stats?.level || 1)
     let idx = -1
@@ -1174,6 +1312,7 @@ export const storeApi = {
   addGold: (n) => useGameStore.getState().addGold(n),
   setGold: (g) => useGameStore.getState().setGold(g),   // espejo del oro autoritativo del server
   addItem: (item, qty) => useGameStore.getState().addItem(item, qty),
+  mirrorInv: (inv) => useGameStore.getState()._mirrorInv(inv),   // espejo del bag autoritativo del server
   inventoryFull: () => useGameStore.getState().inventory.every((x) => x != null),
   addXp: (n) => useGameStore.getState().addXp(n),
   addSkillXp: (skill, n) => useGameStore.getState().addSkillXp(skill, n),

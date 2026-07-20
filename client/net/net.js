@@ -68,6 +68,8 @@ class Net {
         else if (m.t === 'cspawn' || m.t === 'copen' || m.t === 'cloot') this._emit(m.t, m)
         // oro AUTORITATIVO del servidor (faucet: kill/cofre/misión) — push con el nuevo saldo
         else if (m.t === 'gold') this._emit('gold', m)
+        // inventario AUTORITATIVO del servidor (bag) — push con el bag nuevo (loot/compra/venta/uso)
+        else if (m.t === 'inv') this._emit('inv', m)
         // muerte / reaparición de otros jugadores (co-op)
         else if (m.t === 'pdied' || m.t === 'palive') this._emit(m.t, m)
         // equipo visible de otro jugador (cambió su gear)
@@ -114,8 +116,15 @@ class Net {
 
   // --- Economía: oro autoritativo del servidor (Fase A). Los faucets del mundo (kill/cofre) llegan
   // por el push 'gold'; estos son los pedidos del cliente (sinks + faucets secundarios) con su ack.
-  async sellReq(id, count) { this._send({ t: 'sell', id, count }); return this._once('sellack') }
+  async sellReq(index) { this._send({ t: 'sell', index }); return this._once('sellack') }   // vender por índice del bag
+  async useReq(index) { this._send({ t: 'use', index }); return this._once('useack') }      // usar consumible por índice del bag
   async buyReq(id) { this._send({ t: 'buy', id }); return this._once('buyack') }
+  // Transferencias del bag autoritativo (equipar/desequipar/cinturón/tumba/forja). Awaitéalas en
+  // orden (comparten el tipo de respuesta 'bagack'). Cada una devuelve el bag nuevo para espejarlo.
+  async bagTake(index, qty = 1) { this._send({ t: 'bag_take', index, qty }); return this._once('bagack') }
+  async bagGive(item) { this._send({ t: 'bag_give', item }); return this._once('bagack') }
+  async bagConsume(id, qty) { this._send({ t: 'bag_consume', id, qty }); return this._once('bagack') }
+  async bagDump() { this._send({ t: 'bag_dump' }); return this._once('bagack') }
   async spendReq(amount, reason) { this._send({ t: 'spend', amount, reason }); return this._once('spendack') }
   async claimMissionReq(id) { this._send({ t: 'claimmission', id }); return this._once('claimack') }
   async claimQuestReq(id) { this._send({ t: 'claimquest', id }); return this._once('claimack') }
@@ -136,7 +145,7 @@ class Net {
   // Depósito del Gremio (banco compartido). Responden `t:'guild_dep'`.
   async guildDepView() { this._send({ t: 'guild_dep_view' }); return this._once('guild_dep') }
   async guildDepGold(dir, amount) { this._send({ t: 'guild_dep_gold', dir, amount }); return this._once('guild_dep') }
-  async guildDepItemIn(item) { this._send({ t: 'guild_dep_item_in', item }); return this._once('guild_dep') }
+  async guildDepItemIn(index) { this._send({ t: 'guild_dep_item_in', index }); return this._once('guild_dep') }
   async guildDepItemOut(index) { this._send({ t: 'guild_dep_item_out', index }); return this._once('guild_dep') }
   close() { this._wantOpen = false; if (this._reconnectT) { clearTimeout(this._reconnectT); this._reconnectT = null } try { this.ws?.close() } catch {} }
 }

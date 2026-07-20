@@ -388,6 +388,7 @@ export class Game {
     net.on('copen', (m) => this._onCopen(m))
     net.on('cloot', (m) => this._onCloot(m))
     net.on('gold', (m) => this._onGold(m))   // oro autoritativo del server (faucet kill/cofre)
+    net.on('inv', (m) => this.store.mirrorInv(m.inv))   // bag autoritativo del server (Fase A.2)
     // Muerte / reaparición de otros jugadores (co-op).
     net.on('pdied', (m) => { const r = this.remotes?.get(m.id); if (r) r.setDead(true) })
     net.on('palive', (m) => { const r = this.remotes?.get(m.id); if (r) { r.setTarget(m.x, m.y, m.dir); r.tx = m.x; r.ty = m.y; r.setDead(false) } })
@@ -419,6 +420,7 @@ export class Game {
       dmgMin: st.dmgMin || 2, dmgMax: st.dmgMax || 5, dmgMul: st.dmgMul || 1,
       str: st.str || 10, crit: st.crit || 0, weaponKind: st.weaponKind || 'melee',
       defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
+      level: st.level || 1,   // capacidad usable del bag autoritativo (parity con el HUD)
     })
   }
 
@@ -923,10 +925,13 @@ export class Game {
     const mf = this.store.getStats()?.itemFind || 0
     const lvl = Math.max(1, Math.min(16, this.store.getPlayerLevel?.() || 1))
     const roll = rollMonsterDrop(lvl, false, mf)
-    // Online los barriles NO dan oro (son props del cliente, no los trackea el server: dar oro acá
-    // sería oro no-autoritativo). Offline sí. Los ítems siguen client-side (fase de inventario luego).
-    if (roll.gold > 0 && !this._online) this._dropGold(b.x, b.y, roll.gold)
-    if (roll.drops.length) this._dropItems(b.x, b.y, roll.drops)
+    // Online los barriles NO dan oro NI ítems: son props del cliente, no los trackea el server, así
+    // que otorgar acá sería oro/loot no-autoritativo (el cliente decidiría el botín = exploit).
+    // Offline sí (todo local).
+    if (!this._online) {
+      if (roll.gold > 0) this._dropGold(b.x, b.y, roll.gold)
+      if (roll.drops.length) this._dropItems(b.x, b.y, roll.drops)
+    }
   }
 
   // --- cofres autoritativos del servidor (online) ----------------------------
@@ -952,7 +957,8 @@ export class Game {
     this.store.addXp(10)
     this.store.missionProgress('chest', 1)
     if (m.gold > 0) this._dropGold(m.x, m.y, m.gold)
-    if (m.drops && m.drops.length) this._dropItems(m.x, m.y, m.drops)
+    // Los ítems ya se otorgaron al bag autoritativo (push 'inv'); la pila del suelo es cosmética.
+    if (m.drops && m.drops.length) this._dropItems(m.x, m.y, m.drops, true)
   }
 
   // Tocar un cofre: caminar hasta él; se abre al llegar (en el tick).
@@ -983,7 +989,9 @@ export class Game {
   }
 
   // Desparrama ítems (como objetos reales) en tiles caminables alrededor de (cx,cy).
-  _dropItems(cx, cy, drops) {
+  // `cosmetic`=true (online): el server ya otorgó el ítem al bag (llegó por el push 'inv'); la pila
+  // del suelo es SÓLO visual (al recogerla no se agrega nada, como la pila de oro cosmética).
+  _dropItems(cx, cy, drops, cosmetic = false) {
     if (!drops || !drops.length) return
     const tiles = this._scatterTiles(cx, cy, drops.length)
     drops.forEach((d, i) => {
@@ -991,6 +999,7 @@ export class Game {
       if (!item) return
       const [tx, ty] = tiles[i] || [cx, cy]
       const gi = new GroundItem(this.iso, tx, ty, item, d.qty, RARITY_COLOR[item.rarity])
+      gi.cosmetic = cosmetic
       gi.onTap((g) => this._tapGroundItem(g))   // los ítems se recogen por CLICK (no al pasar por arriba)
       this.renderer.objectLayer.addChild(gi.view)
       this.groundItems.push(gi)
@@ -1048,11 +1057,14 @@ export class Game {
     return out
   }
 
-  // Recoge un ítem del suelo (oro ya se sumó al abrir). Devuelve true si entró.
+  // Recoge un ítem del suelo. Devuelve true si entró. Online las pilas son cosméticas (el server ya
+  // otorgó el ítem al bag y lo empujó por 'inv'): recogerlas es sólo el sfx + sacar la pila.
   _pickup(gi) {
-    if (!this.store.addItem(gi.item, gi.qty)) return false // inventario lleno: queda en el piso
+    if (!gi.cosmetic) {
+      if (!this.store.addItem(gi.item, gi.qty)) return false // inventario lleno: queda en el piso
+      this.store.logMessage({ channel: 'sistema', text: tt('picked_up', { name: itemName(gi.item, getLang()), qty: gi.qty > 1 ? ' ×' + gi.qty : '' }) })
+    }
     playSfx('flying_loot.ogg')
-    this.store.logMessage({ channel: 'sistema', text: tt('picked_up', { name: itemName(gi.item, getLang()), qty: gi.qty > 1 ? ' ×' + gi.qty : '' }) })
     gi.picked = true
     gi.destroy()
     return true
@@ -1283,16 +1295,15 @@ export class Game {
     if (this._nearbyNode === node) { this._nearbyNode = null; this.store.setNearbyNode(null) }
   }
 
-  // El server confirma que juntaste: la cantidad se tira local (instanciado), como el loot.
+  // El server confirma que juntaste: el recurso ya lo otorgó al bag autoritativo (push 'inv'). Acá
+  // sólo la XP de skill/misión + el aviso flotante (la cantidad la decide el server).
   _onNgather(m) {
     const item = itemById(m.id); if (!item) return
-    const qty = 1 + (Math.random() < 0.25 ? 1 : 0)
-    if (!this.store.addItem(item, qty)) { this.store.showToast(tt('inv_full')); return }
     this.store.addSkillXp(m.skill, 6)
-    this.store.missionProgress(m.skill === 'excavacion' ? 'mine' : 'herb', qty)
+    this.store.missionProgress(m.skill === 'excavacion' ? 'mine' : 'herb', 1)
     const mat = itemName(item, getLang())
-    this._floatText(this.player.view.x, this.player.view.y - 40, `+${qty} ${mat}`, '#bfe9a0')
-    this.store.logMessage({ channel: 'sistema', text: tt('gathered', { name: mat, n: qty }) })
+    this._floatText(this.player.view.x, this.player.view.y - 40, `+${mat}`, '#bfe9a0')
+    this.store.logMessage({ channel: 'sistema', text: tt('gathered', { name: mat, n: 1 }) })
     playSfx('step2.ogg', 0.5)
   }
 
@@ -1495,14 +1506,19 @@ export class Game {
     const fx = e ? e.view.x : this.player.view.x, fy = e ? e.view.y + (e._hpY || -40) : this.player.view.y - 80
     this._floatText(fx, fy, `+${xp} XP`, '#9fe0ff')
     this.store.logMessage({ channel: 'sistema', text: tt('defeated', { name: enemyName(m.sprite, getLang()) }) })
-    const boss = enemyStats(m.sprite, m.lv).boss, lvl = Math.max(1, Math.min(16, m.lv || 1))
-    const mf = this.store.getStats()?.itemFind || 0
-    const roll = rollMonsterDrop(lvl, boss, mf)
     const gx = e ? Math.round(e.tx) : Math.round(this.player.tx), gy = e ? Math.round(e.ty) : Math.round(this.player.ty)
-    // Online el ORO lo acredita el server (llega por 'gold' + pila cosmética); acá sólo el oro
-    // offline. Los ítems siguen instanciados en el cliente en ambos casos.
-    if (roll.gold > 0 && !this._online) this._dropGold(gx, gy, roll.gold)
-    if (roll.drops.length) this._dropItems(gx, gy, roll.drops)
+    // Online el ORO y el BOTÍN los tira el server (autoritativos): el oro llega por 'gold' + pila
+    // cosmética, y los ítems ya se otorgaron al bag (push 'inv') — acá sólo la pila cosmética con los
+    // drops REALES que mandó el server. Offline: se tira local.
+    if (this._online) {
+      if (m.drops && m.drops.length) this._dropItems(gx, gy, m.drops, true)
+    } else {
+      const boss = enemyStats(m.sprite, m.lv).boss, lvl = Math.max(1, Math.min(16, m.lv || 1))
+      const mf = this.store.getStats()?.itemFind || 0
+      const roll = rollMonsterDrop(lvl, boss, mf)
+      if (roll.gold > 0) this._dropGold(gx, gy, roll.gold)
+      if (roll.drops.length) this._dropItems(gx, gy, roll.drops)
+    }
   }
 
   // El servidor nos avisa que un enemigo nos pegó (ya restó nuestra defensa).

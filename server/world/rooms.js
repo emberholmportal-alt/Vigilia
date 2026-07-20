@@ -15,7 +15,7 @@
 
 import * as combat from './combat.js'
 import * as db from '../db/db.js'
-import { priceOf, sellValueOf } from '../../shared/items.js'
+import { priceOf, sellValueOf, itemById } from '../../shared/items.js'
 import { dailyMissions, todayStr } from '../../shared/missions.js'
 import { rollLoot } from '../../shared/loot.js'
 
@@ -94,7 +94,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0 } = {}) {
+export function join(send, { name, race, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, inv = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -112,6 +112,10 @@ export function join(send, { name, race, map, x, y, dir = 7, channel, spectator,
   // `gold` es AUTORITATIVO del servidor a partir de acá (Fase A de la economía): se carga del
   // personaje al entrar y sólo lo mutan las funciones de abajo (faucets del mundo + sinks validados).
   const p = { id, name: name || 'Vigilante', race: race || null, map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, gold: Math.floor(Number(gold) || 0), send }
+  // `inv` es AUTORITATIVO del servidor (Fase A.2): el bag se carga del personaje al entrar y sólo
+  // lo mutan las funciones de abajo (loot otorgado por el server + ops validadas). Se guarda como
+  // registros mínimos {id, count?, dur?, upgrade?} (el cliente reconstruye el ítem completo por id).
+  p.inv = normalizeInv(inv)
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
@@ -172,7 +176,11 @@ export function gather(id, nid) { combat.playerGather(id, nid) }
 // Pedido de abrir un cofre (del cliente).
 export function openChest(id, cid) { combat.playerOpenChest(id, cid) }
 // El cliente envía sus stats de combate (dependen del equipo) para que el server tire el daño.
-export function setStats(id, stats) { combat.setStats(id, stats) }
+export function setStats(id, stats) {
+  const p = players.get(id)
+  if (p && stats && stats.level) p.invCap = invCapForLevel(stats.level)   // capacidad usable del bag (parity con el HUD)
+  combat.setStats(id, stats)
+}
 
 // --- Oro AUTORITATIVO del servidor (Fase A de la economía) -----------------------------------
 // El servidor es la única fuente de verdad del oro. Los faucets (matar, cofre) los acredita él con
@@ -201,15 +209,139 @@ export function spendGold(id, amt, reason) {
   p._goldDirty = true            // el nuevo saldo viaja en el ack del RPC (no se empuja aparte)
   return { ok: true, gold: p.gold }
 }
-// Vender un ítem al mercader: el VALOR lo computa el server desde el precio real (no el cliente).
-// (Todavía no valida posesión del ítem: eso es autoridad de inventario, la fase siguiente.)
-export function sellItem(id, itemId, count) {
+// --- Inventario AUTORITATIVO del servidor (Fase A.2) -----------------------------------------
+// El bag es la fuente de verdad de qué ítems tenés. El loot lo otorga el server; vender/depositar
+// validan posesión contra este bag. Registros mínimos {id, count?, dur?, upgrade?}.
+const INV_MAX = 55   // largo máximo del bag (5×11, igual que la grilla del cliente)
+const INV_BASE = 30  // celdas usables al nivel 1 (crecen 2 por nivel hasta INV_MAX) — espeja el cliente
+const STACK = new Set(['potion', 'consumable', 'crafting', 'crafting_tool', 'scroll', 'gem', 'book'])
+const isStack = (id) => { const it = itemById(id); return !!it && STACK.has(it.slot) }
+// Capacidad usable del bag según el nivel (espeja client/data/progression.js). Las celdas por
+// encima de la capacidad están bloqueadas, así que el server no otorga loot ahí (parity con el HUD).
+const invCapForLevel = (level) => Math.min(INV_MAX, INV_BASE + Math.max(0, ((level | 0) - 1)) * 2)
+
+// Sanitiza el inventario que llega del blob a registros mínimos; descarta ids inexistentes.
+function normalizeInv(inv) {
+  const out = new Array(INV_MAX).fill(null)
+  if (Array.isArray(inv)) {
+    for (let i = 0; i < Math.min(inv.length, INV_MAX); i++) {
+      const it = inv[i]
+      if (!it || !itemById(it.id)) continue
+      const rec = { id: it.id }
+      if (it.count && it.count > 1) rec.count = it.count | 0
+      if (it.dur != null) rec.dur = it.dur | 0
+      if (it.upgrade) rec.upgrade = it.upgrade | 0
+      out[i] = rec
+    }
+  }
+  return out
+}
+// Otorga un ítem al bag (loot/compra). Apila si corresponde; si no hay lugar dentro de la
+// capacidad usable (según nivel), false.
+function invGrant(p, id, qty, meta) {
+  if (!itemById(id)) return false
+  qty = Math.max(1, qty | 0)
+  const inv = p.inv
+  const cap = p.invCap || INV_MAX
+  if (isStack(id)) {
+    const at = inv.findIndex((x) => x && x.id === id)
+    if (at >= 0) { inv[at] = { ...inv[at], count: (inv[at].count || 1) + qty }; return true }
+  }
+  let free = -1
+  for (let i = 0; i < cap; i++) { if (inv[i] == null) { free = i; break } }
+  if (free < 0) return false   // bag lleno (dentro de la capacidad usable)
+  inv[free] = isStack(id) ? { id, count: qty, ...(meta || {}) } : { id, ...(meta || {}) }
+  return true
+}
+// Saca del bag por índice (vender/depositar/soltar). Devuelve el registro sacado o null.
+function invRemoveAt(p, index, qty) {
+  const inv = p.inv
+  const it = inv[index]
+  if (!it) return null
+  qty = Math.max(1, qty | 0)
+  if (it.count && it.count > qty) { const taken = { ...it, count: qty }; inv[index] = { ...it, count: it.count - qty }; return taken }
+  inv[index] = null
+  return it
+}
+// Otorga una lista de drops (loot del server) al bag y empuja el inventario nuevo al cliente.
+export function grantLoot(id, drops) {
+  const p = players.get(id); if (!p || !Array.isArray(drops)) return
+  for (const d of drops) invGrant(p, d.id, d.qty || 1)
+  p._invDirty = true
+  p.send({ t: 'inv', inv: p.inv })
+}
+// Bag autoritativo de una cuenta con sesión activa (o null). Lo usa el handler `save` para no
+// dejar que el blob del cliente pise el inventario del server.
+export function invOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return p.inv
+  return null
+}
+
+// Vender un ítem al mercader: valida POSESIÓN (el bag[index] existe) y computa el valor del precio
+// real. Saca el ítem del bag autoritativo. Cierra el exploit de "vender lo que no tenés".
+export function sellItem(id, index) {
   const p = players.get(id); if (!p) return { ok: false }
-  const n = Math.max(1, Math.floor(Number(count) || 1))
-  const gain = sellValueOf(itemId) * n
-  p.gold += gain
-  p._goldDirty = true
-  return { ok: true, gold: p.gold, gain }
+  index = index | 0
+  const it = p.inv[index]
+  if (!it) return { ok: false, error: 'no tenés ese ítem' }
+  invRemoveAt(p, index, 1)
+  const gain = sellValueOf(it.id)
+  p.gold += gain; p._goldDirty = true; p._invDirty = true
+  return { ok: true, gold: p.gold, gain, inv: p.inv }
+}
+
+// Usar un consumible: valida posesión y saca 1 del bag. El EFECTO (curar/buff) lo aplica el cliente
+// (la vida sigue client-side por ahora). Devuelve el id usado para que el cliente aplique el efecto.
+export function useItem(id, index) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const it = p.inv[index | 0]
+  if (!it) return { ok: false, error: 'no tenés ese ítem' }
+  invRemoveAt(p, index | 0, 1)
+  p._invDirty = true
+  return { ok: true, id: it.id, inv: p.inv }
+}
+// Saca un ítem del bag por índice y lo DEVUELVE (para depositarlo en el gremio / equiparlo / etc.):
+// valida posesión. El caller decide qué hacer con el registro devuelto. Devuelve { ok, item }.
+export function takeItemAt(id, index, qty = 1) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const rec = invRemoveAt(p, index | 0, qty)
+  if (!rec) return { ok: false, error: 'no tenés ese ítem' }
+  p._invDirty = true
+  return { ok: true, item: rec, inv: p.inv }
+}
+// Consume `qty` unidades de un id a través de stacks/slots (materiales de forja/alquimia). Valida
+// posesión TOTAL antes de tocar nada. Cierra "forjar/craftear sin materiales". Devuelve { ok, inv }.
+export function consumeItems(id, itemId, qty) {
+  const p = players.get(id); if (!p) return { ok: false }
+  qty = Math.max(1, qty | 0)
+  let have = 0
+  for (const x of p.inv) if (x && x.id === itemId) have += (x.count || 1)
+  if (have < qty) return { ok: false, error: 'no tenés materiales' }
+  let left = qty
+  for (let i = 0; i < p.inv.length && left > 0; i++) {
+    const x = p.inv[i]; if (!x || x.id !== itemId) continue
+    const c = x.count || 1
+    const take = Math.min(c, left); left -= take
+    p.inv[i] = c - take > 0 ? { ...x, count: c - take } : null
+  }
+  p._invDirty = true
+  return { ok: true, inv: p.inv }
+}
+// Vacía el bag y devuelve todos los registros (al morir: vuelcan a la tumba client-side). { ok, items, inv }.
+export function dumpBag(id) {
+  const p = players.get(id); if (!p) return { ok: false }
+  const items = []
+  for (let i = 0; i < p.inv.length; i++) { const x = p.inv[i]; if (x) { items.push(x); p.inv[i] = null } }
+  p._invDirty = true
+  return { ok: true, items, inv: p.inv }
+}
+// Devuelve un ítem al bag (retiro del depósito / rollback). Devuelve { ok, inv } o full.
+export function giveItem(id, rec) {
+  const p = players.get(id); if (!p || !rec) return { ok: false }
+  const meta = {}; if (rec.dur != null) meta.dur = rec.dur; if (rec.upgrade) meta.upgrade = rec.upgrade
+  if (!invGrant(p, rec.id, rec.count || 1, meta)) return { ok: false, error: 'bag lleno' }
+  p._invDirty = true
+  return { ok: true, inv: p.inv }
 }
 // Comprar un ítem al mercader: el COSTO lo computa el server desde el precio real.
 export function buyItem(id, itemId) {
@@ -217,9 +349,11 @@ export function buyItem(id, itemId) {
   const cost = priceOf(itemId)
   if (cost <= 0) return { ok: false, error: 'ítem inválido' }
   if (p.gold < cost) return { ok: false, error: 'no tenés tanto oro', gold: p.gold }
+  // Otorga el ítem al bag AUTORITATIVO (si no hay lugar, no cobra). El cliente lo recibe en el 'inv'.
+  if (!invGrant(p, itemId, 1)) return { ok: false, error: 'inventario lleno', gold: p.gold }
   p.gold -= cost
-  p._goldDirty = true
-  return { ok: true, gold: p.gold, cost }
+  p._goldDirty = true; p._invDirty = true
+  return { ok: true, gold: p.gold, cost, inv: p.inv }
 }
 // Oro autoritativo actual de una cuenta con sesión activa (o null). Lo usa el handler `save` para
 // no dejar que el blob del cliente pise el oro del server.
@@ -229,9 +363,9 @@ export function goldOf(accountId) {
 }
 // Persiste el oro autoritativo al personaje (al salir). setCharacterGold preserva el resto del blob.
 async function persistGold(p) {
-  if (!p || !p.accountId || !p._goldDirty) return
-  p._goldDirty = false
-  try { await db.setCharacterGold(p.accountId, p.gold) } catch {}
+  if (!p || !p.accountId) return
+  if (p._goldDirty) { p._goldDirty = false; try { await db.setCharacterGold(p.accountId, p.gold) } catch {} }
+  if (p._invDirty) { p._invDirty = false; try { await db.setCharacterInventory(p.accountId, p.inv) } catch {} }
 }
 
 // --- Faucets secundarios (computados por el server desde datos COMPARTIDOS) ------------------
@@ -259,7 +393,10 @@ export function sealChest(id, level) {
   const roll = rollLoot('chest_level_' + lvl) || { gold: 0, drops: [] }
   const gold = roll.gold || 0
   if (gold > 0) { p.gold += gold; p._goldDirty = true }
-  return { ok: true, gold: p.gold, add: gold, drops: roll.drops || [] }
+  // Los ítems van al bag AUTORITATIVO del server (empuja 'inv'); `drops` es sólo para la animación del cliente.
+  const drops = roll.drops || []
+  if (drops.length) { for (const d of drops) invGrant(p, d.id, d.qty || 1); p._invDirty = true; p.send({ t: 'inv', inv: p.inv }) }
+  return { ok: true, gold: p.gold, add: gold, drops }
 }
 // Al MORIR soltás una fracción de tu oro en una tumba (server-authoritative): el server descuenta y
 // lo guarda como "oro de tumba" pendiente; al recuperar la tumba, te lo devuelve. La granularidad
@@ -325,6 +462,7 @@ combat.init({
   sendTo: (id, msg) => { const p = players.get(id); if (p) p.send(msg) },
   broadcast: (map, ch, msg) => broadcast(map, ch, msg, null),
   awardGold: (id, amt, reason, x, y) => awardGold(id, amt, reason, x, y),   // faucets del mundo (kill/cofre)
+  grantLoot: (id, drops) => grantLoot(id, drops),                           // ítems de loot (kill), autoritativos
 })
 combat.start()
 

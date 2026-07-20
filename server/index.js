@@ -93,12 +93,14 @@ wss.on('connection', (ws) => {
 
         case 'save': {
           if (!conn.accountId) return send({ t: 'saved', ok: false, error: 'no autenticado' })
-          // El ORO es autoritativo del servidor (Fase A): si hay sesión activa, su valor pisa el
-          // del blob del cliente, así un save con oro hackeado no puede setear el saldo. El resto
-          // del blob (inventario, xp, etc.) sigue viniendo del cliente por ahora. Bajo el lock de
-          // la cuenta para serializar contra los descuentos de gremio.
+          // El ORO y el INVENTARIO son autoritativos del servidor (Fase A/A.2): si hay sesión
+          // activa, sus valores pisan el blob del cliente (un save hackeado no puede setear oro ni
+          // ítems). El resto (xp, equipo, etc.) sigue viniendo del cliente. Bajo el lock de la cuenta.
           const g = rooms.goldOf(conn.accountId)
-          const data = (g == null) ? (m.char || {}) : { ...(m.char || {}), gold: g }
+          const inv = rooms.invOf(conn.accountId)
+          const data = { ...(m.char || {}) }
+          if (g != null) data.gold = g
+          if (inv != null) data.inventory = inv
           await db.withAccountLock(conn.accountId, () =>
             db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data }))
           return send({ t: 'saved', ok: true })
@@ -139,25 +141,40 @@ wss.on('connection', (ws) => {
                                     : await guilds.depositGold(conn.accountId, m.amount)
           return send({ t: 'guild_dep', ...r })
         }
-        case 'guild_dep_item_in': {
+        case 'guild_dep_item_in': {   // depositar: el server saca el ítem del bag autoritativo (por índice) y lo guarda
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
-          return send({ t: 'guild_dep', ...(await guilds.depositItem(conn.accountId, m.item)) })
+          if (conn.playerId == null) return send({ t: 'guild_dep', error: 'sin sesión' })
+          const taken = rooms.takeItemAt(conn.playerId, m.index)
+          if (!taken.ok) return send({ t: 'guild_dep', error: taken.error || 'no tenés ese ítem' })
+          const dep = await guilds.depositItem(conn.accountId, taken.item)
+          if (!dep.ok) { rooms.giveItem(conn.playerId, taken.item) }   // rollback al bag si el depósito falló
+          return send({ t: 'guild_dep', ...dep, inv: rooms.invOf(conn.accountId) })
         }
-        case 'guild_dep_item_out': {
+        case 'guild_dep_item_out': {  // retirar: el server saca del stash y lo mete en el bag autoritativo
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
-          return send({ t: 'guild_dep', ...(await guilds.withdrawItem(conn.accountId, m.index)) })
+          if (conn.playerId == null) return send({ t: 'guild_dep', error: 'sin sesión' })
+          const out = await guilds.withdrawItem(conn.accountId, m.index)
+          if (!out.ok) return send({ t: 'guild_dep', ...out })
+          const give = rooms.giveItem(conn.playerId, out.item)
+          if (!give.ok) { await guilds.depositItem(conn.accountId, out.item); return send({ t: 'guild_dep', error: 'bag lleno' }) }   // rollback al stash
+          return send({ t: 'guild_dep', ...out, inv: rooms.invOf(conn.accountId) })
         }
 
         case 'join': {
           if (!conn.accountId) return send({ t: 'error', error: 'no autenticado' })
           db.touchAccount(conn.accountId).catch(() => {})   // actividad (jugadores mensuales)
           if (conn.playerId != null) rooms.leave(conn.playerId)
-          // Oro autoritativo: se carga del personaje al entrar (fuente de verdad server-side).
-          const gold = m.spectator ? 0 : await db.getCharacterGold(conn.accountId)
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold })
+          // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
+          let gold = 0, inv = null
+          if (!m.spectator) {
+            const ch = await db.loadCharacter(conn.accountId)
+            gold = Math.floor(Number(ch?.data?.gold) || 0)
+            inv = ch?.data?.inventory || null
+          }
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, inv })
           conn.playerId = id
           send({ t: 'present', you: id, players: present, map: m.map, channel })
-          if (!m.spectator) send({ t: 'gold', gold, reason: 'init' })   // sincroniza el saldo autoritativo
+          if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + bag
           return
         }
 
@@ -194,13 +211,34 @@ wss.on('connection', (ws) => {
         }
 
         // ---------- Economía: oro autoritativo del servidor (Fase A) ----------
-        case 'sell': {       // vender un ítem al mercader; el VALOR lo computa el server
+        case 'sell': {       // vender un ítem del bag (por índice); el VALOR lo computa el server
           if (conn.playerId == null) return
-          return send({ t: 'sellack', ...rooms.sellItem(conn.playerId, m.id, m.count) })
+          return send({ t: 'sellack', ...rooms.sellItem(conn.playerId, m.index) })
+        }
+        case 'use': {        // usar un consumible del bag (por índice); el server saca 1 y valida posesión
+          if (conn.playerId == null) return
+          return send({ t: 'useack', ...rooms.useItem(conn.playerId, m.index) })
         }
         case 'buy': {        // comprar un ítem al mercader; el COSTO lo computa el server
           if (conn.playerId == null) return
           return send({ t: 'buyack', ...rooms.buyItem(conn.playerId, m.id) })
+        }
+        // ---------- Bag autoritativo: transferencias entre el bag y equipo/cinturón/tumba/forja ----------
+        case 'bag_take': {   // sacar un ítem del bag por índice (equipar / mandar al cinturón)
+          if (conn.playerId == null) return
+          return send({ t: 'bagack', op: 'take', ...rooms.takeItemAt(conn.playerId, m.index, m.qty || 1) })
+        }
+        case 'bag_give': {   // devolver un ítem al bag (desequipar / retirar de tumba / rollback)
+          if (conn.playerId == null) return
+          return send({ t: 'bagack', op: 'give', ...rooms.giveItem(conn.playerId, m.item) })
+        }
+        case 'bag_consume': {   // consumir N materiales del bag (forja / alquimia) — valida posesión
+          if (conn.playerId == null) return
+          return send({ t: 'bagack', op: 'consume', ...rooms.consumeItems(conn.playerId, m.id, m.qty || 1) })
+        }
+        case 'bag_dump': {   // al morir: vaciar el bag (los ítems van a la tumba client-side)
+          if (conn.playerId == null) return
+          return send({ t: 'bagack', op: 'dump', ...rooms.dumpBag(conn.playerId) })
         }
         case 'spend': {      // sink genérico: reparar / forjar / respec / ofrenda (el efecto local lo aplica el cliente)
           if (conn.playerId == null) return
