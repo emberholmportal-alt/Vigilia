@@ -126,6 +126,14 @@ const DICT = {
   trade_them_ok: { es: 'El otro confirmó ✓', en: 'They confirmed ✓' },
   trade_cancel: { es: 'Cancelar', en: 'Cancel' },
   trade_empty: { es: '(nada)', en: '(nothing)' },
+  // Menú de jugador
+  pm_lvl: { es: 'Nv', en: 'Lv' },
+  pm_trade: { es: 'Comerciar', en: 'Trade' },
+  pm_stats: { es: 'Ver stats', en: 'View stats' },
+  pm_class: { es: 'Clase', en: 'Class' },
+  pm_hp: { es: 'Vida', en: 'Health' },
+  pm_back: { es: 'Volver', en: 'Back' },
+  pm_close: { es: 'Cerrar', en: 'Close' },
   // Mercado (casa de subastas)
   market_open: { es: 'Mercado de jugadores', en: 'Player market' },
   market_title: { es: 'Mercado', en: 'Market' },

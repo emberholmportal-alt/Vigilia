@@ -42,7 +42,7 @@ export function playerCount() { return players.size }
 
 // Vista pública de un jugador (lo que ven los demás). Incluye `gfx` = capas del paperdoll
 // (equipo visible) y `dead` para que un recién llegado vea el estado correcto.
-function pub(p) { return { id: p.id, name: p.name, race: p.race, x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax } }
+function pub(p) { return { id: p.id, name: p.name, race: p.race, x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax, level: p.level || 1 } }
 
 function inChannel(map, ch) {
   const out = []
@@ -215,7 +215,11 @@ export function openChest(id, cid) { combat.playerOpenChest(id, cid) }
 // El cliente envía sus stats de combate (dependen del equipo) para que el server tire el daño.
 export function setStats(id, stats) {
   const p = players.get(id)
-  if (p && stats && stats.level) p.invCap = invCapForLevel(stats.level)   // capacidad usable del bag (parity con el HUD)
+  if (p && stats && stats.level) {
+    p.invCap = invCapForLevel(stats.level)
+    const lv = stats.level | 0
+    if (p.level !== lv) { p.level = lv; broadcast(p.map, p.ch, { t: 'plvl', id, level: lv }, id) }   // nivel visible para los demás
+  }
   combat.setStats(id, stats)
 }
 

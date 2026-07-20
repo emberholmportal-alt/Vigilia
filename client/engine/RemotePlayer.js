@@ -9,6 +9,9 @@ export class RemotePlayer {
     this.iso = iso
     this.id = p.id
     this.name = p.name || 'Viajero'
+    this.race = p.race || null
+    this.level = p.level || 1
+    this.gfx = p.gfx || null
     this.tx = p.x; this.ty = p.y
     this.dir = p.dir ?? 7
     this._tgx = this.tx; this._tgy = this.ty   // objetivo de interpolación

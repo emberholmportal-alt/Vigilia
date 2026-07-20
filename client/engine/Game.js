@@ -368,6 +368,7 @@ export class Game {
     net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
     net.on('gfx', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGfx(m.gfx) })   // gear de otro jugador
     net.on('php', (m) => { const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax) })   // vida de otro jugador
+    net.on('plvl', (m) => { const r = this.remotes?.get(m.id); if (r) r.level = m.level })          // nivel de otro jugador
     // Reconexión (clave en móvil): al caerse la red, net reintenta con backoff; al reabrir
     // el socket, re-autenticamos (resume) y reconstruimos el mapa actual (snapshots frescos).
     net.on('close', () => this.store.logMessage({ channel: 'sistema', text: tt('online_lost') }))
@@ -462,12 +463,13 @@ export class Game {
     this.renderer.objectLayer.addChild(r.view)
     this.remotes.set(p.id, r)
   }
-  // Tocar a un jugador cercano propone un intercambio (el server valida la cercanía).
+  // Tocar a un jugador abre un menú (comerciar / ver stats). La cercanía se calcula acá para
+  // habilitar el trade (el server igual la revalida). El menú lo pinta React desde el store.
   _tapRemote(rp) {
     if (this._spectator || this._dead || !rp) return
     const dx = (this.player.tx - rp.tx), dy = (this.player.ty - rp.ty)
-    if (dx * dx + dy * dy > 6 * 6) { this.store.showToast(tt('trade_too_far')); return }
-    this.store.requestTrade(rp.id, rp.name)
+    const near = (dx * dx + dy * dy) <= 6 * 6
+    this.store.openPlayerMenu({ id: rp.id, name: rp.name, race: rp.race, level: rp.level, hp: rp.hp, hpMax: rp.hpMax, near })
   }
   _removeRemote(id) {
     const r = this.remotes?.get(id)

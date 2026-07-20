@@ -560,6 +560,11 @@ export const useGameStore = create((set, get) => ({
   setPanel: (panel) => set({ panel }),
   togglePanel: (p) => set((s) => ({ panel: s.panel === p ? null : p })),
 
+  // --- menú de jugador (al tocar a otro: comerciar / ver stats) ---
+  playerMenu: null,          // { id, name, race, level, hp, hpMax, near } o null
+  openPlayerMenu: (info) => set({ playerMenu: info }),
+  closePlayerMenu: () => set({ playerMenu: null }),
+
   // --- trade P2P (ítems + oro; el server hace el swap atómico) ---
   tradeReq: null,            // { from, name } — pedido entrante (prompt)
   trade: null,               // { withId, withName, youIdx:[bagIndices], youGold, them:{items,gold}, youOk, themOk }
@@ -1441,6 +1446,7 @@ export const storeApi = {
   logMessage: (m) => useGameStore.getState().logMessage(m),
   // Trade P2P (Kintara #3): el loop de Pixi enruta los eventos de red y el tap a un jugador.
   requestTrade: (id, name) => useGameStore.getState().requestTrade(id, name),
+  openPlayerMenu: (info) => useGameStore.getState().openPlayerMenu(info),
   onTradeReq: (m) => useGameStore.getState().onTradeReq(m),
   onTradeOpen: (m) => useGameStore.getState().onTradeOpen(m),
   onTradeState: (m) => useGameStore.getState().onTradeState(m),

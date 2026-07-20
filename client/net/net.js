@@ -85,6 +85,8 @@ class Net {
         else if (m.t === 'gfx') this._emit(m.t, m)
         // vida de otro jugador (para su barra)
         else if (m.t === 'php') this._emit(m.t, m)
+        // nivel de otro jugador (cambió al subir) — para el menú de jugador
+        else if (m.t === 'plvl') this._emit(m.t, m)
       }
     })
   }

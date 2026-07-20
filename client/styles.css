@@ -144,11 +144,12 @@ html, body, #root {
 .gframe::after { bottom: 5px; }
 /* botón X rojo de Flare, arriba a la derecha (como los paneles del juego) */
 .gframe-x {
-  position: absolute; top: 10px; right: 12px; z-index: 2; width: 30px; height: 30px;
-  background: none; background-size: 100% 100%; background-repeat: no-repeat; border: 0; cursor: pointer;
-  filter: drop-shadow(0 1px 2px #000);
+  position: absolute; top: 12px; right: 12px; z-index: 2; width: 38px; aspect-ratio: 64 / 38;
+  /* button_x.png son 4 estados apilados; mostramos el primero (rojo normal), como .panel-close */
+  background: none; background-size: 100% 400%; background-position: center top; background-repeat: no-repeat;
+  border: 0; cursor: pointer; filter: drop-shadow(0 1px 2px #000);
 }
-.gframe-x:active { transform: scale(0.92); }
+.gframe-x:active { transform: scale(0.92); background-position: center 66.6%; }
 .gframe-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
   padding: 16px 52px 12px 22px; border-bottom: 1px solid rgba(201, 162, 39, 0.2);
@@ -216,6 +217,32 @@ html, body, #root {
 .trade-actions { display: flex; gap: 12px; justify-content: center; align-items: center; padding: 12px 0 16px; }
 .trade-actions .gframe-close { margin: 0; }
 .trade-actions .gframe-close:disabled { opacity: 0.6; cursor: default; }
+
+/* Menú de jugador (tocar a otro jugador) */
+.pm-backdrop { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12vh; }
+.pm-card {
+  width: min(320px, 86vw); background: linear-gradient(180deg, #241d2e, #191320); border: 1px solid #6a5a2e;
+  border-radius: 12px; box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6); padding: 14px; color: #e8dcc4;
+}
+.pm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid #3a3040; margin-bottom: 12px; }
+.pm-name { font-family: Georgia, serif; font-size: 17px; color: #f0e6d0; font-weight: 700; }
+.pm-lvl { font-size: 12px; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pm-actions { display: flex; gap: 8px; }
+.pm-actions.col { flex-direction: column; }
+.pm-btn {
+  flex: 1; font-family: Georgia, serif; font-size: 14px; padding: 11px 14px; border-radius: 7px; cursor: pointer;
+  background: rgba(20, 16, 26, 0.7); border: 1px solid #4a3f52; color: #d8cfc0;
+}
+.pm-btn.primary { color: #14111a; background: linear-gradient(180deg, #e6c85a, #c9a227); border-color: #8a6f1e; font-weight: 700; }
+.pm-btn:disabled { opacity: 0.45; cursor: default; }
+.pm-btn:active:not(:disabled) { transform: scale(0.98); }
+.pm-far { color: #d9a0a0; font-size: 12px; text-align: center; margin: 8px 0 0; }
+.pm-stats { display: flex; flex-direction: column; gap: 8px; }
+.pm-row { display: flex; justify-content: space-between; font-size: 13px; color: #b9adc6; }
+.pm-row b { color: #e8dcc4; }
+.pm-hpbar { height: 8px; border-radius: 4px; background: #2a2233; overflow: hidden; border: 1px solid #3a3040; }
+.pm-hpbar i { display: block; height: 100%; background: linear-gradient(90deg, #b8433a, #e0605a); }
+.pm-close { display: block; margin: 12px auto 0; background: transparent; border: 0; color: #9a8fae; font-size: 12px; cursor: pointer; text-decoration: underline; }
 
 /* Mercado (Kintara #4) */
 .shop-market-btn { font-size: 12px !important; padding: 4px 10px !important; }

@@ -10,6 +10,7 @@ import StartScreen from './ui/StartScreen.jsx'
 import Welcome from './ui/Welcome.jsx'
 import Trade from './ui/Trade.jsx'
 import Market from './ui/Market.jsx'
+import PlayerMenu from './ui/PlayerMenu.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
 import Inventory from './ui/Inventory.jsx'
 import Character from './ui/Character.jsx'
@@ -149,6 +150,7 @@ export default function App() {
       {phase === 'game' && waypointOpen && <Waypoints />}
       {phase === 'game' && !loading && !error && showWelcome && <Welcome />}
       {phase === 'game' && !loading && !error && <Trade />}
+      {phase === 'game' && !loading && !error && <PlayerMenu />}
       {phase === 'game' && <ZoneLoader />}
       {error && <div className="error">Error: {error}</div>}
 
