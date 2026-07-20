@@ -105,6 +105,7 @@ const DICT = {
   mission_reward_line: { es: '+{xp} XP · +{gold} oro · +{seals} sellos', en: '+{xp} XP · +{gold} gold · +{seals} seals' },
   mission_done: { es: '¡Misión completa!', en: 'Mission complete!' },
   mission_reward: { es: 'Recompensa: +{xp} XP, +{gold} oro, +{seals} sellos', en: 'Reward: +{xp} XP, +{gold} gold, +{seals} seals' },
+  mission_not_ready: { es: 'Todavía no la completaste', en: "You haven't completed it yet" },
   // sellos / cofre / ofrenda / guardián
   seals_word: { es: 'Sellos', en: 'Seals' },
   seal_need: { es: 'Te faltan sellos ({n})', en: 'You lack seals ({n})' },

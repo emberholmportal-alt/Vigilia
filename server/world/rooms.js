@@ -207,6 +207,7 @@ export function spendGold(id, amt, reason) {
   if (p.gold < amt) return { ok: false, error: 'no tenés tanto oro', gold: p.gold }
   p.gold -= amt
   p._goldDirty = true            // el nuevo saldo viaja en el ack del RPC (no se empuja aparte)
+  if (reason === 'offering') missionTick(id, 'offering', null, amt)   // la ofrenda avanza la misión (progreso = oro entregado)
   return { ok: true, gold: p.gold }
 }
 // --- Inventario AUTORITATIVO del servidor (Fase A.2) -----------------------------------------
@@ -372,11 +373,32 @@ async function persistGold(p) {
 // Reclamar una misión diaria: el oro se computa del set determinístico del día (shared/missions),
 // no del cliente, y se acredita UNA vez por día. La COMPLETITUD sigue siendo client-side por ahora
 // (mission-authority es una fase posterior) — esto acota el exploit a las 3 dailies fijas.
+// Progreso de misiones AUTORITATIVO: el server incrementa el avance desde SUS eventos (kill/cofre/
+// gather/contrato/ofrenda) para poder validar la completitud al reclamar. En memoria (se reinicia
+// con el server; el claim vuelve a exigir el avance — no es un exploit, sólo hay que rehacerla).
+// El cliente sigue mostrando su propio avance (cuenta los mismos eventos), pero el ORO/XP/sellos los
+// gatea el ack del server. Cierra "reclamar la recompensa sin cumplir la misión".
+export function missionTick(id, type, map, n = 1) {
+  const p = players.get(id); if (!p) return
+  const day = todayStr()
+  if (!p._mprog || p._mprog.day !== day) p._mprog = { day, prog: {} }
+  for (const m of dailyMissions(day)) {
+    if (m.type !== type) continue
+    if (m.map && map && m.map !== map) continue   // misiones atadas a un mapa (offering pasa map=null)
+    const cur = p._mprog.prog[m.id] || 0
+    if (cur >= m.target) continue
+    p._mprog.prog[m.id] = Math.min(m.target, cur + Math.max(1, n | 0))
+  }
+}
+
 export function claimMission(id, missionId) {
   const p = players.get(id); if (!p) return { ok: false }
   const m = dailyMissions().find((x) => x.id === missionId)
   if (!m) return { ok: false, error: 'misión inválida' }
   const day = todayStr()
+  // Completitud AUTORITATIVA: el server exige haber visto el avance suficiente (no confía en el cliente).
+  const prog = (p._mprog && p._mprog.day === day) ? (p._mprog.prog[missionId] || 0) : 0
+  if (prog < m.target) return { ok: false, error: 'todavía no la completaste', gold: p.gold }
   if (!p._claimed || p._claimed.day !== day) p._claimed = { day, set: new Set() }
   if (p._claimed.set.has(missionId)) return { ok: false, error: 'ya reclamada', gold: p.gold }
   p._claimed.set.add(missionId)
@@ -463,6 +485,7 @@ combat.init({
   broadcast: (map, ch, msg) => broadcast(map, ch, msg, null),
   awardGold: (id, amt, reason, x, y) => awardGold(id, amt, reason, x, y),   // faucets del mundo (kill/cofre)
   grantLoot: (id, drops) => grantLoot(id, drops),                           // ítems de loot (kill), autoritativos
+  missionTick: (id, type, map, n) => missionTick(id, type, map, n),         // avance de misiones autoritativo
 })
 combat.start()
 

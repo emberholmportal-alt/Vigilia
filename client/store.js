@@ -944,12 +944,22 @@ export const useGameStore = create((set, get) => ({
   claimMission: async (i) => {
     const s = get(); const m = s.missions[i]
     if (!m || m.claimed || m.progress < m.target) return
+    // Online: el server valida la COMPLETITUD (contó los mismos eventos autoritativos) y acredita el
+    // oro. Sólo si dice ok marcamos reclamada y damos XP/sellos. Cierra "reclamar sin cumplir".
+    if (isOnline()) {
+      const r = await net.claimMissionReq(m.id).catch(() => null)
+      if (!r || !r.ok) { get().showToast(tt('mission_not_ready')); return }
+      const missions = get().missions.slice(); missions[i] = { ...m, claimed: true }; set({ missions })
+      get().addXp(m.xp); if (m.seals) get().addSeals(m.seals)
+      if (typeof r.gold === 'number') set({ gold: r.gold })
+      get().showToast(tt('mission_reward', { xp: m.xp, gold: m.gold || 0, seals: m.seals || 0 }))
+      saveGame(get())
+      return
+    }
     const missions = s.missions.slice(); missions[i] = { ...m, claimed: true }
     set({ missions })
-    get().addXp(m.xp); if (m.seals) get().addSeals(m.seals)   // XP y sellos son client-side
-    // Oro: online lo acredita el server (computa el monto del set del día); offline, local.
-    if (isOnline()) { const r = await net.claimMissionReq(m.id).catch(() => null); if (r && r.ok && typeof r.gold === 'number') set({ gold: r.gold }) }
-    else if (m.gold) get().addGold(m.gold)
+    get().addXp(m.xp); if (m.seals) get().addSeals(m.seals)
+    if (m.gold) get().addGold(m.gold)
     get().showToast(tt('mission_reward', { xp: m.xp, gold: m.gold || 0, seals: m.seals || 0 }))
     saveGame(get())
   },

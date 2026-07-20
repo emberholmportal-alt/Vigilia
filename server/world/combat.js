@@ -283,6 +283,8 @@ export function playerGather(pid, nid) {
   ctx.broadcast(w.map, w.ch, { t: 'ndeplete', n: nid, by: pid })
   // El recurso va al bag AUTORITATIVO del server (empuja 'inv'); el cliente sólo aplica la XP de skill.
   if (ctx.grantLoot) ctx.grantLoot(pid, [{ id: nd.id, qty: 1 }])
+  // Avance de misión 'mina'/'hierba' autoritativo (según la skill del nodo).
+  if (ctx.missionTick) ctx.missionTick(pid, nd.skill === 'excavacion' ? 'mine' : 'herb', pl.map, 1)
   ctx.sendTo(pid, { t: 'ngather', n: nid, id: nd.id, skill: nd.skill })
 }
 
@@ -314,6 +316,7 @@ export function playerOpenChest(pid, cid) {
   if (roll.gold > 0 && ctx.awardGold) ctx.awardGold(pid, roll.gold, 'chest', c.x, c.y)
   // Los ítems del cofre van al bag AUTORITATIVO del server (empuja 'inv'); `cloot` es sólo para la animación.
   if (roll.drops && roll.drops.length && ctx.grantLoot) ctx.grantLoot(pid, roll.drops)
+  if (ctx.missionTick) ctx.missionTick(pid, 'chest', pl.map, 1)   // avance de misión 'cofre' autoritativo
   ctx.sendTo(pid, { t: 'cloot', c: cid, x: c.x, y: c.y, drops: roll.drops || [] })
 }
 
@@ -390,6 +393,8 @@ function killEnemy(w, e, killerId) {
   const boss = /boss|minotaur|elite/.test(e.s)
   const roll = rollMonsterDrop(e.lv, boss, 0)
   if (roll.drops.length && ctx.grantLoot) ctx.grantLoot(killerId, roll.drops)
+  // Avance de misiones AUTORITATIVO (matar / contrato): el server cuenta el kill en el mapa del mundo.
+  if (ctx.missionTick) { ctx.missionTick(killerId, 'kill', w.map, 1); if (e.contract) ctx.missionTick(killerId, 'contract', w.map, 1) }
   // Aviso al matador: XP autoritativa del server + los drops REALES (para la pila cosmética del
   // cliente; el bag ya lo actualizó el push 'inv'). Así el suelo muestra lo que de verdad cayó.
   const ek = { t: 'ekill', i: e.i, xp: e.xp, sprite: e.s, lv: e.lv, drops: roll.drops || [] }
