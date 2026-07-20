@@ -880,6 +880,8 @@ export class Game {
   // Clutter destructible: un sprite de caja de Flare que, al romperse, suelta algo de botín.
   // Instanciado por jugador (no compartido) → sin netcode, andan igual offline y online.
   async _buildBarrels(renderer, iso, map, grid, spawn) {
+    // En el pueblo no hay barriles rompibles: no debe haber "cosas para romper y adquirir ítems".
+    if (this.mapName === TOWN_MAP) return
     const BASE = import.meta.env.BASE_URL || '/'
     if (!this._barrelTex) { try { this._barrelTex = await Assets.load(BASE + 'assets/decor/barrel.png') } catch { this._barrelTex = null } }
     if (!this._barrelTex || this.destroyed) return
