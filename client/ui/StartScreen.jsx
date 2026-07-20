@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useT } from './useT.js'
 import { net, ONLINE, WALLET_REQUIRED, fetchStats } from '../net/net.js'
+import { SERVERS, loadServerId, saveServerId, serverById } from '../net/servers.js'
 import { walletSignIn, loadSession, clearSession } from '../net/wallet.js'
 import { deviceAuth } from '../net/online.js'
 import HowToPlay from './HowToPlay.jsx'
@@ -16,6 +17,7 @@ const short = (a) => (a ? a.slice(0, 4) + '…' + a.slice(-4) : '')
 export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, loading }) {
   const t = useT()
   const [wallet, setWallet] = useState(loadSession()?.pubkey || null)
+  const [serverId, setServerId] = useState(loadServerId())
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
   const [stats, setStats] = useState(null)
@@ -34,7 +36,7 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
 
   // Asegura sesión de billetera (reanuda con el token o firma de nuevo). { ok, char } o { ok:false }.
   async function ensureWallet() {
-    await net.connect()
+    await net.connect(serverById(serverId).url)
     const sess = loadSession()
     if (sess?.token) {
       const r = await net.resume(sess.token).catch(() => ({ ok: false }))
@@ -53,6 +55,7 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
     setBusy(false)
   }
   function disconnect() { clearSession(); setWallet(null) }
+  function chooseServer(id) { setServerId(id); saveServerId(id) }
 
   // PLAY: en producción la billetera es OBLIGATORIA (un clic conecta+firma y entra). En dev/local
   // se permite una cuenta de dispositivo (deviceAuth) para testear sin extensión de wallet.
@@ -60,7 +63,7 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
     if (!ONLINE) { onPlay(null); return }
     setBusy(true); setErr(null)
     try {
-      await net.connect()
+      await net.connect(serverById(serverId).url)
       let auth
       if (WALLET_REQUIRED) {
         auth = await ensureWallet()   // conecta + firma (o reanuda) — sin wallet no se juega
@@ -86,6 +89,22 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
           <div className="counters">
             <span className="counter"><i className="dot on" /> <b>{stats.online}</b> {t('players_online')}</span>
             <span className="counter"><b>{stats.monthly}</b> {t('players_monthly')}</span>
+          </div>
+        )}
+
+        {ONLINE && (
+          <div className="server-select">
+            <div className="server-label">{t('server_label')}</div>
+            <div className="server-list">
+              {SERVERS.map((sv) => (
+                <button key={sv.id} className={'server-item' + (sv.id === serverId ? ' on' : '')} onClick={() => chooseServer(sv.id)}>
+                  <span className="server-name">🌐 {sv.name}</span>
+                  <span className="server-region">{sv.region}</span>
+                  {sv.id === serverId && stats && <span className="server-pop"><i className="dot on" /> {stats.online}</span>}
+                </button>
+              ))}
+            </div>
+            {SERVERS.length === 1 && <p className="server-soon">{t('server_soon')}</p>}
           </div>
         )}
 

@@ -399,6 +399,8 @@ const DICT = {
   spectating: { es: 'Modo espectador', en: 'Spectator mode' },
   players_online: { es: 'en línea', en: 'online' },
   players_monthly: { es: 'este mes', en: 'this month' },
+  server_label: { es: 'Servidor', en: 'Server' },
+  server_soon: { es: 'Más servidores próximamente', en: 'More servers coming soon' },
   entering_world: { es: 'Entrando a Velgrim…', en: 'Entering Velgrim…' },
   need_name: { es: 'Elegí un nombre', en: 'Choose a name' },
   // slots del mouse (M1 / M2) + configuración del especial

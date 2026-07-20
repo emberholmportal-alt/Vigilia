@@ -74,6 +74,21 @@ html, body, #root {
 .counters { display: flex; gap: 18px; justify-content: center; margin: 0 0 16px; flex-wrap: wrap; }
 .counter { font-family: Georgia, serif; font-size: 13px; color: var(--parch); display: inline-flex; align-items: center; gap: 6px; }
 .counter b { color: var(--gold); font-size: 16px; font-variant-numeric: tabular-nums; }
+
+/* Selección de servidor (Kintara #5) — mundo nominal + población en vivo */
+.server-select { margin: 0 0 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.server-label { font-family: Georgia, serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.server-list { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 300px; }
+.server-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 14px; cursor: pointer;
+  background: rgba(20, 16, 26, 0.55); border: 1px solid #4a3f52; border-radius: 7px; color: var(--parch);
+  font-family: Georgia, serif; font-size: 14px;
+}
+.server-item.on { border-color: var(--gold); box-shadow: 0 0 8px rgba(230, 200, 90, 0.28); }
+.server-name { flex: 1; text-align: left; color: #e8dcc4; }
+.server-region { font-size: 11px; color: var(--dim); }
+.server-pop { display: inline-flex; align-items: center; gap: 5px; color: var(--gold); font-variant-numeric: tabular-nums; font-size: 13px; }
+.server-soon { color: var(--dim); font-family: 'BonaNova', Georgia, serif; font-size: 11px; font-style: italic; margin: 2px 0 0; }
 .counter .dot { width: 8px; height: 8px; border-radius: 50%; background: #4f9d6b; box-shadow: 0 0 6px #4f9d6b; }
 .counter .dot.on { animation: dotPulse 2s ease-in-out infinite; }
 @keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
