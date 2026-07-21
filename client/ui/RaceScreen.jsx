@@ -11,9 +11,16 @@ const PORTRAIT = { humano: 'male07', elfo: 'female04', enano: 'male16', orco: 'g
 const BASE = import.meta.env.BASE_URL || '/'
 const faceUrl = (id) => `${BASE}assets/portraits/${PORTRAIT[id] || 'male01'}.png`
 
+const BODIES = [
+  { id: 'male', label: 'Hombre', label_en: 'Male' },
+  { id: 'female', label: 'Mujer', label_en: 'Female' },
+  { id: 'female_dark', label: 'Mujer (piel oscura)', label_en: 'Female (dark skin)' },
+]
+
 export default function RaceScreen({ onChoose, onBack }) {
   const [sel, setSel] = useState(RACES[0].id)
   const [name, setName] = useState('')
+  const [body, setBody] = useState('male')
   const race = RACES.find((r) => r.id === sel)
   const t = useT()
   const en = t.lang === 'en'
@@ -52,6 +59,13 @@ export default function RaceScreen({ onChoose, onBack }) {
           </div>
           <div className="race-mods">{en ? (race.modText_en || race.modText) : race.modText}</div>
           <p className="race-fantasy">“{en ? (race.fantasy_en || race.fantasy) : race.fantasy}”</p>
+          <div className="body-pick">
+            {BODIES.map((b) => (
+              <button key={b.id} className={'body-opt' + (b.id === body ? ' on' : '')} onClick={() => setBody(b.id)}>
+                {en ? b.label_en : b.label}
+              </button>
+            ))}
+          </div>
           <input
             className="name-input"
             placeholder={t('your_name')}
@@ -59,7 +73,7 @@ export default function RaceScreen({ onChoose, onBack }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <button className="enter primary confirm" disabled={!name.trim()} onClick={() => onChoose(race.id, name.trim())}>
+          <button className="enter primary confirm" disabled={!name.trim()} onClick={() => onChoose(race.id, name.trim(), body)}>
             {name.trim() ? t('incarnate', { race: rn(race) }) : t('need_name')}
           </button>
         </div>

@@ -124,6 +124,7 @@ export const useGameStore = create((set, get) => ({
 
   // --- personaje ---
   race: null,
+  body: 'male',             // cuerpo/aspecto elegido: male | female | female_dark
   playerName: 'Vigilante',
   gold: 0,
   speech: null,             // {text, until} — chat propio sobre la cabeza
@@ -713,7 +714,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined, graves = null, stash = null, spectator = false }) => {
+  initCharacter: ({ race, body = 'male', gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined, graves = null, stash = null, spectator = false }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -731,7 +732,8 @@ export const useGameStore = create((set, get) => ({
     // Botón derecho: si no viene del save, se liga por defecto a la 1ª habilidad desbloqueada.
     const special = specialAbility !== undefined ? specialAbility : (unlockedAbilities(st)[0]?.id || null)
     set({
-      race, gold, stats: st, xp, skills: skills || emptySkills(),
+      race, body: (body === 'female' || body === 'female_dark') ? body : 'male',
+      gold, stats: st, xp, skills: skills || emptySkills(),
       attrAlloc: alloc, skillRanks: ranks, questFlags: questFlags || {}, specialAbility: special,
       graves: graves || [], _graveId: (graves || []).reduce((m, g) => Math.max(m, g.id || 0), 0),
       stash: stash || [],
@@ -1477,6 +1479,7 @@ export const storeApi = {
   getPlayerLevel: () => useGameStore.getState().stats?.level || 1,
   getRaceName: () => raceName(useGameStore.getState().race) || '',
   getRaceId: () => useGameStore.getState().race?.id || null,
+  getBody: () => useGameStore.getState().body || 'male',
   getRaceAppearance: () => { const r = useGameStore.getState().race; return { tint: (r && r.tint) || 0xffffff, head: (r && r.head) || 'head_short' } },
   setNearby: (v) => useGameStore.getState().setNearby(v),
   getInteractSeq: () => useGameStore.getState().interactSeq,

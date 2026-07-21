@@ -353,6 +353,14 @@ html, body, #root {
 .grave-cell.dim { opacity: 0.72; cursor: default; }
 .trade-bag-cta { font-style: italic; color: #8a7c5e; font-size: 11px; }
 .trade-remove-cta { font-style: italic; color: #8a7c5e; font-size: 11px; font-weight: 400; }
+/* selector de cuerpo/género en la creación de personaje */
+.body-pick { display: flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; }
+.body-opt {
+  flex: 1 1 auto; min-width: 84px; font-family: 'BonaNova', Georgia, serif; font-size: 13px;
+  padding: 7px 10px; cursor: pointer; color: #6a4a24; background: rgba(120, 90, 50, 0.12);
+  border: 1px solid #b79a63; border-radius: 4px;
+}
+.body-opt.on { color: #3a2510; background: linear-gradient(180deg, #e6cf8f, #c9a227); border-color: #8a6f1e; font-weight: 700; }
 .trade-howto {
   margin: 4px 18px 2px; padding: 8px 12px; font-size: 12px; line-height: 1.45; color: #c2b189;
   background: rgba(0, 0, 0, 0.25); border-left: 2px solid var(--bronze); border-radius: 3px;

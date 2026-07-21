@@ -12,6 +12,7 @@ export class RemotePlayer {
     this.id = p.id
     this.name = p.name || 'Viajero'
     this.race = p.race || null
+    this.body = p.body || 'male'
     this.level = p.level || 1
     this.gfx = p.gfx || null
     this.tx = p.x; this.ty = p.y
@@ -43,6 +44,7 @@ export class RemotePlayer {
     if (p.hp != null && p.hpMax) this.setHp(p.hp, p.hpMax)
 
     this.paperdoll.setDirection(this.dir)
+    this.paperdoll.setBody(this.body)                        // cuerpo (male/female/female_dark) del jugador remoto
     this.paperdoll.setRace(raceAppearance(this.race))        // tinte de piel + cabeza según la raza
     this._ready = this.paperdoll.setEquipment(p.gfx || {})   // equipo real del jugador remoto
     if (p.dead) this.setDead(true)                           // se unió mientras estaba caído

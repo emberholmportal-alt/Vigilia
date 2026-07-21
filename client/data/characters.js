@@ -47,7 +47,7 @@ export function raceAppearance(id) {
 // Arma el personaje inicial para una raza: equipo puesto + pocas cosas más + oro. El kit es CANÓNICO
 // y vive en shared/ (el server lo asigna autoritativo al crear: un blob manipulado no da oro/equipo
 // falso). Acá sólo le sumamos el objeto `race` para la UI.
-export function startingCharacter(raceId) {
+export function startingCharacter(raceId, body = 'male') {
   const race = raceById(raceId) || RACES[0]
-  return { race, ...startingKit(race.id) }
+  return { race, body: (body === 'female' || body === 'female_dark') ? body : 'male', ...startingKit(race.id) }
 }

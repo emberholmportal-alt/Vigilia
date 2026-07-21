@@ -51,6 +51,7 @@ export function unpackSave(s) {
       specialAbility: s.specialAbility ?? undefined,
       graves: s.graves || null,
       stash: s.stash || null,
+      body: s.body || 'male',
   }
 }
 
@@ -80,6 +81,7 @@ export function snapshot(state) {
     specialAbility: state.specialAbility ?? null,
     graves: state.graves || [],
     stash: state.stash || [],
+    body: state.body || 'male',
   }
 }
 
