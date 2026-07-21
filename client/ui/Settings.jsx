@@ -8,7 +8,7 @@ import { Sound, Mute, Plug } from './Icon.jsx'
 
 const short = (a) => (a ? a.slice(0, 4) + '…' + a.slice(-4) : '')
 
-export default function Settings() {
+export default function Settings({ onLogout }) {
   const muted = useGameStore((s) => s.muted)
   const toggleMute = useGameStore((s) => s.toggleMute)
   const lang = useGameStore((s) => s.lang)
@@ -40,7 +40,7 @@ export default function Settings() {
         {ONLINE && wallet && (
           <div className="settings-row">
             <span>{t('wallet_connected')} <b className="wallet-addr">{short(wallet)}</b></span>
-            <button className="wallet-disc" onClick={() => { clearSession(); setWallet(null) }}>
+            <button className="wallet-disc" onClick={() => { clearSession(); setWallet(null); onLogout && onLogout() }}>
               <Plug /> {t('wallet_disconnect')}
             </button>
           </div>

@@ -55,7 +55,7 @@ export default function App() {
                     belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills, discovered: s.discovered,
                     missions: s.missions, missionsDate: s.missionsDate, seals: s.seals,
                     attrAlloc: s.attrAlloc, skillRanks: s.skillRanks, questFlags: s.questFlags,
-                    specialAbility: s.specialAbility, graves: s.graves, stash: s.stash, body: s.body })
+                    specialAbility: s.specialAbility, graves: s.graves, stash: s.stash, stashGold: s.stashGold, body: s.body })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
@@ -148,7 +148,7 @@ export default function App() {
       {phase === 'game' && panel === 'inventory' && <Inventory />}
       {phase === 'game' && panel === 'character' && <Character />}
       {phase === 'game' && panel === 'powers' && <Powers />}
-      {phase === 'game' && panel === 'settings' && <Settings />}
+      {phase === 'game' && panel === 'settings' && <Settings onLogout={() => { net.close(); useGameStore.getState().setPanel(null); setPhase('start') }} />}
       {phase === 'game' && panel === 'shop' && <Vendor />}
       {phase === 'game' && panel === 'smith' && <Blacksmith />}
       {phase === 'game' && panel === 'alchemy' && <Alchemy />}

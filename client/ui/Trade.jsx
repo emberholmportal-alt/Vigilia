@@ -2,14 +2,13 @@
 // (tu oferta / la del otro) + tu bolsa para ofrecer ítems y un campo de oro. Doble confirmación;
 // el server hace el swap ATÓMICO (valida posesión). Toda la lógica de red vive en el store.
 import { useT } from './useT.js'
-import { useGameStore, beltCapacityOf } from '../store.js'
+import { useGameStore } from '../store.js'
 import { itemName } from '../i18n.js'
 import { itemById } from '../data/items.js'
 import ItemIcon from './ItemIcon.jsx'
 import { Gold, Swap } from './Icon.jsx'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
-const ARMOR_SLOTS = ['head', 'chest', 'legs', 'feet', 'hands', 'main', 'off']
 
 export default function Trade() {
   const t = useT()
@@ -17,9 +16,6 @@ export default function Trade() {
   const tradeReq = useGameStore((s) => s.tradeReq)
   const trade = useGameStore((s) => s.trade)
   const inventory = useGameStore((s) => s.inventory)
-  const equipment = useGameStore((s) => s.equipment)
-  const belt = useGameStore((s) => s.belt)
-  const equippedBelt = useGameStore((s) => s.equippedBelt)
   const gold = useGameStore((s) => s.gold)
   const accept = useGameStore((s) => s.acceptTradeReq)
   const decline = useGameStore((s) => s.declineTradeReq)
@@ -89,36 +85,16 @@ export default function Trade() {
 
         <p className="trade-howto">{t('trade_howto')}</p>
 
-        {/* tu inventario completo: armadura + cinturón (contexto) + bolsa (tocá para ofrecer) */}
+        {/* Sólo la BOLSA: son los ítems ofrecibles. Para ofrecer armadura o cinturón, desequipalos
+            antes en el inventario (van a la bolsa). Así el panel coincide con las instrucciones. */}
         <div className="trade-bag">
-          <h4>{t('trade_your_inv')}</h4>
-          <div className="stash-inv-block">
-            <span className="stash-inv-lbl">{t('grave_armor')}</span>
-            <div className="stash-grid">
-              {ARMOR_SLOTS.map((k, idx) => { const it = equipment[k]; return (
-                <div key={idx} className="grave-cell dim" title={it ? itemName(it, lang) : ''}>{it && <ItemIcon icon={it.icon} size={26} />}</div>
-              ) })}
-            </div>
-          </div>
-          {beltCapacityOf(equippedBelt) > 0 && (
-            <div className="stash-inv-block">
-              <span className="stash-inv-lbl">{t('belt')}</span>
-              <div className="stash-grid">
-                {Array.from({ length: beltCapacityOf(equippedBelt) }).map((_, i) => (
-                  <div key={i} className="grave-cell dim" title={belt[i] ? itemName(belt[i], lang) : ''}>{belt[i] && <ItemIcon icon={belt[i].icon} size={26} count={belt[i].count} />}</div>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="stash-inv-block">
-            <span className="stash-inv-lbl">{t('stash_your_bag')} <em className="trade-bag-cta">({t('trade_tap_to_offer')})</em></span>
-            <div className="stash-grid">
-              {inventory.some((it, i) => it && !trade.youIdx.includes(i))
-                ? inventory.map((it, i) => (it && !trade.youIdx.includes(i)
-                    ? <button key={i} className="grave-cell" onClick={() => toggle(i)} title={itemName(it, lang)}><ItemIcon icon={it.icon} size={26} count={it.count} /></button>
-                    : null))
-                : <p className="stash-empty">{t('trade_bag_empty')}</p>}
-            </div>
+          <h4>{t('stash_your_bag')} <em className="trade-bag-cta">({t('trade_tap_to_offer')})</em></h4>
+          <div className="stash-grid">
+            {inventory.some((it, i) => it && !trade.youIdx.includes(i))
+              ? inventory.map((it, i) => (it && !trade.youIdx.includes(i)
+                  ? <button key={i} className="grave-cell" onClick={() => toggle(i)} title={itemName(it, lang)}><ItemIcon icon={it.icon} size={26} count={it.count} /></button>
+                  : null))
+              : <p className="stash-empty">{t('trade_bag_empty')}</p>}
           </div>
         </div>
 

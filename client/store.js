@@ -649,6 +649,7 @@ export const useGameStore = create((set, get) => ({
   // persistido en el save. En ambos casos, `stashItems` es lo que muestra el modal.
   stash: [],                 // offline: registros guardados; se persiste en el save
   stashItems: [],            // lo que muestra el modal (online: del server; offline: espejo de `stash`)
+  stashGold: 0,              // oro guardado en la bóveda del alijo (online: server; offline: local)
   stashMax: 20,
   stashBusy: false,
   openStash: () => { set({ panel: 'stash' }); get().refreshStash() },
@@ -656,7 +657,7 @@ export const useGameStore = create((set, get) => ({
     if (isOnline()) {
       set({ stashBusy: true })
       const r = await net.stashView().catch(() => null)
-      set({ stashItems: r?.ok ? r.items : [], stashMax: r?.max || 20, stashBusy: false })
+      set({ stashItems: r?.ok ? r.items : [], stashGold: r?.gold || 0, stashMax: r?.max || 20, stashBusy: false })
     } else {
       set({ stashItems: (get().stash || []).slice(), stashMax: 20 })
     }
@@ -701,6 +702,60 @@ export const useGameStore = create((set, get) => ({
     saveGame(get())
     return { ok: true }
   },
+  // Depositar oro en la bóveda del alijo. Online: el server debita el oro VIVO y acredita la bóveda.
+  stashDepositGold: async (amount) => {
+    const amt = Math.floor(Number(amount) || 0)
+    if (amt <= 0) return { ok: false }
+    if (isOnline()) {
+      const r = await net.stashGold('in', amt).catch(() => null)
+      if (!r || !r.ok) { get().showToast(r?.error || tt('stash_fail')); return { ok: false } }
+      const patch = { stashGold: r.stashGold ?? get().stashGold }
+      if (r.gold != null) patch.gold = r.gold
+      set(patch)
+      return { ok: true }
+    }
+    const s = get()
+    if ((s.gold || 0) < amt) { get().showToast(tt('stash_fail')); return { ok: false } }
+    set({ gold: s.gold - amt, stashGold: (s.stashGold || 0) + amt })
+    saveGame(get())
+    return { ok: true }
+  },
+  // Retirar oro de la bóveda del alijo al oro vivo.
+  stashWithdrawGold: async (amount) => {
+    const amt = Math.floor(Number(amount) || 0)
+    if (amt <= 0) return { ok: false }
+    if (isOnline()) {
+      const r = await net.stashGold('out', amt).catch(() => null)
+      if (!r || !r.ok) { get().showToast(r?.error || tt('stash_fail')); return { ok: false } }
+      const patch = { stashGold: r.stashGold ?? get().stashGold }
+      if (r.gold != null) patch.gold = r.gold
+      set(patch)
+      return { ok: true }
+    }
+    const s = get()
+    if ((s.stashGold || 0) < amt) { get().showToast(tt('stash_fail')); return { ok: false } }
+    set({ gold: (s.gold || 0) + amt, stashGold: s.stashGold - amt })
+    saveGame(get())
+    return { ok: true }
+  },
+  // Pasa un ítem del cinturón a la bolsa (para poder guardarlo en el alijo, vender, etc.). Online:
+  // vuelve al bag autoritativo (bagGive, validado contra el ledger). El cinturón es client-side.
+  beltToBag: async (beltIndex) => {
+    const s = get()
+    const it = s.belt[beltIndex]; if (!it) return { ok: false }
+    const qty = it.count || 1
+    if (isOnline()) {
+      const g = await net.bagGive(get()._recOf(it)).catch(() => null)
+      if (!g || !g.ok) { get().showToast(g?.error || tt('inv_full')); return { ok: false } }
+      get()._mirrorInv(g.inv)
+    } else {
+      if (!get().addItem({ ...it }, qty)) { get().showToast(tt('inv_full')); return { ok: false } }
+    }
+    const belt = s.belt.slice(); belt[beltIndex] = null
+    set({ belt })
+    saveGame(get())
+    return { ok: true }
+  },
 
   // --- bienvenida (1 vez por personaje) ---
   showWelcome: false,        // el modal de bienvenida está visible (lo dispara initCharacter la 1ª vez)
@@ -714,7 +769,7 @@ export const useGameStore = create((set, get) => ({
 
   // Inicializa personaje con su kit real (inventario + equipo) y calcula stats. Acepta
   // progreso (xp/skills) si viene de una partida guardada; si no, arranca en 0.
-  initCharacter: ({ race, body = 'male', gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined, graves = null, stash = null, spectator = false }) => {
+  initCharacter: ({ race, body = 'male', gold, inventory, equipment, belt, equippedBelt = null, xp = 0, skills = null, discovered = null, missions = null, missionsDate = '', seals = 0, attrAlloc = null, skillRanks = null, questFlags = null, specialAbility = undefined, graves = null, stash = null, stashGold = 0, spectator = false }) => {
     const inv = inventory.slice(0, INVENTORY_SIZE)
     while (inv.length < INVENTORY_SIZE) inv.push(null)
     const level = playerLevelFromXp(xp)
@@ -736,7 +791,7 @@ export const useGameStore = create((set, get) => ({
       gold, stats: st, xp, skills: skills || emptySkills(),
       attrAlloc: alloc, skillRanks: ranks, questFlags: questFlags || {}, specialAbility: special,
       graves: graves || [], _graveId: (graves || []).reduce((m, g) => Math.max(m, g.id || 0), 0),
-      stash: stash || [],
+      stash: stash || [], stashGold: stashGold || 0,
       spectator: !!spectator,
       inventory: inv, equipment: equip, belt: b, equippedBelt,
       discovered: discovered || {},

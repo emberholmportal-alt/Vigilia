@@ -178,6 +178,7 @@ class Net {
   async stashView() { this._send({ t: 'stash_view' }); return this._once('stash') }
   async stashIn(index) { this._send({ t: 'stash_in', index }); return this._once('stash') }
   async stashOut(index) { this._send({ t: 'stash_out', index }); return this._once('stash') }
+  async stashGold(dir, amount) { this._send({ t: 'stash_gold', dir, amount }); return this._once('stash') }
   close() { this._wantOpen = false; if (this._reconnectT) { clearTimeout(this._reconnectT); this._reconnectT = null } try { this.ws?.close() } catch {} }
 }
 

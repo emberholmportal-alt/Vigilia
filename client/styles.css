@@ -350,6 +350,22 @@ html, body, #root {
 }
 .grave-cell.dim { opacity: 0.72; cursor: default; }
 .trade-bag-cta { font-style: italic; color: #8a7c5e; font-size: 11px; }
+/* Bóveda de oro del alijo */
+.stash-gold { margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(156, 122, 46, 0.22); }
+.stash-gold-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.stash-gold-head .stash-inv-lbl { margin: 0; }
+.stash-gold-amt { color: var(--gold); font-size: 16px; font-variant-numeric: tabular-nums; }
+.stash-gold-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.stash-gold-row input {
+  width: 88px; background: #14111a; border: 1px solid #4a3f52; border-radius: 4px;
+  color: #e8dcc4; padding: 6px 8px; font-family: inherit; font-size: 13px;
+}
+.stash-gold-btn {
+  font-family: 'BonaNova', Georgia, serif; font-size: 13px; padding: 6px 12px; border-radius: 4px; cursor: pointer;
+  color: #14100a; background: linear-gradient(180deg, #d8b552, #a67e22); border: 1px solid #5c4715; font-weight: 700;
+}
+.stash-gold-btn:disabled { opacity: 0.5; cursor: default; }
+.stash-gold-wallet { display: block; margin-top: 6px; font-size: 12px; color: #9a8fae; font-variant-numeric: tabular-nums; }
 .trade-remove-cta { font-style: italic; color: #8a7c5e; font-size: 11px; font-weight: 400; }
 /* selector de cuerpo/género en la creación de personaje */
 .body-pick { display: flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; }

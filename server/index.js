@@ -265,6 +265,24 @@ wss.on('connection', (ws) => {
           if (!give.ok) { await stash.depositItem(conn.accountId, out.item); return send({ t: 'stash', error: 'bag lleno' }) }   // rollback al alijo
           return send({ t: 'stash', ...out, inv: rooms.invOf(conn.accountId) })
         }
+        case 'stash_gold': {   // oro: m.dir 'in' deposita (oro vivo -> bóveda), 'out' retira (bóveda -> oro vivo)
+          if (!conn.accountId) return send({ t: 'stash', error: 'no autenticado' })
+          if (conn.playerId == null) return send({ t: 'stash', error: 'sin sesión' })
+          const amt = Math.floor(Number(m.amount) || 0)
+          if (amt <= 0) return send({ t: 'stash', error: 'monto inválido' })
+          if (m.dir === 'out') {
+            const w = await stash.withdrawGold(conn.accountId, amt)
+            if (!w.ok) return send({ t: 'stash', ...w })
+            const gold = rooms.awardGold(conn.playerId, amt, 'stash_out')   // acredita al oro vivo (broadcast 'gold')
+            return send({ t: 'stash', ok: true, stashGold: w.gold, gold })
+          }
+          // depositar: primero debitá el oro VIVO (autoritativo); si no alcanza, abortá antes de tocar la bóveda
+          const spent = rooms.spendGold(conn.playerId, amt, 'stash_in')
+          if (!spent.ok) return send({ t: 'stash', error: spent.error || 'no tenés tanto oro' })
+          const dep = await stash.depositGold(conn.accountId, amt)
+          if (!dep.ok) { rooms.awardGold(conn.playerId, amt, 'stash_rollback'); return send({ t: 'stash', ...dep }) }   // rollback al oro vivo
+          return send({ t: 'stash', ok: true, stashGold: dep.gold, gold: spent.gold })
+        }
 
         case 'join': {
           if (!conn.accountId) return send({ t: 'error', error: 'no autenticado' })

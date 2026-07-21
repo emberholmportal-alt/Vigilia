@@ -12,7 +12,31 @@ export const STASH_MAX = 20   // capacidad inicial (5×4). Ampliable más adelan
 export async function view(accountId) {
   if (!accountId) return { ok: false, error: 'no autenticado' }
   const items = await db.getStash(accountId)
-  return { ok: true, items, max: STASH_MAX }
+  const gold = await db.getStashGold(accountId)
+  return { ok: true, items, gold, max: STASH_MAX }
+}
+
+// Suma oro a la bóveda del alijo (el caller ya debitó el oro VIVO del jugador). Bajo lock por cuenta.
+export async function depositGold(accountId, amount) {
+  const amt = Math.floor(Number(amount) || 0)
+  if (amt <= 0) return { ok: false, error: 'monto inválido' }
+  return db.withAccountLock(accountId, async () => {
+    const g = await db.getStashGold(accountId)
+    await db.setStashGold(accountId, g + amt)
+    return { ok: true, gold: g + amt }
+  })
+}
+
+// Saca oro de la bóveda (el caller lo acredita al oro vivo). Falla si no alcanza. Bajo lock por cuenta.
+export async function withdrawGold(accountId, amount) {
+  const amt = Math.floor(Number(amount) || 0)
+  if (amt <= 0) return { ok: false, error: 'monto inválido' }
+  return db.withAccountLock(accountId, async () => {
+    const g = await db.getStashGold(accountId)
+    if (g < amt) return { ok: false, error: 'no hay tanto oro en el alijo' }
+    await db.setStashGold(accountId, g - amt)
+    return { ok: true, gold: g - amt }
+  })
 }
 
 // Guarda un ítem (registro ya sacado del bag por el caller). Devuelve { ok, items } o error.

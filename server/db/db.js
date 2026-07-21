@@ -72,8 +72,11 @@ export async function init() {
       );
       CREATE TABLE IF NOT EXISTS player_stash (
         account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
-        items JSONB DEFAULT '[]'::jsonb
+        items JSONB DEFAULT '[]'::jsonb,
+        gold BIGINT DEFAULT 0
       );`)
+    // Migración: sumar la columna de oro del alijo a tablas ya creadas sin ella.
+    await pg.query(`ALTER TABLE player_stash ADD COLUMN IF NOT EXISTS gold BIGINT DEFAULT 0;`)
     console.log('[db] PostgreSQL conectado')
     return
   }
@@ -88,6 +91,7 @@ export async function init() {
   if (!file.guildDeposit) file.guildDeposit = {}     // guild_id -> {gold, items:[]}
   if (!file.market) file.market = []                 // [{id, seller, seller_name, item, price, created_at, expires_at}]
   if (!file.stash) file.stash = {}                   // account_id -> items[] (alijo privado)
+  if (!file.stashGold) file.stashGold = {}           // account_id -> gold (bóveda del alijo)
   if (file.marketSeq == null) file.marketSeq = file.market.reduce((m, l) => Math.max(m, l.id), 0) + 1
   if (file.guildSeq == null) file.guildSeq = file.guilds.reduce((m, g) => Math.max(m, g.id), 0) + 1
   seq = file.accounts.reduce((m, a) => Math.max(m, a.id), 0) + 1
@@ -394,6 +398,28 @@ export async function setStash(accountId, items) {
     return
   }
   file.stash[accountId] = items || []
+  flush()
+}
+
+// Oro guardado en el alijo (bóveda personal). Se mueve contra el oro VIVO del jugador (rooms), no
+// contra el oro persistido del personaje, así no desincroniza con la sesión.
+export async function getStashGold(accountId) {
+  if (pg) {
+    const r = await pg.query('SELECT gold FROM player_stash WHERE account_id=$1', [accountId])
+    return Math.floor(Number(r.rows[0] && r.rows[0].gold) || 0)
+  }
+  return Math.floor(Number(file.stashGold[accountId]) || 0)
+}
+export async function setStashGold(accountId, gold) {
+  const g = Math.max(0, Math.floor(Number(gold) || 0))
+  if (pg) {
+    await pg.query(
+      `INSERT INTO player_stash (account_id, gold) VALUES ($1,$2)
+       ON CONFLICT (account_id) DO UPDATE SET gold=$2`,
+      [accountId, g])
+    return
+  }
+  file.stashGold[accountId] = g
   flush()
 }
 
