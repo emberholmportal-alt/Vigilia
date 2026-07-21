@@ -3,6 +3,7 @@
 // (cuerpo base + nombre); sincronizar el equipo remoto es un paso siguiente del protocolo.
 import { Container, Graphics, Text } from 'pixi.js'
 import { Paperdoll } from './Paperdoll.js'
+import { raceAppearance } from '../data/characters.js'
 
 export class RemotePlayer {
   constructor(iso, manifest, p) {
@@ -38,6 +39,7 @@ export class RemotePlayer {
     if (p.hp != null && p.hpMax) this.setHp(p.hp, p.hpMax)
 
     this.paperdoll.setDirection(this.dir)
+    this.paperdoll.setRace(raceAppearance(this.race))        // tinte de piel + cabeza según la raza
     this._ready = this.paperdoll.setEquipment(p.gfx || {})   // equipo real del jugador remoto
     if (p.dead) this.setDead(true)                           // se unió mientras estaba caído
     // Tappable: tocar a otro jugador abre la opción de comerciar (P2P).

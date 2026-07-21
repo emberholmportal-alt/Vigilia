@@ -55,14 +55,14 @@ export default function Trade() {
 
         <div className="trade-cols">
           <div className="trade-col">
-            <h3>{t('trade_your_offer')}</h3>
+            <h3>{t('trade_your_offer')} {youItems.length > 0 && <em className="trade-remove-cta">({t('trade_tap_to_remove')})</em>}</h3>
             <div className="trade-slots">
               {youItems.map(({ i, it }) => (
                 <button key={i} className="trade-slot on" onClick={() => toggle(i)} title={itemName(it, lang)}>
                   <ItemIcon icon={it.icon} size={30} count={it.count} />
                 </button>
               ))}
-              {!youItems.length && <span className="trade-empty">{t('trade_empty')}</span>}
+              {!youItems.length && <span className="trade-empty">{t('trade_offer_empty')}</span>}
             </div>
             <div className="trade-gold-row">
               <span className="trade-gold-lbl"><Gold /> {t('trade_gold')}</span>
@@ -86,6 +86,8 @@ export default function Trade() {
             <div className={'trade-ok' + (trade.themOk ? ' on' : '')}>{trade.themOk ? t('trade_them_ok') : t('trade_waiting_them')}</div>
           </div>
         </div>
+
+        <p className="trade-howto">{t('trade_howto')}</p>
 
         {/* tu inventario completo: armadura + cinturón (contexto) + bolsa (tocá para ofrecer) */}
         <div className="trade-bag">

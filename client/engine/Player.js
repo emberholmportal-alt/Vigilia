@@ -91,6 +91,8 @@ export class Player {
     this._bubbleText = ''
   }
 
+  setRace(app) { this.paperdoll.setRace(app) }
+
   async setEquipment(equip) {
     await this.paperdoll.setEquipment(equip)
   }

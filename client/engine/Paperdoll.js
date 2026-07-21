@@ -87,6 +87,10 @@ export class Paperdoll {
       this.sprites[type] = s
     }
 
+    // Aspecto por raza: tinte de piel + capa de cabeza (Flare no tiene cuerpos por raza).
+    this.skinTint = 0xffffff
+    this.defaultHead = 'head_short'
+
     // Estado actual por tipo: { layerName, source, def(anims/cell) }
     this.layers = {}
     this.equip = {} // slot -> gfx (nombre de capa) o null
@@ -99,12 +103,23 @@ export class Paperdoll {
     this._lastKey = ''
   }
 
+  // Aspecto por raza: tinte de piel (para las capas base del cuerpo) + capa de cabeza. Se setea
+  // ANTES de setEquipment. Re-tiñe la piel visible si ya hay equipo cargado.
+  setRace(app = {}) {
+    this.skinTint = app.tint || 0xffffff
+    this.defaultHead = app.head || 'head_short'
+    for (const type of TYPES) {
+      const s = this.sprites[type]
+      if (s && !s.destroyed) s.tint = this.equip[type] ? 0xffffff : this.skinTint
+    }
+  }
+
   // equip: { chest, legs, hands, feet, head, main, off } con nombres de capa (gfx) o null.
   async setEquipment(equip) {
     this.equip = { ...equip }
     // Resolver capa efectiva por tipo (equipada o base) y cargar sus fuentes.
     const jobs = TYPES.map(async (type) => {
-      const name = this.equip[type] || DEFAULT_LAYER[type]
+      const name = this.equip[type] || (type === 'head' ? this.defaultHead : DEFAULT_LAYER[type])
       if (!name || !this.manifest.layers[name]) {
         this.layers[type] = null
         return
@@ -124,6 +139,8 @@ export class Paperdoll {
         s.texture = new Texture({ source, frame: new Rectangle(0, 0, def.cell[0], def.cell[1]) })
         s._layerName = name
       }
+      // Tinte de piel: sólo las capas base del cuerpo (slot sin equipo); el equipo va sin teñir.
+      s.tint = this.equip[type] ? 0xffffff : this.skinTint
       this.layers[type] = { name, def }
     })
     await Promise.all(jobs)

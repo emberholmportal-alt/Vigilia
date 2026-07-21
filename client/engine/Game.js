@@ -199,6 +199,7 @@ export class Game {
     } else {
       player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'))
       this._nameLevel = this.store.getPlayerLevel()
+      player.setRace(this.store.getRaceAppearance())   // tinte de piel + cabeza según la raza (antes del equipo)
       await player.setEquipment(equipToGfx(this.store.getEquipment()))
     }
 
