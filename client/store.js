@@ -1476,6 +1476,7 @@ export const storeApi = {
   addSkillXp: (skill, n) => useGameStore.getState().addSkillXp(skill, n),
   getPlayerLevel: () => useGameStore.getState().stats?.level || 1,
   getRaceName: () => raceName(useGameStore.getState().race) || '',
+  getRaceId: () => useGameStore.getState().race?.id || null,
   getRaceAppearance: () => { const r = useGameStore.getState().race; return { tint: (r && r.tint) || 0xffffff, head: (r && r.head) || 'head_short' } },
   setNearby: (v) => useGameStore.getState().setNearby(v),
   getInteractSeq: () => useGameStore.getState().interactSeq,

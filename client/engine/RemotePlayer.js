@@ -3,7 +3,8 @@
 // (cuerpo base + nombre); sincronizar el equipo remoto es un paso siguiente del protocolo.
 import { Container, Graphics, Text } from 'pixi.js'
 import { Paperdoll } from './Paperdoll.js'
-import { raceAppearance } from '../data/characters.js'
+import { raceAppearance, raceById } from '../data/characters.js'
+import { raceName, tt } from '../i18n.js'
 
 export class RemotePlayer {
   constructor(iso, manifest, p) {
@@ -21,8 +22,11 @@ export class RemotePlayer {
     this.paperdoll = new Paperdoll(manifest)
     this.view.addChild(this.paperdoll.view)
 
+    // Etiqueta flotante: nombre · raza (localizada desde el id) · Nv nivel — igual que el héroe.
+    const rn = raceName(raceById(this.race))
+    const label = [p.name || 'Viajero', rn, tt('lv') + ' ' + (this.level || 1)].filter(Boolean).join(' · ')
     this.nameText = new Text({
-      text: p.name || 'Viajero', style: {
+      text: label, style: {
         fontFamily: 'Georgia, serif', fontSize: 12, fill: '#bfe0ff',
         stroke: { color: '#0a090c', width: 3 }, align: 'center',
       },

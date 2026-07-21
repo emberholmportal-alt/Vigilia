@@ -414,7 +414,7 @@ export class Game {
     if (!this._online) return
     this._clearRemotes()
     net.join({
-      name: this.store.getPlayerName(), race: this.store.getRaceName(),
+      name: this.store.getPlayerName(), race: this.store.getRaceId(),
       map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
       channel: this._channel,        // intenta conservar tu canal entre mapas
       spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
