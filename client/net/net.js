@@ -117,7 +117,7 @@ class Net {
   async walletChallenge(pubkey) { this._send({ t: 'wallet_challenge', pubkey }); return this._once('challenge') }
   async walletVerify(pubkey, signature) { this._send({ t: 'wallet_verify', pubkey, signature }); return this._once('auth') }
   async save(name, race, char) { this._send({ t: 'save', name, race, char }); return this._once('saved') }
-  async join({ name, race, body, head, map, x, y, dir, channel, spectator, gfx }) { this._send({ t: 'join', name, race, body, head, map, x, y, dir, channel, spectator, gfx }); return this._once('present') }
+  async join({ name, race, body, map, x, y, dir, channel, spectator, gfx }) { this._send({ t: 'join', name, race, body, map, x, y, dir, channel, spectator, gfx }); return this._once('present') }
   setGfx(gfx) { this._send({ t: 'setgfx', gfx }) }           // equipo visible (capas del paperdoll)
   hp(hp, hpMax) { this._send({ t: 'php', hp, hpMax }) }      // mi vida (para la barra que ven los demás)
 

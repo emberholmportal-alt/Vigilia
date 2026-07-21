@@ -42,7 +42,7 @@ export function playerCount() { return players.size }
 
 // Vista pública de un jugador (lo que ven los demás). Incluye `gfx` = capas del paperdoll
 // (equipo visible) y `dead` para que un recién llegado vea el estado correcto.
-function pub(p) { return { id: p.id, name: p.name, race: p.race, body: p.body || 'male', head: p.head || null, x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax, level: p.level || 1 } }
+function pub(p) { return { id: p.id, name: p.name, race: p.race, body: p.body || 'male', x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax, level: p.level || 1 } }
 
 function inChannel(map, ch) {
   const out = []
@@ -103,7 +103,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, body, head, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, inv = null, outSeed = null, ledger = null } = {}) {
+export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, inv = null, outSeed = null, ledger = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -120,7 +120,7 @@ export function join(send, { name, race, body, head, map, x, y, dir = 7, channel
   const ch = pickChannel(map, channel)
   // `gold` es AUTORITATIVO del servidor a partir de acá (Fase A de la economía): se carga del
   // personaje al entrar y sólo lo mutan las funciones de abajo (faucets del mundo + sinks validados).
-  const p = { id, name: name || 'Vigilante', race: race || null, body: (body === 'female' || body === 'female_dark') ? body : 'male', head: (head === 'head_short' || head === 'head_bald' || head === 'head_long') ? head : null, map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, gold: Math.floor(Number(gold) || 0), send }
+  const p = { id, name: name || 'Vigilante', race: race || null, body: (body === 'female' || body === 'female_dark') ? body : 'male', map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, gold: Math.floor(Number(gold) || 0), send }
   // `inv` es AUTORITATIVO del servidor (Fase A.2): el bag se carga del personaje al entrar y sólo
   // lo mutan las funciones de abajo (loot otorgado por el server + ops validadas). Se guarda como
   // registros mínimos {id, count?, dur?, upgrade?} (el cliente reconstruye el ítem completo por id).

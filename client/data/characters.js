@@ -47,33 +47,7 @@ export function raceAppearance(id) {
 // Arma el personaje inicial para una raza: equipo puesto + pocas cosas más + oro. El kit es CANÓNICO
 // y vive en shared/ (el server lo asigna autoritativo al crear: un blob manipulado no da oro/equipo
 // falso). Acá sólo le sumamos el objeto `race` para la UI.
-export function startingCharacter(raceId, body = 'male', head = null) {
+export function startingCharacter(raceId, body = 'male') {
   const race = raceById(raceId) || RACES[0]
-  return {
-    race,
-    body: (body === 'female' || body === 'female_dark') ? body : 'male',
-    head: normalizeHead(head, race.id),
-    ...startingKit(race.id),
-  }
-}
-
-// Peinados disponibles POR CUERPO (sólo lo que trae Flare). El cuerpo masculino tiene con-pelo
-// (head_short) o pelado (head_bald); los cuerpos femeninos sólo pelo largo (head_long). Se ofrece
-// como elección en la creación; por defecto toma la cabeza de la raza (enano/orco pelados).
-export const HAIR_OPTIONS = {
-  male: [
-    { id: 'head_short', label: 'Con pelo', label_en: 'Hair' },
-    { id: 'head_bald', label: 'Pelado', label_en: 'Bald' },
-  ],
-  female: [{ id: 'head_long', label: 'Pelo largo', label_en: 'Long hair' }],
-  female_dark: [{ id: 'head_long', label: 'Pelo largo', label_en: 'Long hair' }],
-}
-
-// Normaliza el peinado a uno válido para el cuerpo; si no viene, usa el default de la raza.
-export function normalizeHead(head, raceId, body = 'male') {
-  const opts = HAIR_OPTIONS[body] || HAIR_OPTIONS.male
-  if (head && opts.some((o) => o.id === head)) return head
-  const race = raceById(raceId)
-  const def = (race && race.head) || 'head_short'
-  return opts.some((o) => o.id === def) ? def : opts[0].id
+  return { race, body: (body === 'female' || body === 'female_dark') ? body : 'male', ...startingKit(race.id) }
 }

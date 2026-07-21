@@ -294,7 +294,7 @@ wss.on('connection', (ws) => {
             // save manipulado (belt/graves con count enorme) en cuentas sin ledger persistido.
             if (!ledger) outSeed = grandfatherSeed(d)
           }
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, head: m.head, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, inv, outSeed, ledger })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, inv, outSeed, ledger })
           conn.playerId = id
           send({ t: 'present', you: id, players: present, map: m.map, channel })
           if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + bag

@@ -93,7 +93,6 @@ export class Player {
 
   setRace(app) { this.paperdoll.setRace(app) }
   setBody(body) { this.paperdoll.setBody(body) }
-  setHead(head) { this.paperdoll.setHead(head) }
 
   async setEquipment(equip) {
     await this.paperdoll.setEquipment(equip)

@@ -52,7 +52,6 @@ export function unpackSave(s) {
       graves: s.graves || null,
       stash: s.stash || null,
       body: s.body || 'male',
-      head: s.head || null,
   }
 }
 
@@ -83,7 +82,6 @@ export function snapshot(state) {
     graves: state.graves || [],
     stash: state.stash || [],
     body: state.body || 'male',
-    head: state.head || null,
   }
 }
 

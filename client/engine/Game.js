@@ -201,7 +201,6 @@ export class Game {
       this._nameLevel = this.store.getPlayerLevel()
       player.setBody(this.store.getBody())              // cuerpo elegido (male/female/female_dark)
       player.setRace(this.store.getRaceAppearance())    // tinte de piel + cabeza según la raza (antes del equipo)
-      player.setHead(this.store.getHead())              // peinado elegido (override de la cabeza)
       await player.setEquipment(equipToGfx(this.store.getEquipment()))
     }
 
@@ -416,7 +415,7 @@ export class Game {
     if (!this._online) return
     this._clearRemotes()
     net.join({
-      name: this.store.getPlayerName(), race: this.store.getRaceId(), body: this.store.getBody(), head: this.store.getHead(),
+      name: this.store.getPlayerName(), race: this.store.getRaceId(), body: this.store.getBody(),
       map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
       channel: this._channel,        // intenta conservar tu canal entre mapas
       spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
