@@ -29,7 +29,7 @@ from PIL import Image, ImageChops
 AVATAR_LAYERS = [
     # base (siempre visible debajo del equipo)
     "default_chest", "default_legs", "default_hands", "default_feet",
-    "head_bald", "head_short",
+    "head_bald", "head_short", "head_long",
     # cloth
     "cloth_shirt", "cloth_pants", "cloth_gloves", "cloth_sandals",
     # leather
@@ -485,14 +485,22 @@ def main():
         "license": "Art: Flare (Empyrean Campaign) — CC-BY-SA 3.0 — flareteam/flare-game",
     }
 
-    for L in AVATAR_LAYERS:
-        r = repack(resolve(roots, f"animations/avatar/{a.gender}/{L}.txt"), roots,
-                   f"{a.out}/avatar/{L}.png", a.scale)
-        if r:
-            r["src"] = "avatar/" + os.path.basename(r["src"])
-            man["layers"][L] = r
-        else:
-            print("  (falta capa)", L)
+    # Cuerpos jugables de Flare: male (por defecto → man["layers"], compat) + female + female_dark
+    # (→ man["bodies"][gender]). Cada cuerpo trae SU propia versión de cada capa (la armadura calza
+    # distinto en cada silueta). El cliente elige el cuerpo y arma el paperdoll con ese set.
+    man["bodies"] = {}
+    BODIES = ["male", "female", "female_dark"]
+    for gender in BODIES:
+        sub = "" if gender == "male" else gender + "/"
+        target = man["layers"] if gender == "male" else man["bodies"].setdefault(gender, {})
+        for L in AVATAR_LAYERS:
+            r = repack(resolve(roots, f"animations/avatar/{gender}/{L}.txt"), roots,
+                       f"{a.out}/avatar/{sub}{L}.png", a.scale)
+            if r:
+                r["src"] = f"avatar/{sub}" + os.path.basename(r["src"])
+                target[L] = r
+            elif gender == "male":
+                print("  (falta capa)", L)
 
     for e in ENEMIES:
         r = repack(resolve(roots, f"animations/enemies/{e}.txt"), roots,
