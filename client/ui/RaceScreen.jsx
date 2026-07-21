@@ -1,8 +1,8 @@
 // Selección de raza estilo Diablo II: char-select sobre el TOMO abierto de Flare.
 // Cada raza es una carta con su retrato (arte de Flare); al elegirla se ilumina y la página
 // derecha muestra el retrato grande, los modificadores y la frase de fantasía (WORLD.md).
-import { useState } from 'react'
-import { RACES } from '../data/characters.js'
+import { useEffect, useRef, useState } from 'react'
+import { RACES, HAIR_OPTIONS, normalizeHead } from '../data/characters.js'
 import { useT } from './useT.js'
 import Embers from './Embers.jsx'
 
@@ -34,7 +34,16 @@ export default function RaceScreen({ onChoose, onBack }) {
   const [sel, setSel] = useState(RACES[0].id)
   const [name, setName] = useState('')
   const [body, setBody] = useState('male')
+  const [head, setHead] = useState(() => normalizeHead(null, RACES[0].id, 'male'))
   const race = RACES.find((r) => r.id === sel)
+  const hairOpts = HAIR_OPTIONS[body] || HAIR_OPTIONS.male
+  // Al cambiar de RAZA, el peinado vuelve al canónico de esa raza (enano/orco pelados). Al cambiar
+  // sólo el CUERPO, se mantiene la elección si sigue siendo válida (male↔female no la pierde).
+  const prevSel = useRef(sel)
+  useEffect(() => {
+    if (prevSel.current !== sel) { prevSel.current = sel; setHead(normalizeHead(null, sel, body)) }
+    else setHead((h) => normalizeHead(h, sel, body))
+  }, [sel, body])
   const t = useT()
   const en = t.lang === 'en'
   const rn = (r) => (en ? (r.name_en || r.name) : r.name)
@@ -79,6 +88,15 @@ export default function RaceScreen({ onChoose, onBack }) {
               </button>
             ))}
           </div>
+          {hairOpts.length > 1 && (
+            <div className="body-pick hair-pick">
+              {hairOpts.map((h) => (
+                <button key={h.id} className={'body-opt' + (h.id === head ? ' on' : '')} onClick={() => setHead(h.id)}>
+                  {en ? h.label_en : h.label}
+                </button>
+              ))}
+            </div>
+          )}
           <input
             className="name-input"
             placeholder={t('your_name')}
@@ -86,7 +104,7 @@ export default function RaceScreen({ onChoose, onBack }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <button className="enter primary confirm" disabled={!name.trim()} onClick={() => onChoose(race.id, name.trim(), body)}>
+          <button className="enter primary confirm" disabled={!name.trim()} onClick={() => onChoose(race.id, name.trim(), body, head)}>
             {name.trim() ? t('incarnate', { race: rn(race) }) : t('need_name')}
           </button>
         </div>

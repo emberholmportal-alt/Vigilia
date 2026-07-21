@@ -46,6 +46,7 @@ export class RemotePlayer {
     this.paperdoll.setDirection(this.dir)
     this.paperdoll.setBody(this.body)                        // cuerpo (male/female/female_dark) del jugador remoto
     this.paperdoll.setRace(raceAppearance(this.race))        // tinte de piel + cabeza según la raza
+    this.paperdoll.setHead(p.head)                           // peinado elegido (override de la cabeza)
     this._ready = this.paperdoll.setEquipment(p.gfx || {})   // equipo real del jugador remoto
     if (p.dead) this.setDead(true)                           // se unió mientras estaba caído
     // Tappable: tocar a otro jugador abre la opción de comerciar (P2P). Le damos un hitArea

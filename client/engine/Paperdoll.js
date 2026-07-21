@@ -92,6 +92,8 @@ export class Paperdoll {
     this.defaultHead = 'head_short'
     // Cuerpo elegido (male/female/female_dark). Resuelve cada capa a la versión de ese cuerpo.
     this.body = 'male'
+    // Peinado elegido (override): head_short/head_bald para el cuerpo masculino. null = default de raza.
+    this.hair = null
 
     // Estado actual por tipo: { layerName, source, def(anims/cell) }
     this.layers = {}
@@ -107,6 +109,10 @@ export class Paperdoll {
 
   // Cuerpo elegido. Se setea ANTES de setEquipment.
   setBody(body) { this.body = (body === 'female' || body === 'female_dark') ? body : 'male' }
+
+  // Peinado elegido (override de la cabeza base). Se setea ANTES de setEquipment. Sólo aplica al
+  // cuerpo masculino (head_short/head_bald); los femeninos usan head_long. Se resuelve en setEquipment.
+  setHead(head) { this.hair = (head === 'head_short' || head === 'head_bald') ? head : null }
 
   // Resuelve una capa (por nombre) al def del cuerpo actual, con fallback: female_dark → female →
   // male (layers). Así female_dark reusa el gear de female y ambas caen a male si les falta la capa.
@@ -135,8 +141,9 @@ export class Paperdoll {
     // Resolver capa efectiva por tipo (equipada o base) y cargar sus fuentes.
     const jobs = TYPES.map(async (type) => {
       // Cabeza base: los cuerpos femeninos usan head_long (no tienen head_short/bald); el male usa
-      // la cabeza de la raza. Los cascos equipados van por su nombre (con variante de cuerpo).
-      const headDefault = this.body !== 'male' ? 'head_long' : this.defaultHead
+      // el peinado elegido (head_short/head_bald) o, si no eligió, la cabeza de la raza. Los cascos
+      // equipados van por su nombre (con variante de cuerpo).
+      const headDefault = this.body !== 'male' ? 'head_long' : (this.hair || this.defaultHead)
       const name = this.equip[type] || (type === 'head' ? headDefault : DEFAULT_LAYER[type])
       const def = this._def(name)
       if (!def) {

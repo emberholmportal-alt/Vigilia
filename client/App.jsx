@@ -55,7 +55,7 @@ export default function App() {
                     belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills, discovered: s.discovered,
                     missions: s.missions, missionsDate: s.missionsDate, seals: s.seals,
                     attrAlloc: s.attrAlloc, skillRanks: s.skillRanks, questFlags: s.questFlags,
-                    specialAbility: s.specialAbility, graves: s.graves, stash: s.stash, body: s.body })
+                    specialAbility: s.specialAbility, graves: s.graves, stash: s.stash, body: s.body, head: s.head })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
@@ -74,9 +74,9 @@ export default function App() {
 
   // Crea el personaje (raza + nombre elegidos). Online: lo guarda en el servidor (queda ligado
   // a la cuenta/billetera — uno por cuenta, raza fija de acá en más).
-  function chooseRace(raceId, name, body) {
+  function chooseRace(raceId, name, body, head) {
     useGameStore.getState().setPlayerName(name || 'Vigilante')
-    initCharacter(startingCharacter(raceId, body))
+    initCharacter(startingCharacter(raceId, body, head))
     if (ONLINE) { const b = storeApi.getSaveBlob(); net.save(b.name, b.race, b.char) }
     playMusic('town_theme.ogg')
     setLoading(true)
