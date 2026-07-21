@@ -38,6 +38,7 @@ export default function App() {
   const [phase, setPhase] = useState('boot') // 'boot' | 'start' | 'race' | 'game'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [kicked, setKicked] = useState(null)  // expulsado por single-session (cuenta abierta en otro lado)
   const canvasRef = useRef(null)
   const gameRef = useRef(null)
   const panel = useGameStore((s) => s.panel)
@@ -117,6 +118,13 @@ export default function App() {
   // buffer de historial en cada retroceso para que la app no se cierre sola.
   const phaseRef = useRef(phase)
   useEffect(() => { phaseRef.current = phase }, [phase])
+
+  // Single-session: si el server nos expulsa (la cuenta entró desde otro lado), salimos del juego y
+  // mostramos el aviso. No reconectamos (net ya cortó el reintento).
+  useEffect(() => {
+    const off = net.on('kicked', (m) => { setKicked(m?.reason || t('kicked_msg')); setPhase('start') })
+    return off
+  }, [t])
   useEffect(() => {
     window.history.pushState({ v: 'velgrim' }, '')
     const onPop = () => {
@@ -157,6 +165,14 @@ export default function App() {
       {phase === 'game' && !loading && !error && <GraveModal />}
       {phase === 'game' && <ZoneLoader />}
       {error && <div className="error">Error: {error}</div>}
+      {kicked && (
+        <div className="kicked-backdrop" onClick={() => setKicked(null)}>
+          <div className="kicked-card" onClick={(e) => e.stopPropagation()}>
+            <p>{kicked}</p>
+            <button className="gframe-close" onClick={() => setKicked(null)}>{t('ok')}</button>
+          </div>
+        </div>
+      )}
 
       {phase === 'boot' && <BootSplash onDone={() => setPhase('start')} />}
       {phase === 'start' && <StartScreen onPlay={play} onSpectate={spectate} onNew={startGame} canContinue={hasSave()} loading={false} />}

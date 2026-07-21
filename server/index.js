@@ -92,6 +92,10 @@ const http_server = http.createServer(async (req, res) => {
 
 const wss = new WebSocketServer({ server: http_server })
 
+// Una sola sesión de juego por cuenta: si la misma cuenta entra de nuevo, se expulsa a la anterior
+// (evita jugar dos veces con el mismo usuario, y con eso duplicar acciones/loops entre dos ventanas).
+const liveConns = new Map() // accountId -> ws
+
 wss.on('connection', (ws) => {
   const conn = { accountId: null, username: null, playerId: null }
   const send = (msg) => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)) }
@@ -265,6 +269,14 @@ wss.on('connection', (ws) => {
         case 'join': {
           if (!conn.accountId) return send({ t: 'error', error: 'no autenticado' })
           db.touchAccount(conn.accountId).catch(() => {})   // actividad (jugadores mensuales)
+          // Single-session: si esta cuenta ya está jugando en otra conexión, la echamos. El cliente
+          // viejo recibe 'kicked' y NO reintenta reconectar (si no, haría ping-pong con el nuevo).
+          const prev = liveConns.get(conn.accountId)
+          if (prev && prev !== ws) {
+            try { prev.send(JSON.stringify({ t: 'kicked', reason: 'Tu cuenta entró desde otro lugar.' })) } catch {}
+            try { prev.close(4001, 'another session') } catch {}
+          }
+          liveConns.set(conn.accountId, ws)
           if (conn.playerId != null) rooms.leave(conn.playerId)
           // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
           let gold = 0, inv = null, outSeed = null, ledger = null
@@ -458,6 +470,7 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     if (conn.playerId != null) rooms.leave(conn.playerId)
+    if (conn.accountId && liveConns.get(conn.accountId) === ws) liveConns.delete(conn.accountId)
   })
   ws.on('error', () => {})
 })

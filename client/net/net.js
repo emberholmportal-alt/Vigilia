@@ -65,6 +65,9 @@ class Net {
           const w = this._onceWaiters[i]
           if (w.type === m.t && (w.op == null || w.op === m.op)) { this._onceWaiters.splice(i, 1); w.res(m); break }
         }
+        // expulsado por single-session (la cuenta entró desde otro lado): NO reconectar (evita el
+        // ping-pong con la nueva sesión), y avisar a la app para volver al inicio.
+        if (m.t === 'kicked') { this._wantOpen = false; this._emit('kicked', m); return }
         // eventos de presencia
         if (m.t === 'present' || m.t === 'join' || m.t === 'move' || m.t === 'leave' || m.t === 'chat') this._emit(m.t, m)
         // eventos de combate autoritativo (enemigos del servidor)

@@ -114,22 +114,19 @@ export default function Inventory() {
           )
         })}
 
-        {/* cinturón: grilla 3×3 bajo el muñeco (slots activos = capacidad del cinturón equipado) */}
+        {/* cinturón: SÓLO los slots disponibles (capacidad del cinturón equipado), bajo el muñeco */}
         <div className="inv-belt-label" style={{ left: (BELT.x / PW * 100) + '%', top: ((BELT.y - 26) / PH * 100) + '%' }}>{t('belt')}</div>
-        {Array.from({ length: BELT.cols * BELT.rows }).map((_, i) => {
+        {Array.from({ length: beltCapacityOf(equippedBelt) }).map((_, i) => {
           const col = i % BELT.cols, row = (i / BELT.cols) | 0
           const x = BELT.x + col * SLOT, y = BELT.y + row * SLOT
-          const beltCap = beltCapacityOf(equippedBelt)
-          const locked = i >= beltCap
-          const it = !locked ? belt[i] : null
+          const it = belt[i]
           return (
-            <button key={'belt' + i} disabled={locked}
-                    className={'inv-cell inv-belt-cell' + (locked ? ' locked' : '')}
+            <button key={'belt' + i}
+                    className="inv-cell inv-belt-cell"
                     style={slotStyle(x, y)}
-                    title={locked ? t('locked_hint') : (it ? undefined : t('belt_empty'))}
-                    onClick={() => !locked && it && useBelt(i)}>
+                    title={it ? undefined : t('belt_empty')}
+                    onClick={() => it && useBelt(i)}>
               {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
-              {locked && <span className="inv-lock"><Lock /></span>}
             </button>
           )
         })}
