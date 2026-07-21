@@ -70,7 +70,7 @@ export default function Stash() {
             <h3>{t('stash_your_inv')}</h3>
             <div className="stash-inv-block">
               <span className="stash-inv-lbl">{t('grave_armor')}</span>
-              <div className="stash-grid armor">
+              <div className="stash-grid">
                 {armor.map((it, i) => (
                   <div key={i} className="grave-cell dim" title={it ? nameOf(it.id) : ''}>
                     {it && <ItemIcon icon={it.icon} size={28} />}
@@ -81,7 +81,7 @@ export default function Stash() {
             {beltCap > 0 && (
               <div className="stash-inv-block">
                 <span className="stash-inv-lbl">{t('belt')}</span>
-                <div className="stash-grid belt">
+                <div className="stash-grid">
                   {Array.from({ length: beltCap }).map((_, i) => (
                     <div key={i} className="grave-cell dim" title={belt[i] ? nameOf(belt[i].id) : ''}>
                       {belt[i] && <ItemIcon icon={belt[i].icon} size={28} count={belt[i].count} />}
@@ -92,7 +92,7 @@ export default function Stash() {
             )}
             <div className="stash-inv-block">
               <span className="stash-inv-lbl">{t('stash_your_bag')}</span>
-              <div className="stash-grid bag">
+              <div className="stash-grid">
                 {carried.length ? carried.map(({ it, i }) => (
                   <button key={i} className="grave-cell" title={nameOf(it.id)} onClick={() => deposit(i)}>
                     <ItemIcon icon={it.icon} size={28} count={it.count} />

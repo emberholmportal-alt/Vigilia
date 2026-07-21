@@ -1,7 +1,7 @@
 // Otro jugador (remoto): mismo paperdoll de Flare que el héroe, movido por lo que difunde el
 // servidor. Interpola su posición entre updates para que se vea fluido. Sin equipo por ahora
 // (cuerpo base + nombre); sincronizar el equipo remoto es un paso siguiente del protocolo.
-import { Container, Graphics, Text } from 'pixi.js'
+import { Container, Graphics, Rectangle, Text } from 'pixi.js'
 import { Paperdoll } from './Paperdoll.js'
 import { raceAppearance, raceById } from '../data/characters.js'
 import { raceName, tt } from '../i18n.js'
@@ -48,7 +48,12 @@ export class RemotePlayer {
     this.paperdoll.setRace(raceAppearance(this.race))        // tinte de piel + cabeza según la raza
     this._ready = this.paperdoll.setEquipment(p.gfx || {})   // equipo real del jugador remoto
     if (p.dead) this.setDead(true)                           // se unió mientras estaba caído
-    // Tappable: tocar a otro jugador abre la opción de comerciar (P2P).
+    // Tappable: tocar a otro jugador abre la opción de comerciar (P2P). Le damos un hitArea
+    // EXPLÍCITO del tamaño del cuerpo (celda del paperdoll, anclada en los pies) para que el toque
+    // pegue siempre en el jugador y no se lo lleve el handler global de "caminar acá". Sin esto, el
+    // hit-test dependía de las bounds de los sprites (que cargan async) y a veces fallaba.
+    const pd = this.paperdoll
+    this.view.hitArea = new Rectangle(-pd.anchorX, -pd.anchorY, pd.cellW, pd.cellH)
     this.view.eventMode = 'static'
     this.view.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
     this._sync()

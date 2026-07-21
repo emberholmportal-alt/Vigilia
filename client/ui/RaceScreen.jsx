@@ -6,10 +6,23 @@ import { RACES } from '../data/characters.js'
 import { useT } from './useT.js'
 import Embers from './Embers.jsx'
 
-// Retrato pintado de Flare por raza (public/assets/portraits). Elegidos por arquetipo.
-const PORTRAIT = { humano: 'male07', elfo: 'female04', enano: 'male16', orco: 'goblin' }
+// Retrato pintado de Flare por raza Y cuerpo (public/assets/portraits). Cada raza tiene su cara
+// masculina y femenina (y una de piel oscura donde hay arte) para que el retrato acompañe la
+// elección de cuerpo. El orco sólo tiene un retrato (goblin) en el arte de Flare.
+const PORTRAIT = {
+  humano: { male: 'male07', female: 'female01', female_dark: 'female13' },
+  elfo:   { male: 'male09', female: 'female04' },
+  enano:  { male: 'male16', female: 'female10' },
+  orco:   { male: 'goblin', female: 'goblin' },
+}
 const BASE = import.meta.env.BASE_URL || '/'
-const faceUrl = (id) => `${BASE}assets/portraits/${PORTRAIT[id] || 'male01'}.png`
+const faceFile = (id, body) => {
+  const p = PORTRAIT[id] || PORTRAIT.humano
+  if (body === 'female_dark') return p.female_dark || p.female || p.male
+  if (body === 'female') return p.female || p.male
+  return p.male
+}
+const faceUrl = (id, body) => `${BASE}assets/portraits/${faceFile(id, body)}.png`
 
 const BODIES = [
   { id: 'male', label: 'Hombre', label_en: 'Male' },
@@ -42,7 +55,7 @@ export default function RaceScreen({ onChoose, onBack }) {
                 className={'race-card' + (r.id === sel ? ' on' : '')}
                 onClick={() => setSel(r.id)}
               >
-                <span className="race-face" style={{ backgroundImage: `url(${faceUrl(r.id)})` }} />
+                <span className="race-face" style={{ backgroundImage: `url(${faceUrl(r.id, body)})` }} />
                 <b>{rn(r)}</b>
                 <span className="race-arch">{ar(r)}</span>
               </button>
@@ -53,7 +66,7 @@ export default function RaceScreen({ onChoose, onBack }) {
         {/* Página derecha: retrato grande + nombre + mods + fantasía + confirmar */}
         <div className="tome-page tome-right">
           <div className="race-hero">
-            <span className="race-hero-face" style={{ backgroundImage: `url(${faceUrl(sel)})` }} />
+            <span className="race-hero-face" style={{ backgroundImage: `url(${faceUrl(sel, body)})` }} />
             <div className="race-hero-name">{rn(race)}</div>
             <div className="race-hero-arch">{ar(race)}</div>
           </div>

@@ -94,7 +94,7 @@ export default function Trade() {
           <h4>{t('trade_your_inv')}</h4>
           <div className="stash-inv-block">
             <span className="stash-inv-lbl">{t('grave_armor')}</span>
-            <div className="stash-grid armor">
+            <div className="stash-grid">
               {ARMOR_SLOTS.map((k, idx) => { const it = equipment[k]; return (
                 <div key={idx} className="grave-cell dim" title={it ? itemName(it, lang) : ''}>{it && <ItemIcon icon={it.icon} size={26} />}</div>
               ) })}
@@ -103,7 +103,7 @@ export default function Trade() {
           {beltCapacityOf(equippedBelt) > 0 && (
             <div className="stash-inv-block">
               <span className="stash-inv-lbl">{t('belt')}</span>
-              <div className="stash-grid belt">
+              <div className="stash-grid">
                 {Array.from({ length: beltCapacityOf(equippedBelt) }).map((_, i) => (
                   <div key={i} className="grave-cell dim" title={belt[i] ? itemName(belt[i], lang) : ''}>{belt[i] && <ItemIcon icon={belt[i].icon} size={26} count={belt[i].count} />}</div>
                 ))}
@@ -112,7 +112,7 @@ export default function Trade() {
           )}
           <div className="stash-inv-block">
             <span className="stash-inv-lbl">{t('stash_your_bag')} <em className="trade-bag-cta">({t('trade_tap_to_offer')})</em></span>
-            <div className="stash-grid bag">
+            <div className="stash-grid">
               {inventory.some((it, i) => it && !trade.youIdx.includes(i))
                 ? inventory.map((it, i) => (it && !trade.youIdx.includes(i)
                     ? <button key={i} className="grave-cell" onClick={() => toggle(i)} title={itemName(it, lang)}><ItemIcon icon={it.icon} size={26} count={it.count} /></button>
