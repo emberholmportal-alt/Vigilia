@@ -39,6 +39,29 @@ function grandfatherSeed(d) {
 }
 
 await db.init()
+
+// Migración batch (una vez, idempotente): sella un ledger "checkout" SANEADO en todo personaje viejo
+// que todavía no tenga `_outLedger` persistido. Usa la MISMA sanitización que el grandfather del join
+// (1 por slot de equipo/cinturón, sin `count` ni tumbas, con tope), pero desde el servidor y de una.
+// Después de esto, ningún personaje queda en el estado migrable: el join ya nunca grandfatherea desde
+// el blob del cliente, cerrando definitivamente ese vector de mint. Corre en cada arranque; los
+// personajes que ya tienen ledger se saltean, así que es un no-op salvo la primera vez.
+async function migrateLegacyLedgers() {
+  try {
+    const chars = await db.allCharacters()
+    let n = 0
+    for (const { accountId, data } of chars) {
+      if (data && data._outLedger && typeof data._outLedger === 'object') continue   // ya migrado
+      const ledger = {}
+      for (const id of grandfatherSeed(data || {})) ledger[id] = (ledger[id] || 0) + 1
+      await db.setCharacterLedger(accountId, ledger)
+      n++
+    }
+    if (n) console.log(`[migración] ledger sellado en ${n} personaje(s) sin ledger persistido`)
+  } catch (e) { console.error('[migración] fallo sellando ledgers viejos:', e && e.message) }
+}
+await migrateLegacyLedgers()
+
 // Mercado: barrido periódico de publicaciones vencidas (devuelven el ítem al vendedor). El browse
 // también barre, pero esto cubre listados vencidos sin nadie mirando.
 setInterval(() => { market.sweepExpired(Date.now()).catch(() => {}) }, 5 * 60 * 1000)

@@ -194,6 +194,14 @@ export async function loadCharacter(accountId) {
   }
   return file.chars[accountId] || null
 }
+// Todos los personajes persistidos: [{ accountId, data }]. Para migraciones batch al arranque.
+export async function allCharacters() {
+  if (pg) {
+    const r = await pg.query('SELECT account_id, data FROM characters')
+    return r.rows.map((row) => ({ accountId: row.account_id, data: row.data || {} }))
+  }
+  return Object.entries(file.chars || {}).map(([aid, ch]) => ({ accountId: Number(aid), data: (ch && ch.data) || {} }))
+}
 
 // ---------- Gremios ----------
 // El oro de fundación/donación lo descuenta el server del blob persistido del personaje
