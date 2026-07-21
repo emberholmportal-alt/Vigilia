@@ -1698,7 +1698,7 @@ export class Game {
 
   // Alijo personal en el pueblo: un cofre privado cerca del spawn. Se busca un tile caminable
   // junto al spawn para no taparlo ni quedar dentro de una colisión.
-  _spawnStashChest(renderer, grid, spawn, mapName) {
+  async _spawnStashChest(renderer, grid, spawn, mapName) {
     if (mapName !== TOWN_MAP) return
     // Candidatos alrededor del spawn (un par de tiles a un costado), el 1º caminable gana.
     const cand = [[3, 0], [0, 3], [3, 3], [-3, 0], [0, -3], [2, 2], [4, 0]]
@@ -1708,7 +1708,10 @@ export class Game {
       if (grid.isWalkable(x, y)) { tx = x; ty = y; found = true; break }
     }
     if (!found) return
-    const chest = new StashChest(this.iso, tx, ty)
+    const BASE = import.meta.env.BASE_URL || '/'
+    if (!this._stashTex) { try { this._stashTex = await Assets.load(BASE + 'assets/decor/stash_chest.png') } catch { this._stashTex = null } }
+    if (this.destroyed || this.mapName !== TOWN_MAP) return
+    const chest = new StashChest(this.iso, tx, ty, this._stashTex)
     chest.view.scale.set(this._eScale)
     chest.onTap((c) => { if (!this._spectator) this.player.walkTo(c.tx, c.ty) })   // caminar hacia él; se abre al llegar
     renderer.objectLayer.addChild(chest.view)

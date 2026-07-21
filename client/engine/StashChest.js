@@ -1,11 +1,12 @@
 // Alijo del pueblo: un cofre personal, plantado en el pueblo, que SÓLO ve su dueño (se dibuja
 // client-side por jugador, no es un objeto compartido del mundo). Al tocarlo, el jugador camina
-// hasta él y se abre el modal del alijo. Se dibuja con un aura cálida + una etiqueta flotante.
-import { Container, Graphics, Text } from 'pixi.js'
+// hasta él y se abre el modal del alijo. Usa el sprite de cofre REAL de Flare (boss_chest), con un
+// aura cálida en el piso para marcar que es tuyo y una etiqueta flotante.
+import { Container, Graphics, Sprite, Text } from 'pixi.js'
 import { tt } from '../i18n.js'
 
 export class StashChest {
-  constructor(iso, tx, ty) {
+  constructor(iso, tx, ty, tex) {
     this.iso = iso
     this.tx = tx
     this.ty = ty
@@ -16,17 +17,21 @@ export class StashChest {
     this.view.y = iso.toWorldY(tx, ty)
     this.view.zIndex = tx + ty
 
+    // aura cálida + sombra en el piso (marca que es tuyo)
     const g = new Graphics()
-    // aura cálida en el piso (marca que es tuyo)
-    g.ellipse(0, 0, iso.wHalf * 0.44, iso.hHalf * 0.42).fill({ color: 0xc9a227, alpha: 0.14 })
-    g.ellipse(0, 2, iso.wHalf * 0.32, iso.hHalf * 0.3).fill({ color: 0x000000, alpha: 0.32 })   // sombra
-    // cofre de madera con herrajes de bronce
-    g.roundRect(-20, -30, 40, 26, 4).fill({ color: 0x4a3623 }).stroke({ color: 0x241a10, width: 2 })   // cuerpo
-    g.moveTo(-20, -30).lineTo(0, -40).lineTo(20, -30).fill({ color: 0x5b4429 })                          // tapa
-    g.rect(-20, -20, 40, 3).fill(0x7a5c33)                                                                // faja
-    g.rect(-3, -22, 6, 8).fill({ color: 0xc9a227 }).stroke({ color: 0x6b5320, width: 1 })                // cerradura de bronce
+    g.ellipse(0, 0, iso.wHalf * 0.5, iso.hHalf * 0.46).fill({ color: 0xc9a227, alpha: 0.13 })
+    g.ellipse(0, 3, iso.wHalf * 0.36, iso.hHalf * 0.32).fill({ color: 0x000000, alpha: 0.32 })
     this.view.addChild(g)
-    this.body = g
+    this.aura = g
+
+    // cofre real de Flare
+    if (tex) {
+      const sp = new Sprite(tex)
+      sp.anchor.set(0.5, 0.86)   // base del cofre apoyada en el tile
+      sp.scale.set(0.34)
+      this.view.addChild(sp)
+      this.sprite = sp
+    }
 
     this.label = new Text({
       text: tt('stash_label'), style: {
@@ -35,7 +40,7 @@ export class StashChest {
       },
     })
     this.label.anchor.set(0.5, 1)
-    this.label.y = -46
+    this.label.y = -56
     this.view.addChild(this.label)
 
     this.view.eventMode = 'static'
@@ -46,8 +51,8 @@ export class StashChest {
 
   update(dt) {
     this._t += dt
-    this.body.alpha = 0.92 + 0.08 * Math.sin(this._t * 2)
-    this.label.y = -46 + Math.sin(this._t * 1.6) * 1.3
+    this.aura.alpha = 0.9 + 0.1 * Math.sin(this._t * 2)
+    this.label.y = -56 + Math.sin(this._t * 1.6) * 1.3
   }
 
   destroy() { this.view.destroy({ children: true }) }

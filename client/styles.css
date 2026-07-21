@@ -157,23 +157,12 @@ html, body, #root {
 .gframe {
   position: relative; width: 100%; max-width: 640px; max-height: 92vh;
   display: flex; flex-direction: column;
-  background:
-    radial-gradient(120% 80% at 50% 0%, rgba(60, 50, 36, 0.5), transparent 60%),
-    linear-gradient(180deg, #251f18 0%, #191410 55%, #100c09 100%),
-    var(--leather);
-  border: 3px solid var(--iron); border-radius: 5px;
-  box-shadow:
-    0 0 0 1px var(--bronze), 0 0 0 4px #17120b,
-    inset 0 0 0 1px rgba(156, 122, 46, 0.28), inset 0 3px 40px rgba(0, 0, 0, 0.7),
-    0 26px 70px rgba(0, 0, 0, 0.82);
+  /* cuero + marco REALES de Flare (menus/dialog_box.png, 9-slice); nada de gradientes */
+  background: url('/assets/ui/panel_leather.png') center / 256px auto;
+  border: 16px solid transparent;
+  border-image: url('/assets/ui/dialog_box.png') 20 stretch;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.82);
 }
-/* filos dorados arriba/abajo (evocan el frame tallado) */
-.gframe::before, .gframe::after {
-  content: ''; position: absolute; left: 10px; right: 10px; height: 1px; pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(201, 162, 39, 0.55), transparent);
-}
-.gframe::before { top: 5px; }
-.gframe::after { bottom: 5px; }
 /* botón X rojo de Flare, arriba a la derecha (como los paneles del juego) */
 .gframe-x {
   position: absolute; top: 12px; right: 12px; z-index: 2; width: 38px; aspect-ratio: 64 / 38;
@@ -259,12 +248,11 @@ html, body, #root {
 /* Menú de jugador (tocar a otro jugador) */
 .pm-backdrop { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12vh; }
 .pm-card {
-  width: min(320px, 86vw); color: #ece0c4; padding: 15px;
-  background:
-    radial-gradient(120% 80% at 50% 0%, rgba(60, 50, 36, 0.45), transparent 60%),
-    linear-gradient(180deg, #251f18, #100c09), var(--leather);
-  border: 3px solid var(--iron); border-radius: 5px;
-  box-shadow: 0 0 0 1px var(--bronze), 0 0 0 4px #17120b, inset 0 0 0 1px rgba(156, 122, 46, 0.28), 0 16px 40px rgba(0, 0, 0, 0.72);
+  width: min(320px, 86vw); color: #ece0c4; padding: 12px;
+  background: url('/assets/ui/panel_leather.png') center / 220px auto;
+  border: 15px solid transparent;
+  border-image: url('/assets/ui/dialog_box.png') 20 stretch;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.72);
 }
 .pm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid rgba(156, 122, 46, 0.28); margin-bottom: 12px; }
 .pm-name { font-family: 'BonaNova', Georgia, serif; font-size: 18px; color: #f0e6d0; font-weight: 700; letter-spacing: 0.02em; }
@@ -630,10 +618,10 @@ html, body, #root {
   text-shadow: 0 1px 2px #000; white-space: nowrap;
 }
 .ab-coin {
-  width: 15px; height: 15px; border-radius: 50%; flex: 0 0 auto;
-  display: inline-block; vertical-align: -0.15em;
-  background: radial-gradient(circle at 35% 30%, #ffe89a, #c9a227 60%, #8a6a12);
-  box-shadow: 0 0 0 1px #5a4410, inset 0 -2px 3px rgba(0, 0, 0, 0.4);
+  width: 17px; height: 17px; flex: 0 0 auto;
+  display: inline-block; vertical-align: -0.2em;
+  background: url('/assets/ui/coin.png') center / contain no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
 }
 /* Monto de oro reusable: moneda dorada + número (sin emoji, en todo el sitio) */
 .gold-amt { display: inline-flex; align-items: center; gap: 5px; }
