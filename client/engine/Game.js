@@ -994,7 +994,8 @@ export class Game {
     this._pendingChest = chest
   }
 
-  // Abre el cofre: tira la tabla real de Flare, suma oro y desparrama los ítems.
+  // Abre el cofre: tira la tabla real de Flare y desparrama los ítems. Los cofres del suelo ya NO
+  // dan oro (solo ítems) — igual que la ruta online; el oro sale de matar + vender el loot.
   _openChest(chest) {
     chest.opened = true
     if (chest.glow) { chest.glow.destroy(); chest.glow = null }
@@ -1009,8 +1010,7 @@ export class Game {
     this.store.missionProgress('chest', 1)
 
     const roll = rollLoot(chest.loot)
-    if (roll.gold > 0) this._dropGold(chest.x, chest.y, roll.gold)
-    this._dropItems(chest.x, chest.y, roll.drops)
+    this._dropItems(chest.x, chest.y, roll.drops)   // solo ítems: los cofres del suelo no dan oro
   }
 
   // Desparrama ítems (como objetos reales) en tiles caminables alrededor de (cx,cy).

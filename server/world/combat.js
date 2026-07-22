@@ -311,9 +311,9 @@ export function playerOpenChest(pid, cid) {
   w.chestDead.push({ x: c.x, y: c.y, loot: c.loot, at: now() + respawnDelay(w, CHEST_RESPAWN, MIN_CHEST_RESPAWN) * 1000 })
   ctx.broadcast(w.map, w.ch, { t: 'copen', c: cid, by: pid })
   const roll = hasLootTable(c.loot) ? rollLoot(c.loot) : { gold: 0, drops: [] }
-  // Oro del cofre AUTORITATIVO del server; los ítems siguen instanciados en el cliente. `cloot` ya
-  // no lleva oro (el cliente lo recibe por el mensaje 'gold').
-  if (roll.gold > 0 && ctx.awardGold) ctx.awardGold(pid, roll.gold, 'chest', c.x, c.y)
+  // Los cofres del SUELO ya NO dan oro: sólo ítems. Eran el faucet fuerte que inflaba la economía
+  // (§ECONOMY_VEL.md). El oro sale de matar enemigos + vender el loot. Los cofres de SELLO (premium,
+  // pagados con fragmentos de sello) sí siguen dando oro — ahí está bien porque pagaste por abrirlos.
   // Los ítems del cofre van al bag AUTORITATIVO del server (empuja 'inv'); `cloot` es sólo para la animación.
   if (roll.drops && roll.drops.length && ctx.grantLoot) ctx.grantLoot(pid, roll.drops)
   if (ctx.missionTick) ctx.missionTick(pid, 'chest', pl.map, 1)   // avance de misión 'cofre' autoritativo
