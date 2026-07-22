@@ -11,7 +11,7 @@ import Embers from './Embers.jsx'
 // elección de cuerpo. El orco sólo tiene un retrato (goblin) en el arte de Flare.
 const PORTRAIT = {
   humano: { male: 'male07', female: 'female01', female_dark: 'female13' },
-  elfo:   { male: 'male11', female: 'female04', female_dark: 'female03' },   // male11/female04: orejas puntiagudas; female03: piel oscura + circlet
+  elfo:   { male: 'elf_male', female: 'elf_female', female_dark: 'female03' },   // arte propio (elf_male/elf_female); female03: piel oscura + circlet
   enano:  { male: 'male16', female: 'female10' },
   orco:   { male: 'goblin', female: 'goblin' },
 }
