@@ -1,10 +1,18 @@
 // Login por billetera (Solana): "Sign-In With Solana". El jugador prueba que controla una
 // wallet firmando un desafío; la CUENTA es la dirección de la wallet (sin contraseña).
 //
-// El gate del token $VEL está previsto pero APAGADO por ahora (no exigimos ninguna moneda
-// hasta que exista): se enciende seteando VEL_MINT (+ VEL_MIN, SOLANA_RPC).
+// Gate de acceso del token $VEL (modelo "play-to-access", ver docs/ECONOMY_VEL.md): para entrar,
+// la wallet tiene que holdear un mínimo de $VEL. El mínimo puede ser DINÁMICO en USD (fijamos el
+// USD, la cantidad de tokens flota con el precio vía oráculo) o fijo en tokens. Está APAGADO hasta
+// que exista el token: sin VEL_MINT, cualquiera entra.
+//   VEL_MINT      -> dirección del token (sin esto, gate apagado)
+//   VEL_MIN_USD   -> mínimo en USD (ej. 3). Prende el modo dinámico (oráculo de precio).
+//   VEL_MIN       -> mínimo fijo en tokens (fallback si no hay VEL_MIN_USD)
+//   VEL_ORACLE    -> endpoint de precio (Jupiter Price API por defecto)
+//   SOLANA_RPC    -> RPC para leer el balance
 //
-// Sin dependencias nuevas: verificación ed25519 con node:crypto + base58 inline.
+// Sin dependencias nuevas: verificación ed25519 con node:crypto + base58 inline; balance y precio
+// por fetch a JSON-RPC / API pública.
 import crypto from 'node:crypto'
 import { findAccount, createAccount } from '../db/db.js'
 import { issueToken } from './auth.js'
@@ -49,12 +57,8 @@ export function challenge(pubkey) {
   return message
 }
 
-// Gate opcional del token $VEL. APAGADO si no hay VEL_MINT (por ahora, cualquiera entra).
-async function meetsTokenGate(pubkey) {
-  const mint = process.env.VEL_MINT
-  if (!mint) return true
-  const rpc = process.env.SOLANA_RPC || 'https://api.mainnet-beta.solana.com'
-  const min = Number(process.env.VEL_MIN || 0)
+// Balance de $VEL (uiAmount, suma de todas las token accounts) de una wallet. -1 ante error de RPC.
+async function velBalance(pubkey, mint, rpc) {
   try {
     const res = await fetch(rpc, {
       method: 'POST', headers: { 'content-type': 'application/json' },
@@ -68,8 +72,58 @@ async function meetsTokenGate(pubkey) {
     for (const acc of j?.result?.value || []) {
       total += acc.account?.data?.parsed?.info?.tokenAmount?.uiAmount || 0
     }
-    return total >= min
-  } catch { return false } // ante error de RPC, no dejamos pasar (fail-closed)
+    return total
+  } catch { return -1 }
+}
+
+// Precio de $VEL en USD desde un oráculo (Jupiter Price API por defecto). Cacheado ~60s para no
+// pegarle al oráculo en cada login. 0 ante error (el caller falla cerrado). Formato Jupiter v2:
+// { data: { "<mint>": { price: "0.0001" } } }.
+const VEL_ORACLE = process.env.VEL_ORACLE || 'https://api.jup.ag/price/v2'
+let _priceCache = { at: 0, usd: 0 }
+async function velPriceUsd(mint) {
+  const now = Date.now()
+  if (now - _priceCache.at < 60_000 && _priceCache.usd > 0) return _priceCache.usd
+  try {
+    const url = VEL_ORACLE + (VEL_ORACLE.includes('?') ? '&' : '?') + 'ids=' + encodeURIComponent(mint)
+    const res = await fetch(url)
+    const j = await res.json()
+    const usd = Number(j?.data?.[mint]?.price) || 0
+    if (usd > 0) _priceCache = { at: now, usd }
+    return usd
+  } catch { return 0 }
+}
+
+// Cuántos tokens de $VEL exige el gate ahora mismo (para mostrar en la UI o loguear). 0 = sin gate.
+export async function velRequirement() {
+  const mint = process.env.VEL_MINT
+  if (!mint) return { gate: false, tokens: 0, usd: 0 }
+  const usdMin = Number(process.env.VEL_MIN_USD || 0)
+  if (usdMin > 0) {
+    const price = await velPriceUsd(mint)
+    return { gate: true, mode: 'usd', usd: usdMin, price, tokens: price > 0 ? Math.ceil(usdMin / price) : null }
+  }
+  return { gate: true, mode: 'fixed', usd: 0, tokens: Number(process.env.VEL_MIN || 0) }
+}
+
+// Gate de acceso del token $VEL. APAGADO si no hay VEL_MINT (por ahora, cualquiera entra).
+// Con mínimo DINÁMICO en USD (VEL_MIN_USD) la cantidad de tokens flota con el precio; si no, usa el
+// mínimo fijo en tokens (VEL_MIN). Fail-closed: ante error de RPC u oráculo, NO deja pasar.
+async function meetsTokenGate(pubkey) {
+  const mint = process.env.VEL_MINT
+  if (!mint) return true   // gate apagado hasta que exista el token
+  const rpc = process.env.SOLANA_RPC || 'https://api.mainnet-beta.solana.com'
+  const total = await velBalance(pubkey, mint, rpc)
+  if (total < 0) return false   // error de RPC -> fail-closed
+  const usdMin = Number(process.env.VEL_MIN_USD || 0)
+  if (usdMin > 0) {
+    // Modo dinámico: exigir el equivalente en tokens de VEL_MIN_USD al precio actual.
+    const price = await velPriceUsd(mint)
+    if (!(price > 0)) return false   // sin precio confiable -> fail-closed
+    return total >= usdMin / price
+  }
+  // Modo fijo: mínimo en tokens.
+  return total >= Number(process.env.VEL_MIN || 0)
 }
 
 // Verifica la firma del desafío y devuelve { ok, token, pubkey } o { ok:false, error }.
