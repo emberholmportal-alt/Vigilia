@@ -425,6 +425,9 @@ const DICT = {
   wallet_required_hint: { es: 'Necesitás una billetera Solana para jugar.', en: 'You need a Solana wallet to play.' },
   back: { es: 'Volver', en: 'Back' },
   loot_labels: { es: 'Loot', en: 'Loot' },
+  run_on: { es: 'Corriendo', en: 'Running' },
+  run_off: { es: 'Caminando', en: 'Walking' },
+  run_hint: { es: 'Correr (gasta stamina) · Shift en PC', en: 'Run (uses stamina) · Shift on PC' },
   spec_hint: { es: 'Arrastrá para mirar · WASD/flechas', en: 'Drag to look · WASD/arrows' },
   // billetera (Solana)
   wallet_connect: { es: 'Conectar billetera', en: 'Connect wallet' },

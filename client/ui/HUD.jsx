@@ -22,6 +22,30 @@ const IcTalk = () => <Svg><path d="M20 4H4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3v4l5-4
 const IcTrade = () => <Svg><ellipse cx="12" cy="6.5" rx="7" ry="2.8" /><path d="M5 6.5v5c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8v-5" /><path d="M5 11.5v5c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8v-5" /></Svg>
 const IcPick = () => <Svg><path d="M4.5 19.5 13 11" /><path d="M6 8.5c4-2.2 9-1 12 4" /><path d="M9.5 5c2.4 3 5 5.6 8 7" /></Svg>
 const IcHerb = () => <Svg><path d="M12 21v-9" /><path d="M12 13c-3.2 0-5.3-2-5.3-5.3 3.2 0 5.3 2 5.3 5.3Z" /><path d="M12 11c3.2 0 5.3-2 5.3-5.3-3.2 0-5.3 2-5.3 5.3Z" /></Svg>
+const IcRun = () => <Svg><path d="M13 4.5a1.4 1.4 0 1 0 0-.1Z" fill="currentColor" stroke="none" /><path d="M7 21l3-5 3 2 1 3" /><path d="M5 12l3-2 3 1 2 3 4 1" /><path d="M14 9l-2-3-4 1" /></Svg>
+
+// Leaf: correr + stamina. Aislado para que la stamina (que cambia ~12Hz) no re-renderice el HUD
+// entero. El toggle prende/apaga el modo correr (mobile + desktop); en desktop además está Shift.
+function StaminaBar() {
+  const stamina = useGameStore((s) => s.stamina)
+  const staminaMax = useGameStore((s) => s.staminaMax)
+  const running = useGameStore((s) => s.running)
+  const toggleRun = useGameStore((s) => s.toggleRun)
+  const t = useT()
+  const pct = Math.max(0, Math.min(1, stamina / (staminaMax || 1)))
+  const low = pct <= 0.2
+  return (
+    <div className="stamina-row">
+      <button className={'run-toggle' + (running ? ' on' : '')} onClick={toggleRun}
+              title={t('run_hint')}>
+        <IcRun /> {running ? t('run_on') : t('run_off')}
+      </button>
+      <div className="stamina-bar" title={`${Math.round(stamina)}/${staminaMax}`}>
+        <div className={'stamina-fill' + (low ? ' low' : '')} style={{ width: pct * 100 + '%' }} />
+      </div>
+    </div>
+  )
+}
 
 // Aviso breve que aparece arriba de la barra y se va solo.
 function Toast() {
@@ -182,6 +206,8 @@ export default function HUD({ onExitSpectate }) {
           <DesktopBar belt={belt} onPanel={togglePanel} onUseBelt={useBelt} beltCap={beltCap} />
           <MpGlobe />
         </div>
+
+        <StaminaBar />
 
         <div className="xp-strip" title={t('xp_of', { lv: level, into: prog.into, need: prog.need })}
              style={{ backgroundImage: `url(${UI}bar_xp_background.png)` }}>

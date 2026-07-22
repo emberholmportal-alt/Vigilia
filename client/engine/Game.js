@@ -1978,6 +1978,15 @@ export class Game {
     window.addEventListener('keyup', this._onAltUp)
     window.addEventListener('blur', this._onAltUp)   // soltar Alt si la ventana pierde foco
 
+    // Shift (desktop): mantener para CORRER (override temporal del toggle de correr). Gasta stamina
+    // como el modo correr; al soltar, vuelve a caminar. En mobile se usa el botón de la HUD.
+    this._shiftRun = false
+    this._onShiftDown = (e) => { if (e.key === 'Shift') this._shiftRun = true }
+    this._onShiftUp = (e) => { if (e.key === 'Shift') this._shiftRun = false }
+    window.addEventListener('keydown', this._onShiftDown)
+    window.addEventListener('keyup', this._onShiftUp)
+    window.addEventListener('blur', this._onShiftUp)   // soltar Shift si pierde foco
+
     // Click DERECHO (estilo Diablo): acción directa sobre lo que hay bajo el cursor
     // (enemigo -> atacar, cadáver -> inspeccionar). Bloqueamos el menú del navegador.
     this._onContext = (e) => e.preventDefault()
@@ -2041,7 +2050,7 @@ export class Game {
 
     // Correr/caminar con stamina.
     const st = this.store.getRunState()
-    const runningNow = st.running && st.stamina > 0 && this.player.moving
+    const runningNow = (st.running || this._shiftRun) && st.stamina > 0 && this.player.moving
     let stamina = st.stamina
     if (runningNow) stamina = Math.max(0, stamina - STAM_DRAIN * dt)
     else stamina = Math.min(st.staminaMax, stamina + STAM_REGEN * dt)
@@ -2400,6 +2409,8 @@ export class Game {
     if (this._onKeyUp) window.removeEventListener('keyup', this._onKeyUp)
     if (this._onAltDown) window.removeEventListener('keydown', this._onAltDown)
     if (this._onAltUp) { window.removeEventListener('keyup', this._onAltUp); window.removeEventListener('blur', this._onAltUp) }
+    if (this._onShiftDown) window.removeEventListener('keydown', this._onShiftDown)
+    if (this._onShiftUp) { window.removeEventListener('keyup', this._onShiftUp); window.removeEventListener('blur', this._onShiftUp) }
     if (this._onContext && this.app?.canvas) this.app.canvas.removeEventListener('contextmenu', this._onContext)
     if (this.weather) { this.weather.destroy(); this.weather = null }
     if (this.dayNight) { this.dayNight.destroy(); this.dayNight = null }
