@@ -435,7 +435,11 @@ wss.on('connection', (ws) => {
         }
         case 'spend': {      // sink genérico: reparar / forjar / respec / ofrenda (el efecto local lo aplica el cliente)
           if (conn.playerId == null) return
-          return send({ t: 'spendack', reason: m.reason, ...rooms.spendGold(conn.playerId, m.amount, m.reason) })
+          // Respec: el costo lo RECALCULA el server del nivel real (no confía en el monto del cliente),
+          // cerrando el under-pay. Reparar/forjar dependen del equipo (client-side) y todavía no se
+          // pueden recalcular acá; ofrenda es inofensiva (pagar de menos sólo avanza menos la misión).
+          const amount = m.reason === 'respec' ? rooms.respecCostOf(conn.playerId) : m.amount
+          return send({ t: 'spendack', reason: m.reason, amount, ...rooms.spendGold(conn.playerId, amount, m.reason) })
         }
         case 'claimmission': {  // recompensa de misión diaria (oro computado del set del día)
           if (conn.playerId == null) return

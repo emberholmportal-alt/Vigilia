@@ -213,6 +213,14 @@ export function gather(id, nid) { combat.playerGather(id, nid) }
 // Pedido de abrir un cofre (del cliente).
 export function openChest(id, cid) { combat.playerOpenChest(id, cid) }
 // El cliente envía sus stats de combate (dependen del equipo) para que el server tire el daño.
+// Costo de respec AUTORITATIVO del server: se computa del nivel real del jugador (que el server
+// conoce vía setStats), no del monto que manda el cliente. Cierra el under-pay del respec.
+// Coincide con la fórmula del cliente (store.respecCost): 50 + 25×nivel.
+export function respecCostOf(id) {
+  const p = players.get(id)
+  return p ? 50 + 25 * (p.level || 1) : 0
+}
+
 export function setStats(id, stats) {
   const p = players.get(id)
   if (p && stats && stats.level) {
