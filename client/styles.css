@@ -7,6 +7,37 @@
   --gold: #c9a227;
   --parch: #d3c6ac;
   --dim: #8b8194;
+  /* Paleta "forja" — cuero oscuro cálido de los paneles de Flare (nada de lila/gradientes IA). */
+  --leather: #211c17;
+  --leather-2: #14100c;
+  --iron: #0c0a08;
+  --bronze: #6b5320;
+  --bronze-lit: #9c7a2e;
+  --slot-bg: url('/assets/ui/slot_empty.png');
+  --slot-on: url('/assets/ui/slot_selected.png');
+}
+/* Celda de ítem con el sprite real de Flare (piedra biselada). Reutilizable en todos los paneles. */
+.forge-slot {
+  background: var(--slot-bg) center / 100% 100% no-repeat;
+  border: 0; box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+}
+.forge-slot.on, .forge-slot:focus-visible {
+  background-image: var(--slot-on); outline: none;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5), 0 0 7px rgba(201, 162, 39, 0.45);
+}
+/* Botón forjado (bronce apagado con bisel) — reemplaza los botones dorados planos "IA". */
+.forge-btn {
+  font-family: 'BonaNova', Georgia, serif; letter-spacing: 0.03em; cursor: pointer;
+  color: #efe0b6; background: linear-gradient(180deg, #2b241a, #1a1510);
+  border: 1px solid #0c0a08; border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgba(201, 162, 39, 0.25), inset 0 0 0 1px rgba(107, 83, 32, 0.4), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.forge-btn:active:not(:disabled) { transform: translateY(1px); }
+.forge-btn:disabled { opacity: 0.45; cursor: default; }
+.forge-btn.primary {
+  color: #14100a; background: linear-gradient(180deg, #d8b552, #a67e22);
+  border-color: #5c4715; box-shadow: inset 0 1px 0 rgba(255, 236, 170, 0.5), 0 2px 8px rgba(0, 0, 0, 0.55);
+  font-weight: 700;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -68,7 +99,413 @@ html, body, #root {
   display: block; width: 100%; max-width: 380px; height: auto; margin: 0 auto 4px;
   filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.7));
 }
-.tagline { color: var(--dim); margin: 10px 0 28px; font-style: italic; }
+.tagline { color: var(--dim); margin: 10px 0 22px; font-style: italic; }
+
+/* contadores del landing (online / mensuales) */
+.counters { display: flex; gap: 18px; justify-content: center; margin: 0 0 16px; flex-wrap: wrap; }
+.counter { font-family: Georgia, serif; font-size: 13px; color: var(--parch); display: inline-flex; align-items: center; gap: 6px; }
+.counter b { color: var(--gold); font-size: 16px; font-variant-numeric: tabular-nums; }
+
+/* Selección de servidor (Kintara #5) — mundo nominal + población en vivo */
+.server-select { margin: 0 0 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.server-label { font-family: Georgia, serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.server-list { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 300px; }
+.server-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 14px; cursor: pointer;
+  background: rgba(20, 16, 26, 0.55); border: 1px solid #4a3f52; border-radius: 7px; color: var(--parch);
+  font-family: Georgia, serif; font-size: 14px;
+}
+.server-item.on { border-color: var(--gold); box-shadow: 0 0 8px rgba(230, 200, 90, 0.28); }
+.server-name { flex: 1; text-align: left; color: #e8dcc4; }
+.server-region { font-size: 11px; color: var(--dim); }
+.server-pop { display: inline-flex; align-items: center; gap: 5px; color: var(--gold); font-variant-numeric: tabular-nums; font-size: 13px; }
+.server-soon { color: var(--dim); font-family: 'BonaNova', Georgia, serif; font-size: 11px; font-style: italic; margin: 2px 0 0; }
+.counter .dot { width: 8px; height: 8px; border-radius: 50%; background: #4f9d6b; box-shadow: 0 0 6px #4f9d6b; }
+.counter .dot.on { animation: dotPulse 2s ease-in-out infinite; }
+@keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* acciones de entrada: PLAY NOW / SPECTATE */
+.entry { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.enter.play-now {
+  color: #14111a; background: linear-gradient(180deg, #e6c85a, #c9a227);
+  border-color: #8a6f1e; font-weight: 700; letter-spacing: 0.08em;
+}
+.new-link {
+  display: block; margin: 12px auto 0; background: none; border: 0; cursor: pointer;
+  font-family: Georgia, serif; font-size: 12px; color: var(--dim); text-decoration: underline;
+}
+
+/* ---------- Overlays de Cómo Jugar / Docs: chrome estilo panel de Flare ---------- */
+/* Links del landing: botones de piedra tallada con filo dorado (como las entradas del juego). */
+.htp-links { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.htp-link {
+  cursor: pointer; font-family: Georgia, serif; font-size: 13px; letter-spacing: 0.05em; color: var(--gold);
+  background: linear-gradient(180deg, #2a2320 0%, #17120e 60%, #0d0a08 100%);
+  border: 1px solid #6b5320; border-radius: 4px; padding: 8px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(201, 162, 39, 0.2);
+  transition: border-color 0.15s, color 0.15s;
+}
+.htp-link:hover { border-color: var(--gold); color: #f0dc8f; }
+.htp-link:active { transform: translateY(1px); }
+
+.gframe-backdrop {
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px;
+  background: rgba(6, 5, 9, 0.84); backdrop-filter: blur(2px); overflow-y: auto; animation: gframe-in 0.2s ease;
+}
+@keyframes gframe-in { from { opacity: 0; } }
+/* Marco tallado: piedra oscura + banda de bronce + biseles dorados + esquinas. */
+.gframe {
+  position: relative; width: 100%; max-width: 640px; max-height: 92vh;
+  display: flex; flex-direction: column;
+  /* cuero + marco REALES de Flare (menus/dialog_box.png, 9-slice); nada de gradientes */
+  background: url('/assets/ui/panel_leather.png') center / 256px auto;
+  border: 16px solid transparent;
+  border-image: url('/assets/ui/dialog_box.png') 20 stretch;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.82);
+}
+/* botón X rojo de Flare, arriba a la derecha (como los paneles del juego) */
+.gframe-x {
+  position: absolute; top: 12px; right: 12px; z-index: 2; width: 38px; aspect-ratio: 64 / 38;
+  /* button_x.png son 4 estados apilados; mostramos el primero (rojo normal), como .panel-close */
+  background: none; background-size: 100% 400%; background-position: center top; background-repeat: no-repeat;
+  border: 0; cursor: pointer; filter: drop-shadow(0 1px 2px #000);
+}
+.gframe-x:active { transform: scale(0.92); background-position: center 66.6%; }
+.gframe-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 16px 52px 12px 22px; border-bottom: 1px solid rgba(201, 162, 39, 0.2);
+}
+.gframe-title {
+  font-family: Georgia, serif; font-size: 22px; color: var(--gold); margin: 0; letter-spacing: 0.05em;
+  text-shadow: 0 2px 10px rgba(194, 85, 31, 0.4), 0 1px 0 #000; text-wrap: balance;
+}
+.gframe-sub { font-family: Georgia, serif; font-size: 12px; font-style: italic; color: var(--dim); margin: 4px 0 0; }
+.gframe-lang { display: flex; gap: 4px; flex: 0 0 auto; }
+.gframe-lang button {
+  font-family: Georgia, serif; font-size: 11px; color: var(--parch); cursor: pointer;
+  background: rgba(20, 17, 26, 0.7); border: 1px solid var(--edge); border-radius: 4px; padding: 4px 9px;
+}
+.gframe-lang button.on { color: #14111a; background: var(--gold); border-color: var(--gold); }
+.gframe-body { overflow-y: auto; padding: 6px 22px; display: flex; flex-direction: column; }
+.gframe-close {
+  margin: 8px auto 16px; font-family: 'BonaNova', Georgia, serif; font-size: 15px; letter-spacing: 0.05em; font-weight: 700;
+  color: #14100a; background: linear-gradient(180deg, #d8b552, #a67e22); border: 1px solid #5c4715;
+  border-radius: 4px; padding: 9px 30px; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 170, 0.5), 0 3px 10px rgba(0, 0, 0, 0.55);
+}
+.gframe-close:active { transform: translateY(1px); }
+
+/* Bienvenida (1 vez por personaje) */
+.welcome-frame { max-width: 560px; }
+.welcome-body { padding: 4px 20px 0; }
+.welcome-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.welcome-list li { display: flex; gap: 12px; align-items: flex-start; color: #d8cfc0; font-size: 14px; line-height: 1.5; }
+.welcome-list li b { color: var(--gold); }
+.welcome-num {
+  flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  font-family: 'BonaNova', Georgia, serif; font-weight: 700; font-size: 13px; color: #14100a;
+  background: linear-gradient(180deg, #d8b552, #a67e22); border: 1px solid #5c4715;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 170, 0.5);
+}
+.welcome-actions { display: flex; gap: 12px; justify-content: center; align-items: center; padding: 4px 0 16px; }
+.welcome-guide {
+  font-family: 'BonaNova', Georgia, serif; font-size: 14px; letter-spacing: 0.03em; color: #efe0b6;
+  background: linear-gradient(180deg, #2b241a, #1a1510); border: 1px solid #0c0a08; border-radius: 4px; padding: 9px 22px; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(201, 162, 39, 0.22), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.welcome-guide:active { transform: translateY(1px); }
+/* etiqueta de oro en el trade (moneda + palabra) */
+.trade-gold-lbl { display: inline-flex; align-items: center; gap: 5px; }
+.welcome-actions .gframe-close { margin: 0; }
+
+/* Trade P2P (Kintara #3) */
+.trade-req { max-width: 380px; text-align: center; padding: 22px 24px 18px; }
+.trade-req-msg { color: #e8dcc4; font-size: 16px; margin: 6px 0 16px; }
+.trade-frame { max-width: 620px; }
+.trade-cols { display: flex; gap: 14px; padding: 4px 18px; }
+.trade-col { flex: 1; background: rgba(0, 0, 0, 0.32); border: 1px solid #2a2118; border-radius: 4px; padding: 10px; min-width: 0; box-shadow: inset 0 0 0 1px rgba(107, 83, 32, 0.15); }
+.trade-col h3 { margin: 0 0 8px; color: var(--gold); font-size: 13px; font-family: 'BonaNova', Georgia, serif; letter-spacing: 0.03em; }
+.trade-slots { display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; align-content: flex-start; }
+.trade-bag-slots { max-height: 108px; overflow-y: auto; }
+.trade-slot {
+  width: 40px; height: 40px; padding: 0; border-radius: 3px;
+  background: var(--slot-bg) center / 100% 100% no-repeat; box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+  display: grid; place-items: center; cursor: pointer; position: relative;
+}
+.trade-slot.on { background-image: var(--slot-on); box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5), 0 0 7px rgba(201, 162, 39, 0.45); }
+.trade-empty { color: #7c7286; font-size: 12px; font-style: italic; align-self: center; }
+.trade-gold-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; color: #d8cfc0; font-size: 13px; }
+.trade-gold-row input { width: 84px; background: #14111a; border: 1px solid #4a3f52; border-radius: 4px; color: #e8dcc4; padding: 4px 6px; font-family: inherit; }
+.trade-gold-max { color: #9a8fae; font-size: 12px; }
+.trade-ok { min-height: 18px; margin-top: 6px; font-size: 12px; color: #7c7286; font-weight: 700; }
+.trade-ok.on { color: #7fe08a; }
+.trade-bag { padding: 10px 18px 0; }
+.trade-bag h4 { margin: 0 0 6px; color: #b9adc6; font-size: 12px; font-weight: 600; }
+.trade-actions { display: flex; gap: 12px; justify-content: center; align-items: center; padding: 12px 0 16px; }
+.trade-actions .gframe-close { margin: 0; }
+.trade-actions .gframe-close:disabled { opacity: 0.6; cursor: default; }
+
+/* Menú de jugador (tocar a otro jugador) */
+.pm-backdrop { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12vh; }
+.pm-card {
+  width: min(320px, 86vw); color: #ece0c4; padding: 12px;
+  background: url('/assets/ui/panel_leather.png') center / 220px auto;
+  border: 15px solid transparent;
+  border-image: url('/assets/ui/dialog_box.png') 20 stretch;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.72);
+}
+.pm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid rgba(156, 122, 46, 0.28); margin-bottom: 12px; }
+.pm-name { font-family: 'BonaNova', Georgia, serif; font-size: 18px; color: #f0e6d0; font-weight: 700; letter-spacing: 0.02em; }
+.pm-lvl { font-size: 12px; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pm-actions { display: flex; gap: 8px; }
+.pm-actions.col { flex-direction: column; }
+.pm-btn {
+  flex: 1; font-family: 'BonaNova', Georgia, serif; font-size: 15px; padding: 11px 14px; border-radius: 4px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  color: #efe0b6; background: linear-gradient(180deg, #2b241a, #1a1510); border: 1px solid #0c0a08;
+  box-shadow: inset 0 1px 0 rgba(201, 162, 39, 0.22), inset 0 0 0 1px rgba(107, 83, 32, 0.35), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.pm-btn.primary { color: #14100a; background: linear-gradient(180deg, #d8b552, #a67e22); border-color: #5c4715; font-weight: 700; box-shadow: inset 0 1px 0 rgba(255, 236, 170, 0.5), 0 2px 8px rgba(0, 0, 0, 0.55); }
+.pm-btn:disabled { opacity: 0.45; cursor: default; }
+.pm-btn:active:not(:disabled) { transform: translateY(1px); }
+.pm-far { color: #cf9a70; font-size: 12px; text-align: center; margin: 8px 0 0; }
+.pm-stats { display: flex; flex-direction: column; gap: 8px; }
+.pm-row { display: flex; justify-content: space-between; font-size: 13px; color: #c2b189; }
+.pm-row b { color: #ece0c4; }
+.pm-hpbar { height: 8px; border-radius: 3px; background: #1a1510; overflow: hidden; border: 1px solid #0c0a08; box-shadow: inset 0 0 4px rgba(0,0,0,0.6); }
+.pm-hpbar i { display: block; height: 100%; background: linear-gradient(90deg, #8f2f26, #c8463c); }
+.pm-close { display: block; margin: 12px auto 0; background: transparent; border: 0; color: #9a8a6a; font-size: 12px; cursor: pointer; text-decoration: underline; font-family: 'BonaNova', Georgia, serif; }
+
+/* Mercado (Kintara #4) */
+.shop-market-btn { font-size: 12px !important; padding: 4px 10px !important; }
+.market-frame { max-width: 560px; }
+.market-tabs { display: flex; gap: 6px; padding: 4px 18px 0; }
+.market-tabs button { flex: 1; background: linear-gradient(180deg, #221c15, #17130e); border: 1px solid #0c0a08; color: #c2b189; border-radius: 4px 4px 0 0; padding: 8px; cursor: pointer; font-family: 'BonaNova', Georgia, serif; font-size: 13px; }
+.market-tabs button.on { color: #14100a; background: linear-gradient(180deg, #d8b552, #a67e22); border-color: #5c4715; font-weight: 700; }
+.market-body { padding: 10px 18px; min-height: 220px; max-height: 46vh; overflow-y: auto; }
+.market-row { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #2a2118; border-radius: 4px; background: rgba(0, 0, 0, 0.28); margin-bottom: 8px; }
+.market-row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.market-row-name { color: #ece0c4; font-size: 13px; }
+.market-row-sub { color: #9a8a6a; font-size: 11px; }
+.market-row-price { color: var(--gold); font-weight: 700; font-size: 13px; white-space: nowrap; }
+.market-buy, .market-cancel {
+  font-family: 'BonaNova', Georgia, serif; font-size: 13px; border-radius: 4px; padding: 7px 14px; cursor: pointer; white-space: nowrap;
+  color: #14100a; background: linear-gradient(180deg, #d8b552, #a67e22); border: 1px solid #5c4715;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 170, 0.45);
+}
+.market-buy:disabled { opacity: 0.5; cursor: default; }
+.market-cancel { background: linear-gradient(180deg, #2b241a, #1a1510); color: #cf9a70; border-color: #0c0a08; box-shadow: none; }
+.market-empty { color: #8a7c5e; text-align: center; padding: 30px 0; font-style: italic; }
+.market-sell-hint { color: #c2b189; font-size: 13px; margin: 0 0 10px; }
+.market-bag { display: flex; flex-wrap: wrap; gap: 6px; max-height: 160px; overflow-y: auto; margin-bottom: 12px; }
+.market-sell-form { display: flex; align-items: center; gap: 8px; }
+.market-sell-form span { color: #d8cfc0; font-size: 13px; }
+.market-sell-form input { width: 110px; background: #14111a; border: 1px solid #4a3f52; border-radius: 4px; color: #e8dcc4; padding: 6px 8px; font-family: inherit; }
+.market-sell-form .gframe-close { margin: 0; }
+.market-sell-form .gframe-close:disabled { opacity: 0.6; cursor: default; }
+
+/* Aviso de expulsión (single-session) */
+.kicked-backdrop { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: rgba(6, 5, 9, 0.88); }
+.kicked-card {
+  max-width: 360px; text-align: center; color: #ece0c4; padding: 22px;
+  background: url('/assets/ui/panel_leather.png') center / 220px auto; border: 15px solid transparent;
+  border-image: url('/assets/ui/dialog_box.png') 20 stretch;
+}
+.kicked-card p { font-family: 'BonaNova', Georgia, serif; font-size: 16px; margin: 4px 0 16px; }
+
+/* Tumba / ataúd (al morir): armadura + cinturón + bolsa, con el chrome de Flare */
+.grave-frame { max-width: 460px; }
+.grave-body { padding: 6px 20px 4px; display: flex; flex-direction: column; gap: 12px; }
+.grave-sect h3 {
+  margin: 0 0 6px; font-family: 'BonaNova', Georgia, serif; font-size: 13px; letter-spacing: 0.04em;
+  color: var(--gold); border-bottom: 1px solid rgba(156, 122, 46, 0.22); padding-bottom: 4px;
+}
+.grave-grid { display: grid; gap: 6px; justify-content: start; }
+.grave-cell {
+  width: 46px; height: 46px; border: 0; padding: 0; border-radius: 3px; cursor: pointer;
+  display: grid; place-items: center; position: relative;
+  background: var(--slot-bg) center / 100% 100% no-repeat; box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+}
+.grave-cell:disabled { cursor: default; }
+.grave-cell:not(:disabled):active { filter: brightness(1.2); }
+
+/* Alijo personal (cofre del pueblo): alijo (todos los slots, sin barras) + tu inventario completo */
+.stash-frame { max-width: 640px; }
+.stash-cols { display: flex; gap: 18px; padding: 6px 20px 8px; align-items: flex-start; }
+.stash-col { flex: 1; min-width: 0; }
+.stash-col h3 {
+  margin: 0 0 8px; font-family: 'BonaNova', Georgia, serif; font-size: 14px; letter-spacing: 0.03em;
+  color: var(--gold); border-bottom: 1px solid rgba(156, 122, 46, 0.22); padding-bottom: 5px;
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.stash-count { font-size: 12px; color: #c2b189; font-variant-numeric: tabular-nums; }
+/* grillas de celdas de 46px (como el ataúd), alineadas a la izquierda. auto-fill: llena tantas
+   columnas de 46px como entren en el ancho disponible y envuelve el resto — así nunca se desborda
+   ni se encima en pantallas angostas (mobile). Nada de minmax (colapsaba a 4px). */
+.stash-grid { display: grid; grid-template-columns: repeat(auto-fill, 46px); gap: 5px; justify-content: start; width: 100%; min-width: 0; box-sizing: border-box; }
+.stash-inv-block { margin-bottom: 10px; }
+.stash-inv-lbl {
+  display: block; font-family: 'BonaNova', Georgia, serif; font-size: 12px; letter-spacing: 0.04em;
+  color: var(--gold); opacity: 0.85; margin: 0 0 4px;
+}
+.grave-cell.dim { opacity: 0.72; cursor: default; }
+.trade-bag-cta { font-style: italic; color: #8a7c5e; font-size: 11px; }
+/* Bóveda de oro del alijo */
+.stash-gold { margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(156, 122, 46, 0.22); }
+.stash-gold-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.stash-gold-head .stash-inv-lbl { margin: 0; }
+.stash-gold-amt { color: var(--gold); font-size: 16px; font-variant-numeric: tabular-nums; }
+.stash-gold-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.stash-gold-row input {
+  width: 88px; background: #14111a; border: 1px solid #4a3f52; border-radius: 4px;
+  color: #e8dcc4; padding: 6px 8px; font-family: inherit; font-size: 13px;
+}
+.stash-gold-btn {
+  font-family: 'BonaNova', Georgia, serif; font-size: 13px; padding: 6px 12px; border-radius: 4px; cursor: pointer;
+  color: #14100a; background: linear-gradient(180deg, #d8b552, #a67e22); border: 1px solid #5c4715; font-weight: 700;
+}
+.stash-gold-btn:disabled { opacity: 0.5; cursor: default; }
+.stash-gold-wallet { display: block; margin-top: 6px; font-size: 12px; color: #9a8fae; font-variant-numeric: tabular-nums; }
+.trade-remove-cta { font-style: italic; color: #8a7c5e; font-size: 11px; font-weight: 400; }
+/* selector de cuerpo/género en la creación de personaje */
+.body-pick { display: flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; }
+.body-opt {
+  flex: 1 1 auto; min-width: 84px; font-family: 'BonaNova', Georgia, serif; font-size: 13px;
+  padding: 7px 10px; cursor: pointer; color: #6a4a24; background: rgba(120, 90, 50, 0.12);
+  border: 1px solid #b79a63; border-radius: 4px;
+}
+.body-opt.on { color: #3a2510; background: linear-gradient(180deg, #e6cf8f, #c9a227); border-color: #8a6f1e; font-weight: 700; }
+.trade-howto {
+  margin: 4px 18px 2px; padding: 8px 12px; font-size: 12px; line-height: 1.45; color: #c2b189;
+  background: rgba(0, 0, 0, 0.25); border-left: 2px solid var(--bronze); border-radius: 3px;
+}
+.stash-hint { color: #8a7c5e; font-size: 11px; font-style: italic; margin: 6px 0 2px; }
+.stash-empty { color: #8a7c5e; font-style: italic; font-size: 12px; padding: 12px 0; }
+.grave-gold { display: flex; justify-content: center; padding: 4px 0 2px; }
+.grave-actions { display: flex; justify-content: center; padding: 8px 0 14px; }
+.grave-actions .gframe-close:disabled { opacity: 0.5; cursor: default; }
+
+/* Cómo Jugar: secciones con ícono */
+.htp-frame { max-width: 640px; }
+.htp-sec { display: flex; gap: 14px; padding: 15px 0; align-items: flex-start; border-bottom: 1px solid rgba(120, 104, 80, 0.14); }
+.htp-sec:last-child { border-bottom: 0; }
+.htp-sec-ic {
+  flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center; font-size: 22px; color: var(--gold);
+  background: radial-gradient(circle, rgba(201, 162, 39, 0.16), transparent 70%);
+  border: 1px solid rgba(201, 162, 39, 0.35); border-radius: 50%;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
+}
+.htp-sec-txt { flex: 1; min-width: 0; }
+.htp-sec-txt h3 { font-family: Georgia, serif; font-size: 15px; color: #f2ead6; margin: 3px 0 6px; display: flex; align-items: center; gap: 8px; text-wrap: balance; }
+.htp-num { flex: 0 0 auto; width: 20px; height: 20px; line-height: 20px; text-align: center; font-size: 11px; font-weight: bold; color: #14111a; background: var(--gold); border-radius: 50%; }
+.htp-sec-txt p { font-family: Georgia, serif; font-size: 13.5px; line-height: 1.55; color: var(--parch); margin: 0 0 6px; max-width: 62ch; }
+
+/* Docs: layout con sidebar (grupos → temas) + artículo */
+.docs-frame { max-width: 920px; height: 92vh; }
+.docs-layout { flex: 1; display: flex; min-height: 0; }
+.docs-nav {
+  flex: 0 0 200px; overflow-y: auto; padding: 12px 10px 12px 16px;
+  border-right: 1px solid rgba(201, 162, 39, 0.14); scrollbar-width: thin;
+}
+.docs-nav-group { margin-bottom: 12px; }
+.docs-nav-title {
+  font-family: Georgia, serif; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--gold); opacity: 0.75; margin: 0 0 4px; padding-left: 8px;
+}
+.docs-nav-item {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  font-family: Georgia, serif; font-size: 12.5px; color: var(--parch);
+  background: none; border: 0; border-left: 2px solid transparent; border-radius: 0 3px 3px 0;
+  padding: 5px 8px; transition: color 0.12s, background 0.12s;
+}
+.docs-nav-item:hover { color: #f2ead6; background: rgba(201, 162, 39, 0.06); }
+.docs-nav-item.on { color: var(--gold); background: rgba(201, 162, 39, 0.1); border-left-color: var(--gold); }
+.docs-article { flex: 1; overflow-y: auto; padding: 16px 22px 20px; min-width: 0; }
+.docs-topic-title { font-family: Georgia, serif; font-size: 19px; color: var(--gold); margin: 0 0 10px; text-shadow: 0 1px 2px #000; text-wrap: balance; }
+.docs-h { font-family: Georgia, serif; font-size: 14px; color: #e0c368; margin: 15px 0 5px; letter-spacing: 0.02em; text-shadow: 0 1px 2px #000; }
+.docs-p { font-family: Georgia, serif; font-size: 13.5px; line-height: 1.6; color: var(--parch); margin: 0 0 9px; max-width: 68ch; }
+.docs-list { margin: 0 0 11px; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.docs-list li { font-family: Georgia, serif; font-size: 13px; line-height: 1.45; color: var(--parch); }
+.docs-list li::marker { color: var(--gold); }
+.docs-table-wrap { overflow-x: auto; margin: 4px 0 13px; }
+.docs-table { border-collapse: collapse; width: 100%; font-family: Georgia, serif; font-size: 12.5px; }
+.docs-table th { text-align: left; color: var(--gold); font-weight: normal; padding: 6px 12px 6px 0; border-bottom: 1px solid rgba(201, 162, 39, 0.3); white-space: nowrap; }
+.docs-table td { color: var(--parch); padding: 6px 12px 6px 0; border-bottom: 1px solid rgba(120, 104, 80, 0.14); vertical-align: top; }
+.docs-table tr:last-child td { border-bottom: 0; }
+.docs-table td:first-child { color: #f2ead6; white-space: nowrap; }
+
+/* Notas: consejo (tip, verde) / aviso (warn, ámbar) */
+.docs-note { display: flex; gap: 9px; align-items: flex-start; margin: 6px 0 11px; padding: 9px 11px; border-radius: 6px; border: 1px solid; }
+.docs-note p { font-family: Georgia, serif; font-size: 12.5px; line-height: 1.5; margin: 0; color: var(--parch); }
+.docs-note span { flex: 0 0 auto; width: 18px; height: 18px; line-height: 18px; text-align: center; font-size: 12px; font-weight: bold; border-radius: 50%; }
+.docs-note.tip { background: rgba(60, 120, 80, 0.14); border-color: rgba(107, 208, 138, 0.4); }
+.docs-note.tip span { background: #4f9d6b; color: #08140c; }
+.docs-note.warn { background: rgba(140, 90, 30, 0.16); border-color: rgba(224, 137, 74, 0.45); }
+.docs-note.warn span { background: #e0894a; color: #1a0f06; }
+
+/* móvil: la sidebar de Docs pasa arriba, horizontal */
+@media (max-width: 620px) {
+  .docs-frame { max-width: 100%; height: 94vh; }
+  .docs-layout { flex-direction: column; }
+  .docs-nav {
+    flex: 0 0 auto; display: flex; gap: 4px; overflow-x: auto; overflow-y: hidden;
+    border-right: 0; border-bottom: 1px solid rgba(201, 162, 39, 0.14); padding: 8px 12px;
+  }
+  .docs-nav-group { margin: 0; display: flex; gap: 4px; }
+  .docs-nav-title { display: none; }
+  .docs-nav-item { white-space: nowrap; border-left: 0; border-bottom: 2px solid transparent; border-radius: 3px; padding: 5px 10px; }
+  .docs-nav-item.on { border-left: 0; border-bottom-color: var(--gold); }
+  /* Alijo y trade: en pantallas angostas (mobile) las dos columnas se apilan en vertical, así cada
+     sección usa el ancho completo y las grillas de 46px entran sin desbordarse ni encimarse. El
+     contenido apilado puede pasar el alto del marco, así que scrollea adentro. */
+  .stash-cols, .trade-cols { flex-direction: column; min-height: 0; overflow-y: auto; }
+  .stash-col, .trade-col { width: 100%; }
+}
+
+/* barra del modo espectador */
+.spectator-bar {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 30;
+  display: flex; align-items: center; gap: 12px; pointer-events: auto;
+  background: rgba(20, 17, 26, 0.82); border: 1px solid #4a6fa0; border-top: 0;
+  border-radius: 0 0 10px 10px; padding: 6px 14px;
+  font-family: Georgia, serif; font-size: 13px; color: #bfe0ff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+.spec-hint { color: #7f8aa0; font-size: 11px; font-style: italic; }
+@media (max-width: 520px) { .spec-hint { display: none; } }
+.spectator-bar button {
+  font-family: Georgia, serif; font-size: 12px; font-weight: bold; color: #14111a;
+  background: linear-gradient(180deg, #e6c85a, #c9a227); border: 1px solid #8a6f1e; border-radius: 5px;
+  padding: 4px 12px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+
+/* conexión de billetera (Solana) en la pantalla de inicio */
+.wallet-box { margin: 0 0 18px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.wallet-btn {
+  font-family: 'BonaNova', Georgia, serif; font-size: 13px; letter-spacing: 0.05em; color: #d9c9f0;
+  background: linear-gradient(180deg, #241a30, #150f1c 60%, #0d0912);
+  border: 1px solid #5b3f83; border-radius: 5px; padding: 9px 20px; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(160,120,220,0.18);
+  text-shadow: 0 1px 2px #000; transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.wallet-btn:hover { border-color: #9a72d6; color: #efe4ff; box-shadow: 0 2px 14px rgba(140,90,208,0.3), inset 0 1px 0 rgba(160,120,220,0.3); }
+.wallet-btn:disabled { opacity: 0.6; cursor: default; }
+.wallet-btn:not(:disabled):active { transform: scale(0.97); }
+.wallet-on {
+  display: flex; align-items: center; gap: 8px; font-family: Georgia, serif; font-size: 13px;
+  color: var(--parch); background: rgba(20, 26, 40, 0.6); border: 1px solid #4a6fa0;
+  border-radius: 7px; padding: 7px 12px;
+}
+.wallet-on b { color: #bfe0ff; font-family: 'Courier New', monospace; }
+.wallet-x { background: none; border: 0; color: var(--dim); cursor: pointer; font-size: 13px; padding: 0 2px; }
+.wallet-disc {
+  background: rgba(40, 20, 20, 0.6); border: 1px solid #7a4636; color: #e0b8a8;
+  border-radius: 6px; padding: 4px 10px; font-family: Georgia, serif; font-size: 12px; cursor: pointer;
+}
+.wallet-disc:active { transform: scale(0.97); }
+.wallet-addr { color: #bfe0ff; font-family: 'Courier New', monospace; }
+.wallet-err { color: #d98a6a; font-family: Georgia, serif; font-size: 11px; margin: 2px 0 0; max-width: 300px; }
+.wallet-hint { color: var(--dim); font-family: 'BonaNova', Georgia, serif; font-size: 11px; font-style: italic; margin: 2px 0 0; }
 
 /* splash de arranque: logo + barra de carga estilo Flare */
 .boot {
@@ -97,6 +534,30 @@ html, body, #root {
   animation-name: bootFill; animation-timing-function: ease-in-out; animation-fill-mode: forwards;
 }
 @keyframes bootFill { from { width: 0; } to { width: 100%; } }
+/* barra de carga del loader de juego: llena de 0 a ~97% con desaceleración (efecto "trickle",
+   como los loaders de siempre). El componente se desmonta al terminar la carga real, así que la
+   barra progresa de verdad en vez de mostrarse llena de entrada. */
+.boot-bar i.trickle {
+  width: 0; margin: 0;
+  background: linear-gradient(90deg, #8a2f1a, #c9a227 60%, #e6c85a);
+  box-shadow: 0 0 8px rgba(230, 200, 90, 0.5);
+  animation: bootTrickle 3.6s cubic-bezier(0.16, 0.84, 0.3, 1) forwards;
+}
+@keyframes bootTrickle {
+  0% { width: 0; }
+  18% { width: 34%; }
+  46% { width: 64%; }
+  76% { width: 85%; }
+  100% { width: 97%; }
+}
+.game-loader .loader-title {
+  font-family: Georgia, serif; font-size: 20px; letter-spacing: 0.06em; color: var(--gold);
+  text-shadow: 0 2px 12px rgba(194, 85, 31, 0.4); text-align: center;
+}
+.game-loader .loader-lore {
+  font-family: Georgia, serif; font-size: 13px; font-style: italic; color: var(--dim);
+  text-align: center; max-width: 460px; line-height: 1.5; margin: 4px 0 0; text-wrap: balance;
+}
 .boot-label {
   font-family: Georgia, serif; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
   color: var(--dim); text-shadow: 0 1px 2px #000; margin: -8px 0 0;
@@ -104,6 +565,7 @@ html, body, #root {
 @media (prefers-reduced-motion: reduce) {
   .boot-logo { animation: none; }
   .boot-bar i { animation-duration: 1ms !important; }
+  .boot-bar i.trickle { animation: none; width: 70%; }
 }
 .enter {
   font-family: Georgia, serif; font-size: 16px; letter-spacing: 0.06em;
@@ -208,10 +670,14 @@ html, body, #root {
   text-shadow: 0 1px 2px #000; white-space: nowrap;
 }
 .ab-coin {
-  width: 15px; height: 15px; border-radius: 50%; flex: 0 0 auto;
-  background: radial-gradient(circle at 35% 30%, #ffe89a, #c9a227 60%, #8a6a12);
-  box-shadow: 0 0 0 1px #5a4410, inset 0 -2px 3px rgba(0, 0, 0, 0.4);
+  width: 17px; height: 17px; flex: 0 0 auto;
+  display: inline-block; vertical-align: -0.2em;
+  background: url('/assets/ui/coin.png') center / contain no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
 }
+/* Monto de oro reusable: moneda dorada + número (sin emoji, en todo el sitio) */
+.gold-amt { display: inline-flex; align-items: center; gap: 5px; }
+.gold-amt .gold-n { font-family: Georgia, serif; color: var(--gold); font-variant-numeric: tabular-nums; }
 /* fila de botones de menú, centrada arriba de la barra (así no la tapan los globos) */
 .menu-row {
   display: flex; justify-content: center; gap: 6px;
@@ -362,6 +828,7 @@ html, body, #root {
 /* piedra oscura + borde de latón + texto pergamino serif (estética Flare) */
 .interact-btn {
   pointer-events: auto; font-family: Georgia, serif; font-size: 14px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px;
   letter-spacing: 0.02em; color: var(--parch);
   background: linear-gradient(180deg, #2a2320 0%, #17120e 60%, #0d0a08 100%);
   border: 1px solid var(--gold); border-radius: 4px; padding: 8px 18px; cursor: pointer;
@@ -386,23 +853,18 @@ html, body, #root {
 @keyframes interact-pop { from { transform: scale(0.9); opacity: 0; } }
 
 /* barra de XP: canal siempre visible (aunque esté en 0) con relleno + etiqueta de nivel */
+/* Barra de XP: el asset real de Flare/Demonic (bar_xp_background = marco con borde,
+   bar_xp = relleno fino). Aspecto nativo 256/16; el relleno (246x6) va inset dentro del marco.
+   Fina, con su borde, como la propone la Demonic UI por defecto. */
 .xp-strip {
-  position: relative; height: 16px; pointer-events: auto;
-  background: linear-gradient(180deg, #14100a, #0a0806);
-  border-top: 1px solid #6b5320;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
-  margin-bottom: env(safe-area-inset-bottom);
+  position: relative; width: 100%; height: 13px;
+  background-size: 100% 100%; background-repeat: no-repeat; image-rendering: auto;
+  pointer-events: auto; margin-bottom: env(safe-area-inset-bottom);
 }
 .xp-strip-fill {
-  height: 100%;
-  background: linear-gradient(180deg, #d06bff, #8a30d6);
-  box-shadow: 0 0 6px rgba(180, 90, 255, 0.6);
+  position: absolute; left: 2%; top: 31.25%; bottom: 31.25%;   /* región del relleno (246x6 en 256x16) */
+  background-size: 100% 100%; background-repeat: no-repeat;
   transition: width 0.3s ease;
-}
-.xp-strip-label {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-family: Georgia, serif; font-size: 10px; letter-spacing: 0.03em;
-  color: #ead9c4; text-shadow: 0 1px 2px #000; pointer-events: none;
 }
 
 /* ---------- PC / pantallas anchas: Demonic UI a lo grande (globos y barra) ---------- */
@@ -423,8 +885,7 @@ html, body, #root {
     filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5)); pointer-events: auto;
   }
 
-  .xp-strip { height: 20px; }
-  .xp-strip-label { font-size: 12px; }
+  .xp-strip { height: 15px; }
 }
 .run-btn {
   display: flex; align-items: center; gap: 6px;
@@ -465,14 +926,22 @@ html, body, #root {
 
 /* ---------- minimapa (marco de Flare) ---------- */
 .minimap {
-  position: absolute; top: 56px; right: 8px; width: 124px; height: 124px; z-index: 5;
+  position: absolute; top: 56px; right: 8px; width: 152px; height: 152px; z-index: 5;
   background-size: 100% 100%; background-repeat: no-repeat; pointer-events: none;
 }
 .minimap-inner { position: absolute; left: 9px; right: 9px; top: 50%; transform: translateY(-50%); }
 .minimap-inner img { width: 100%; display: block; image-rendering: auto; }
+/* TU punto (el jugador): cian brillante y pulsante, distinto del oro de los mercaderes, para
+   que se vea claramente dónde estás y cómo te movés. */
 .mm-dot {
+  position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%;
+  background: #5fe0ff; box-shadow: 0 0 6px #5fe0ff, 0 0 0 1.5px #06131a;
+  animation: mm-pulse 1.4s ease-in-out infinite;
+}
+/* tus tumbas en el minimapa (calavera violeta) */
+.mm-grave {
   position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
-  background: #ffcf5a; box-shadow: 0 0 4px #ffcf5a, 0 0 0 1px #000;
+  background: #b98bff; box-shadow: 0 0 4px #7a4bd0, 0 0 0 1px #000;
 }
 /* marcador de portal en el minimapa (violeta pulsante) */
 .mm-portal {
@@ -481,6 +950,16 @@ html, body, #root {
   animation: mm-pulse 1.4s ease-in-out infinite;
 }
 @keyframes mm-pulse { 50% { transform: scale(1.5); opacity: 0.7; } }
+/* marcadores de NPC de servicio en el minimapa: rombo pequeño, color por rol (distinto del
+   punto redondo del jugador y los portales). mercader=oro, herrero=naranja, bruja=verde. */
+.mm-npc {
+  position: absolute; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
+  transform: rotate(45deg); box-shadow: 0 0 0 1px #000;
+}
+.mm-merchant  { background: #e8c15a; }
+.mm-smith     { background: #e0894a; }
+.mm-alchemist { background: #6bd08a; }
+.mm-npc:not(.mm-merchant):not(.mm-smith):not(.mm-alchemist) { background: #cfd3dc; }
 
 /* ---------- caja de diálogo (RPG con retrato) ---------- */
 .dialogue {
@@ -501,6 +980,12 @@ html, body, #root {
 }
 .dlg-body p { color: var(--parch); font-size: 14px; line-height: 1.35; margin: 4px 0; flex: 1; }
 .dlg-hint { font-size: 10px; color: var(--dim); text-align: right; }
+.dlg-offer {
+  align-self: flex-end; margin-top: 4px; padding: 4px 12px; cursor: pointer;
+  background: var(--stone); border: 1px solid var(--gold, #e8c15a); color: var(--gold, #e8c15a);
+  font-size: 12px; border-radius: 3px;
+}
+.dlg-offer:disabled { opacity: 0.5; cursor: default; border-color: var(--edge); color: var(--dim); }
 .dlg-close {
   position: absolute; top: -10px; right: -6px; width: 26px; height: 26px;
   background: var(--stone); border: 1px solid var(--edge); color: var(--parch);
@@ -581,6 +1066,19 @@ html, body, #root {
   text-align: center; color: var(--gold); font-family: Georgia, serif; font-size: 13px;
   text-shadow: 0 1px 2px #000;
 }
+/* Celdas del cinturón (3×3 bajo el muñeco): el área del panel está vacía, así que traen
+   el sprite de piedra de Flare. Mayor especificidad que .inv-cell (que pone background:none). */
+.inv-cell.inv-belt-cell {
+  border-radius: 3px;
+  background: var(--slot-bg) center / 100% 100% no-repeat;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+.inv-cell.inv-belt-cell.on { background-image: var(--slot-on); }
+.inv-belt-label {
+  position: absolute; transform: translateY(-50%);
+  font-family: 'BonaNova', Georgia, serif; font-size: 12px; letter-spacing: 0.05em;
+  color: var(--gold); text-shadow: 0 1px 2px #000; opacity: 0.9;
+}
 
 /* hoja de personaje (panel character.png) */
 .char-title {
@@ -655,10 +1153,12 @@ html, body, #root {
   position: absolute; left: 0; right: 0; transform: translateY(-50%); text-align: center;
   font-family: Georgia, serif; font-size: 15px; letter-spacing: 0.06em;
   color: var(--gold); text-shadow: 0 1px 2px #000;
+  pointer-events: none;   /* es ancho completo: sin esto tapaba el click de la X de cerrar */
 }
 .shop-gold {
   position: absolute; left: 0; right: 0; transform: translateY(-50%); text-align: center;
   font-family: Georgia, serif; font-size: 12px; color: #e6dcc6; text-shadow: 0 1px 2px #000;
+  pointer-events: none;
 }
 .shop-tabs {
   position: absolute; left: 0; right: 0; transform: translateY(-50%);
@@ -711,6 +1211,7 @@ html, body, #root {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
 }
 .tree-col-h span { font-size: 16px; filter: drop-shadow(0 1px 2px #000); }
+.tree-col-ic { display: flex; align-items: center; justify-content: center; }
 .tree-col-h em { font-family: Georgia, serif; font-style: normal; font-size: 10px; color: var(--gold); text-shadow: 0 1px 2px #000; }
 .tree-slot {
   position: absolute; transform: translate(-50%, -50%); z-index: 1;
@@ -719,7 +1220,7 @@ html, body, #root {
   border: 2px solid #3b3145; border-radius: 6px; -webkit-tap-highlight-color: transparent;
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
 }
-.tree-slot-ic { display: block; font-size: 22px; line-height: 42px; text-align: center; filter: drop-shadow(0 1px 2px #000); }
+.tree-slot-ic { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; filter: drop-shadow(0 1px 2px #000); }
 .tree-slot.locked { opacity: 0.55; filter: grayscale(0.6); }
 .tree-slot.ranked { border-color: #8a6f1e; }
 .tree-slot.maxed { border-color: var(--gold); box-shadow: 0 0 8px rgba(230, 200, 90, 0.55), inset 0 0 6px rgba(0, 0, 0, 0.5); }
@@ -730,7 +1231,11 @@ html, body, #root {
   padding: 0 2px; font-family: Georgia, serif; font-size: 10px; font-weight: bold; color: #14111a;
   background: var(--gold); border: 1px solid #8a6f1e; border-radius: 8px; text-align: center;
 }
-.tree-slot-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.tree-slot-lock {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 20px; height: 20px; stroke: #e6c85a; fill: rgba(20, 17, 26, 0.85);
+  filter: drop-shadow(0 1px 2px #000);
+}
 
 /* tira de detalle del nodo elegido */
 .tree-detail {
@@ -766,6 +1271,115 @@ html, body, #root {
   background: rgba(20, 17, 26, 0.7); }
 .pw-bar i { display: block; height: 100%; background: linear-gradient(90deg, #4f9d6b, #7fd0a0); }
 
+/* ---------- Casa de Gremios ---------- */
+.guild-body {
+  position: absolute; left: 10%; right: 10%; top: 14.5%; bottom: 7%;
+  display: flex; flex-direction: column; gap: 9px; overflow-y: auto;
+  font-family: Georgia, serif; color: var(--parch);
+}
+.guild-offline, .guild-empty {
+  margin: auto; text-align: center; font-size: 13px; color: var(--dim); max-width: 82%;
+  line-height: 1.5; font-style: italic; text-wrap: balance;
+}
+.guild-none { display: flex; flex-direction: column; gap: 3px; text-align: center; padding: 4px 0 2px; }
+.guild-none b { color: var(--gold); font-size: 14px; text-shadow: 0 1px 2px #000; }
+.guild-none span { color: var(--dim); font-size: 11px; }
+.guild-found { display: flex; flex-direction: column; gap: 8px;
+  background: rgba(20, 17, 26, 0.5); border: 1px solid #322a3c; border-radius: 7px; padding: 10px; }
+.guild-found-head { color: var(--gold); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.guild-input {
+  width: 100%; background: rgba(12, 10, 16, 0.9); border: 1px solid #4a3d2a; border-radius: 4px;
+  color: var(--parch); font-family: Georgia, serif; font-size: 14px; padding: 8px 10px; box-sizing: border-box;
+}
+.guild-input:focus { outline: none; border-color: var(--ember); }
+.guild-input.tag { width: 78px; text-transform: uppercase; letter-spacing: 0.14em; text-align: center; }
+.guild-row { display: flex; gap: 9px; align-items: center; }
+.guild-banner-pick { display: flex; gap: 6px; flex-wrap: wrap; }
+.guild-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5); -webkit-tap-highlight-color: transparent; }
+.guild-swatch.on { border-color: #fff; transform: scale(1.12); }
+.guild-preview { display: flex; align-items: center; gap: 8px; border: 1px solid; border-radius: 6px;
+  padding: 6px 9px; background: rgba(12, 10, 16, 0.5); }
+.guild-preview-name { color: var(--parch); font-size: 13px; }
+.guild-tag-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 20px;
+  padding: 0 6px; border-radius: 4px; color: #14111a; font-weight: bold; font-size: 11px; letter-spacing: 0.08em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
+.guild-tag-chip.big { min-width: 46px; height: 30px; font-size: 15px; }
+.guild-btn {
+  align-self: stretch; font-family: Georgia, serif; font-size: 13px; color: var(--gold);
+  background: var(--stone); border: 1px solid var(--edge); border-radius: 5px; padding: 8px 12px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.guild-btn.primary { background: linear-gradient(180deg, #8a6f1e, #6b5416); color: #fff2cf; border-color: #b08a2e; }
+.guild-btn.danger { color: #e0808a; border-color: #7a3038; align-self: center; padding: 6px 16px; margin-top: 2px; }
+.guild-btn.small { align-self: center; padding: 5px 12px; font-size: 12px; flex: 0 0 auto; }
+.guild-btn:disabled { opacity: 0.45; cursor: default; }
+.guild-btn:not(:disabled):active { transform: scale(0.97); }
+.guild-error { color: #e0808a; font-size: 12px; text-align: center; }
+.guild-hint { color: var(--dim); font-size: 11px; text-align: center; }
+/* con gremio */
+.guild-header { display: flex; align-items: center; gap: 10px; border: 1px solid; border-left-width: 4px;
+  border-radius: 7px; padding: 8px 10px; background: rgba(20, 17, 26, 0.5); }
+.guild-header-txt { display: flex; flex-direction: column; gap: 1px; }
+.guild-header-txt b { color: #f2ead6; font-size: 15px; text-shadow: 0 1px 2px #000; }
+.guild-header-txt span { color: var(--gold); font-size: 11px; }
+.guild-level-bar { height: 9px; border: 1px solid #3b3145; border-radius: 5px; overflow: hidden;
+  background: rgba(20, 17, 26, 0.8); }
+.guild-level-bar i { display: block; height: 100%; transition: width 0.4s ease; }
+.guild-level-cap { color: var(--dim); font-size: 11px; text-align: center; margin-top: -3px; }
+.guild-donate { display: flex; gap: 8px; }
+.guild-donate .guild-input { flex: 1; }
+.guild-donate .guild-btn { align-self: stretch; flex: 0 0 auto; }
+.guild-sub { color: var(--gold); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
+  border-bottom: 1px solid rgba(120, 104, 80, 0.25); padding-bottom: 3px; }
+.guild-perks { display: flex; flex-direction: column; gap: 4px; }
+.guild-perk { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6a6472; }
+.guild-perk.on { color: var(--parch); }
+.guild-perk-lv { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+  border-radius: 50%; background: #2a2433; color: #5a5262; font-size: 10px; flex: 0 0 auto; border: 1px solid #322a3c; }
+.guild-perk.on .guild-perk-lv { background: var(--gold); color: #14111a; border-color: var(--gold); }
+.guild-roster { display: flex; flex-direction: column; gap: 4px; }
+.guild-roster-list { display: flex; flex-direction: column; gap: 2px; max-height: 120px; overflow-y: auto; }
+.guild-member { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 4px;
+  border-bottom: 1px solid rgba(120, 104, 80, 0.14); }
+.guild-member em { color: var(--dim); font-style: normal; font-size: 10px; }
+/* ranking */
+.guild-rank-list { display: flex; flex-direction: column; gap: 5px; }
+.guild-rank-row { display: flex; align-items: center; gap: 9px; padding: 6px 7px; border-radius: 6px;
+  background: rgba(20, 17, 26, 0.45); border: 1px solid #2a2433; }
+.guild-rank-row.mine { border-color: var(--gold); background: rgba(90, 70, 20, 0.28); }
+.guild-rank-n { color: var(--gold); font-size: 13px; font-weight: bold; width: 16px; text-align: center; flex: 0 0 auto; }
+.guild-rank-txt { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.guild-rank-txt b { color: #f2ead6; font-size: 13px; }
+.guild-rank-txt span { color: var(--dim); font-size: 10px; }
+/* contrato semanal */
+.guild-contract { display: flex; flex-direction: column; gap: 4px;
+  background: rgba(40, 30, 55, 0.4); border: 1px solid #3b2f4c; border-radius: 7px; padding: 8px 10px; }
+.guild-contract-name { color: #f2ead6; font-size: 13px; }
+.guild-contract-bar { position: relative; height: 14px; border: 1px solid #3b3145; border-radius: 5px;
+  overflow: hidden; background: rgba(20, 17, 26, 0.8); }
+.guild-contract-bar i { display: block; height: 100%; background: linear-gradient(90deg, #7a52c0, #b58bff);
+  transition: width 0.4s ease; }
+.guild-contract-bar span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: #f2ead6; text-shadow: 0 1px 2px #000; }
+.guild-contract-foot { font-size: 11px; color: var(--dim); }
+.guild-contract-done { color: #6bd08a; font-size: 11px; }
+/* depósito */
+.guild-dep-gold, .guild-dep-items, .guild-dep-put { display: flex; flex-direction: column; gap: 5px; }
+.guild-dep-goldrow { display: flex; align-items: center; gap: 6px; }
+.guild-dep-goldn { color: var(--gold); font-size: 15px; font-weight: bold; min-width: 54px;
+  font-variant-numeric: tabular-nums; }
+.guild-dep-goldrow .guild-input { flex: 1; min-width: 60px; }
+.guild-dep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 6px; }
+.guild-dep-cell { position: relative; display: flex; align-items: center; justify-content: center;
+  height: 48px; background: rgba(20, 17, 26, 0.6); border: 1px solid #322a3c; border-radius: 6px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; }
+.guild-dep-cell:disabled { opacity: 0.5; cursor: default; }
+.guild-dep-cell:not(:disabled):active { transform: scale(0.94); }
+.guild-dep-take { position: absolute; bottom: -1px; left: 0; right: 0; font-size: 8px; color: var(--gold);
+  background: rgba(10, 9, 12, 0.7); text-align: center; opacity: 0; transition: opacity 0.15s; }
+.guild-dep-cell:hover .guild-dep-take { opacity: 1; }
+
 /* herrero (reparación) */
 .smith-body {
   position: absolute; left: 12%; right: 12%; top: 15%; bottom: 10%;
@@ -773,6 +1387,7 @@ html, body, #root {
 }
 .smith-empty { color: var(--dim); font-family: Georgia, serif; font-size: 13px; text-align: center; margin-top: 20px; }
 .smith-row { display: flex; align-items: center; gap: 8px; font-family: Georgia, serif; }
+.smith-ico { flex: 0 0 auto; display: flex; align-items: center; }
 .smith-name { flex: 1 1 auto; font-size: 13px; text-shadow: 0 1px 2px #000; }
 .smith-name em { color: var(--dim); font-style: normal; font-size: 10px; }
 .smith-bar {
@@ -897,6 +1512,15 @@ html, body, #root {
   color: var(--dim); font-family: Georgia, serif; font-style: italic;
   font-size: 12px; text-align: center; margin-bottom: 2px;
 }
+/* sección de compra de la bruja (arriba de las recetas) */
+.alch-shop { border-bottom: 1px solid #332b3f; padding-bottom: 8px; margin-bottom: 2px; }
+.alch-gold { color: var(--gold); font-style: normal; }
+.alch-buy-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.alch-buy {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; width: 30%; min-width: 92px;
+  padding: 7px 6px; border-radius: 6px; background: rgba(20, 17, 26, 0.55); border: 1px solid #332b3f;
+}
+.alch-buy-name { font-family: Georgia, serif; font-size: 11px; color: var(--parch); text-align: center; line-height: 1.15; }
 .alch-list { display: flex; flex-direction: column; gap: 7px; overflow-y: auto; padding-right: 4px; }
 .alch-recipe {
   display: flex; align-items: center; gap: 8px;
@@ -951,7 +1575,9 @@ html, body, #root {
 .wp-row:hover:not(:disabled) { border-color: #7a52c0; box-shadow: inset 0 0 0 1px rgba(154,107,255,0.2); }
 .wp-row:active:not(:disabled) { filter: brightness(1.15); }
 .wp-row.current { opacity: 0.6; cursor: default; border-color: var(--gold); }
-.wp-rune { font-size: 15px; filter: saturate(1.2); }
+.wp-rune { display: inline-flex; width: 18px; height: 18px; flex: 0 0 auto; color: #b58bff; }
+.wp-rune svg { width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.6; fill: none;
+  filter: drop-shadow(0 0 3px rgba(154, 107, 255, 0.5)); }
 .wp-name { flex: 1 1 auto; }
 .wp-tag { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
 .wp-row.current .wp-tag { color: var(--gold); }
@@ -1066,3 +1692,222 @@ html, body, #root {
 /* variante recolectar: acento verde */
 .gather-btn { color: #cde6b0; border-color: #4f7d3b;
   box-shadow: 0 3px 10px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.45), inset 0 1px 0 rgba(120,200,90,0.28); }
+
+/* ============================================================================
+   Reskin de menús estilo Diablo II — arte de Flare (CC-BY-SA): fondo pintado
+   (badlands), tomo (book.png), fuente Bona Nova SC. Aplica a StartScreen y
+   RaceScreen. Todo self-hosted (sin CDN).
+   ============================================================================ */
+@font-face { font-family: 'BonaNova'; src: url('/assets/fonts/BonaNovaSC-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'BonaNova'; src: url('/assets/fonts/BonaNovaSC-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'BonaNova'; src: url('/assets/fonts/BonaNovaSC-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+
+/* --- Escena atmosférica compartida --- */
+.menu-scene {
+  position: absolute; inset: 0; overflow: hidden; display: grid; place-items: center; padding: 24px;
+  background:
+    radial-gradient(120% 90% at 50% 10%, rgba(0,0,0,0.10), rgba(6,5,8,0.70) 60%, rgba(4,3,6,0.94) 100%),
+    linear-gradient(180deg, rgba(6,5,8,0.30), rgba(6,5,8,0.82)),
+    url('/assets/menu/bg_badlands.png') center 22% / cover no-repeat,
+    var(--obsidian);
+}
+.menu-scene::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  box-shadow: inset 0 0 220px 70px rgba(0,0,0,0.9);
+  background: radial-gradient(120% 80% at 50% 44%, transparent 52%, rgba(0,0,0,0.55));
+}
+
+/* --- Brasas flotantes --- */
+.embers { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
+.embers i {
+  position: absolute; bottom: -12px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, #ffcf8a 0%, #e0842f 55%, rgba(194,85,31,0) 76%);
+  box-shadow: 0 0 6px 1px rgba(224,132,47,0.55);
+  animation-name: emberRise; animation-iteration-count: infinite; animation-timing-function: linear;
+}
+@keyframes emberRise {
+  0% { transform: translate3d(0,0,0); opacity: 0; }
+  8% { opacity: 0.85; }
+  85% { opacity: 0.4; }
+  100% { transform: translate3d(var(--drift), -100vh, 0); opacity: 0; }
+}
+
+/* --- Botón ornamentado: placa de metal biselada con cabezales de flecha (estilo Flare) --- */
+.entry { align-items: center; }
+.enter {
+  font-family: 'BonaNova', Georgia, serif; font-size: 16px; letter-spacing: 0.09em; font-weight: 700;
+  color: var(--parch); cursor: pointer; position: relative; clip-path: none; text-shadow: 0 1px 2px #000;
+  min-width: 210px; min-height: 52px; padding: 14px 42px; border-radius: 5px; border: 1px solid #6b5320;
+  display: inline-flex; align-items: center; justify-content: center; text-align: center;
+  background:
+    linear-gradient(180deg, rgba(255,238,196,0.10), rgba(255,238,196,0) 42%),
+    linear-gradient(180deg, #322a26 0%, #1b1510 52%, #0c0a08 100%);
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.55),
+    inset 0 0 0 1px rgba(201,162,39,0.28),
+    inset 0 1px 0 rgba(255,224,150,0.22),
+    inset 0 -8px 14px rgba(0,0,0,0.45);
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.05s, background 0.15s;
+}
+/* cabezales de flecha (doble punta) a los costados */
+.enter::before, .enter::after {
+  content: ''; position: absolute; top: 50%; transform: translateY(-50%); width: 12px; height: 58%;
+  background: linear-gradient(180deg, #f0d475, #a9861d 60%, #7a5f14);
+  box-shadow: 0 0 4px rgba(230,200,90,0.5); opacity: 0.9;
+}
+.enter::before { left: 7px; clip-path: polygon(100% 0, 22% 50%, 100% 100%, 62% 50%); }
+.enter::after { right: 7px; clip-path: polygon(0 0, 78% 50%, 0 100%, 38% 50%); }
+.enter:hover {
+  border-color: var(--gold); color: #f8ecbe; transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(201,162,39,0.30), inset 0 0 0 1px rgba(201,162,39,0.45), inset 0 1px 0 rgba(255,224,150,0.32), inset 0 -8px 14px rgba(0,0,0,0.4);
+}
+.enter:hover::before, .enter:hover::after { opacity: 1; }
+.enter:active { transform: translateY(1px); }
+.enter:disabled { opacity: 0.5; cursor: default; }
+/* Variante primaria: placa dorada pulida (PLAY NOW / Encarnar) */
+.enter.primary, .enter.play-now {
+  color: #1c1305; border-color: #8a6f1e; text-shadow: 0 1px 0 rgba(255,246,210,0.5);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 45%),
+    linear-gradient(180deg, #f4d76e 0%, #d3ad30 50%, #a9861d 100%);
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.5),
+    inset 0 0 0 1px rgba(90,66,14,0.5),
+    inset 0 1px 0 rgba(255,250,220,0.6),
+    inset 0 -7px 12px rgba(120,90,20,0.4);
+}
+.enter.primary:hover, .enter.play-now:hover {
+  color: #140d03; background:
+    linear-gradient(180deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 45%),
+    linear-gradient(180deg, #fbe487 0%, #dcb638 50%, #b8922a 100%);
+}
+.enter.primary::before, .enter.primary::after,
+.enter.play-now::before, .enter.play-now::after { background: linear-gradient(180deg, #3a2c10, #1a1206); box-shadow: none; opacity: 0.92; }
+/* Secundaria: MISMO tamaño que la primaria, en cuero (no desalineada) */
+.enter.secondary { font-size: 16px; padding: 14px 42px; margin-top: 0; opacity: 1; }
+
+/* --- StartScreen: panel de acciones sobre la escena --- */
+.start.menu-scene { background:
+    radial-gradient(120% 90% at 50% 10%, rgba(0,0,0,0.10), rgba(6,5,8,0.70) 60%, rgba(4,3,6,0.94) 100%),
+    linear-gradient(180deg, rgba(6,5,8,0.30), rgba(6,5,8,0.82)),
+    url('/assets/menu/bg_badlands.png') center 22% / cover no-repeat, var(--obsidian); }
+.start-inner { position: relative; z-index: 3; max-width: 460px; }
+.start-logo { filter: drop-shadow(0 6px 24px rgba(0,0,0,0.8)) drop-shadow(0 0 22px rgba(194,85,31,0.22)); }
+.tagline { font-family: 'BonaNova', Georgia, serif; color: #cdbfa6; font-style: italic; letter-spacing: 0.03em; font-size: 15px; text-shadow: 0 1px 3px #000; }
+.start-panel {
+  position: relative; margin: 4px auto 0; padding: 20px 24px 18px; max-width: 420px;
+  background: linear-gradient(180deg, rgba(22,17,24,0.80), rgba(10,8,12,0.90));
+  border: 1px solid #5a4a2a; border-radius: 6px;
+  box-shadow: 0 12px 44px rgba(0,0,0,0.6), inset 0 1px 0 rgba(201,162,39,0.14), inset 0 0 0 1px rgba(201,162,39,0.06);
+}
+.start-panel::before, .start-panel::after {
+  content: ''; position: absolute; width: 14px; height: 14px; border: 2px solid var(--gold); opacity: 0.55;
+}
+.start-panel::before { top: 5px; left: 5px; border-right: 0; border-bottom: 0; }
+.start-panel::after { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
+.attribution { position: relative; z-index: 3; }
+
+/* --- RaceScreen: TOMO abierto (char-select) --- */
+.race.menu-scene { display: grid; place-items: center; padding: 20px; }
+.tome {
+  position: relative; z-index: 3; width: min(94vw, 900px); aspect-ratio: 1137 / 700;
+  background: url('/assets/menu/book.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 18px 50px rgba(0,0,0,0.7));
+}
+/* Páginas posicionadas EXACTO sobre el pergamino (medido de book.png):
+   izq x12–47%, der x52–89%, ambas y8–92%. Con inset para no pisar las cantoneras. */
+.tome-page {
+  position: absolute; top: 9%; height: 82%; color: #3a2c1c; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.tome-left { left: 12.5%; width: 33.5%; justify-content: flex-start; }
+.tome-right { left: 52.5%; width: 35.5%; justify-content: flex-start; }
+.tome-title { font-family: 'BonaNova', serif; font-size: clamp(15px, 2vw, 24px); color: #5c3a16; letter-spacing: 0.03em; margin: 0 0 6%; text-align: center; flex: 0 0 auto; }
+.race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6%; width: 100%; }
+.race-card {
+  display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 9px 4px; cursor: pointer;
+  background: rgba(70,45,20,0.05); border: 1px solid rgba(90,60,30,0.35); border-radius: 6px;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.race-face {
+  width: clamp(42px, 6vw, 70px); aspect-ratio: 1; background-size: cover; background-position: center top;
+  border-radius: 50%; border: 2px solid #7a5a2a; box-shadow: 0 2px 6px rgba(0,0,0,0.4); filter: sepia(0.18) contrast(1.02);
+}
+.race-card b { font-family: 'BonaNova', serif; font-size: clamp(12px, 1.4vw, 16px); color: #3a2410; }
+.race-arch { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b4a26; }
+.race-card:hover { border-color: #b8862e; background: rgba(120,80,30,0.10); }
+.race-card.on { border-color: var(--gold); background: rgba(201,162,39,0.16); box-shadow: 0 0 14px rgba(201,162,39,0.4), inset 0 0 0 1px var(--gold); }
+.race-card.on .race-face { border-color: var(--gold); box-shadow: 0 0 12px rgba(201,162,39,0.6); filter: none; }
+.race-hero { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 3%; }
+.race-hero-face { width: clamp(60px, 9vw, 104px); aspect-ratio: 1; background-size: cover; background-position: center top; border-radius: 50%; border: 3px solid #7a5a2a; box-shadow: 0 3px 12px rgba(0,0,0,0.5), 0 0 16px rgba(201,162,39,0.25); }
+.race-hero-name { font-family: 'BonaNova', serif; font-size: clamp(18px, 2.4vw, 28px); color: #5c2f10; margin-top: 6px; }
+.race-hero-arch { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #7a4a20; }
+.tome-right .race-mods { color: #8a5a12; font-size: clamp(12px, 1.4vw, 15px); font-weight: 700; margin: 3% 0 2%; text-align: center; }
+.tome-right .race-fantasy { color: #5a4632; font-style: italic; font-size: clamp(12px, 1.4vw, 15px); text-align: center; margin: 0 0 4%; max-width: 90%; }
+.tome-right .name-input {
+  background: rgba(255,250,235,0.55); border: 1px solid #8a6a3a; color: #3a2410; max-width: 220px;
+  margin: 0 auto 4%; border-radius: 3px; font-family: 'BonaNova', serif;
+}
+.tome-right .name-input::placeholder { color: #8a7250; }
+.tome-right .name-input:focus { outline: none; border-color: var(--ember); background: rgba(255,250,235,0.72); }
+.confirm { margin-top: auto; }
+
+/* --- Mobile / portrait: el tomo landscape no entra; usamos una página de pergamino --- */
+@media (max-width: 760px), (orientation: portrait) {
+  .tome {
+    aspect-ratio: auto; width: min(96vw, 460px); background: none;
+    border: 1px solid #6b5320; border-radius: 8px; padding: 18px 16px 20px;
+    background-image: linear-gradient(180deg, #efe6cf, #e2d4b4);
+    box-shadow: 0 14px 44px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(90,60,30,0.4);
+  }
+  .tome-page { position: static; top: auto; left: auto; width: auto; height: auto; padding: 0; }
+  .tome-left { margin-bottom: 14px; }
+  .tome-title { margin-bottom: 12px; }
+  .race-grid { gap: 8px; }
+  .confirm { margin-top: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .embers i { animation: none; opacity: 0; }
+}
+
+/* Botón "Volver" en pantallas de menú (arriba a la izquierda) */
+.menu-back {
+  position: absolute; top: 16px; left: 16px; z-index: 5;
+  font-family: 'BonaNova', Georgia, serif; font-size: 14px; letter-spacing: 0.05em; color: var(--parch);
+  background: linear-gradient(180deg, rgba(30,24,20,0.85), rgba(14,10,8,0.9));
+  border: 1px solid #5a4a2a; border-radius: 5px; padding: 8px 16px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(201,162,39,0.15);
+  transition: border-color 0.15s, color 0.15s;
+}
+.menu-back:hover { border-color: var(--gold); color: #f0dc8f; }
+.menu-back:active { transform: translateY(1px); }
+
+/* Botón de "mostrar loot" (etiquetas del suelo, estilo Alt de Diablo) */
+.loot-toggle {
+  position: absolute; right: 12px; bottom: 96px; z-index: 6; pointer-events: auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: Georgia, serif; font-size: 12px; letter-spacing: 0.04em; color: var(--parch);
+  background: linear-gradient(180deg, rgba(30,24,20,0.85), rgba(14,10,8,0.9));
+  border: 1px solid #5a4a2a; border-radius: 6px; padding: 7px 12px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5); transition: border-color 0.15s, color 0.15s;
+}
+.loot-toggle svg { width: 15px; height: 15px; }
+.loot-toggle:hover { border-color: var(--gold); }
+.loot-toggle.on { border-color: var(--gold); color: #f0dc8f; background: linear-gradient(180deg, rgba(60,48,20,0.9), rgba(30,22,10,0.92)); box-shadow: 0 0 10px rgba(201,162,39,0.35); }
+
+/* Correr + stamina: fila centrada arriba de la barra de XP (botón toggle + barra de vigor). */
+.stamina-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto 3px; max-width: 360px; padding: 0 10px; pointer-events: auto; }
+.run-toggle {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-family: Georgia, serif; font-size: 11px; letter-spacing: 0.03em; color: var(--parch);
+  background: linear-gradient(180deg, rgba(30,24,20,0.85), rgba(14,10,8,0.9));
+  border: 1px solid #5a4a2a; border-radius: 6px; padding: 5px 10px; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5); transition: border-color 0.15s, color 0.15s;
+}
+.run-toggle svg { width: 14px; height: 14px; }
+.run-toggle:hover { border-color: var(--gold); }
+.run-toggle.on { border-color: var(--gold); color: #f0dc8f; box-shadow: 0 0 9px rgba(201,162,39,0.4); }
+.stamina-bar { flex: 1; height: 8px; min-width: 70px; max-width: 220px; background: rgba(10,8,12,0.82); border: 1px solid #3a3020; border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6); }
+.stamina-fill { height: 100%; background: linear-gradient(180deg, #7fe09a, #3a9a52); transition: width 0.12s linear; }
+.stamina-fill.low { background: linear-gradient(180deg, #e6b055, #b06a1e); }

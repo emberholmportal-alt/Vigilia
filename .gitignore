@@ -29,3 +29,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# datos locales del server (fallback sin Postgres)
+server/.data/

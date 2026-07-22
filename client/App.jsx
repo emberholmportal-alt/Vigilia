@@ -3,9 +3,16 @@ import { Game } from './engine/Game.js'
 import { storeApi, useGameStore } from './store.js'
 import { playMusic } from './engine/audio.js'
 import { startingCharacter, raceById, RACES } from './data/characters.js'
-import { loadGame, hasSave } from './data/save.js'
+import { loadGame, hasSave, unpackSave } from './data/save.js'
+import { net, ONLINE } from './net/net.js'
 import HUD from './ui/HUD.jsx'
 import StartScreen from './ui/StartScreen.jsx'
+import Welcome from './ui/Welcome.jsx'
+import Trade from './ui/Trade.jsx'
+import Market from './ui/Market.jsx'
+import PlayerMenu from './ui/PlayerMenu.jsx'
+import GraveModal from './ui/GraveModal.jsx'
+import Stash from './ui/Stash.jsx'
 import RaceScreen from './ui/RaceScreen.jsx'
 import Inventory from './ui/Inventory.jsx'
 import Character from './ui/Character.jsx'
@@ -14,9 +21,11 @@ import Settings from './ui/Settings.jsx'
 import Vendor from './ui/Vendor.jsx'
 import Blacksmith from './ui/Blacksmith.jsx'
 import Alchemy from './ui/Alchemy.jsx'
+import Guild from './ui/Guild.jsx'
 import Missions from './ui/Missions.jsx'
 import MouseBind from './ui/MouseBind.jsx'
 import BootSplash from './ui/BootSplash.jsx'
+import GameLoader from './ui/GameLoader.jsx'
 import ChatLog from './ui/ChatLog.jsx'
 import Minimap from './ui/Minimap.jsx'
 import DialogueBox from './ui/DialogueBox.jsx'
@@ -29,38 +38,55 @@ export default function App() {
   const [phase, setPhase] = useState('boot') // 'boot' | 'start' | 'race' | 'game'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [kicked, setKicked] = useState(null)  // expulsado por single-session (cuenta abierta en otro lado)
   const canvasRef = useRef(null)
   const gameRef = useRef(null)
   const panel = useGameStore((s) => s.panel)
   const waypointOpen = useGameStore((s) => s.waypointOpen)
+  const showWelcome = useGameStore((s) => s.showWelcome)
   const initCharacter = useGameStore((s) => s.initCharacter)
   const t = useT()
 
-  function startGame() {
-    playMusic('title_theme.ogg') // gesto del usuario: arranca la música
-    setPhase('race')
-  }
-
-  function chooseRace(raceId, name) {
-    // Personaje con kit real ANTES de montar el juego (el paperdoll lo lee al arrancar).
-    if (name) useGameStore.getState().setPlayerName(name)
-    initCharacter(startingCharacter(raceId))
-    playMusic('town_theme.ogg')
-    setLoading(true)
-    setPhase('game')
-  }
-
-  // Continuar la partida guardada (progreso, oro, XP, skills, inventario y equipo).
-  function continueGame() {
-    const s = loadGame()
-    if (!s) { startGame(); return }
+  // Entra al juego con un personaje ya rehidratado (de localStorage o del servidor).
+  function enterWithBlob(s) {
     useGameStore.getState().setPlayerName(s.playerName)
     const race = raceById(s.raceId) || RACES[0]
     initCharacter({ race, gold: s.gold, inventory: s.inventory, equipment: s.equipment,
                     belt: s.belt, equippedBelt: s.equippedBelt, xp: s.xp, skills: s.skills, discovered: s.discovered,
                     missions: s.missions, missionsDate: s.missionsDate, seals: s.seals,
                     attrAlloc: s.attrAlloc, skillRanks: s.skillRanks, questFlags: s.questFlags,
-                    specialAbility: s.specialAbility })
+                    specialAbility: s.specialAbility, graves: s.graves, stash: s.stash, stashGold: s.stashGold, body: s.body })
+    playMusic('town_theme.ogg')
+    setLoading(true)
+    setPhase('game')
+  }
+
+  // PLAY NOW: `char` es el blob del servidor (o null). Con la billetera conectada, un personaje
+  // por cuenta con la raza fija: si ya existe se carga; si no, elegís nombre + raza.
+  function play(char) {
+    const s = char ? unpackSave(char) : null
+    if (s && s.raceId) { enterWithBlob(s); return }
+    if (!ONLINE) { const local = loadGame(); if (local && local.raceId) { enterWithBlob(local); return } }
+    playMusic('title_theme.ogg')
+    setPhase('race')   // crear personaje: pide nombre (obligatorio) + raza
+  }
+  function startGame() { setPhase('race') }
+
+  // Crea el personaje (raza + nombre elegidos). Online: lo guarda en el servidor (queda ligado
+  // a la cuenta/billetera — uno por cuenta, raza fija de acá en más).
+  function chooseRace(raceId, name, body) {
+    useGameStore.getState().setPlayerName(name || 'Vigilante')
+    initCharacter(startingCharacter(raceId, body))
+    if (ONLINE) { const b = storeApi.getSaveBlob(); net.save(b.name, b.race, b.char) }
+    playMusic('town_theme.ogg')
+    setLoading(true)
+    setPhase('game')
+  }
+
+  // Modo espectador (mirón): entra al hub con un personaje descartable, sin combate ni guardado.
+  function spectate() {
+    useGameStore.getState().setPlayerName('Spectator')
+    initCharacter({ ...startingCharacter('humano'), spectator: true })
     playMusic('town_theme.ogg')
     setLoading(true)
     setPhase('game')
@@ -86,30 +112,72 @@ export default function App() {
     }
   }, [phase])
 
+  // Botón "atrás" del navegador / gesto de retroceso del celular: en vez de ABANDONAR la página,
+  // navega DENTRO de la app — primero cierra el overlay abierto (diálogo, waypoints, panel) y, si
+  // no hay ninguno, vuelve del juego o la creación de personaje al menú de inicio. Se re-arma un
+  // buffer de historial en cada retroceso para que la app no se cierre sola.
+  const phaseRef = useRef(phase)
+  useEffect(() => { phaseRef.current = phase }, [phase])
+
+  // Single-session: si el server nos expulsa (la cuenta entró desde otro lado), salimos del juego y
+  // mostramos el aviso. No reconectamos (net ya cortó el reintento).
+  useEffect(() => {
+    const off = net.on('kicked', (m) => { setKicked(m?.reason || t('kicked_msg')); setPhase('start') })
+    return off
+  }, [t])
+  useEffect(() => {
+    window.history.pushState({ v: 'velgrim' }, '')
+    const onPop = () => {
+      const st = useGameStore.getState()
+      if (st.dialogue) st.closeDialogue()
+      else if (st.waypointOpen) st.closeWaypoints()
+      else if (st.panel) st.setPanel(null)
+      else if (phaseRef.current === 'game' || phaseRef.current === 'race') setPhase('start')
+      window.history.pushState({ v: 'velgrim' }, '')
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
   return (
     <div id="wrap">
       {phase === 'game' && <div ref={canvasRef} className="canvas-host" />}
-      {phase === 'game' && !loading && !error && <HUD />}
+      {phase === 'game' && !loading && !error && <HUD onExitSpectate={() => setPhase('start')} />}
       {phase === 'game' && !loading && !error && <Minimap />}
       {phase === 'game' && !loading && !error && <ChatLog />}
       {phase === 'game' && panel === 'inventory' && <Inventory />}
       {phase === 'game' && panel === 'character' && <Character />}
       {phase === 'game' && panel === 'powers' && <Powers />}
-      {phase === 'game' && panel === 'settings' && <Settings />}
+      {phase === 'game' && panel === 'settings' && <Settings onLogout={() => { net.close(); useGameStore.getState().setPanel(null); setPhase('start') }} />}
       {phase === 'game' && panel === 'shop' && <Vendor />}
       {phase === 'game' && panel === 'smith' && <Blacksmith />}
       {phase === 'game' && panel === 'alchemy' && <Alchemy />}
+      {phase === 'game' && panel === 'guild' && <Guild />}
+      {phase === 'game' && panel === 'market' && <Market />}
+      {phase === 'game' && panel === 'stash' && <Stash />}
       {phase === 'game' && panel === 'missions' && <Missions />}
       {phase === 'game' && panel === 'mousebind' && <MouseBind />}
       {phase === 'game' && !loading && !error && <DialogueBox />}
       {phase === 'game' && waypointOpen && <Waypoints />}
+      {phase === 'game' && !loading && !error && showWelcome && <Welcome />}
+      {phase === 'game' && !loading && !error && <Trade />}
+      {phase === 'game' && !loading && !error && <PlayerMenu />}
+      {phase === 'game' && !loading && !error && <GraveModal />}
       {phase === 'game' && <ZoneLoader />}
       {error && <div className="error">Error: {error}</div>}
+      {kicked && (
+        <div className="kicked-backdrop" onClick={() => setKicked(null)}>
+          <div className="kicked-card" onClick={(e) => e.stopPropagation()}>
+            <p>{kicked}</p>
+            <button className="gframe-close" onClick={() => setKicked(null)}>{t('ok')}</button>
+          </div>
+        </div>
+      )}
 
       {phase === 'boot' && <BootSplash onDone={() => setPhase('start')} />}
-      {phase === 'start' && <StartScreen onEnter={startGame} onContinue={continueGame} canContinue={hasSave()} loading={false} />}
-      {phase === 'race' && <RaceScreen onChoose={chooseRace} />}
-      {phase === 'game' && loading && <div className="loading">{t('loading_city')}</div>}
+      {phase === 'start' && <StartScreen onPlay={play} onSpectate={spectate} onNew={startGame} canContinue={hasSave()} loading={false} />}
+      {phase === 'race' && <RaceScreen onChoose={chooseRace} onBack={() => setPhase('start')} />}
+      {phase === 'game' && loading && <GameLoader />}
     </div>
   )
 }

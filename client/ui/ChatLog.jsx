@@ -3,6 +3,7 @@
 // "hablar": lo que escribís aparece como globo sobre la cabeza del personaje + acá.
 import { useState, useRef, useEffect } from 'react'
 import { useGameStore } from '../store.js'
+import { Chat } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const CHANNEL = {
@@ -14,6 +15,7 @@ const CHANNEL = {
 export default function ChatLog() {
   const log = useGameStore((s) => s.chatLog)
   const sayChat = useGameStore((s) => s.sayChat)
+  const spectator = useGameStore((s) => s.spectator)
   const t = useT()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
@@ -45,7 +47,8 @@ export default function ChatLog() {
         <div ref={endRef} />
       </div>
 
-      {open ? (
+      {/* El mirón sólo observa: no puede hablar. */}
+      {spectator ? null : open ? (
         <form className="chat-input" onSubmit={submit}>
           <input autoFocus value={text} maxLength={120}
                  onChange={(e) => setText(e.target.value)}
@@ -53,7 +56,7 @@ export default function ChatLog() {
                  placeholder={t('say_something')} />
         </form>
       ) : (
-        <button className="chat-say" onClick={() => setOpen(true)}>💬 {t('talk')}</button>
+        <button className="chat-say" onClick={() => setOpen(true)}><Chat /> {t('talk')}</button>
       )}
     </div>
   )

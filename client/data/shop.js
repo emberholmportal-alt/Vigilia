@@ -5,6 +5,13 @@ import { ITEMS, BELTS, RECALL_STONE, itemById } from './items.js'
 // Botella Vacía: envase base de toda receta de alquimia. Siempre en stock (barata).
 const EMPTY_BOTTLE = itemById(750)
 
+// Ítems EXCLUSIVOS de la alquimista (la bruja): sólo ella los vende. El mercader Nix NO.
+// Poción de vida (2), Poción de maná (3), Pergamino de Retorno (papiro portal, RECALL_STONE).
+const ALCHEMIST_IDS = new Set([2, 3, RECALL_STONE.id])
+export function alchemistStock() {
+  return [itemById(2), itemById(3), RECALL_STONE].filter(Boolean)
+}
+
 // Slots que el mercader ofrece/compra (equipo + consumibles + cinturones).
 const SELLABLE = new Set(['head', 'chest', 'legs', 'hands', 'feet', 'main', 'off', 'ring', 'artifact', 'potion', 'scroll', 'belt'])
 
@@ -31,19 +38,19 @@ export function todayStr() {
 // pueden comprar los mismos ítems (el límite por-usuario no tenía sentido sin servidor).
 export function dailyStock(dateStr = todayStr()) {
   const rng = mulberry32(hashStr('vigilia-' + dateStr))
-  const pool = ITEMS.filter((it) => (it.price || 0) > 0 && it.slot && SELLABLE.has(it.slot))
+  // El mercader Nix NO vende pociones ni el Pergamino de Retorno (eso lo vende sólo la bruja).
+  const pool = ITEMS.filter((it) => (it.price || 0) > 0 && it.slot && SELLABLE.has(it.slot)
+    && it.slot !== 'potion' && !ALCHEMIST_IDS.has(it.id))
 
-  const potions = pool.filter((it) => it.slot === 'potion').slice(0, 4)
-
-  const gear = pool.filter((it) => it.slot !== 'potion' && (it.tier || 1) <= 10)
+  const gear = pool.filter((it) => (it.tier || 1) <= 10)
   for (let i = gear.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
     ;[gear[i], gear[j]] = [gear[j], gear[i]]
   }
 
   const seen = new Set()
-  // Cinturones, Piedras de Retorno y Botellas Vacías siempre disponibles (utilidad básica).
-  const staples = [RECALL_STONE, ...(EMPTY_BOTTLE ? [EMPTY_BOTTLE] : []), ...BELTS]
-  // Catálogo más amplio para dar variedad al mercado compartido.
-  return [...potions, ...staples, ...gear.slice(0, 28)].filter((it) => !seen.has(it.id) && seen.add(it.id)).slice(0, 36)
+  // Cinturones y Botellas Vacías siempre disponibles (utilidad básica). SIN Piedra de Retorno.
+  const staples = [...(EMPTY_BOTTLE ? [EMPTY_BOTTLE] : []), ...BELTS]
+  // Catálogo amplio para dar variedad al mercado compartido.
+  return [...staples, ...gear.slice(0, 32)].filter((it) => !seen.has(it.id) && seen.add(it.id)).slice(0, 36)
 }

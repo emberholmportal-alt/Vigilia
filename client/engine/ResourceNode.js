@@ -41,7 +41,8 @@ export class ResourceNode {
 
     // Ícono real del material, flotando.
     const col = def.icon % COLS, row = (def.icon / COLS) | 0
-    this.sprite = new Sprite(new Texture({ source: iconsTex.source, frame: new Rectangle(col * ICON, row * ICON, ICON, ICON) }))
+    this._ownTex = new Texture({ source: iconsTex.source, frame: new Rectangle(col * ICON, row * ICON, ICON, ICON) })
+    this.sprite = new Sprite(this._ownTex)
     this.sprite.anchor.set(0.5, 1)
     this.sprite.y = -8
     this.sprite.scale.set(0.85)
@@ -71,5 +72,8 @@ export class ResourceNode {
     this.glow.alpha = 0.24 + 0.12 * (0.5 + 0.5 * Math.sin(this._t * 2.4))
   }
 
-  destroy() { this.view.destroy({ children: true }) }
+  destroy() {
+    if (this._ownTex) { this._ownTex.destroy(false); this._ownTex = null }   // wrapper propio (no la source)
+    this.view.destroy({ children: true })
+  }
 }

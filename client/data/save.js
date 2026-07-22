@@ -28,12 +28,10 @@ export function hasSave() {
   try { return !!localStorage.getItem(KEY) } catch { return false }
 }
 
-export function loadGame() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return null
-    const s = JSON.parse(raw)
-    return {
+// Rehidrata un blob del save (localStorage o servidor) a la forma que usa initCharacter.
+export function unpackSave(s) {
+  if (!s) return null
+  return {
       playerName: s.playerName,
       raceId: s.raceId,
       gold: s.gold || 0,
@@ -51,33 +49,48 @@ export function loadGame() {
       skillRanks: s.skillRanks || null,
       questFlags: s.questFlags || null,
       specialAbility: s.specialAbility ?? undefined,
-    }
-  } catch { return null }
+      graves: s.graves || null,
+      stash: s.stash || null,
+      stashGold: s.stashGold || 0,
+      body: s.body || 'male',
+  }
+}
+
+export function loadGame() {
+  try { return unpackSave(JSON.parse(localStorage.getItem(KEY))) } catch { return null }
+}
+
+// Construye el blob serializable del personaje (mismo shape para localStorage y para el server).
+export function snapshot(state) {
+  return {
+    playerName: state.playerName,
+    raceId: state.race?.id,
+    gold: state.gold,
+    xp: state.xp,
+    skills: state.skills,
+    inventory: (state.inventory || []).map(packItem),
+    equipment: Object.fromEntries(Object.entries(state.equipment || {}).map(([k, v]) => [k, packItem(v)])),
+    belt: (state.belt || []).map(packItem),
+    equippedBelt: packItem(state.equippedBelt),
+    discovered: state.discovered || {},
+    missions: state.missions || [],
+    missionsDate: state.missionsDate || '',
+    seals: state.seals || 0,
+    attrAlloc: state.attrAlloc || { str: 0, dex: 0, int: 0, vit: 0 },
+    skillRanks: state.skillRanks || {},
+    questFlags: state.questFlags || {},
+    specialAbility: state.specialAbility ?? null,
+    graves: state.graves || [],
+    stash: state.stash || [],
+    stashGold: state.stashGold || 0,
+    body: state.body || 'male',
+  }
 }
 
 export function saveGame(state) {
-  try {
-    const snap = {
-      playerName: state.playerName,
-      raceId: state.race?.id,
-      gold: state.gold,
-      xp: state.xp,
-      skills: state.skills,
-      inventory: (state.inventory || []).map(packItem),
-      equipment: Object.fromEntries(Object.entries(state.equipment || {}).map(([k, v]) => [k, packItem(v)])),
-      belt: (state.belt || []).map(packItem),
-      equippedBelt: packItem(state.equippedBelt),
-      discovered: state.discovered || {},
-      missions: state.missions || [],
-      missionsDate: state.missionsDate || '',
-      seals: state.seals || 0,
-      attrAlloc: state.attrAlloc || { str: 0, dex: 0, int: 0, vit: 0 },
-      skillRanks: state.skillRanks || {},
-      questFlags: state.questFlags || {},
-      specialAbility: state.specialAbility ?? null,
-    }
-    localStorage.setItem(KEY, JSON.stringify(snap))
-  } catch { /* almacenamiento lleno / bloqueado: ignorar */ }
+  if (state.spectator) return   // el espectador no persiste (no pisa la partida real)
+  try { localStorage.setItem(KEY, JSON.stringify(snapshot(state))) }
+  catch { /* almacenamiento lleno / bloqueado: ignorar */ }
 }
 
 export function clearSave() {

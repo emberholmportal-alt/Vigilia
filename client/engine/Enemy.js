@@ -94,7 +94,9 @@ export class Enemy {
     this.d = d
     const tex = await Assets.load(BASE + 'assets/enemies/' + this.def.sprite + '.png')
       .catch(() => Assets.load(BASE + 'assets/' + d.src))
-    this.sprite.texture = new Texture({ source: tex.source, frame: new Rectangle(0, 0, d.cell[0], d.cell[1]) })
+    // Wrapper de Texture PROPIO (mutamos su frame por tick). Se guarda para liberarlo al morir.
+    this._ownTex = new Texture({ source: tex.source, frame: new Rectangle(0, 0, d.cell[0], d.cell[1]) })
+    this.sprite.texture = this._ownTex
     this.sprite.anchor.set(d.anchor[0] / d.cell[0], d.anchor[1] / d.cell[1])
     this._hpY = -(d.anchor[1] + 8)
     this._syncWorld()
@@ -151,7 +153,51 @@ export class Enemy {
     this._dealt = false
   }
 
+  // --- modo autoritativo (online): el servidor manda; acá sólo interpolamos y reflejamos --------
+  // No corre IA. La posición/HP/muerte llegan del server; suavizamos el movimiento y animamos.
+  netInit(eid) { this.netDriven = true; this.eid = eid; this._nx = this.tx; this._ny = this.ty }
+  netSetTarget(x, y, dir, hp) {
+    this._nx = x; this._ny = y
+    if (dir != null) this.dir = dir
+    if (hp != null && hp !== this.hp) { this.hp = hp; if (this.hp < this.hpMax) this._drawHpBar() }
+  }
+  netDamage(hp, dmg, crit) {
+    if (this.dead) return
+    this.hp = Math.max(0, hp); this._drawHpBar()
+    if (this._anim !== 'hit') this._startAnim('hit')
+    playSfx(this._sfx + '_hit.ogg')
+  }
+  netDie() {
+    if (this.dead) return
+    this.hp = 0; this._startAnim('die'); this.state = 'dead'; this.dead = true; this._deathT = this._animS('die')
+    this.view.eventMode = 'none'; this.view.cursor = 'default'; this.hpBar.visible = false
+    playSfx(this._sfx + '_die.ogg')
+  }
+  _netUpdate(dt) {
+    this.pendingHit = 0
+    if (this.state === 'dead') {
+      this._deathT -= dt; this._advanceAnim(dt)
+      if (this._deathT <= 0) { this.view.alpha -= dt * 2; if (this.view.alpha <= 0) this.remove = true }
+      return
+    }
+    // Interpolación suave hacia la última posición del server (llega ~5 Hz).
+    const k = Math.min(1, dt * 12)
+    this.tx += (this._nx - this.tx) * k
+    this.ty += (this._ny - this.ty) * k
+    this._syncWorld()
+    if (this._anim === 'hit') {
+      this._animT -= dt
+      if (this._animT <= 0) this._startAnim('stance', true)
+    } else {
+      const moving = Math.abs(this._nx - this.tx) + Math.abs(this._ny - this.ty) > 0.08
+      const want = moving ? 'run' : 'stance'
+      if (this._anim !== want) this._startAnim(want, true)
+    }
+    this._advanceAnim(dt)
+  }
+
   update(dt, player) {
+    if (this.netDriven) return this._netUpdate(dt)
     this.pendingHit = 0
     if (this._attackCd > 0) this._attackCd -= dt
     if (this._summonCd > 0) this._summonCd -= dt
@@ -381,5 +427,13 @@ export class Enemy {
     this.hpBar.roundRect(-w / 2, this._hpY, w, h, 2).fill({ color: 0x14111a, alpha: 0.9 }).stroke({ color: 0x000000, width: 1 })
     this.hpBar.roundRect(-w / 2 + 1, this._hpY + 1, (w - 2) * pct, h - 2, 1).fill({ color: pct > 0.4 ? 0xb23b3b : 0xd06b2a })
     this.hpBar.visible = true
+  }
+
+  // Libera el wrapper de Texture propio (NO la source compartida del atlas) y destruye la vista.
+  // Sin esto, cada enemigo muerto dejaba su wrapper colgado en el heap (con spawn/kill constante,
+  // acumula en una sesión larga).
+  destroy() {
+    if (this._ownTex) { this._ownTex.destroy(false); this._ownTex = null }
+    this.view.destroy({ children: true })
   }
 }

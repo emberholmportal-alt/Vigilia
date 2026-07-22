@@ -33,8 +33,8 @@ export const QUESTS = [
         text: 'Encontrá el nombre sellado en viento, en el Paso Roca-Tormenta.',
         text_en: 'Find the name sealed in wind, at Stormrock Pass.' },
       { req: ['q3_init', 'q3_ice', 'q3_fire', 'q3_wind'], not: ['q3_finish'],
-        text: 'Volvé al pueblo y despertá al Guardián de Fuego con los tres nombres.',
-        text_en: 'Return to town and awaken the Guardian of Fire with the three names.' },
+        text: 'Volvé al pueblo y llevale los tres nombres a Udana la Vidente.',
+        text_en: 'Return to town and bring the three names to Udana the Seer.' },
     ],
   },
 ]

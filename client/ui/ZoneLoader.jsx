@@ -6,11 +6,11 @@ import { useGameStore } from '../store.js'
 import { useT } from './useT.js'
 
 // Frases de lore del mundo (dark fantasy). Se elige una al azar por viaje.
-const LORE = {
+export const LORE = {
   es: [
     'Los caminos entre zonas los abrieron los primeros Vigilantes, y no todos volvieron.',
     'Dicen que la piedra de los obeliscos recuerda cada nombre que la tocó.',
-    'Bajo Black Oak City hay más túneles que calles sobre ella.',
+    'Bajo las viejas ciudades hay más túneles que calles sobre ellas.',
     'El acero se cansa como los hombres: repáralo antes de que se quiebre.',
     'En la Ciénaga de Merrimead, la niebla devuelve los pasos que das.',
     'Los duendes no cavan por oro: cavan buscando algo que enterraron sus abuelos.',
@@ -24,7 +24,7 @@ const LORE = {
   en: [
     'The roads between zones were opened by the first Watchers, and not all came back.',
     'They say the obelisks remember every name that ever touched their stone.',
-    'Beneath Black Oak City there are more tunnels than streets above it.',
+    'Beneath the old cities there are more tunnels than streets above them.',
     'Steel tires like men do: repair it before it snaps.',
     'In Merrimead Swamp, the mist gives back the steps you take.',
     "Goblins don't dig for gold: they dig for what their grandfathers buried.",

@@ -22,14 +22,14 @@ Licencia del arte: CC-BY-SA 3.0 — Flare "Empyrean Campaign", flareteam/flare-g
 Este script NO redistribuye arte: lo procesa desde tu copia local del repo.
 """
 import os, re, json, argparse, sys
-from PIL import Image
+from PIL import Image, ImageChops
 
 # ---------------------------------------------------------------- config
 # Capas del paperdoll. La clave es el nombre lógico; el valor, el archivo de Flare.
 AVATAR_LAYERS = [
     # base (siempre visible debajo del equipo)
     "default_chest", "default_legs", "default_hands", "default_feet",
-    "head_bald", "head_short",
+    "head_bald", "head_short", "head_long",
     # cloth
     "cloth_shirt", "cloth_pants", "cloth_gloves", "cloth_sandals",
     # leather
@@ -315,8 +315,10 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
     if not tdef:
         return None
 
-    # id -> (img_rel, (x, y, w, h, ox, oy)); el último define gana.
-    cur_img, tiledefs = None, {}
+    # id -> (img_rel, (x, y, w, h, ox, oy)); el último define gana. Los tiles animados
+    # (`animation=<tid>;x,y,dur;…`) referencian la imagen `img=` VIGENTE en esa línea, que
+    # puede NO ser la del tile base (grassland pone el agua en tileset_grassland_water.png).
+    cur_img, tiledefs, anims_raw = None, {}, {}
     for line in open(tdef, encoding="utf-8", errors="ignore"):
         line = line.strip()
         if line.startswith("img="):
@@ -324,6 +326,24 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
         elif line.startswith("tile=") and cur_img:
             p = [int(x) for x in line.split("=")[1].split(",")]
             tiledefs[p[0]] = (cur_img, tuple(p[1:7]))
+        elif line.startswith("animation=") and cur_img:
+            parts = line.split("=", 1)[1].split(";")
+            try:
+                tid = int(parts[0])
+            except ValueError:
+                continue
+            frames = []
+            for fr in parts[1:]:
+                fr = fr.strip()
+                if not fr:
+                    continue
+                c = fr.split(",")
+                if len(c) < 3:
+                    continue
+                dur = int("".join(ch for ch in c[2] if ch.isdigit()) or "100")
+                frames.append((int(c[0]), int(c[1]), dur))
+            if frames:
+                anims_raw[tid] = (cur_img, frames)   # imagen VIGENTE en la línea de animación
     if not tiledefs:
         return None
 
@@ -334,8 +354,9 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
             srccache[rel] = Image.open(p).convert("RGBA") if p else None
         return srccache[rel]
 
-    # Recortar y escalar cada tile.
-    crops = {}   # id -> (PIL, ox_escalado, oy_escalado)
+    # Recortar y escalar cada tile base y cada frame de animación en una sola lista para
+    # empaquetar juntos. key = ("t", tid) para el tile base, ("a", tid, j) para el frame j.
+    items = []   # (key, PIL, ox_escalado, oy_escalado)
     for tid, (img_rel, (x, y, w, h, ox, oy)) in tiledefs.items():
         im = src_img(img_rel)
         if im is None:
@@ -346,37 +367,86 @@ def extract_tileset(name, roots, out_dir, scale, atlas_w=2048, scale_fn=None):
         crop = im.crop((x, y, x + w, y + h))
         if s != 1.0:
             crop = crop.resize((max(1, int(w * s)), max(1, int(h * s))), Image.LANCZOS)
-        crops[tid] = (crop, int(ox * s), int(oy * s))
-    if not crops:
+        items.append((("t", tid), crop, int(ox * s), int(oy * s)))
+
+    for tid, (anim_img, frames) in anims_raw.items():
+        base = tiledefs.get(tid)
+        if not base:
+            continue
+        _, (x0, y0, w, h, ox, oy) = base   # tamaño/anclas del tile base
+        im = src_img(anim_img)             # …pero los frames salen de la imagen de la animación
+        if im is None:
+            continue
+        s = scale_fn(w, h) if scale_fn else scale
+        for j, (fx, fy, dur) in enumerate(frames):
+            crop = im.crop((fx, fy, fx + w, fy + h))
+            if s != 1.0:
+                crop = crop.resize((max(1, int(w * s)), max(1, int(h * s))), Image.LANCZOS)
+            items.append((("a", tid, j), crop, int(ox * s), int(oy * s)))
+    if not items:
         return None
 
     # Empaquetado por estanterías (altura descendente); pad de 2px anti-bleeding.
     pad = 2
-    order = sorted(crops, key=lambda t: crops[t][0].height, reverse=True)
+    items.sort(key=lambda it: it[1].height, reverse=True)
     cx = cy = rowh = 0
-    placed = {}
-    for tid in order:
-        cw, ch = crops[tid][0].size
+    placed = {}   # key -> (px, py, crop, ox, oy)
+    for key, crop, ox, oy in items:
+        cw, ch = crop.size
         if cx + cw + pad > atlas_w:
             cx = 0
             cy += rowh + pad
             rowh = 0
-        placed[tid] = (cx, cy)
+        placed[key] = (cx, cy, crop, ox, oy)
         cx += cw + pad
         rowh = max(rowh, ch)
     atlas_h = cy + rowh + pad
 
     atlas = Image.new("RGBA", (atlas_w, atlas_h), (0, 0, 0, 0))
-    out_tiles = {}
-    for tid, (crop, ox, oy) in crops.items():
-        px, py = placed[tid]
+    for px, py, crop, ox, oy in placed.values():
         atlas.alpha_composite(crop, (px, py))
-        out_tiles[str(tid)] = [px, py, crop.width, crop.height, ox, oy]
+
+    out_tiles = {}
+    for tid in tiledefs:
+        p = placed.get(("t", tid))
+        if p:
+            px, py, crop, ox, oy = p
+            out_tiles[str(tid)] = [px, py, crop.width, crop.height, ox, oy]
+
+    # Sólo dejamos animaciones que se PERCIBEN. El agua quieta de Flare son 2 frames casi
+    # idénticos (un shimmer imperceptible): esas las descartamos como animación y las tratamos
+    # como agua (shimmer procedural en el cliente). Quedan las que cambian de verdad: lava,
+    # cascadas, fuego.
+    def frames_change(tid, n):
+        crops = [placed[("a", tid, j)][2] for j in range(n)]
+        best = 0.0
+        for i in range(len(crops) - 1):
+            d = ImageChops.difference(crops[i].convert("RGB"), crops[i + 1].convert("RGB"))
+            diff = sum(1 for p in d.getdata() if p[0] + p[1] + p[2] > 24)
+            best = max(best, diff / (crops[i].width * crops[i].height or 1))
+        return best
+
+    out_anim = {}
+    for tid, (anim_img, frames) in anims_raw.items():
+        fr, durs, ok = [], [], True
+        for j, (_, _, dur) in enumerate(frames):
+            p = placed.get(("a", tid, j))
+            if not p:
+                ok = False
+                break
+            px, py, crop, ox, oy = p
+            fr.append([px, py, crop.width, crop.height, ox, oy])
+            durs.append(dur)
+        if ok and len(fr) > 1 and frames_change(tid, len(fr)) >= 0.02:
+            out_anim[str(tid)] = {"frames": fr, "durs": durs}
 
     out = os.path.join(out_dir, "tilesets", name + ".png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     atlas.save(out, optimize=True)
-    return {"src": "tilesets/" + name + ".png", "tiles": out_tiles}
+    res = {"src": "tilesets/" + name + ".png", "tiles": out_tiles}
+    if out_anim:
+        res["anim"] = out_anim
+    return res
 
 
 # ---------------------------------------------------------------- main
@@ -415,14 +485,22 @@ def main():
         "license": "Art: Flare (Empyrean Campaign) — CC-BY-SA 3.0 — flareteam/flare-game",
     }
 
-    for L in AVATAR_LAYERS:
-        r = repack(resolve(roots, f"animations/avatar/{a.gender}/{L}.txt"), roots,
-                   f"{a.out}/avatar/{L}.png", a.scale)
-        if r:
-            r["src"] = "avatar/" + os.path.basename(r["src"])
-            man["layers"][L] = r
-        else:
-            print("  (falta capa)", L)
+    # Cuerpos jugables de Flare: male (por defecto → man["layers"], compat) + female + female_dark
+    # (→ man["bodies"][gender]). Cada cuerpo trae SU propia versión de cada capa (la armadura calza
+    # distinto en cada silueta). El cliente elige el cuerpo y arma el paperdoll con ese set.
+    man["bodies"] = {}
+    BODIES = ["male", "female", "female_dark"]
+    for gender in BODIES:
+        sub = "" if gender == "male" else gender + "/"
+        target = man["layers"] if gender == "male" else man["bodies"].setdefault(gender, {})
+        for L in AVATAR_LAYERS:
+            r = repack(resolve(roots, f"animations/avatar/{gender}/{L}.txt"), roots,
+                       f"{a.out}/avatar/{sub}{L}.png", a.scale)
+            if r:
+                r["src"] = f"avatar/{sub}" + os.path.basename(r["src"])
+                target[L] = r
+            elif gender == "male":
+                print("  (falta capa)", L)
 
     for e in ENEMIES:
         r = repack(resolve(roots, f"animations/enemies/{e}.txt"), roots,

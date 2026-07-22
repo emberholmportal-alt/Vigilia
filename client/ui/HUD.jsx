@@ -8,6 +8,44 @@ import Globe from './Globe.jsx'
 import ActionBar, { MenuRow, DesktopBar, BuffBar } from './ActionBar.jsx'
 import { useT } from './useT.js'
 import { raceName } from '../i18n.js'
+import { Scroll, Eye } from './Icon.jsx'
+
+const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
+
+// Íconos SVG para los botones de interacción (sin emojis). Heredan el color del texto.
+const Svg = (props) => (
+  <svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="none" stroke="currentColor"
+       strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />
+)
+const IcPortal = () => <Svg><circle cx="12" cy="12" r="8.5" /><path d="M12 5.5a6.5 6.5 0 1 1-6 4" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /></Svg>
+const IcTalk = () => <Svg><path d="M20 4H4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3v4l5-4h8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1Z" /></Svg>
+const IcTrade = () => <Svg><ellipse cx="12" cy="6.5" rx="7" ry="2.8" /><path d="M5 6.5v5c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8v-5" /><path d="M5 11.5v5c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8v-5" /></Svg>
+const IcPick = () => <Svg><path d="M4.5 19.5 13 11" /><path d="M6 8.5c4-2.2 9-1 12 4" /><path d="M9.5 5c2.4 3 5 5.6 8 7" /></Svg>
+const IcHerb = () => <Svg><path d="M12 21v-9" /><path d="M12 13c-3.2 0-5.3-2-5.3-5.3 3.2 0 5.3 2 5.3 5.3Z" /><path d="M12 11c3.2 0 5.3-2 5.3-5.3-3.2 0-5.3 2-5.3 5.3Z" /></Svg>
+const IcRun = () => <Svg><path d="M13 4.5a1.4 1.4 0 1 0 0-.1Z" fill="currentColor" stroke="none" /><path d="M7 21l3-5 3 2 1 3" /><path d="M5 12l3-2 3 1 2 3 4 1" /><path d="M14 9l-2-3-4 1" /></Svg>
+
+// Leaf: correr + stamina. Aislado para que la stamina (que cambia ~12Hz) no re-renderice el HUD
+// entero. El toggle prende/apaga el modo correr (mobile + desktop); en desktop además está Shift.
+function StaminaBar() {
+  const stamina = useGameStore((s) => s.stamina)
+  const staminaMax = useGameStore((s) => s.staminaMax)
+  const running = useGameStore((s) => s.running)
+  const toggleRun = useGameStore((s) => s.toggleRun)
+  const t = useT()
+  const pct = Math.max(0, Math.min(1, stamina / (staminaMax || 1)))
+  const low = pct <= 0.2
+  return (
+    <div className="stamina-row">
+      <button className={'run-toggle' + (running ? ' on' : '')} onClick={toggleRun}
+              title={t('run_hint')}>
+        <IcRun /> {running ? t('run_on') : t('run_off')}
+      </button>
+      <div className="stamina-bar" title={`${Math.round(stamina)}/${staminaMax}`}>
+        <div className={'stamina-fill' + (low ? ' low' : '')} style={{ width: pct * 100 + '%' }} />
+      </div>
+    </div>
+  )
+}
 
 // Aviso breve que aparece arriba de la barra y se va solo.
 function Toast() {
@@ -22,13 +60,55 @@ function Toast() {
   return <div className="toast" key={toast.until}>{toast.text}</div>
 }
 
-export default function HUD() {
-  const mapTitle = useGameStore((s) => s.mapTitle)
-  const playerName = useGameStore((s) => s.playerName)
+// Barra del modo espectador: aviso + botón para pasar a jugar.
+function SpectatorBar({ onExit, t }) {
+  return (
+    <div className="spectator-bar">
+      <span><Eye /> {t('spectating')}</span>
+      <span className="spec-hint">{t('spec_hint')}</span>
+      <button onClick={onExit}>▶ {t('play_now')}</button>
+    </div>
+  )
+}
+
+// Leaf: telemetría (fps + zona). Aislada para que el refresco de fps (cada 0.5s) no re-renderice
+// el HUD entero. "React no toca el loop": lo que cambia seguido vive en su propia hoja.
+function Telemetry() {
   const fps = useGameStore((s) => s.fps)
+  const mapTitle = useGameStore((s) => s.mapTitle)
+  return (
+    <div className="telemetry">
+      <span className={fps >= 55 ? 'ok' : fps >= 40 ? 'warn' : 'bad'}>{fps} fps</span>
+      <span className="dim2">{mapTitle}</span>
+    </div>
+  )
+}
+
+// Leaf: globos de vida/maná. Suscriben SÓLO hp/mp (primitivos) para que la regen constante no
+// re-renderice el HUD completo (ActionBar, misiones, etc.), sino nada más el orbe que cambió.
+function HpGlobe() {
+  const hp = useGameStore((s) => s.stats?.hp ?? 0)
+  const hpMax = useGameStore((s) => s.stats?.hpMax ?? 1)
+  return <Globe type="hp" value={hp} max={hpMax} label={`${hp}/${hpMax}`} />
+}
+function MpGlobe() {
+  const mp = useGameStore((s) => s.stats?.mp ?? 0)
+  const mpMax = useGameStore((s) => s.stats?.mpMax ?? 1)
+  return <Globe type="mp" value={mp} max={mpMax} label={`${mp}/${mpMax}`} />
+}
+
+export default function HUD({ onExitSpectate }) {
+  const spectator = useGameStore((s) => s.spectator)
+  const playerName = useGameStore((s) => s.playerName)
   const gold = useGameStore((s) => s.gold)
   const race = useGameStore((s) => s.race)
-  const stats = useGameStore((s) => s.stats)
+  // Sólo los atributos LENTOS del stat block (cambian al subir de nivel/equipar, no por frame).
+  // hp/mp/fps viven en sus hojas (arriba) para no re-renderizar todo el HUD con la regen.
+  const level = useGameStore((s) => s.stats?.level ?? 1)
+  const str = useGameStore((s) => s.stats?.str ?? 0)
+  const dex = useGameStore((s) => s.stats?.dex ?? 0)
+  const intel = useGameStore((s) => s.stats?.int ?? 0)
+  const vit = useGameStore((s) => s.stats?.vit ?? 0)
   const belt = useGameStore((s) => s.belt)
   const xp = useGameStore((s) => s.xp)
   const nearby = useGameStore((s) => s.nearby)
@@ -38,6 +118,8 @@ export default function HUD() {
   const nearbyNode = useGameStore((s) => s.nearbyNode)
   const requestGather = useGameStore((s) => s.requestGather)
   const togglePanel = useGameStore((s) => s.togglePanel)
+  const lootLabels = useGameStore((s) => s.lootLabels)
+  const toggleLootLabels = useGameStore((s) => s.toggleLootLabels)
   const openMissions = useGameStore((s) => s.openMissions)
   const missions = useGameStore((s) => s.missions)
   const useBelt = useGameStore((s) => s.useBelt)
@@ -45,8 +127,20 @@ export default function HUD() {
   const beltCap = beltCapacityOf(equippedBelt)
   const t = useT()
 
-  const s = stats || { level: 1, str: 0, dex: 0, int: 0, vit: 0, hp: 0, hpMax: 1, mp: 0, mpMax: 1 }
   const prog = playerProgress(xp || 0)
+
+  // El mirón sólo observa: HUD mínimo (barra de espectador + título de zona), sin orbes,
+  // barra de acciones, misiones ni XP.
+  if (spectator) {
+    return (
+      <>
+        <SpectatorBar onExit={onExitSpectate} t={t} />
+        <div className="hud">
+          <Telemetry />
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
@@ -54,23 +148,20 @@ export default function HUD() {
         <button className="who" onClick={() => togglePanel('character')} title={t('view_character')}>
           <b>{playerName} {race ? '· ' + raceName(race, t.lang) : ''}</b>
           <div className="attrs">
-            <span>{t('lv')} {s.level}</span>
-            <span>{t('abbr_str')} {s.str}</span>
-            <span>{t('abbr_dex')} {s.dex}</span>
-            <span>{t('abbr_int')} {s.int}</span>
-            <span>{t('abbr_vit')} {s.vit}</span>
+            <span>{t('lv')} {level}</span>
+            <span>{t('abbr_str')} {str}</span>
+            <span>{t('abbr_dex')} {dex}</span>
+            <span>{t('abbr_int')} {intel}</span>
+            <span>{t('abbr_vit')} {vit}</span>
           </div>
         </button>
-        <div className="telemetry">
-          <span className={fps >= 55 ? 'ok' : fps >= 40 ? 'warn' : 'bad'}>{fps} fps</span>
-          <span className="dim2">{mapTitle}</span>
-        </div>
+        <Telemetry />
         <div className="hud-right">
           {(() => {
             const claimable = (missions || []).filter((m) => m.progress >= m.target && !m.claimed).length
             return (
               <button className={'hud-missions' + (claimable > 0 ? ' ready' : '')} onClick={openMissions} title={t('missions_menu')}>
-                <span className="hud-missions-ic">📜</span>
+                <span className="hud-missions-ic"><Scroll /></span>
                 <span className="hud-missions-lbl">{t('missions_menu')}</span>
                 {claimable > 0 ? <span className="hud-badge">{claimable}</span> : null}
               </button>
@@ -86,36 +177,41 @@ export default function HUD() {
         {nearbyPortal && (
           <div className="interact-wrap">
             <button className="interact-btn portal-btn" onClick={openWaypoints}>
-              🌀 {t('portal_use')}
+              <IcPortal /> {t('portal_use')}
             </button>
           </div>
         )}
         {nearby && (
           <div className="interact-wrap">
             <button className="interact-btn" onClick={requestInteract}>
-              {nearby.shop ? '🛒 ' + t('trade_with', { name: nearby.name }) : '💬 ' + t('talk_with', { name: nearby.name })}
+              {nearby.shop ? <IcTrade /> : <IcTalk />} {nearby.shop ? t('trade_with', { name: nearby.name }) : t('talk_with', { name: nearby.name })}
             </button>
           </div>
         )}
         {nearbyNode && !nearby && (
           <div className="interact-wrap">
             <button className="interact-btn gather-btn" onClick={requestGather}>
-              {nearbyNode.skill === 'excavacion' ? '⛏️ ' : '🌿 '}{t('gather_action', { name: nearbyNode.name })}
+              {nearbyNode.skill === 'excavacion' ? <IcPick /> : <IcHerb />} {t('gather_action', { name: nearbyNode.name })}
             </button>
           </div>
         )}
+        <button className={'loot-toggle' + (lootLabels ? ' on' : '')} onClick={toggleLootLabels} title={t('loot_labels')}>
+          <Eye /> {t('loot_labels')}
+        </button>
         <MenuRow onPanel={togglePanel} />
         <BuffBar />
         <div className="globe-row">
-          <Globe type="hp" value={s.hp} max={s.hpMax} label={`${s.hp}/${s.hpMax}`} />
+          <HpGlobe />
           <ActionBar belt={belt} gold={gold} onUseBelt={useBelt} beltCap={beltCap} />
           <DesktopBar belt={belt} onPanel={togglePanel} onUseBelt={useBelt} beltCap={beltCap} />
-          <Globe type="mp" value={s.mp} max={s.mpMax} label={`${s.mp}/${s.mpMax}`} />
+          <MpGlobe />
         </div>
 
-        <div className="xp-strip" title={`XP ${prog.into}/${prog.need}`}>
-          <div className="xp-strip-fill" style={{ width: `${Math.round(prog.pct * 100)}%` }} />
-          <span className="xp-strip-label">{t('xp_of', { lv: s.level, into: prog.into, need: prog.need })}</span>
+        <StaminaBar />
+
+        <div className="xp-strip" title={t('xp_of', { lv: level, into: prog.into, need: prog.need })}
+             style={{ backgroundImage: `url(${UI}bar_xp_background.png)` }}>
+          <div className="xp-strip-fill" style={{ width: `${prog.pct * 96}%`, backgroundImage: `url(${UI}bar_xp.png)` }} />
         </div>
       </div>
     </>

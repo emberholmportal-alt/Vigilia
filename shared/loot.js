@@ -4,7 +4,7 @@
 //
 // Regla 2 (el servidor manda): esta tirada es la autoridad. El cliente la ejecuta local
 // en singleplayer; cuando llegue el servidor, corre allá y el cliente sólo pinta.
-import data from './loot.json'
+import data from './loot.json' with { type: 'json' }
 
 const TABLES = data.tables
 

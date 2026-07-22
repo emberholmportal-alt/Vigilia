@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import ItemIcon from './ItemIcon.jsx'
 import { useGameStore } from '../store.js'
 import { ABILITY_BY_ID } from '../data/abilities.js'
+import { Lock, Fist, Gear } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
@@ -43,7 +44,6 @@ export function BuffBar() {
 // y tiene un engranaje para elegir qué habilidad va ahí. Muestra el barrido de recarga.
 export function MouseSlot({ which, className = '', style }) {
   const equipment = useGameStore((s) => s.equipment)
-  const stats = useGameStore((s) => s.stats)
   const special = useGameStore((s) => s.specialAbility)
   const abilityCd = useGameStore((s) => s.abilityCd)
   const requestCast = useGameStore((s) => s.requestCast)
@@ -53,6 +53,10 @@ export function MouseSlot({ which, className = '', style }) {
   const timer = useRef()
   const isM2 = which === 'm2'
   const ab = isM2 && special ? ABILITY_BY_ID[special] : null
+  // Suscribir al BOOLEANO derivado (¿sin maná?), no al objeto stats entero: así la regen de maná
+  // (que reescribe stats cada tick) sólo re-renderiza este botón cuando el estado realmente cambia,
+  // no en cada tick. (El selector debe ir antes del early-return de M1 por las reglas de hooks.)
+  const noMana = useGameStore((s) => (ab ? (s.stats?.mp || 0) < ab.mp : false))
 
   // Barrido de recarga del M2 mientras su habilidad esté en recarga.
   useEffect(() => {
@@ -70,7 +74,7 @@ export function MouseSlot({ which, className = '', style }) {
     const wIcon = equipment?.main?.icon
     return (
       <button className={'mouse-slot m1 ' + className} style={bg} title={t('m1_normal')}>
-        {wIcon != null ? <ItemIcon icon={wIcon} fill /> : <span className="mouse-fist">✊</span>}
+        {wIcon != null ? <ItemIcon icon={wIcon} fill /> : <span className="mouse-fist"><Fist /></span>}
         <span className="mouse-tag">M1</span>
       </button>
     )
@@ -79,7 +83,6 @@ export function MouseSlot({ which, className = '', style }) {
   const end = ab ? (abilityCd?.[ab.id] || 0) : 0
   const remain = Math.max(0, end - Date.now())
   const frac = ab && remain > 0 ? Math.min(1, remain / (ab.cd * 1000)) : 0
-  const noMana = ab && (stats?.mp || 0) < ab.mp
   return (
     <button className={'mouse-slot m2 ' + className + (noMana ? ' nomana' : '')} style={bg}
             title={ab ? t('ab_' + ab.id) : t('bind_special')}
@@ -88,7 +91,7 @@ export function MouseSlot({ which, className = '', style }) {
       <span className="mouse-tag">M2</span>
       {ab && remain > 0 && <span className="mouse-cd" style={{ height: `${Math.round(frac * 100)}%` }} />}
       {ab && remain > 0 && <span className="mouse-cd-txt">{Math.ceil(remain / 1000)}</span>}
-      <span className="mouse-gear" onClick={(e) => { e.stopPropagation(); openMouseBind() }} title={t('bind_special')}>⚙</span>
+      <span className="mouse-gear" onClick={(e) => { e.stopPropagation(); openMouseBind() }} title={t('bind_special')}><Gear /></span>
     </button>
   )
 }
@@ -106,7 +109,7 @@ export default function ActionBar({ belt, gold, onUseBelt, beltCap = 4 }) {
                  title={locked ? t('bigger_belt') : undefined}
                  onClick={it && !locked ? () => onUseBelt?.(i) : undefined}>
               {it && !locked && <ItemIcon icon={it.icon} fill count={it.count} />}
-              {locked && <span className="ab-lock">🔒</span>}
+              {locked && <span className="ab-lock"><Lock /></span>}
             </div>
           )
         })}
@@ -173,7 +176,7 @@ export function DesktopBar({ belt, onPanel, onUseBelt, beltCap = 4 }) {
                title={locked ? t('bigger_belt') : undefined}
                onClick={it && !locked ? () => onUseBelt?.(i) : undefined}>
             {it && !locked && <ItemIcon icon={it.icon} fill count={it.count} />}
-            {locked && <span className="ab-lock">🔒</span>}
+            {locked && <span className="ab-lock"><Lock /></span>}
           </div>
         )
       })}

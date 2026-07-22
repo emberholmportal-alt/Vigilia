@@ -32,7 +32,13 @@ export default function Waypoints() {
             {rows.map((r) => (
               <button key={r.zone} className={'wp-row' + (r.current ? ' current' : '')}
                       disabled={r.current} onClick={() => requestWaypoint(r.zone)}>
-                <span className="wp-rune">🌀</span>
+                <span className="wp-rune">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8.5" />
+                    <path d="M12 5.5a6.5 6.5 0 1 1-6 4" fill="none" />
+                    <circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none" />
+                  </svg>
+                </span>
                 <span className="wp-name">{t.zone(r.zone) || r.label}</span>
                 <span className="wp-tag">{r.current ? t('wp_here') : ''}</span>
               </button>

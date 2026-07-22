@@ -25,6 +25,17 @@ Flare (CC-BY-SA 3.0), que a su vez parte del *Health Orb* de **itsmars** en Open
 - Demonic UI: https://gitlab.com/predator8bit/flare-demonic-ui
 - Health Orb (itsmars): https://opengameart.org/content/health-orb-11
 
+## Menús (inicio y selección de raza) — CC-BY-SA 3.0 / OFL
+
+Los menús usan arte de menú de **Flare** (CC-BY-SA 3.0):
+
+- Fondos pintados (`badlands`, `ice_palace`, `fire_temple`) y la ventana/panel de menú.
+- El **tomo** abierto de la selección de raza (`book.png`, Empyrean Campaign).
+- Los **retratos** de raza (portraits de Flare).
+
+La tipografía de los menús es **Bona Nova SC** (Andrij Shevchenko), bajo **SIL Open Font
+License 1.1** — incluida con Flare (mod *fantasycore*).
+
 ## Motor de Flare
 
 El *engine* de Flare (GPLv3) **no se usa** en este proyecto. Vigilia tiene su propio motor

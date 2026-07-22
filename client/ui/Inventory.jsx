@@ -2,11 +2,12 @@
 // exactas de menus/inventory.txt. Ítems superpuestos sobre los marcos ya dibujados,
 // tooltip al tocar (nombre/nivel/slot/stats/precio) y oro. Look idéntico a Flare.
 import { useState } from 'react'
-import { useGameStore, equipSlotFor, beltEligible } from '../store.js'
+import { useGameStore, equipSlotFor, beltEligible, beltCapacityOf } from '../store.js'
 import { RARITY_COLOR, isDurable, durabilityMax } from '../data/items.js'
 import { inventoryCapacity } from '../data/progression.js'
 import { armorDefense, upgradeLevel, itemAffinity } from '../data/stats.js'
 import ItemIcon from './ItemIcon.jsx'
+import { Lock, Gold } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const hasAbsorb = (it) => !!(it.stats?.absorb_max || it.stats?.absorb_min)
@@ -17,10 +18,13 @@ const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 const PW = 640, PH = 832, SLOT = 64
 const EQUIP_POS = {
   head: [464, 72], chest: [464, 160], legs: [464, 248], feet: [464, 336],
-  hands: [376, 136], artifact: [552, 136], ring: [376, 224], main: [376, 312], off: [552, 312],
+  hands: [376, 136], artifact: [552, 136], ring: [376, 224], ring2: [552, 224], main: [376, 312], off: [552, 312],
 }
 const CARRIED = { x: 32, y: 64, cols: 5 }
-const EQUIP_ORDER = ['head', 'chest', 'legs', 'feet', 'hands', 'artifact', 'ring', 'main', 'off']
+// Cinturón como grilla 3×3 en el área libre bajo el muñeco de armadura (los slots activos = capacidad
+// del cinturón equipado; el resto quedan bloqueados, igual que la bolsa). Coords del panel de Flare.
+const BELT = { x: 392, y: 452, cols: 3, rows: 3 }
+const EQUIP_ORDER = ['head', 'chest', 'legs', 'feet', 'hands', 'artifact', 'ring', 'ring2', 'main', 'off']
 
 // Estilo para centrar algo en un slot (coords de Flare, en % del panel).
 function slotStyle(x, y) {
@@ -35,6 +39,9 @@ function slotStyle(x, y) {
 export default function Inventory() {
   const inventory = useGameStore((s) => s.inventory)
   const equipment = useGameStore((s) => s.equipment)
+  const belt = useGameStore((s) => s.belt)
+  const equippedBelt = useGameStore((s) => s.equippedBelt)
+  const useBelt = useGameStore((s) => s.useBelt)
   const gold = useGameStore((s) => s.gold)
   const equipFromInventory = useGameStore((s) => s.equipFromInventory)
   const unequip = useGameStore((s) => s.unequip)
@@ -102,17 +109,34 @@ export default function Inventory() {
                     title={locked ? t('locked_hint') : undefined}
                     onClick={() => !locked && it && setSel({ src: 'inv', i, pos: [x, y] })}>
               {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
-              {locked && <span className="inv-lock">🔒</span>}
+              {locked && <span className="inv-lock"><Lock /></span>}
+            </button>
+          )
+        })}
+
+        {/* cinturón: SÓLO los slots disponibles (capacidad del cinturón equipado), bajo el muñeco */}
+        <div className="inv-belt-label" style={{ left: (BELT.x / PW * 100) + '%', top: ((BELT.y - 26) / PH * 100) + '%' }}>{t('belt')}</div>
+        {Array.from({ length: beltCapacityOf(equippedBelt) }).map((_, i) => {
+          const col = i % BELT.cols, row = (i / BELT.cols) | 0
+          const x = BELT.x + col * SLOT, y = BELT.y + row * SLOT
+          const it = belt[i]
+          return (
+            <button key={'belt' + i}
+                    className="inv-cell inv-belt-cell"
+                    style={slotStyle(x, y)}
+                    title={it ? undefined : t('belt_empty')}
+                    onClick={() => it && useBelt(i)}>
+              {it && <ItemIcon icon={it.icon} size={34} count={it.count} />}
             </button>
           )
         })}
 
         {/* oro */}
-        <div className="inv-gold" style={{ top: (823 / PH * 100) + '%' }}>{gold} {t('gold')}</div>
+        <div className="inv-gold" style={{ top: (823 / PH * 100) + '%' }}><Gold n={gold} /></div>
 
         {selItem && (
           <Tooltip item={selItem} pos={sel.pos} t={t}
-                   compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selItem)] : null}
+                   compareTo={sel.src === 'inv' ? equipment[equipSlotFor(selItem, equipment)] : null}
                    actionLabel={sel.src === 'inv' ? t('equip') : t('unequip')} onAction={act}
                    onUse={sel.src === 'inv' && selItem.recall ? doUse : null}
                    onBelt={sel.src === 'inv' && beltEligible(selItem) ? toBelt : null}

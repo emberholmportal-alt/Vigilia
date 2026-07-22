@@ -3,6 +3,7 @@
 // Diablo— se quedan en su puesto y le dan vida a la plaza con presencia y charla.
 
 import { Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js'
+import { npcName, getLang } from '../i18n.js'
 
 const BASE = import.meta.env.BASE_URL || '/'
 
@@ -28,7 +29,7 @@ export class Npc {
     this.nameText = null
     if (def.name) {
       this.nameText = new Text({
-        text: def.name,
+        text: npcName(def, getLang()),
         style: {
           fontFamily: 'Georgia, serif', fontSize: 12,
           fill: def.landmark ? '#c9a227' : '#c9b48a',
@@ -59,9 +60,14 @@ export class Npc {
     if (!d) return false
     this.d = d
     const tex = await Assets.load(BASE + 'assets/' + d.src)
-    this.sprite.texture = new Texture({
+    // Filas (direcciones) reales del sheet: los sprites de 1 sola dirección (p. ej. la bruja)
+    // tienen 1 fila; si `dir` supera las filas, la celda cae fuera del sheet y el NPC desaparece.
+    // Clampeamos con módulo para que hablarle (que le cambia la dirección) no lo borre.
+    this._rows = Math.max(1, Math.round(tex.source.height / d.cell[1]))
+    this._ownTex = new Texture({
       source: tex.source, frame: new Rectangle(0, 0, d.cell[0], d.cell[1]),
     })
+    this.sprite.texture = this._ownTex
     this.sprite.anchor.set(d.anchor[0] / d.cell[0], d.anchor[1] / d.cell[1])
 
     const headY = -(d.anchor[1] + 6)
@@ -138,7 +144,7 @@ export class Npc {
     }
     const fr = this.sprite.texture.frame
     fr.x = (st.start + f) * this.d.cell[0]
-    fr.y = this.dir * this.d.cell[1]
+    fr.y = (this.dir % (this._rows || 1)) * this.d.cell[1]
     fr.width = this.d.cell[0]
     fr.height = this.d.cell[1]
     this.sprite.texture.updateUvs()

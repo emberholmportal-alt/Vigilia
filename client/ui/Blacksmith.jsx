@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useGameStore } from '../store.js'
 import { isDurable, durabilityMax, RARITY_COLOR } from '../data/items.js'
 import { armorDefense, upgradeLevel } from '../data/stats.js'
+import ItemIcon from './ItemIcon.jsx'
+import { Gem, Sword, Shield } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
@@ -49,6 +51,7 @@ export default function Blacksmith() {
                 const pct = Math.max(0, Math.min(1, dur / max))
                 return (
                   <div className="smith-row" key={sl}>
+                    <span className="smith-ico" title={t.item(it)}><ItemIcon icon={it.icon} size={30} /></span>
                     <span className="smith-name" style={{ color: RARITY_COLOR[it.rarity] || '#f2ead6' }}>
                       {t.item(it)}{upgradeLevel(it) ? ` +${upgradeLevel(it)}` : ''} <em>{t.slot(sl)}</em>
                     </span>
@@ -65,7 +68,7 @@ export default function Blacksmith() {
 
           {tab === 'forge' && (
             <>
-              <div className="forge-hint">{t('forge_hint')} · 💎 {crystals}</div>
+              <div className="forge-hint">{t('forge_hint')} · <Gem /> {crystals}</div>
               {durables.length === 0 && <div className="smith-empty">{t('forge_none')}</div>}
               {durables.map(([sl, it]) => {
                 const up = upgradeLevel(it)
@@ -74,12 +77,13 @@ export default function Blacksmith() {
                 const can = !dmax && crystals >= c.crystals && gold >= c.gold
                 return (
                   <div className="forge-row" key={sl}>
+                    <span className="smith-ico" title={t.item(it)}><ItemIcon icon={it.icon} size={30} /></span>
                     <div className="forge-info">
                       <span className="smith-name" style={{ color: RARITY_COLOR[it.rarity] || '#f2ead6' }}>
                         {t.item(it)}{up ? ` +${up}` : ''} <em>{t.slot(sl)}</em>
                       </span>
                       <span className="forge-stat">
-                        {it.slot === 'main' ? '⚔' : '🛡'} {it.slot === 'main' ? '' : armorDefense(it)}
+                        {it.slot === 'main' ? <Sword /> : <Shield />} {it.slot === 'main' ? '' : armorDefense(it)}
                         {!dmax && <em> · {t('forge_cost', { c: c.crystals, g: c.gold })}</em>}
                       </span>
                     </div>

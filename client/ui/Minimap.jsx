@@ -8,7 +8,14 @@ export default function Minimap() {
   const mm = useGameStore((s) => s.minimap)
   const pt = useGameStore((s) => s.playerTile)
   const portals = useGameStore((s) => s.portalTiles)
+  const discovered = useGameStore((s) => s.discovered)
+  const npcs = useGameStore((s) => s.npcTiles)
+  const graves = useGameStore((s) => s.graveTiles)
   if (!mm) return null
+
+  // Sólo mostramos en el minimapa los portales que YA descubriste (pisaste su destino). Se
+  // actualiza solo: al pisar un portal nuevo, su zona entra en `discovered` y acá aparece.
+  const shownPortals = (portals || []).filter((p) => !p.to || (discovered && discovered[p.to]))
 
   // misma proyección iso que usa Game para el minimapa
   const proj = (x, y) => ({
@@ -21,9 +28,17 @@ export default function Minimap() {
     <div className="minimap" style={{ backgroundImage: `url(${UI}minimap.png)` }}>
       <div className="minimap-inner" style={{ aspectRatio: `${mm.w} / ${mm.h}` }}>
         <img src={mm.url} alt="mapa" />
-        {(portals || []).map((p, i) => {
+        {shownPortals.map((p, i) => {
           const pos = proj(p.x, p.y)
           return <span key={i} className="mm-portal" title={p.label} style={{ left: `${pos.left}%`, top: `${pos.top}%` }} />
+        })}
+        {(npcs || []).map((n, i) => {
+          const pos = proj(n.x, n.y)
+          return <span key={'n' + i} className={`mm-npc mm-${n.role}`} title={n.label} style={{ left: `${pos.left}%`, top: `${pos.top}%` }} />
+        })}
+        {(graves || []).map((g, i) => {
+          const pos = proj(g.x, g.y)
+          return <span key={'g' + i} className="mm-grave" style={{ left: `${pos.left}%`, top: `${pos.top}%` }} />
         })}
         <span className="mm-dot" style={{ left: `${me.left}%`, top: `${me.top}%` }} />
       </div>

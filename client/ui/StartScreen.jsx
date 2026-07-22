@@ -1,33 +1,159 @@
-// Pantalla de inicio. La atribución a Flare (CC-BY-SA 3.0) es OBLIGATORIA acá
-// además del CREDITS.md (ver CLAUDE.md).
+// Pantalla de inicio estilo Kintara: logo, contadores (online / mensuales), y dos acciones —
+// PLAY NOW (jugar) y SPECTATE (mirón). En online, además, conexión de billetera (Solana): la
+// cuenta es la wallet. Por ahora NO se exige ninguna moneda ($VEL todavía no existe).
+import { useState, useEffect } from 'react'
 import { useT } from './useT.js'
+import { net, ONLINE, WALLET_REQUIRED, fetchStats } from '../net/net.js'
+import { SERVERS, loadServerId, saveServerId, serverById } from '../net/servers.js'
+import { walletSignIn, loadSession, clearSession } from '../net/wallet.js'
+import { deviceAuth } from '../net/online.js'
+import HowToPlay from './HowToPlay.jsx'
+import Docs from './Docs.jsx'
+import Embers from './Embers.jsx'
+import { Globe, Plug, Eye } from './Icon.jsx'
 
 const LOGO = (import.meta.env.BASE_URL || '/') + 'velgrinlogo.png'
+const short = (a) => (a ? a.slice(0, 4) + '…' + a.slice(-4) : '')
 
-export default function StartScreen({ onEnter, onContinue, canContinue, loading }) {
+export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, loading }) {
   const t = useT()
+  const [wallet, setWallet] = useState(loadSession()?.pubkey || null)
+  const [serverId, setServerId] = useState(loadServerId())
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+  const [stats, setStats] = useState(null)
+  const [showGuide, setShowGuide] = useState(false)
+  const [showDocs, setShowDocs] = useState(false)
+
+  // Contadores en vivo (online / mensuales) desde el server.
+  useEffect(() => {
+    if (!ONLINE) return
+    let alive = true
+    const tick = async () => { const s = await fetchStats(); if (alive && s) setStats(s) }
+    tick()
+    const id = setInterval(tick, 15000)
+    return () => { alive = false; clearInterval(id) }
+  }, [])
+
+  // Asegura sesión de billetera (reanuda con el token o firma de nuevo). { ok, char } o { ok:false }.
+  async function ensureWallet() {
+    await net.connect(serverById(serverId).url)
+    const sess = loadSession()
+    if (sess?.token) {
+      const r = await net.resume(sess.token).catch(() => ({ ok: false }))
+      if (r.ok) { setWallet(sess.pubkey); return { ok: true, char: r.char } }
+    }
+    const r = await walletSignIn(net)
+    if (!r.ok) return { ok: false, error: r.error }
+    setWallet(r.pubkey)
+    return { ok: true, char: r.char }
+  }
+
+  async function connect() {
+    setBusy(true); setErr(null)
+    try { const r = await ensureWallet(); if (!r.ok) setErr(r.error === 'no-wallet' ? t('wallet_none') : t('wallet_fail')) }
+    catch { setErr(t('wallet_fail')) }
+    setBusy(false)
+  }
+  function disconnect() { clearSession(); setWallet(null) }
+  function chooseServer(id) { setServerId(id); saveServerId(id) }
+
+  // PLAY: en producción la billetera es OBLIGATORIA (un clic conecta+firma y entra). En dev/local
+  // se permite una cuenta de dispositivo (deviceAuth) para testear sin extensión de wallet.
+  async function handlePlay() {
+    if (!ONLINE) { onPlay(null); return }
+    setBusy(true); setErr(null)
+    try {
+      await net.connect(serverById(serverId).url)
+      let auth
+      if (WALLET_REQUIRED) {
+        auth = await ensureWallet()   // conecta + firma (o reanuda) — sin wallet no se juega
+        if (!auth.ok) { setBusy(false); setErr(auth.error === 'no-wallet' ? t('wallet_none') : t('wallet_fail')); return }
+      } else {
+        auth = await deviceAuth(net)  // dev/local: wallet si ya está, si no cuenta de dispositivo
+      }
+      setBusy(false)
+      if (auth.wallet) setWallet(auth.wallet)
+      onPlay(auth.ok ? auth.char : null)
+    } catch { setBusy(false); onPlay(null) }
+  }
+
   return (
-    <div className="start">
+    <div className="start menu-scene">
+      <Embers />
       <div className="start-inner">
         <img className="start-logo" src={LOGO} alt="Velgrim" />
         <p className="tagline">{t('start_tag')}</p>
-        {canContinue && (
-          <button className="enter" onClick={onContinue} disabled={loading}>
-            {loading ? t('loading') : t('start_continue')}
-          </button>
+
+        <div className="start-panel">
+        {ONLINE && stats && (
+          <div className="counters">
+            <span className="counter"><i className="dot on" /> <b>{stats.online}</b> {t('players_online')}</span>
+            <span className="counter"><b>{stats.monthly}</b> {t('players_monthly')}</span>
+          </div>
         )}
-        <button className={canContinue ? 'enter secondary' : 'enter'} onClick={onEnter} disabled={loading}>
-          {canContinue ? t('start_new') : (loading ? t('loading') : t('start_begin'))}
-        </button>
+
+        {ONLINE && (
+          <div className="server-select">
+            <div className="server-label">{t('server_label')}</div>
+            <div className="server-list">
+              {SERVERS.map((sv) => (
+                <button key={sv.id} className={'server-item' + (sv.id === serverId ? ' on' : '')} onClick={() => chooseServer(sv.id)}>
+                  <span className="server-name"><Globe /> {sv.name}</span>
+                  <span className="server-region">{sv.region}</span>
+                  {sv.id === serverId && stats && <span className="server-pop"><i className="dot on" /> {stats.online}</span>}
+                </button>
+              ))}
+            </div>
+            {SERVERS.length === 1 && <p className="server-soon">{t('server_soon')}</p>}
+          </div>
+        )}
+
+        {ONLINE && (
+          <div className="wallet-box">
+            {wallet ? (
+              <div className="wallet-on">
+                <span><i className="dot on" /> {t('wallet_connected')}: <b>{short(wallet)}</b></span>
+                <button className="wallet-disc" onClick={disconnect}><Plug /> {t('wallet_disconnect')}</button>
+              </div>
+            ) : (
+              <>
+                <button className="wallet-btn" onClick={connect} disabled={busy}>
+                  {busy ? t('wallet_connecting') : t('wallet_connect')}
+                </button>
+                <p className="wallet-hint">{WALLET_REQUIRED ? t('wallet_required_hint') : t('wallet_optional')}</p>
+              </>
+            )}
+            {err && <p className="wallet-err">{err}</p>}
+          </div>
+        )}
+
+        <div className="entry">
+          <button className="enter play-now" onClick={handlePlay} disabled={loading || busy}>
+            {busy ? t('wallet_connecting') : loading ? t('loading') : t('play_now')}
+          </button>
+          <button className="enter secondary" onClick={onSpectate} disabled={loading}>
+            <Eye /> {t('spectate')}
+          </button>
+        </div>
+        {!ONLINE && canContinue && <button className="new-link" onClick={onNew}>{t('start_new')}</button>}
+
+        <div className="htp-links">
+          <button className="htp-link" onClick={() => setShowGuide(true)}>{t('how_to_play')}</button>
+          <button className="htp-link" onClick={() => setShowDocs(true)}>{t('docs_link')}</button>
+        </div>
+        </div>
+
         <p className="attribution">
-          Arte, sprites, tilesets y mapas: <b>Flare — Empyrean Campaign</b>,
-          © Flare Team, bajo licencia CC-BY-SA 3.0.
+          {t('start_credit')}
           <br />
           <a href="https://github.com/flareteam/flare-game" target="_blank" rel="noreferrer">
             github.com/flareteam/flare-game
           </a>
         </p>
       </div>
+      {showGuide && <HowToPlay onClose={() => setShowGuide(false)} />}
+      {showDocs && <Docs onClose={() => setShowDocs(false)} />}
     </div>
   )
 }

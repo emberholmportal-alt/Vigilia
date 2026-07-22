@@ -53,14 +53,14 @@ export function screenVecToDir(vx, vy) {
   return OCTANT_TO_DIR[oct]
 }
 
-// Cache de baseTextures de capas de avatar (por nombre de capa).
+// Cache de baseTextures por SRC (no por nombre): distintos cuerpos comparten nombres de capa
+// (male/female/leather_chest) pero apuntan a PNGs distintos; cachear por nombre los colisionaría.
 const texCache = new Map()
-async function loadLayerSource(manifest, name) {
-  if (texCache.has(name)) return texCache.get(name)
-  const def = manifest.layers[name]
+async function loadLayerSource(def) {
   if (!def) return null
+  if (texCache.has(def.src)) return texCache.get(def.src)
   const p = Assets.load(BASE + 'assets/' + def.src).then((t) => t.source)
-  texCache.set(name, p)
+  texCache.set(def.src, p)
   return p
 }
 
@@ -87,6 +87,12 @@ export class Paperdoll {
       this.sprites[type] = s
     }
 
+    // Aspecto por raza: tinte de piel + capa de cabeza (Flare no tiene cuerpos por raza).
+    this.skinTint = 0xffffff
+    this.defaultHead = 'head_short'
+    // Cuerpo elegido (male/female/female_dark). Resuelve cada capa a la versión de ese cuerpo.
+    this.body = 'male'
+
     // Estado actual por tipo: { layerName, source, def(anims/cell) }
     this.layers = {}
     this.equip = {} // slot -> gfx (nombre de capa) o null
@@ -99,24 +105,60 @@ export class Paperdoll {
     this._lastKey = ''
   }
 
+  // Cuerpo elegido. Se setea ANTES de setEquipment.
+  setBody(body) { this.body = (body === 'female' || body === 'female_dark') ? body : 'male' }
+
+  // Resuelve una capa (por nombre) al def del cuerpo actual, con fallback: female_dark → female →
+  // male (layers). Así female_dark reusa el gear de female y ambas caen a male si les falta la capa.
+  _def(name) {
+    if (!name) return null
+    const b = this.manifest.bodies || {}
+    if (this.body === 'female_dark' && b.female_dark && b.female_dark[name]) return b.female_dark[name]
+    if ((this.body === 'female' || this.body === 'female_dark') && b.female && b.female[name]) return b.female[name]
+    return this.manifest.layers[name] || null
+  }
+
+  // Aspecto por raza: tinte de piel (para las capas base del cuerpo) + capa de cabeza. Se setea
+  // ANTES de setEquipment. Re-tiñe la piel visible si ya hay equipo cargado.
+  setRace(app = {}) {
+    this.skinTint = app.tint || 0xffffff
+    this.defaultHead = app.head || 'head_short'
+    for (const type of TYPES) {
+      const s = this.sprites[type]
+      if (s && !s.destroyed) s.tint = this.equip[type] ? 0xffffff : this.skinTint
+    }
+  }
+
   // equip: { chest, legs, hands, feet, head, main, off } con nombres de capa (gfx) o null.
   async setEquipment(equip) {
     this.equip = { ...equip }
     // Resolver capa efectiva por tipo (equipada o base) y cargar sus fuentes.
     const jobs = TYPES.map(async (type) => {
-      const name = this.equip[type] || DEFAULT_LAYER[type]
-      if (!name || !this.manifest.layers[name]) {
+      // Cabeza base: los cuerpos femeninos usan head_long (no tienen head_short/bald); el male usa
+      // la cabeza de la raza. Los cascos equipados van por su nombre (con variante de cuerpo).
+      const headDefault = this.body !== 'male' ? 'head_long' : this.defaultHead
+      const name = this.equip[type] || (type === 'head' ? headDefault : DEFAULT_LAYER[type])
+      const def = this._def(name)
+      if (!def) {
         this.layers[type] = null
         return
       }
-      const source = await loadLayerSource(this.manifest, name)
-      const def = this.manifest.layers[name]
+      const source = await loadLayerSource(def)
       // Textura propia por sprite; mutamos su frame por tick.
       const s = this.sprites[type]
+      // El dueño (p. ej. un jugador remoto) puede haberse destruido mientras cargábamos la capa
+      // (setEquipment corre sin await del constructor). Si el sprite ya está destruido, cortamos:
+      // asignarle textura sería un use-after-free y crearía un wrapper que nadie liberaría.
+      if (!s || s.destroyed) return
       if (!s.texture || s._layerName !== name) {
+        // Al recambiar la capa (cambio de equipo), liberar el wrapper anterior antes de crear el
+        // nuevo. El guard `_layerName` asegura que sólo destruimos wrappers propios (no EMPTY).
+        if (s._layerName && s.texture) s.texture.destroy(false)
         s.texture = new Texture({ source, frame: new Rectangle(0, 0, def.cell[0], def.cell[1]) })
         s._layerName = name
       }
+      // Tinte de piel: sólo las capas base del cuerpo (slot sin equipo); el equipo va sin teñir.
+      s.tint = this.equip[type] ? 0xffffff : this.skinTint
       this.layers[type] = { name, def }
     })
     await Promise.all(jobs)
@@ -238,5 +280,19 @@ export class Paperdoll {
       s.texture.updateUvs()
       s.visible = true
     }
+  }
+
+  // Libera los wrappers de Texture propios de cada capa (no la source compartida). Se usa al
+  // destruir al dueño (jugador remoto que se va) sin destruir la vista (la maneja el caller).
+  freeTextures() {
+    for (const type of TYPES) {
+      const s = this.sprites[type]
+      if (s && s._layerName && s.texture) { s.texture.destroy(false); s._layerName = '' }
+    }
+  }
+
+  destroy() {
+    this.freeTextures()
+    this.view.destroy({ children: true })
   }
 }

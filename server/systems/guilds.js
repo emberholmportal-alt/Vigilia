@@ -1,0 +1,276 @@
+// Gremios (WORLD.md): estructura persistente con la que el mundo interactúa, no un chat con
+// nombre. Fundar cuesta 500 de oro; el nivel sube donando oro; el ranking es público.
+//
+// Autoridad del oro: la fuente de verdad del oro es el blob del personaje persistido. El server
+// lo lee/descuenta acá (getCharacterGold / setCharacterGold), así fundar y donar son
+// server-autoritativos: el cliente guarda su estado, pide la operación y el server confirma el
+// oro resultante. El cliente adopta ese oro.
+import * as db from '../db/db.js'
+
+export const FOUND_COST = 500
+
+// Umbrales de oro DONADO acumulado por nivel (nivel 1 al fundar; cap 5). Ver ventajas en WORLD.md:
+// n1 +oro de botín · n2 +defensa a todos · n3 +XP compartida · n4 Depósito · n5 estandarte.
+const LEVEL_THRESHOLDS = [0, 1500, 5000, 12000, 30000] // índice 0 => nivel 1
+export const MAX_LEVEL = LEVEL_THRESHOLDS.length
+
+export function levelForDonated(donated) {
+  let lvl = 1
+  for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) if (donated >= LEVEL_THRESHOLDS[i]) lvl = i + 1
+  return Math.min(lvl, MAX_LEVEL)
+}
+// Oro que falta para el siguiente nivel (0 si está al tope).
+export function nextThreshold(level) {
+  return level >= MAX_LEVEL ? null : LEVEL_THRESHOLDS[level]
+}
+
+// ---------- Contrato semanal (WORLD.md) ----------
+// Un objetivo compartido del gremio que se renueva cada semana. Determinista: la misma semana
+// da el mismo contrato para todos los gremios (como las dailies). El progreso es POR gremio: cada
+// miembro que mata enemigos de la categoría suma al contador común. Al completarlo, el gremio
+// recibe una recompensa colectiva (oro al pozo -> sube el nivel).
+export const NEED_DEPOSIT_LEVEL = 4   // el Depósito se desbloquea a nivel 4 (WORLD.md)
+const CONTRACT_REWARD = 2500          // oro al pozo del gremio al completar (empuja el nivel)
+
+const CONTRACTS = [
+  { id: 'undead', target: 120, match: (c) => /zombie|undead|skeleton|ghoul|ghost|wraith/i.test(c || '') },
+  { id: 'goblin', target: 150, match: (c) => /goblin/i.test(c || '') },
+  { id: 'beast',  target: 100, match: (c) => /wolf|bear|spider|antlion|rat|bat|beast|slime/i.test(c || '') },
+]
+
+// Clave de semana ISO (año-semana). Usa la fecha del server (Node). Todos los gremios comparten
+// la misma clave, así el contrato es el mismo para todos esa semana.
+function weekKey(d = new Date()) {
+  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+  const day = dt.getUTCDay() || 7
+  dt.setUTCDate(dt.getUTCDate() + 4 - day)                       // jueves de esta semana
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1))
+  const week = Math.ceil(((dt - yearStart) / 86400000 + 1) / 7)
+  return dt.getUTCFullYear() + '-W' + String(week).padStart(2, '0')
+}
+function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) } return h >>> 0 }
+
+// Contrato de ESTA semana (mismo para todos).
+export function weeklyContract() {
+  const wk = weekKey()
+  const c = CONTRACTS[hashStr(wk) % CONTRACTS.length]
+  return { week: wk, id: c.id, target: c.target }
+}
+function contractMatches(category) {
+  const wk = weekKey()
+  const c = CONTRACTS[hashStr(wk) % CONTRACTS.length]
+  return c.match(category)
+}
+// Estado del contrato para un gremio (progreso de ESTA semana; si la guardada difiere, 0).
+function contractStatus(g) {
+  const wc = weeklyContract()
+  const progress = g.contract_week === wc.week ? Math.min(wc.target, g.contract_progress || 0) : 0
+  return { id: wc.id, target: wc.target, progress, done: progress >= wc.target, reward: CONTRACT_REWARD }
+}
+
+// Cache en memoria de a qué gremio pertenece cada cuenta (para no pegarle a la DB en cada kill).
+// Se invalida al fundar/unirse/salir.
+const guildCache = new Map()   // accountId -> guildId | null
+export function invalidateGuildCache(accountId) { guildCache.delete(accountId) }
+async function cachedGuildId(accountId) {
+  if (guildCache.has(accountId)) return guildCache.get(accountId)
+  const mem = await db.getGuildMembership(accountId)
+  const id = mem?.guild_id || null
+  guildCache.set(accountId, id)
+  return id
+}
+
+// Acredita una kill al contrato del gremio del matador (lo llama la simulación de combate).
+// No await en el hot-path: fire-and-forget con catch. Devuelve el resultado (o null).
+export async function onKill(accountId, category) {
+  if (!accountId || !contractMatches(category)) return null
+  const guildId = await cachedGuildId(accountId)
+  if (!guildId) return null
+  const wc = weeklyContract()
+  const before = (await db.getGuild(guildId))?.contract_progress || 0
+  const wasWeek = (await db.getGuild(guildId))?.contract_week
+  const progress = await db.bumpContract(guildId, wc.week, 1)
+  if (progress == null) return null
+  // ¿recién se completó? (cruzó el target esta semana) -> recompensa colectiva.
+  const prevInWeek = wasWeek === wc.week ? before : 0
+  if (prevInWeek < wc.target && progress >= wc.target) {
+    const g = await db.getGuild(guildId)
+    const newDonated = (Number(g.donated) || 0) + CONTRACT_REWARD
+    await db.addGuildDonation(guildId, CONTRACT_REWARD, levelForDonated(newDonated))
+    return { guildId, completed: true }
+  }
+  return { guildId, progress }
+}
+
+// Vista pública de un gremio (lo que ve el cliente).
+function pubGuild(g) {
+  if (!g) return null
+  return {
+    id: g.id, name: g.name, tag: g.tag, color: g.color || '#c9a227',
+    level: g.level, donated: Number(g.donated) || 0,
+    next: nextThreshold(g.level),
+    contract: contractStatus(g),
+  }
+}
+
+function validName(name) {
+  const n = String(name || '').trim()
+  if (n.length < 3 || n.length > 24) return null
+  if (!/^[\p{L}0-9 ''.-]+$/u.test(n)) return null
+  return n
+}
+function validTag(tag) {
+  const t = String(tag || '').trim().toUpperCase()
+  return /^[A-Z0-9]{3}$/.test(t) ? t : null
+}
+function validColor(color) {
+  return /^#[0-9a-fA-F]{6}$/.test(String(color || '')) ? color : '#c9a227'
+}
+
+// Info de gremio + miembros (para el panel). guildId opcional: si no, usa el del jugador.
+export async function info(accountId, guildId) {
+  const mem = await db.getGuildMembership(accountId)
+  const id = guildId || mem?.guild_id
+  if (!id) return { ok: true, guild: null, mine: null, members: [] }
+  const g = await db.getGuild(id)
+  if (!g) return { ok: true, guild: null, mine: null, members: [] }
+  const members = await db.guildMembers(id)
+  return { ok: true, guild: pubGuild(g), members, mine: mem?.guild_id === id ? (mem.role || 'member') : null }
+}
+
+// Ranking público.
+export async function ranking(limit = 20) {
+  const rows = await db.listGuilds(limit)
+  return { ok: true, guilds: rows.map((g) => ({ ...pubGuild(g), members: g.members | 0 })) }
+}
+
+// Fundar un gremio. Cobra FOUND_COST del oro persistido del fundador.
+export async function create(accountId, { name, tag, color }) {
+  if (await db.getGuildMembership(accountId)) return { ok: false, error: 'ya pertenecés a un gremio' }
+  const n = validName(name); if (!n) return { ok: false, error: 'nombre inválido (3 a 24 caracteres)' }
+  const t = validTag(tag); if (!t) return { ok: false, error: 'la sigla debe ser 3 letras o números' }
+  const c = validColor(color)
+  if (await db.findGuildByName(n)) return { ok: false, error: 'ya existe un gremio con ese nombre' }
+  if (await db.findGuildByTag(t)) return { ok: false, error: 'ya existe un gremio con esa sigla' }
+  // Cobra el costo de forma atómica (lee+descuenta bajo el lock de la cuenta): no se puede fundar
+  // dos gremios con el mismo oro por dos pedidos simultáneos.
+  const paid = await db.updateCharacterGold(accountId, (gold) => gold >= FOUND_COST ? gold - FOUND_COST : null)
+  if (!paid.ok) return { ok: false, error: `necesitás ${FOUND_COST} de oro para fundar` }
+  const g = await db.createGuild({ name: n, tag: t, color: c, founder: accountId })
+  await db.setGuildMembership(accountId, g.id, 'founder')
+  invalidateGuildCache(accountId)
+  return { ok: true, guild: pubGuild(g), gold: paid.gold, role: 'founder' }
+}
+
+// Unirse a un gremio por id o sigla.
+export async function join(accountId, { guildId, tag }) {
+  if (await db.getGuildMembership(accountId)) return { ok: false, error: 'ya pertenecés a un gremio' }
+  const g = guildId ? await db.getGuild(guildId) : await db.findGuildByTag(tag)
+  if (!g) return { ok: false, error: 'ese gremio no existe' }
+  await db.setGuildMembership(accountId, g.id, 'member')
+  invalidateGuildCache(accountId)
+  return { ok: true, guild: pubGuild(g), role: 'member' }
+}
+
+// Salir del gremio. Si era el último miembro, el gremio se disuelve.
+export async function leave(accountId) {
+  const mem = await db.getGuildMembership(accountId)
+  if (!mem) return { ok: false, error: 'no estás en un gremio' }
+  await db.removeGuildMembership(accountId)
+  invalidateGuildCache(accountId)
+  const left = await db.guildMemberCount(mem.guild_id)
+  return { ok: true, disbanded: left === 0 }
+}
+
+// Donar oro al gremio: descuenta del oro persistido y sube el nivel según el total donado.
+export async function donate(accountId, amount) {
+  const amt = Math.floor(Number(amount) || 0)
+  if (amt <= 0) return { ok: false, error: 'monto inválido' }
+  const mem = await db.getGuildMembership(accountId)
+  if (!mem) return { ok: false, error: 'no estás en un gremio' }
+  // Descuento del personaje + crédito al gremio en UNA transacción (dos filas): un crash en el
+  // medio ya no puede perder ni duplicar el oro. (OJO: no evita que un autosave del cliente con
+  // oro viejo pise el descuento — eso es economía server-autoritativa, pendiente con la $VEL.)
+  const r = await db.txDonate(accountId, mem.guild_id, amt, levelForDonated)
+  if (!r.ok) return r
+  return { ok: true, guild: pubGuild(r.guild), gold: r.gold, leveledUp: r.leveledUp }
+}
+
+// ---------- Depósito del Gremio (banco compartido, desbloquea a nivel 4) ----------
+const DEPOSIT_MAX_ITEMS = 40
+
+// Chequea membresía + nivel; devuelve { g, mem } o { error }.
+async function depositGuard(accountId) {
+  const mem = await db.getGuildMembership(accountId)
+  if (!mem) return { error: 'no estás en un gremio' }
+  const g = await db.getGuild(mem.guild_id)
+  if (!g) return { error: 'ese gremio no existe' }
+  if (g.level < NEED_DEPOSIT_LEVEL) return { error: `el Depósito se desbloquea a nivel ${NEED_DEPOSIT_LEVEL}` }
+  return { g, mem }
+}
+
+// Vista del depósito (oro + ítems) para el panel.
+export async function depositView(accountId) {
+  const gd = await depositGuard(accountId)
+  if (gd.error) return { ok: false, error: gd.error }
+  const dep = await db.getDeposit(gd.g.id)
+  return { ok: true, deposit: { gold: Number(dep.gold) || 0, items: dep.items || [] } }
+}
+
+// Depositar oro: sale del oro persistido del personaje y entra al pozo del depósito. Bajo el lock
+// del gremio: dos miembros depositando a la vez no se pisan la fila del depósito compartido.
+export async function depositGold(accountId, amount) {
+  const amt = Math.floor(Number(amount) || 0)
+  if (amt <= 0) return { ok: false, error: 'monto inválido' }
+  const gd = await depositGuard(accountId)
+  if (gd.error) return { ok: false, error: gd.error }
+  // Personaje -> banco del gremio en una transacción (sin pérdida por crash entre las dos filas).
+  return db.txDepositGold(accountId, gd.g.id, amt)
+}
+
+// Retirar oro: sale del depósito y vuelve al oro del personaje. Bajo el lock del gremio para que
+// dos retiros simultáneos no lean el mismo saldo y dupliquen el oro del pozo.
+export async function withdrawGold(accountId, amount) {
+  const amt = Math.floor(Number(amount) || 0)
+  if (amt <= 0) return { ok: false, error: 'monto inválido' }
+  const gd = await depositGuard(accountId)
+  if (gd.error) return { ok: false, error: gd.error }
+  // Banco del gremio -> personaje en una transacción (sin pérdida por crash entre las dos filas).
+  return db.txWithdrawGold(accountId, gd.g.id, amt)
+}
+
+// Depositar un ítem: el cliente manda el ítem (dueño de su inventario); el server lo guarda en
+// el depósito compartido (fuente de verdad del stash) y confirma. El cliente lo saca de su bolsa.
+export async function depositItem(accountId, item) {
+  if (!item || typeof item !== 'object') return { ok: false, error: 'ítem inválido' }
+  const gd = await depositGuard(accountId)
+  if (gd.error) return { ok: false, error: gd.error }
+  return db.withGuildLock(gd.g.id, async () => {
+    const dep = await db.getDeposit(gd.g.id)
+    const items = dep.items || []
+    if (items.length >= DEPOSIT_MAX_ITEMS) return { ok: false, error: 'el depósito está lleno' }
+    items.push(item)
+    const nd = { gold: Number(dep.gold) || 0, items }
+    await db.setDeposit(gd.g.id, nd)
+    return { ok: true, deposit: nd }
+  })
+}
+
+// Retirar un ítem por índice: el server lo saca del depósito y lo devuelve; el cliente lo mete
+// en su inventario. Autoritativo sobre el stash compartido (no se puede duplicar).
+export async function withdrawItem(accountId, index) {
+  const i = index | 0
+  const gd = await depositGuard(accountId)
+  if (gd.error) return { ok: false, error: gd.error }
+  // Bajo el lock del gremio: dos retiros del mismo índice a la vez no pueden llevarse el ítem
+  // duplicado (leerían el mismo array antes de escribir).
+  return db.withGuildLock(gd.g.id, async () => {
+    const dep = await db.getDeposit(gd.g.id)
+    const items = dep.items || []
+    if (i < 0 || i >= items.length) return { ok: false, error: 'ese ítem no está' }
+    const [item] = items.splice(i, 1)
+    const nd = { gold: Number(dep.gold) || 0, items }
+    await db.setDeposit(gd.g.id, nd)
+    return { ok: true, item, deposit: nd }
+  })
+}

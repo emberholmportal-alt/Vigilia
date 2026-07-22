@@ -1,7 +1,7 @@
 // Orquestador del juego (Fase 1): Pixi Application + loop.
 // React NO entra acá: solo lee el store que este loop actualiza.
 
-import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js'
+import { Application, Assets, Container, Graphics, Point, Rectangle, Sprite, Text, Texture } from 'pixi.js'
 import { Iso } from './iso.js'
 import { loadWorld } from './assets.js'
 import { Grid } from './Pathfinding.js'
@@ -17,10 +17,19 @@ import { ABILITY_BY_ID } from '../data/abilities.js'
 import { tt, zoneName, getLang, itemName, npcName, npcLines } from '../i18n.js'
 import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
+import { ZONE_LORE } from '../data/zonelore.js'
 import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCousin, enemyAbility } from '../data/bestiary.js'
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
+import { Weather, weatherFor } from './Weather.js'
+import { DayNight } from './DayNight.js'
+import { Fauna } from './Fauna.js'
 import { GroundItem, loadIcons, iconsTexture } from './GroundItem.js'
+import { Grave } from './Grave.js'
+import { StashChest } from './StashChest.js'
+import { RemotePlayer } from './RemotePlayer.js'
+import { net, ONLINE } from '../net/net.js'
+import { deviceAuth } from '../net/online.js'
 import { rollLoot } from '../../shared/loot.js'
 import { rollMonsterDrop } from '../data/drops.js'
 import { itemById, RARITY_COLOR } from '../data/items.js'
@@ -71,6 +80,37 @@ export class Game {
     app.stage.addChild(this.fade)
     this._fadeAlpha = 0
 
+    // Clima/ambiente en pantalla (lluvia, niebla, brasas…). Vive en el stage — sobre el mundo,
+    // debajo de la cortina de viaje — así sobrevive al cambio de mapa. Se le fija el tipo por zona.
+    this.weather = new Weather(app.renderer)
+    this.weather.layer.zIndex = 5e6
+    app.stage.addChild(this.weather.layer)
+    this.weather.resize(app.screen.width, app.screen.height)
+
+    // Ciclo día/noche: cortina de color sobre el mundo (debajo del clima y del fundido).
+    this.dayNight = new DayNight()
+    this.dayNight.rect.zIndex = 4.9e6
+    app.stage.addChild(this.dayNight.rect)
+
+    // Luz cálida que acompaña al personaje de noche (antorcha/linterna): un halo radial en espacio
+    // de pantalla, POR ENCIMA de la cortina, con mezcla aditiva para "abrir" la oscuridad alrededor
+    // del jugador mientras camina. De día queda apagado. (Estilo Diablo/roguelike.)
+    this.playerLight = new Sprite(makeLightTexture())
+    this.playerLight.anchor.set(0.5)
+    this.playerLight.blendMode = 'add'
+    this.playerLight.eventMode = 'none'
+    this.playerLight.visible = false
+    this.playerLight.zIndex = 4.95e6
+    this.playerLight.scale.set(1.35)
+    this._lightPt = new Point()
+    app.stage.addChild(this.playerLight)
+
+    // Fauna: bandadas de día, murciélagos de noche. Sobre el clima, debajo del fundido.
+    this.fauna = new Fauna(app.renderer)
+    this.fauna.layer.zIndex = 5.1e6
+    app.stage.addChild(this.fauna.layer)
+    this.fauna.resize(app.screen.width, app.screen.height)
+
     await this._buildWorld(mapName)
     if (this.destroyed) { app.destroy(true); return }
 
@@ -80,6 +120,7 @@ export class Game {
     window.addEventListener('resize', this._onResize)
     this._unsub = this.store.onEquipmentChange((equip) => {
       if (this.player) this.player.setEquipment(equipToGfx(equip))
+      if (this._online && !this._spectator) net.setGfx(equipToGfx(equip))   // que los demás vean mi gear
     })
 
     if (import.meta.env.DEV) window.__vigilia = this
@@ -114,11 +155,8 @@ export class Game {
     const renderer = new MapRenderer(iso, world.map, world.tileset)
     this.renderer = renderer
 
-    // Atlas del tileset en un canvas para leer alpha por-pixel (oclusión precisa).
-    this._masks = new Map()
+    // Alpha por-tile de la oclusión de edificios (atenuar los que tapan al jugador).
     this._occAlpha = new Map()
-    this._atlasCtx = null
-    this._loadOcclusionAtlas(world.tileset.atlasSrc)
 
     // Zoom consistente entre mapas: apuntamos a un ancho de tile en pantalla parejo
     // (~83px, el de Triston) sin importar si el tileset trae tiles de 64 o 96px.
@@ -145,14 +183,26 @@ export class Game {
       ? spawnOverride
       : hubOrCentralSpawn(mapName, grid, world.map)
     this._spawn = spawn
+    this._manifest = world.manifest   // para spawnear jugadores remotos / invocaciones
     const player = new Player(iso, grid, world.manifest, spawn.x, spawn.y)
     player.view.scale.set(eScale * (PLAYER_SCALE[mapName] || 1))
     this._playerScale = eScale * (PLAYER_SCALE[mapName] || 1)
     renderer.objectLayer.addChild(player.view)
     this.player = player
-    player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'))
-    this._nameLevel = this.store.getPlayerLevel()
-    await player.setEquipment(equipToGfx(this.store.getEquipment()))
+    this.remotes = new Map()          // id -> RemotePlayer (otros jugadores en este mapa)
+    // Modo mirón: no controlás un personaje ni interactuás; sólo ves a los demás y recorrés el
+    // pueblo con la cámara. Ocultamos tu avatar y la cámara sigue un punto libre (tap para mover).
+    this._spectator = this.store.isSpectator()
+    if (this._spectator) {
+      player.view.visible = false
+      this._panKeys = new Set()   // teclas de pan sostenidas (WASD / flechas)
+    } else {
+      player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'))
+      this._nameLevel = this.store.getPlayerLevel()
+      player.setBody(this.store.getBody())              // cuerpo elegido (male/female/female_dark)
+      player.setRace(this.store.getRaceAppearance())    // tinte de piel + cabeza según la raza (antes del equipo)
+      await player.setEquipment(equipToGfx(this.store.getEquipment()))
+    }
 
     // NPCs de la plaza.
     this.npcs = []
@@ -166,22 +216,43 @@ export class Game {
       const ok = await npc.load()
       if (this.destroyed) return
       if (!ok) continue
-      npc.view.scale.set(eScale)
+      npc.view.scale.set(eScale * (def.scale || 1))   // los sprites HERESY son chicos: se agrandan
       renderer.objectLayer.addChild(npc.view)
-      grid.blocked[y * grid.w + x] = 1
+      // El nombre va a la capa de etiquetas (por encima de los edificios), en coords de mundo,
+      // para que ningún edificio lo tape. El NPC no se mueve, así que se posiciona una vez.
+      if (npc.nameText) {
+        const nt = npc.nameText, headY = nt.y
+        npc.view.removeChild(nt)
+        nt.x = npc.view.x; nt.y = npc.view.y + headY * npc.view.scale.y
+        nt.zIndex = 2e6
+        renderer.labelLayer.addChild(nt)
+      }
+      if (!def.critter) grid.blocked[y * grid.w + x] = 1   // los animales no bloquean el paso
       npc.onTap((n) => this._talkTo(n))
       this.npcs.push(npc)
     }
+    this._publishNpcMarkers()
 
     await this._buildDecorations(renderer, iso, world.map, grid)
 
     await loadIcons()
+    // Conexión al server ANTES de poblar el mundo: así sabemos si spawnear del server o local.
+    // Si el server no responde a tiempo, quedamos en modo local (single-player) — el mundo NO
+    // queda vacío. Sólo corre de verdad la primera vez (guardado por _onlineInit).
+    if (ONLINE) await this._initOnline()
     this.groundItems = []
     this._pendingChest = null
+    this._pendingPickup = null
     this._buildChests(renderer, iso, world.map, grid)
+    // Barriles/cajas rompibles: clutter destructible que suelta algo de botín. Instanciado por
+    // jugador (no compartido) para no meter netcode: andan igual offline y online, en todo mapa.
+    this.barrels = []
+    this._pendingBarrel = null
+    await this._buildBarrels(renderer, iso, world.map, grid, spawn)
 
     // Enemigos + estado de combate.
     this.enemies = []
+    this._netEnemies = new Map()   // eid -> Enemy (enemigos autoritativos del servidor)
     this._floaters = []
     this._projectiles = []
     this._target = null
@@ -194,8 +265,17 @@ export class Game {
     // Élite del día (misión Contrato): aparece SÓLO en su zona mientras el contrato siga activo.
     await this._spawnContractElite(renderer, grid, world.manifest, spawn, mapName)
 
+    // Tumbas: si moriste en esta zona, tu carga te espera acá para recuperarla.
+    this.graves = []
+    this._spawnGraves(renderer, mapName)
+
+    // Alijo personal: sólo en el pueblo. Cofre privado (lo ve/accede sólo su dueño).
+    this.stashChest = null
+    this._spawnStashChest(renderer, grid, spawn, mapName)
+
     // Nodos de recursos (hierbas + vetas de cristal) para juntar/minar.
     this.nodes = []
+    this._netNodes = new Map()   // nid -> ResourceNode (nodos autoritativos del servidor)
     this._pendingNode = null
     this._spawnNodes(renderer, iso, world.map, grid, spawn, mapName)
 
@@ -205,16 +285,27 @@ export class Game {
     const sc = iso.toWorld(spawn.x, spawn.y)
     this.particles.addEmitter({
       x: sc.x, y: sc.y - 24, rx: iso.wHalf * 11, ry: iso.hHalf * 11,
-      rate: 11, tint: 0xffe08a, vy: -4, spread: 5, life: 3.6, size: 1,
+      rate: 3.5, tint: 0xffe08a, vy: -4, spread: 5, life: 3.4, size: 0.9,
     })
     for (const npc of this.npcs) {
-      if (!npc.def.landmark) continue
+      if (!npc.def.landmark || npc.def.noParticles) continue   // el obelisco va sin partículas mágicas
       const w = iso.toWorld(npc.tx, npc.ty)
       const tint = npc.def.glow || GLOW_TINT[npc.def.sprite] || 0xffcf5a
       this.particles.addEmitter(npc.def.portal
         ? { x: w.x, y: w.y - 34, rx: 7, ry: 5, rate: 16, tint, vy: -30, spread: 6, life: 2.2, size: 1.1 }
         : { x: w.x, y: w.y - 30, rx: 9, ry: 6, rate: 9, tint, vy: -20, spread: 5, life: 1.8, size: 0.9 })
     }
+    // (El fuego de la fragua se hará como decoración animada colocada sobre un brasero/hornalla,
+    // no como partículas sobre el NPC del herrero — quedaba como si se estuviera quemando.)
+
+    // Clima de la zona (por bioma o mapa): brasas en el pueblo, niebla en la ciénaga, nieve en
+    // los llanos helados, hojas en el campo, polvo en las cuevas.
+    if (this.weather) this.weather.set(weatherFor(mapName, world.map.tileset))
+
+    // Día/noche y fauna sólo al aire libre (una cueva no tiene cielo ni se oscurece de noche).
+    const OUTDOOR = new Set(['tileset_grassland', 'tileset_snowplains', 'tileset_triston'])
+    this._outdoor = OUTDOOR.has(world.map.tileset)
+    if (this.dayNight) this.dayNight.rect.visible = this._outdoor
 
     // Portales del mapa (viaje entre zonas). Precargamos el pad de teletransporte.
     const BASE = import.meta.env.BASE_URL || '/'
@@ -233,8 +324,13 @@ export class Game {
     this.store.setSafeZone(this._safeZone)
     this.store.setMinimap(this._buildMinimap(world.map))
     this.store.logMessage({ channel: 'mundo', text: tt('arrived_at', { zone: title }) })
-    // Llegar a una zona la descubre como waypoint (llegás donde apareciste).
-    this.store.discoverZone(mapName, spawn.x, spawn.y, title)
+    // Llegar a una zona la descubre como waypoint (llegás donde apareciste). Devuelve true si es
+    // la PRIMERA vez: ahí tiramos la línea de lore de la zona (una sola vez, en tono de mundo).
+    const firstTime = this.store.discoverZone(mapName, spawn.x, spawn.y, title)
+    if (firstTime) {
+      const lore = ZONE_LORE[mapName]
+      if (lore) this.store.logMessage({ channel: 'mundo', text: lore[getLang()] || lore.en })
+    }
     this._refreshWaypoints()
     // Quest "Los Tres Nombres": ciertas ruinas revelan un nombre olvidado al llegar.
     const revealed = this.store.revealForZone(mapName)
@@ -243,6 +339,153 @@ export class Game {
       this.store.logMessage({ channel: 'sistema', text: tt('name_found', { name: revealed }) })
     }
     this._loading = false
+
+    // Online: conectar (una vez) y anunciar el mapa actual para ver a otros jugadores.
+    if (ONLINE) this._enterOnlineMap(mapName, spawn)
+  }
+
+  // Conecta al servidor la primera vez y engancha los eventos de presencia; luego, en cada
+  // mapa, anuncia dónde estás (join) para recibir a los demás de esa sala.
+  // Conecta al servidor UNA vez, CON TIMEOUT: si el server no responde a tiempo (Render dormido,
+  // caído o sin desplegar), NO nos colgamos ni dejamos el mundo vacío — seguimos en modo local
+  // (single-player) y el juego spawnea enemigos/cofres/nodos por su cuenta. Un éxito tardío se
+  // ignora (this._netGaveUp) para no mezclar el mundo local con el del servidor.
+  async _initOnline() {
+    if (this._onlineInit) return
+    this._onlineInit = true
+    try {
+      const ok = await Promise.race([
+        this._doConnectAndWire(),
+        new Promise((res) => setTimeout(() => { this._netGaveUp = true; res(false) }, 4500)),
+      ])
+      if (!ok) this.store.logMessage({ channel: 'sistema', text: tt('online_off') })
+    } catch { this.store.logMessage({ channel: 'sistema', text: tt('online_off') }) }
+  }
+
+  // Establece la conexión y engancha TODOS los eventos de presencia + combate autoritativo.
+  async _doConnectAndWire() {
+    await net.connect()
+    const auth = await deviceAuth(net)
+    if (!auth.ok || this._netGaveUp) return false
+    this._online = true
+    net.on('present', (m) => this._onPresent(m))
+    net.on('join', (m) => this._addRemote(m.player))
+    net.on('move', (m) => { const r = this.remotes?.get(m.id); if (r) r.setTarget(m.x, m.y, m.dir) })
+    net.on('leave', (m) => this._removeRemote(m.id))
+    net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
+    net.on('gfx', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGfx(m.gfx) })   // gear de otro jugador
+    net.on('php', (m) => { const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax) })   // vida de otro jugador
+    net.on('plvl', (m) => { const r = this.remotes?.get(m.id); if (r) r.level = m.level })          // nivel de otro jugador
+    // Reconexión (clave en móvil): al caerse la red, net reintenta con backoff; al reabrir
+    // el socket, re-autenticamos (resume) y reconstruimos el mapa actual (snapshots frescos).
+    net.on('close', () => this.store.logMessage({ channel: 'sistema', text: tt('online_lost') }))
+    net.on('reconnect', () => this._onReconnect())
+    // Combate autoritativo: los enemigos los manda el servidor (compartidos por canal).
+    net.on('espawn', (m) => { for (const e of m.es || []) this._spawnNetEnemy(e) })
+    net.on('estate', (m) => { for (const s of m.es || []) { const e = this._netEnemies?.get(s.i); if (e) e.netSetTarget(s.x, s.y, s.d, s.hp) } })
+    net.on('edmg', (m) => this._onEdmg(m))
+    net.on('edie', (m) => this._onEdie(m))
+    net.on('ekill', (m) => this._onEkill(m))
+    net.on('ehit', (m) => this._onEhit(m))
+    // Nodos de recursos autoritativos (compartidos por canal).
+    net.on('nspawn', (m) => { for (const n of m.ns || []) this._spawnNetNode(n) })
+    net.on('ndeplete', (m) => this._onNdeplete(m))
+    net.on('ngather', (m) => this._onNgather(m))
+    // Cofres autoritativos (compartidos por canal, primero en llegar + respawn).
+    net.on('cspawn', (m) => this._onCspawn(m))
+    net.on('copen', (m) => this._onCopen(m))
+    net.on('cloot', (m) => this._onCloot(m))
+    net.on('gold', (m) => this._onGold(m))   // oro autoritativo del server (faucet kill/cofre)
+    net.on('inv', (m) => this.store.mirrorInv(m.inv))   // bag autoritativo del server (Fase A.2)
+    // Trade P2P (Kintara #3): pedido / apertura / estado / cierre / cancelación -> store.
+    net.on('trade_req', (m) => this.store.onTradeReq(m))
+    net.on('trade_open', (m) => this.store.onTradeOpen(m))
+    net.on('trade_state', (m) => this.store.onTradeState(m))
+    net.on('trade_done', () => this.store.onTradeDone())
+    net.on('trade_cancel', (m) => this.store.onTradeCancel(m))
+    // Muerte / reaparición de otros jugadores (co-op).
+    net.on('pdied', (m) => { const r = this.remotes?.get(m.id); if (r) r.setDead(true) })
+    net.on('palive', (m) => { const r = this.remotes?.get(m.id); if (r) { r.setTarget(m.x, m.y, m.dir); r.tx = m.x; r.ty = m.y; r.setDead(false) } })
+    this.store.logMessage({ channel: 'sistema', text: tt('online_on') })
+    return true
+  }
+
+  // En cada mapa, anuncia dónde estás (join) para ver a los demás y recibir los enemigos del canal.
+  async _enterOnlineMap(mapName, spawn) {
+    if (!this._online) return
+    this._clearRemotes()
+    net.join({
+      name: this.store.getPlayerName(), race: this.store.getRaceId(), body: this.store.getBody(),
+      map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
+      channel: this._channel,        // intenta conservar tu canal entre mapas
+      spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
+      gfx: this._spectator ? null : equipToGfx(this.store.getEquipment()),   // equipo visible para los demás
+    }).then(() => { if (!this._spectator) this.store.refreshGuild() }).catch(() => {})   // cargar gremio -> aplicar ventajas
+    this._sendStats()   // stats de combate para que el server tire el daño de nuestros golpes
+  }
+
+  // Envía al server las stats de combate del jugador (dependen del equipo). El server las usa
+  // para tirar el daño de forma autoritativa. Se reenvía cuando cambian (al equiparse).
+  _sendStats() {
+    if (!this._online || this._spectator) return
+    const st = this.store.getStats() || {}
+    this._lastStatsObj = st
+    net.setStats({
+      dmgMin: st.dmgMin || 2, dmgMax: st.dmgMax || 5, dmgMul: st.dmgMul || 1,
+      str: st.str || 10, crit: st.crit || 0, weaponKind: st.weaponKind || 'melee',
+      defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
+      level: st.level || 1,   // capacidad usable del bag autoritativo (parity con el HUD)
+    })
+  }
+
+  // Reconexión: re-autentica (resume) y reconstruye el mapa actual para reenganchar el estado
+  // compartido con snapshots frescos (enemigos/nodos/cofres/jugadores del canal).
+  async _onReconnect() {
+    if (this.destroyed || !this._online) return
+    try {
+      const auth = await deviceAuth(net)
+      if (this.destroyed || !auth.ok) return
+      this.store.logMessage({ channel: 'sistema', text: tt('online_back') })
+      if (!this._loading && !this._changing && this.player) {
+        this.changeMap(this.mapName, Math.round(this.player.tx), Math.round(this.player.ty))
+      }
+    } catch { /* si falla, net seguirá reintentando el socket */ }
+  }
+
+  _onPresent(m) {
+    this._selfId = m.you
+    this._clearRemotes()
+    for (const p of m.players || []) this._addRemote(p)
+    // El server te asigna un canal (shard) del mapa; avisá en qué canal quedaste.
+    if (m.channel != null && m.channel !== this._channel) {
+      this._channel = m.channel
+      this.store.logMessage({ channel: 'sistema', text: tt('channel_on', { n: m.channel }) })
+    }
+  }
+  _addRemote(p) {
+    if (!p || p.id === this._selfId || !this.remotes || this.remotes.has(p.id) || !this._manifest) return
+    const r = new RemotePlayer(this.iso, this._manifest, p)
+    r.view.scale.set(this._playerScale || 1)
+    r.onTap((rp) => this._tapRemote(rp))   // tocar a otro jugador -> proponer intercambio
+    this.renderer.objectLayer.addChild(r.view)
+    this.remotes.set(p.id, r)
+  }
+  // Tocar a un jugador abre un menú (comerciar / ver stats). La cercanía se calcula acá para
+  // habilitar el trade (el server igual la revalida). El menú lo pinta React desde el store.
+  _tapRemote(rp) {
+    if (this._spectator || this._dead || !rp) return
+    const dx = (this.player.tx - rp.tx), dy = (this.player.ty - rp.ty)
+    const near = (dx * dx + dy * dy) <= 6 * 6
+    this.store.openPlayerMenu({ id: rp.id, name: rp.name, race: rp.race, level: rp.level, hp: rp.hp, hpMax: rp.hpMax, near })
+  }
+  _removeRemote(id) {
+    const r = this.remotes?.get(id)
+    if (r) { r.destroy(); this.remotes.delete(id) }
+  }
+  _clearRemotes() {
+    if (!this.remotes) return
+    for (const r of this.remotes.values()) r.destroy()
+    this.remotes.clear()
   }
 
   // Arma la lista de destinos del modal de waypoints: SÓLO las zonas que el jugador
@@ -258,37 +501,60 @@ export class Game {
 
   // Reetiqueta todo lo que dibuja el motor cuando cambia el idioma.
   _onLangChange() {
-    if (this.player) this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'))
+    if (this.player && !this._spectator) this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'))
     this.store.setMapTitle(zoneTitle(this.mapName))
     for (const p of (this.portals || [])) {
       const nl = zoneTitle(p.to, p.label)
       p.label = nl
       if (p.labelText) p.labelText.text = nl
     }
-    this.store.setPortals((this.portals || []).map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label })))
+    this.store.setPortals((this.portals || []).map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label, to: p.to })))
     this._refreshWaypoints()
   }
 
   // Destruye todo lo específico del mapa (para reconstruir en otro). La app, el input y
   // la cortina de fundido sobreviven.
   _teardownWorld() {
+    // Liberar los wrappers de Texture POR-INSTANCIA antes del destroy en bloque (que usa
+    // texture:false y no los tocaría). Sólo el wrapper propio, nunca la source compartida del
+    // atlas. Cubre lo que se destruye en bloque al cambiar de mapa (una fuga por mapa si no).
+    const freeOwn = (o) => { if (o && o._ownTex) { o._ownTex.destroy(false); o._ownTex = null } }
+    for (const e of this.enemies || []) freeOwn(e)
+    for (const n of this.npcs || []) freeOwn(n)
+    for (const nd of this.nodes || []) freeOwn(nd)
+    for (const gi of this.groundItems || []) freeOwn(gi)   // loot que quedó en el suelo al cambiar de mapa
+    for (const p of this.portals || []) { if (p.pad && p.pad.texture) p.pad.texture.destroy(false) }
+    for (const ad of this._animDecor || []) { if (ad.tex) ad.tex.destroy(false) }
+    // Paperdolls: se crea un Player y un Map de remotos nuevos en cada _buildWorld, así que los
+    // viejos se van con el destroy en bloque; hay que liberar sus wrappers de capa antes (~7 por
+    // paperdoll). El player se leakeaba en CADA cambio de mapa; los remotos, en co-op.
+    this.player?.paperdoll?.freeTextures()
+    if (this.remotes) for (const r of this.remotes.values()) r.paperdoll?.freeTextures()
     if (this.worldContainer) { this.worldContainer.destroy({ children: true, texture: false }); this.worldContainer = null }
     this.npcs = []
     this.enemies = []
+    this._netEnemies = new Map()
+    this._netDeadPending = null   // muertes netcode que llegaron antes que el spawn: no cruzan de mapa
     this.groundItems = []
     this.chests = []
     this._floaters = []
     this._projectiles = []
+    // Los telegraphs/anillos de habilidad son hijos del worldContainer (ya destruido arriba con
+    // children:true). Hay que vaciar la lista o el primer tick del mapa nuevo opera sobre Graphics
+    // destruidos (doble-destroy). Igual que _floaters/_projectiles.
+    this._effects = []
     this.nodes = []
+    this._netNodes = new Map()
     this._pendingNode = null
     this.portals = []
     this._target = null
     this._pendingChest = null
+    this._pendingBarrel = null
+    this._pendingPickup = null
+    this._pickupTries = 0
     this._pendingHit = null
     this.particles = null
-    this._masks?.clear()
     this._occAlpha?.clear()
-    this._atlasCtx = null
   }
 
   // Viaja a otro mapa (portal). Pantalla de carga temática (con lore) mientras reconstruye
@@ -320,6 +586,18 @@ export class Game {
     this._changing = false
     this.store.setZoneLoad(null)
     this._fadeOut = true // el tick baja el alpha del velo de Pixi por debajo de la cortina
+  }
+
+  // Publica al HUD los NPCs de servicio (con nombre) para marcarlos en el minimapa: el mercader,
+  // el herrero, la bruja/alquimista, guardias y videntes. Los animales de ambiente (critter) y
+  // los landmarks (estatuas/obelisco) no van. El `role` colorea el marcador.
+  _publishNpcMarkers() {
+    const lang = getLang()
+    const role = (d) => d.alchemy ? 'alchemist' : d.smith ? 'smith' : d.shop ? 'merchant' : 'npc'
+    const list = (this.npcs || [])
+      .filter((n) => n.def.name && !n.def.critter && !n.def.landmark)
+      .map((n) => ({ x: n.tx, y: n.ty, label: npcName(n.def, lang), role: role(n.def) }))
+    this.store.setNpcTiles(list)
   }
 
   // Arma los marcadores de portal + guarda sus zonas para detectar la entrada.
@@ -361,8 +639,8 @@ export class Game {
       renderer.objectLayer.addChild(label)
       this.portals.push({ x: p.x, y: p.y, w, h, to: p.to, tx: p.tx, ty: p.ty, label: plabel, gfx: g, pad, labelText: label, discovered })
     }
-    // Al HUD: tiles de portal para marcarlos en el minimapa.
-    this.store.setPortals(this.portals.map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label })))
+    // Al HUD: tiles de portal para marcarlos en el minimapa (el minimapa filtra por descubierto).
+    this.store.setPortals(this.portals.map((p) => ({ x: p.x + (p.w - 1) / 2, y: p.y + (p.h - 1) / 2, label: p.label, to: p.to })))
   }
 
   // Enciende el pad de un portal descubierto (frame de runas + alpha lleno).
@@ -404,10 +682,17 @@ export class Game {
   // Tocar el Obelisco de Retorno del pueblo: si hay un ancla guardada, te devuelve ahí.
   _useObelisk() {
     const a = this.store.getRecallAnchor()
-    if (a) {
+    if (a) {   // función principal: te devuelve al punto anclado (tiene prioridad)
       this.store.clearRecallAnchor()
       this.store.showToast(tt('obelisk_opens', { zone: a.label }))
       this.changeMap(a.map, a.tx, a.ty)
+      return
+    }
+    // Sumidero de oro: si hay una ofrenda diaria pendiente, la piedra la pide (con confirmación
+    // vía botón en la caja de diálogo; no cobra sola). Si no, sólo su lore.
+    const need = this.store.pendingOfferingNeed ? this.store.pendingOfferingNeed() : 0
+    if (need > 0) {
+      this.store.openDialogue({ name: tt('obelisk_name'), portrait: null, lines: [tt('offer_prompt', { n: need })], offer: { need } })
     } else {
       this.store.openDialogue({ name: tt('obelisk_name'), portrait: null, lines: [tt('obelisk_l1'), tt('obelisk_l2')] })
     }
@@ -422,10 +707,11 @@ export class Game {
       this.store.openDialogue({ name: nm, portrait: null, lines: [tt('guardians_wake')] })
       return
     }
-    const res = this.store.deliverOffering()
-    if (!res.ok && res.reason === 'none') {
-      this.store.openDialogue({ name: tt('offering_sleep_name'), portrait: null, lines: [tt('offering_sleep_l1'), tt('offering_sleep_l2')] })
-    }
+    Promise.resolve(this.store.deliverOffering()).then((res) => {
+      if (res && !res.ok && res.reason === 'none') {
+        this.store.openDialogue({ name: tt('offering_sleep_name'), portrait: null, lines: [tt('offering_sleep_l1'), tt('offering_sleep_l2')] })
+      }
+    })
   }
 
   _inspectCorpse(e) {
@@ -448,7 +734,7 @@ export class Game {
   // Click derecho: busca la criatura bajo el cursor. Enemigo vivo -> atacar; cadáver ->
   // inspeccionar. En el piso vacío no hace nada (no camina, para no moverse sin querer).
   _rightClick(gx, gy) {
-    if (this._dead || this._loading || this._changing || !this.enemies) return
+    if (this._spectator || this._dead || this._loading || this._changing || !this.enemies) return
     const w = this.camera.screenToWorld(gx, gy)
     const t = this.iso.toTile(w.x, w.y)
     const tx = Math.round(t.x), ty = Math.round(t.y)
@@ -468,6 +754,8 @@ export class Game {
 
   // Tocar un NPC: el jugador se acerca, el NPC te mira y se abre la caja de diálogo.
   _talkTo(npc) {
+    if (this._spectator || npc.def.critter) return   // el mirón / los animales no hablan
+    this._pendingPickup = null   // hablar cancela un "ir a recoger" pendiente (no tironear de vuelta)
     this.player.walkTo(npc.tx, npc.ty) // A* enruta a un tile adyacente (el suyo está bloqueado)
     const pv = this.iso.toWorld(this.player.tx, this.player.ty)
     const nv = this.iso.toWorld(npc.tx, npc.ty)
@@ -475,9 +763,10 @@ export class Game {
     const nm = npcName(npc.def, getLang())
     if (npc.def.obelisk) this._useObelisk()
     else if (npc.def.guardian) this._makeOffering(npc)
-    else if (npc.def.shop) this.store.openShop(nm)
+    else if (npc.def.shop) this.store.openShop(nm, npc.def.shopKind)
     else if (npc.def.smith) this.store.openSmith(nm)
     else if (npc.def.alchemy) this.store.openAlchemy(nm)
+    else if (npc.def.guild) this.store.openGuild()
     else if (npc.def.dialog) this._talkDialog(npc)
     else this.store.openDialogue({ name: nm, portrait: npc.def.portrait, lines: npcLines(npc.def, getLang()) })
   }
@@ -501,6 +790,7 @@ export class Game {
   // Decoraciones estáticas del mapa (secciones [npc] de Flare: fuente, cerdos, aldeanos
   // ambientales). Sprites reales de HERESY (public/assets/decor/), depth-sort por x+y.
   async _buildDecorations(renderer, iso, map, grid) {
+    this._animDecor = []   // decoraciones animadas (p. ej. la fuente que corre agua)
     const list = map.decorations || []
     if (!list.length) return
     const BASE = import.meta.env.BASE_URL || '/'
@@ -519,6 +809,26 @@ export class Game {
       if (!meta) continue
       // Saltar sprites chicos: son crops mal parseados (salen como "pies" o basura).
       if (meta.cell[1] < 100) continue
+      // Decoración ANIMADA (la fuente corre agua): sprite que cicla frames de un strip.
+      if (meta.anim) {
+        const a = meta.anim
+        let atex
+        try { atex = await Assets.load(BASE + 'assets/' + a.src) } catch { atex = null }
+        if (this.destroyed) return
+        if (atex) {
+          const sp = new Sprite(new Texture({ source: atex.source, frame: new Rectangle(0, 0, a.cell[0], a.cell[1]) }))
+          sp.anchor.set(a.anchor[0] / a.cell[0], a.anchor[1] / a.cell[1])
+          sp.x = iso.toWorldX(d.x, d.y); sp.y = iso.toWorldY(d.x, d.y); sp.zIndex = d.x + d.y
+          renderer.objectLayer.addChild(sp)
+          this._animDecor.push({ tex: sp.texture, a, t: 0 })
+          for (let dy = 0; dy < (d.h || 1); dy++)
+            for (let dx = 0; dx < (d.w || 1); dx++) {
+              const bx = d.x + dx, by = d.y + dy
+              if (bx >= 0 && bx < grid.w && by >= 0 && by < grid.h) grid.blocked[by * grid.w + bx] = 1
+            }
+          continue
+        }
+      }
       let tex
       try { tex = await Assets.load(BASE + 'assets/' + meta.src) } catch { continue }
       if (this.destroyed) return
@@ -543,33 +853,143 @@ export class Game {
   // Crea los cofres del mapa: brillo dorado que pulsa + hotspot para abrir.
   _buildChests(renderer, iso, map, grid) {
     this.chests = []
-    for (const c of map.chests || []) {
-      const wx = iso.toWorldX(c.x, c.y), wy = iso.toWorldY(c.x, c.y)
+    if (this._online) return   // conectado: los cofres los manda el servidor (cspawn). Sin conexión: fallback local
+    for (const c of map.chests || []) this._addChest(c.x, c.y, c.loot, null)
+  }
 
-      const glow = new Graphics()
-      glow.ellipse(0, 0, iso.wHalf * 0.7, iso.hHalf * 0.7).fill({ color: 0xffcf5a, alpha: 0.3 })
-      glow.x = wx; glow.y = wy
-      glow.zIndex = c.x + c.y - 1
-      renderer.groundLayer.addChild(glow)
+  // Crea el brillo + hotspot de un cofre (el sprite ya está dibujado en el tile del mapa).
+  // Lo usan tanto el modo offline (_buildChests) como el online (_onCspawn).
+  _addChest(x, y, loot, cid) {
+    const iso = this.iso, renderer = this.renderer
+    const wx = iso.toWorldX(x, y), wy = iso.toWorldY(x, y)
+    const glow = new Graphics()
+    glow.ellipse(0, 0, iso.wHalf * 0.7, iso.hHalf * 0.7).fill({ color: 0xffcf5a, alpha: 0.3 })
+    glow.x = wx; glow.y = wy; glow.zIndex = x + y - 1
+    renderer.groundLayer.addChild(glow)
+    const hot = new Graphics()
+    hot.poly([0, -iso.hHalf, iso.wHalf, 0, 0, iso.hHalf, -iso.wHalf, 0]).fill({ color: 0xffffff, alpha: 0.001 })
+    hot.x = wx; hot.y = wy - iso.hHalf; hot.zIndex = 1e6
+    hot.eventMode = 'static'
+    hot.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
+    renderer.objectLayer.addChild(hot)
+    const chest = { x, y, loot, cid, opened: false, glow, hot }
+    hot.on('pointertap', (e) => { e.stopPropagation(); this._tapChest(chest) })
+    this.chests.push(chest)
+    return chest
+  }
 
-      // hotspot invisible sobre el tile del cofre (el sprite ya está dibujado en object).
-      const hot = new Graphics()
-      hot.poly([0, -iso.hHalf, iso.wHalf, 0, 0, iso.hHalf, -iso.wHalf, 0]).fill({ color: 0xffffff, alpha: 0.001 })
-      hot.x = wx; hot.y = wy - iso.hHalf
-      hot.zIndex = 1e6
-      hot.eventMode = 'static'
-      hot.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
-      renderer.objectLayer.addChild(hot)
-
-      const chest = { x: c.x, y: c.y, loot: c.loot, opened: false, glow, hot }
-      hot.on('pointertap', (e) => { e.stopPropagation(); this._tapChest(chest) })
-      this.chests.push(chest)
+  // --- Barriles / cajas rompibles --------------------------------------------
+  // Clutter destructible: un sprite de caja de Flare que, al romperse, suelta algo de botín.
+  // Instanciado por jugador (no compartido) → sin netcode, andan igual offline y online.
+  async _buildBarrels(renderer, iso, map, grid, spawn) {
+    // En el pueblo no hay barriles rompibles: no debe haber "cosas para romper y adquirir ítems".
+    if (this.mapName === TOWN_MAP) return
+    const BASE = import.meta.env.BASE_URL || '/'
+    if (!this._barrelTex) { try { this._barrelTex = await Assets.load(BASE + 'assets/decor/barrel.png') } catch { this._barrelTex = null } }
+    if (!this._barrelTex || this.destroyed) return
+    // Los agrupamos CERCA del punto de llegada (anillo 3–16 tiles) para que el jugador los
+    // encuentre — antes se esparcían por todo el mapa y eran imposibles de hallar.
+    const n = 7 + randInt([0, 4])   // 7–11 cerca de la entrada
+    const used = new Set()
+    for (let i = 0; i < n; i++) {
+      for (let tries = 0; tries < 30; tries++) {
+        const ang = Math.random() * Math.PI * 2
+        const r = 3 + Math.random() * 13
+        const x = Math.round(spawn.x + Math.cos(ang) * r), y = Math.round(spawn.y + Math.sin(ang) * r)
+        if (x < 1 || y < 1 || x >= grid.w - 1 || y >= grid.h - 1) continue
+        const key = y * grid.w + x
+        if (used.has(key) || !grid.isWalkable(x, y)) continue
+        if (Math.abs(x - spawn.x) + Math.abs(y - spawn.y) < 3) continue   // no encima del spawn
+        used.add(key)
+        this._addBarrel(x, y, grid)
+        break
+      }
     }
+  }
+
+  _addBarrel(x, y, grid) {
+    const iso = this.iso, renderer = this.renderer
+    const wx = iso.toWorldX(x, y), wy = iso.toWorldY(x, y)
+    // Brillo tenue en el piso para que el barril se note como interactuable (como los cofres).
+    const glow = new Graphics()
+    glow.ellipse(0, 0, iso.wHalf * 0.5, iso.hHalf * 0.5).fill({ color: 0xc98a3a, alpha: 0.22 })
+    glow.x = wx; glow.y = wy; glow.zIndex = x + y - 1
+    renderer.groundLayer.addChild(glow)
+    const sp = new Sprite(this._barrelTex)
+    sp.anchor.set(0.5, 0.82)
+    sp.x = wx; sp.y = wy; sp.zIndex = x + y
+    sp.scale.set((this._eScale || 1) * 1.5)
+    sp.eventMode = 'static'
+    sp.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
+    renderer.objectLayer.addChild(sp)
+    if (x >= 0 && x < grid.w && y >= 0 && y < grid.h) grid.blocked[y * grid.w + x] = 1
+    const barrel = { x, y, sp, glow, broken: false }
+    sp.on('pointertap', (e) => { e.stopPropagation(); this._tapBarrel(barrel) })
+    this.barrels.push(barrel)
+    return barrel
+  }
+
+  _tapBarrel(b) {
+    if (this._spectator || b.broken || this._dead) return
+    this._pendingPickup = null   // otra orden cancela un "ir a recoger" pendiente
+    this.player.walkTo(b.x, b.y)   // A* enruta a un tile adyacente (el barril bloquea el suyo)
+    this._pendingBarrel = b
+  }
+
+  _breakBarrel(b) {
+    if (b.broken) return
+    b.broken = true
+    if (b.x >= 0 && b.x < this._grid.w && b.y >= 0 && b.y < this._grid.h) this._grid.blocked[b.y * this._grid.w + b.x] = 0
+    const wx = b.sp.x, wy = b.sp.y
+    b.sp.destroy()
+    if (b.glow) b.glow.destroy()
+    this.barrels = this.barrels.filter((x) => x !== b)
+    if (this._pendingBarrel === b) this._pendingBarrel = null
+    playSfx('swing.ogg')
+    // Botín modesto (como un enemigo débil): oro + a veces un consumible/pieza.
+    const mf = this.store.getStats()?.itemFind || 0
+    const lvl = Math.max(1, Math.min(16, this.store.getPlayerLevel?.() || 1))
+    const roll = rollMonsterDrop(lvl, false, mf)
+    // Online los barriles NO dan oro NI ítems: son props del cliente, no los trackea el server, así
+    // que otorgar acá sería oro/loot no-autoritativo (el cliente decidiría el botín = exploit).
+    // Offline sí (todo local).
+    if (!this._online) {
+      if (roll.gold > 0) this._dropGold(b.x, b.y, roll.gold)
+      if (roll.drops.length) this._dropItems(b.x, b.y, roll.drops)
+    }
+  }
+
+  // --- cofres autoritativos del servidor (online) ----------------------------
+  _onCspawn(m) {
+    for (const cd of m.cs || []) {
+      if ((this.chests || []).some((c) => c.cid === cd.c)) continue
+      this._addChest(cd.x, cd.y, null, cd.c)
+    }
+  }
+  _onCopen(m) {
+    const c = (this.chests || []).find((x) => x.cid === m.c)
+    if (!c) return
+    c.opened = true
+    if (c.glow) { c.glow.destroy(); c.glow = null }
+    if (c.hot) { c.hot.destroy(); c.hot = null }
+    playSfx('wood_open.ogg')
+    this.chests = this.chests.filter((x) => x !== c)
+    if (this._pendingChest === c) this._pendingChest = null
+  }
+  // Sólo al que abrió: el loot lo tiró el servidor (autoritativo). Aplica oro/ítems + XP + misión.
+  _onCloot(m) {
+    this.store.addSkillXp('saqueo', 14)
+    this.store.addXp(10)
+    this.store.missionProgress('chest', 1)
+    if (m.gold > 0) this._dropGold(m.x, m.y, m.gold)
+    // Los ítems ya se otorgaron al bag autoritativo (push 'inv'); la pila del suelo es cosmética.
+    if (m.drops && m.drops.length) this._dropItems(m.x, m.y, m.drops, true)
   }
 
   // Tocar un cofre: caminar hasta él; se abre al llegar (en el tick).
   _tapChest(chest) {
-    if (chest.opened) return
+    if (this._spectator || chest.opened) return
+    this._pendingPickup = null   // otra orden cancela un "ir a recoger" pendiente
     this.player.walkTo(chest.x, chest.y) // A* enruta a un tile adyacente si está bloqueado
     this._pendingChest = chest
   }
@@ -578,7 +998,9 @@ export class Game {
   _openChest(chest) {
     chest.opened = true
     if (chest.glow) { chest.glow.destroy(); chest.glow = null }
-    if (chest.hot) { chest.hot.eventMode = 'none'; chest.hot.cursor = 'default' }
+    // Destruir el hotspot (no sólo desactivarlo): es un Graphics con zIndex 1e6 que si no queda
+    // colgado en objectLayer hasta el cambio de mapa. Igual que la ruta online (_onCopen).
+    if (chest.hot) { chest.hot.destroy(); chest.hot = null }
     playSfx('wood_open.ogg')
 
     // Abrir un cofre es la acción de Saqueo (+XP de skill y de jugador).
@@ -587,12 +1009,14 @@ export class Game {
     this.store.missionProgress('chest', 1)
 
     const roll = rollLoot(chest.loot)
-    if (roll.gold > 0) this.store.addGold(roll.gold)
+    if (roll.gold > 0) this._dropGold(chest.x, chest.y, roll.gold)
     this._dropItems(chest.x, chest.y, roll.drops)
   }
 
   // Desparrama ítems (como objetos reales) en tiles caminables alrededor de (cx,cy).
-  _dropItems(cx, cy, drops) {
+  // `cosmetic`=true (online): el server ya otorgó el ítem al bag (llegó por el push 'inv'); la pila
+  // del suelo es SÓLO visual (al recogerla no se agrega nada, como la pila de oro cosmética).
+  _dropItems(cx, cy, drops, cosmetic = false) {
     if (!drops || !drops.length) return
     const tiles = this._scatterTiles(cx, cy, drops.length)
     drops.forEach((d, i) => {
@@ -600,10 +1024,49 @@ export class Game {
       if (!item) return
       const [tx, ty] = tiles[i] || [cx, cy]
       const gi = new GroundItem(this.iso, tx, ty, item, d.qty, RARITY_COLOR[item.rarity])
-      gi.onTap((g) => { this.player.walkTo(g.tx, g.ty) }) // caminar hacia él; se recoge al pasar
+      gi.cosmetic = cosmetic
+      gi.onTap((g) => this._tapGroundItem(g))   // los ítems se recogen por CLICK (no al pasar por arriba)
       this.renderer.objectLayer.addChild(gi.view)
       this.groundItems.push(gi)
     })
+  }
+
+  // Suelta una PILA de oro VISIBLE en el suelo (Diablo). Se recoge al pasarle por encima.
+  // `cosmetic`=true (online): el server ya acreditó el oro, la pila es SÓLO visual (no re-acredita).
+  _dropGold(cx, cy, amount, cosmetic = false) {
+    if (!(amount > 0)) return
+    const [tx, ty] = this._scatterTiles(cx, cy, 1)[0] || [cx, cy]
+    const gi = new GroundItem(this.iso, tx, ty, { gold: amount, icon: 0 }, 1, '#e6c85a')
+    gi.cosmetic = cosmetic
+    gi.onTap((g) => this._tapGroundItem(g))
+    this.renderer.objectLayer.addChild(gi.view)
+    this.groundItems.push(gi)
+  }
+
+  // Oro AUTORITATIVO del servidor (Fase A): setea el saldo espejo y muestra la pila cosmética +
+  // "+N" donde cayó (kill/cofre). El saldo NUNCA lo decide el cliente online.
+  _onGold(m) {
+    if (typeof m.gold === 'number') this.store.setGold(m.gold)
+    if (m.add > 0 && m.x != null) this._dropGold(m.x, m.y, m.add, true)
+    else if (m.add > 0 && this.player) this._floatText(this.player.view.x, this.player.view.y - 60, `+${m.add}`, '#e6c85a')
+  }
+
+  // Click en un loot del suelo: el jugador camina hasta él. El oro se recoge al pasar; los ítems,
+  // al llegar (quedan marcados como "pendientes de recoger").
+  _tapGroundItem(gi) {
+    if (this._spectator || gi.picked) return
+    this.player.walkTo(gi.tx, gi.ty)
+    if (!gi.isGold) { this._pendingPickup = gi; this._pickupTries = 0 }
+  }
+
+  // Recoge una pila de oro (al pasarle por encima): suma el oro y la saca del suelo.
+  _pickupGold(gi) {
+    if (gi.picked) return
+    if (!gi.cosmetic) this.store.addGold(gi.gold)   // online la pila es cosmética: el server ya acreditó
+    this._floatText(gi.view.x, gi.view.y - 16, `+${gi.gold}`, '#e6c85a')
+    playSfx('flying_loot.ogg')
+    gi.picked = true
+    gi.destroy()
   }
 
   // Tiles caminables alrededor del cofre para repartir el loot (sin repetir).
@@ -619,83 +1082,64 @@ export class Game {
     return out
   }
 
-  // Recoge un ítem del suelo (oro ya se sumó al abrir). Devuelve true si entró.
+  // Recoge un ítem del suelo. Devuelve true si entró. Online las pilas son cosméticas (el server ya
+  // otorgó el ítem al bag y lo empujó por 'inv'): recogerlas es sólo el sfx + sacar la pila.
   _pickup(gi) {
-    if (!this.store.addItem(gi.item, gi.qty)) return false // inventario lleno: queda en el piso
+    if (!gi.cosmetic) {
+      if (!this.store.addItem(gi.item, gi.qty)) return false // inventario lleno: queda en el piso
+      this.store.logMessage({ channel: 'sistema', text: tt('picked_up', { name: itemName(gi.item, getLang()), qty: gi.qty > 1 ? ' ×' + gi.qty : '' }) })
+    }
     playSfx('flying_loot.ogg')
-    this.store.logMessage({ channel: 'sistema', text: tt('picked_up', { name: itemName(gi.item, getLang()), qty: gi.qty > 1 ? ' ×' + gi.qty : '' }) })
     gi.picked = true
     gi.destroy()
     return true
   }
 
-  // Carga el atlas del tileset en un canvas 2D para poder leer su alpha por-pixel.
-  async _loadOcclusionAtlas(src) {
-    try {
-      const img = new Image()
-      img.decoding = 'async'
-      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = src })
-      if (this.destroyed) return
-      const cv = document.createElement('canvas')
-      cv.width = img.naturalWidth; cv.height = img.naturalHeight
-      const ctx = cv.getContext('2d', { willReadFrequently: true })
-      ctx.drawImage(img, 0, 0)
-      this._atlasCtx = ctx
-    } catch { this._atlasCtx = null }
-  }
-
-  // Máscara de alpha (Uint8) de un tile de edificio, extraída del atlas una sola vez.
-  _maskFor(s) {
-    const key = s.texture.uid
-    let m = this._masks.get(key)
-    if (m !== undefined) return m
-    m = null
-    try {
-      const f = s.texture.frame
-      const raw = this._atlasCtx.getImageData(f.x, f.y, f.width, f.height).data
-      const a = new Uint8Array(f.width * f.height)
-      for (let i = 0; i < a.length; i++) a[i] = raw[i * 4 + 3]
-      m = { w: f.width | 0, h: f.height | 0, a }
-    } catch { m = null }
-    this._masks.set(key, m)
-    return m
-  }
-
-  // ¿El sprite `s` (edificio) tapa de verdad al personaje? Muestrea la silueta del
-  // jugador (pies, torso, cabeza) contra el alpha del edificio: sólo si un pixel opaco
-  // del edificio cae sobre el cuerpo, está tapado. Así nunca se atenúa de lejos/frente.
-  _coversPlayer(s) {
-    const m = this._maskFor(s)
-    if (!m) return false
-    const px = this.player.view.x, feetY = this.player.view.y
-    const lx = Math.round(px - s.x)
-    if (lx < 0 || lx >= m.w) return false
-    // puntos a lo largo del alto del personaje (mundo px; hacia arriba es negativo)
-    for (const dy of [-6, -32, -58, -80]) {
-      const ly = Math.round(feetY + dy - s.y)
-      if (ly < 0 || ly >= m.h) continue
-      if (m.a[ly * m.w + lx] > 60) return true
+  // Cullea por VISIBILIDAD las entidades fuera de cámara (enemigos, NPCs, tumbas, nodos, remotos).
+  // `view.x/y` están en pixel de mundo; pantalla = mundo*zoom + offset. Margen generoso porque los
+  // sprites están anclados a los pies y se extienden hacia arriba. No toca al jugador (siempre on).
+  _cullEntities() {
+    const z = this.camera.zoom, ox = this.camera.offsetX, oy = this.camera.offsetY
+    const W = this.app.screen.width, H = this.app.screen.height
+    const MX = 180, MY = 240
+    const vis = (v) => {
+      if (!v) return
+      const sx = v.x * z + ox, sy = v.y * z + oy
+      v.visible = sx >= -MX && sx <= W + MX && sy >= -MY && sy <= H + MY
     }
-    return false
+    for (const e of this.enemies) vis(e.view)
+    for (const n of this.npcs) vis(n.view)
+    if (this.graves) for (const m of this.graves) { if (!m.taken) vis(m.view) }
+    if (this.nodes) for (const nd of this.nodes) vis(nd.view)
+    if (this.remotes) for (const r of this.remotes.values()) vis(r.view)
   }
 
-  // Atenúa un EDIFICIO sólo cuando su pixel opaco realmente tapa al personaje (lo cubre
-  // por detrás). Excluye cercas, árboles, barriles y props del suelo por tamaño.
+  // Atenúa un EDIFICIO cuando tapa al personaje (queda dibujado por delante y su rectángulo cubre
+  // el cuerpo). Excluye cercas, árboles, barriles y props del suelo por tamaño. Usa cobertura por
+  // bounding-box (robusta y predecible); la versión pixel-perfect anterior no atenuaba nunca.
   _updateOcclusion() {
     const p = this.player
-    if (!p || !this._atlasCtx) return
+    if (!p || this._spectator) return
     const iso = this.iso
     const pd = p.tx + p.ty                         // profundidad del jugador (x+y)
     const bldMinW = iso.tileW * 2.5                // sólo sprites grandes (edificios)
     const bldMinH = iso.tileH * 2.5
+    const px = p.view.x, feet = p.view.y           // punto del personaje: x central, y en los pies
+    const HEAD = 78                                // alto aprox. del cuerpo (pies -> cabeza) en px
+    // Sólo se atenúan los edificios que tapan al JUGADOR (los NPCs no vuelven translúcidas las casas).
     const occ = this._occAlpha || (this._occAlpha = new Map()) // alpha por tile (persiste entre rebuilds)
     this.renderer.eachVisibleObject((s) => {
       let hide = false
       const tw = s.texture ? s.texture.width : s.width
       const th = s.texture ? s.texture.height : s.height
-      // Debe estar dibujado por ENCIMA del jugador (más profundo) y ser un edificio.
-      if (s.zIndex > pd && tw >= bldMinW && th >= bldMinH) hide = this._coversPlayer(s)
-      const target = hide ? 0.3 : 1
+      if (s.zIndex > pd && tw >= bldMinW && th >= bldMinH) {   // edificio dibujado por encima del jugador
+        // ¿El cuerpo del personaje (x central, franja pies..cabeza) cae dentro del rectángulo
+        // dibujado del edificio (top-left en s.x,s.y, tamaño tw×th)? sprites con anchor (0,0).
+        const inX = px >= s.x && px <= s.x + tw
+        const inY = feet >= s.y && (feet - HEAD) <= s.y + th
+        hide = inX && inY
+      }
+      const target = hide ? 0.32 : 1
       let a = occ.get(s._ti); if (a === undefined) a = 1
       a += (target - a) * 0.28                      // desvanecido suave, por tile
       if (a > 0.999) a = 1
@@ -710,6 +1154,7 @@ export class Game {
     // Guardados para invocaciones en vivo (los nigromantes crean esbirros durante el combate).
     this._manifest = manifest
     this._grid = grid
+    if (this._online) return   // conectado: los enemigos los manda el servidor (espawn). Sin conexión: fallback local
     const spawners = map.spawners || []
     if (!spawners.length || !manifest.enemies) return
     const MAX = 40
@@ -749,6 +1194,7 @@ export class Game {
   // Élite del día: si hay un contrato activo para esta zona, aparece su jefe (una vez), más
   // fuerte y con nombre. Matarlo completa la misión Contrato.
   async _spawnContractElite(renderer, grid, manifest, spawn, mapName) {
+    if (this._online) return   // conectado: la élite la maneja el servidor. Sin conexión: fallback local
     const missions = this.store.getMissions ? this.store.getMissions() : []
     const c = (missions || []).find((m) => m.type === 'contract' && !m.claimed && m.progress < m.target && m.map === mapName)
     if (!c) return
@@ -777,7 +1223,8 @@ export class Game {
   }
 
   _targetEnemy(e) {
-    if (this._dead || e.dead) return
+    if (this._dead || e.dead || this.store.isSpectator()) return   // el mirón no ataca
+    this._pendingPickup = null   // atacar cancela el "ir a recoger" pendiente
     this._target = e
     this.player.walkTo(Math.round(e.tx), Math.round(e.ty))
     this._retargetT = 0.3
@@ -787,6 +1234,7 @@ export class Game {
   // Siembra unos nodos en tiles caminables lejos del spawn. Las minas/cuevas traen más
   // vetas de cristal; el resto, más hierbas. Sólo en zonas de combate (las que tienen spawners).
   _spawnNodes(renderer, iso, map, grid, spawn, mapName) {
+    if (this._online) return                              // conectado: los nodos los manda el servidor. Sin conexión: local
     if (mapName === 'triston') return                     // el pueblo no tiene recursos
     if (!(map.spawners || []).length) return              // sólo zonas salvajes
     const tex = iconsTexture()
@@ -825,7 +1273,8 @@ export class Game {
 
   // Tocar un nodo: el jugador camina hasta él y junta al llegar.
   _gatherNode(node) {
-    if (node.depleted || this._dead) return
+    if (this._spectator || node.depleted || this._dead) return
+    this._pendingPickup = null   // otra orden cancela un "ir a recoger" pendiente
     this._pendingNode = node
     this.player.walkTo(node.tx, node.ty)
   }
@@ -842,6 +1291,44 @@ export class Game {
     const mat = itemName(item, getLang())
     this._floatText(node.view.x, node.view.y - 30, `+${qty} ${mat}`, '#bfe9a0')
     this.store.logMessage({ channel: 'sistema', text: tt('gathered', { name: mat, n: qty }) })
+    playSfx('step2.ogg', 0.5)
+  }
+
+  // --- nodos de recursos autoritativos del servidor (online) -----------------
+  _spawnNetNode(data) {
+    if (!this._netNodes || this._netNodes.has(data.n)) return
+    const tex = iconsTexture(); if (!tex) return
+    const item = itemById(data.id); if (!item) return
+    const node = new ResourceNode(this.iso, data.x, data.y, {
+      id: data.id, name: data.name, glow: data.glow, base: data.base, icon: item.icon, skill: data.skill,
+    }, tex)
+    node.nid = data.n
+    node.onTap((nd) => this._gatherNode(nd))
+    this.renderer.objectLayer.addChild(node.view)
+    this.nodes.push(node)
+    this._netNodes.set(data.n, node)
+  }
+
+  _onNdeplete(m) {
+    const node = this._netNodes && this._netNodes.get(m.n)
+    if (!node) return
+    node.deplete()
+    node.destroy()
+    this.nodes = this.nodes.filter((x) => x !== node)
+    this._netNodes.delete(m.n)
+    if (this._pendingNode === node) this._pendingNode = null
+    if (this._nearbyNode === node) { this._nearbyNode = null; this.store.setNearbyNode(null) }
+  }
+
+  // El server confirma que juntaste: el recurso ya lo otorgó al bag autoritativo (push 'inv'). Acá
+  // sólo la XP de skill/misión + el aviso flotante (la cantidad la decide el server).
+  _onNgather(m) {
+    const item = itemById(m.id); if (!item) return
+    this.store.addSkillXp(m.skill, 6)
+    this.store.missionProgress(m.skill === 'excavacion' ? 'mine' : 'herb', 1)
+    const mat = itemName(item, getLang())
+    this._floatText(this.player.view.x, this.player.view.y - 40, `+${mat}`, '#bfe9a0')
+    this.store.logMessage({ channel: 'sistema', text: tt('gathered', { name: mat, n: 1 }) })
     playSfx('step2.ogg', 0.5)
   }
 
@@ -866,7 +1353,7 @@ export class Game {
   // Lanza una habilidad activa (pedida desde la barra). Valida desbloqueo, recarga, objetivo
   // y maná; si pasa, ejecuta su efecto y arranca la recarga.
   _castAbility(id) {
-    if (this._dead || !this.player) return
+    if (this._dead || !this.player || this.store.isSpectator()) return
     if (this._safeZone) { this.store.showToast(tt('no_combat_town')); return }
     const ab = ABILITY_BY_ID[id]
     if (!ab) return
@@ -883,13 +1370,21 @@ export class Game {
 
     if (ab.kind === 'melee_aoe') {
       p.attack('swing'); playSfx('swing.ogg')
-      this._castRing(p.view.x, p.view.y - 20, 0xffcf6a)
+      this._castRing(p.view.x, p.view.y - 20, ab.lifesteal ? 0xd05a5a : 0xffcf6a)
+      let dealt = 0
       for (const e of this.enemies) {
         if (e.dead) continue
         if (Math.abs(e.tx - p.tx) + Math.abs(e.ty - p.ty) > ab.radius) continue
         const dmg = Math.max(1, Math.round(this._abilityRoll() * ab.dmgMul))
+        dealt += dmg
         this._floatText(e.view.x, e.view.y + e._hpY, `¡${dmg}!`, '#ff9a3a')
         if (e.takeDamage(dmg)) this._enemyKilled(e)
+      }
+      // Robo de vida (ultimate del guerrero): te curás una fracción del daño total infligido.
+      if (ab.lifesteal && dealt > 0) {
+        const heal = Math.max(1, Math.round(dealt * ab.lifesteal))
+        this.store.heal(heal)
+        this._floatText(p.view.x, p.view.y - 60, `+${heal}`, '#9fe0a0')
       }
       if (Math.random() < 0.5) this.store.degradeGear('weapon', 1)
     } else if (ab.kind === 'bolt') {
@@ -978,12 +1473,90 @@ export class Game {
     const boss = !!e.def.boss, lvl = Math.max(1, Math.min(16, e.level || 1))
     const mf = this.store.getStats()?.itemFind || 0
     const roll = rollMonsterDrop(lvl, boss, mf)
-    if (roll.gold > 0) {
-      this.store.addGold(roll.gold)
-      this._floatText(e.view.x, e.view.y + e._hpY - 16, `+${roll.gold}`, '#e6c85a')
-    }
+    if (roll.gold > 0) this._dropGold(Math.round(e.tx), Math.round(e.ty), roll.gold)
     if (roll.drops.length) this._dropItems(Math.round(e.tx), Math.round(e.ty), roll.drops)
     if (this._target === e) this._target = null
+  }
+
+  // --- enemigos autoritativos del servidor (online) --------------------------
+  // Crea un enemigo que manda el servidor (modo net: sin IA local, se interpola su posición).
+  async _spawnNetEnemy(data) {
+    if (!this._manifest || !this.renderer || !this._netEnemies) return
+    if (this._netEnemies.has(data.i)) return
+    const st = enemyStats(data.s, data.lv)
+    const elite = !!data.el
+    const def = {
+      sprite: data.s, x: data.x, y: data.y, level: data.lv, hpMax: data.hpm, damage: st.damage,
+      xp: st.xp, boss: st.boss || elite, ranged: !!data.rng, projKind: projectileKind(data.s),
+      ability: enemyAbility(data.s), name: enemyName(data.s, getLang()),
+    }
+    const e = new Enemy(this._manifest, def, this.iso, this._grid)
+    const ok = await e.load()
+    if (this.destroyed || !ok) return
+    // pudo llegar la muerte mientras cargaba el sprite
+    if (this._netDeadPending && this._netDeadPending.has(data.i)) { this._netDeadPending.delete(data.i); e.destroy(); return }
+    e.netInit(data.i)
+    e.eliteContract = elite
+    e.tx = data.x; e.ty = data.y; e.hp = data.hp; e._syncWorld()
+    e.view.scale.set(this._eScale * (elite ? 1.35 : 1))   // la élite del contrato es más grande
+    e.onTap((en) => this._targetEnemy(en))
+    this.renderer.objectLayer.addChild(e.view)
+    this.enemies.push(e)
+    this._netEnemies.set(data.i, e)
+  }
+
+  _onEdmg(m) {
+    const e = this._netEnemies && this._netEnemies.get(m.i)
+    if (!e) return
+    e.netDamage(m.hp, m.dmg, m.crit)
+    this._floatText(e.view.x, e.view.y + (e._hpY || -40), m.crit ? `¡${m.dmg}!` : `${m.dmg}`, m.crit ? '#ff9a3a' : '#ffe08a')
+  }
+
+  _onEdie(m) {
+    const e = this._netEnemies && this._netEnemies.get(m.i)
+    if (!e) { (this._netDeadPending ||= new Set()).add(m.i); return }
+    e.netDie()
+    this._netEnemies.delete(m.i)
+    if (this._target === e) this._target = null
+  }
+
+  // Aviso al matador: XP autoritativa del server + el botín/oro se tira local (instanciado).
+  _onEkill(m) {
+    const xp = m.xp || 0
+    this.store.addSkillXp('combate', xp)
+    this.store.addXp(xp)
+    this.store.missionProgress('kill', 1)
+    if (m.contract) this.store.missionProgress('contract', 1)   // élite del contrato del día
+    const e = (this.enemies || []).find((x) => x.eid === m.i)   // sigue en la lista (muriendo)
+    const fx = e ? e.view.x : this.player.view.x, fy = e ? e.view.y + (e._hpY || -40) : this.player.view.y - 80
+    this._floatText(fx, fy, `+${xp} XP`, '#9fe0ff')
+    this.store.logMessage({ channel: 'sistema', text: tt('defeated', { name: enemyName(m.sprite, getLang()) }) })
+    const gx = e ? Math.round(e.tx) : Math.round(this.player.tx), gy = e ? Math.round(e.ty) : Math.round(this.player.ty)
+    // Online el ORO y el BOTÍN los tira el server (autoritativos): el oro llega por 'gold' + pila
+    // cosmética, y los ítems ya se otorgaron al bag (push 'inv') — acá sólo la pila cosmética con los
+    // drops REALES que mandó el server. Offline: se tira local.
+    if (this._online) {
+      if (m.drops && m.drops.length) this._dropItems(gx, gy, m.drops, true)
+    } else {
+      const boss = enemyStats(m.sprite, m.lv).boss, lvl = Math.max(1, Math.min(16, m.lv || 1))
+      const mf = this.store.getStats()?.itemFind || 0
+      const roll = rollMonsterDrop(lvl, boss, mf)
+      if (roll.gold > 0) this._dropGold(gx, gy, roll.gold)
+      if (roll.drops.length) this._dropItems(gx, gy, roll.drops)
+    }
+  }
+
+  // El servidor nos avisa que un enemigo nos pegó (ya restó nuestra defensa).
+  _onEhit(m) {
+    if (this._dead || this._spectator || !this.player) return
+    const dmg = m.dmg || 0
+    if (dmg <= 0) return
+    const hp = this.store.takeDamage(dmg)
+    const p = this.player
+    this._floatText(p.view.x, p.view.y - 70, `-${dmg}`, '#ff6a5a')
+    this.store.degradeGear('armor', 1)
+    if (this._hurtCd <= 0) { p.hurt(); playSfx('player_hit.ogg'); this._hurtCd = 0.5 }
+    if (hp <= 0) this._playerDeath()
   }
 
   _floatText(x, y, text, color) {
@@ -1024,7 +1597,7 @@ export class Game {
     g.scale.set(0.25)
     this.renderer.objectLayer.addChild(g)
     ;(this._effects ||= []).push({ g, life: ab.windup || 0.75, max: ab.windup || 0.75, telegraph: true })
-    this._floatText(en.view.x, en.view.y + (en._hpY || -40), '⚠', '#ff5a3a')
+    this._floatText(en.view.x, en.view.y + (en._hpY || -40), '!', '#ff5a3a')
   }
 
   // Un nigromante invoca un esbirro débil en un tile caminable cercano.
@@ -1105,7 +1678,63 @@ export class Game {
     this.player.path.length = 0
     this.player.playDie()
     playSfx('player_die.ogg')
+    if (this._online) net.dead()   // avisar al canal (co-op: los demás te ven caer)
     this.store.showToast(tt('fell_combat'))
+    // Riesgo estilo Kintara: tu carga (inventario + parte del oro) queda en una tumba acá.
+    const dropped = this.store.createGrave(this.mapName, Math.round(this.player.tx), Math.round(this.player.ty))
+    if (dropped) this.store.logMessage({ channel: 'sistema', text: tt('grave_left', { zone: zoneName(this.mapName, getLang()) }) })
+  }
+
+  // Coloca las tumbas del jugador que quedaron en esta zona (al entrar/volver).
+  _spawnGraves(renderer, mapName) {
+    const list = this.store.getGravesInZone ? this.store.getGravesInZone(mapName) : []
+    for (const gr of list) {
+      const m = new Grave(this.iso, gr)
+      m.view.scale.set(this._eScale)
+      m.onTap((mk) => { if (!this._spectator) this.player.walkTo(mk.tx, mk.ty) })   // caminar hacia ella; se recupera al llegar
+      renderer.objectLayer.addChild(m.view)
+      this.graves.push(m)
+    }
+    this._publishGraves()
+  }
+
+  // Alijo personal en el pueblo: un cofre privado cerca del spawn. Se busca un tile caminable
+  // junto al spawn para no taparlo ni quedar dentro de una colisión.
+  async _spawnStashChest(renderer, grid, spawn, mapName) {
+    if (mapName !== TOWN_MAP) return
+    // Candidatos alrededor del spawn (un par de tiles a un costado), el 1º caminable gana.
+    const cand = [[3, 0], [0, 3], [3, 3], [-3, 0], [0, -3], [2, 2], [4, 0]]
+    let tx = spawn.x, ty = spawn.y, found = false
+    for (const [dx, dy] of cand) {
+      const x = spawn.x + dx, y = spawn.y + dy
+      if (grid.isWalkable(x, y)) { tx = x; ty = y; found = true; break }
+    }
+    if (!found) return
+    const BASE = import.meta.env.BASE_URL || '/'
+    if (!this._stashTex) { try { this._stashTex = await Assets.load(BASE + 'assets/decor/stash_chest.png') } catch { this._stashTex = null } }
+    if (this.destroyed || this.mapName !== TOWN_MAP) return
+    const chest = new StashChest(this.iso, tx, ty, this._stashTex)
+    chest.view.scale.set(this._eScale)
+    chest.onTap((c) => { if (!this._spectator) this.player.walkTo(c.tx, c.ty) })   // caminar hacia él; se abre al llegar
+    renderer.objectLayer.addChild(chest.view)
+    this.stashChest = chest
+  }
+
+  // Publica al HUD las tumbas de este mapa, para marcarlas en el minimapa.
+  _publishGraves() {
+    this.store.setGraveTiles((this.graves || []).filter((m) => !m.taken).map((m) => ({ x: m.tx, y: m.ty })))
+  }
+
+  // Recupera una tumba (vuelca su contenido al inventario). Si el inventario está lleno, la
+  // tumba queda con lo que no entró (reintenta con un pequeño cooldown, sin spamear avisos).
+  _recoverGrave(m) {
+    if (m._cd > 0 || m._recovering) return
+    m._recovering = true   // recoverGrave es async (online pide el oro al server): evitar reentradas
+    Promise.resolve(this.store.recoverGrave(m.grave.id)).then((ok) => {
+      m._recovering = false
+      if (ok) { m.taken = true; m.destroy(); this._publishGraves() }
+      else { m._cd = 1.8 }   // inventario lleno: reintenta más tarde
+    })
   }
 
   _respawn() {
@@ -1121,6 +1750,7 @@ export class Game {
     this.player.moving = false; this.player.path.length = 0
     this.player.paperdoll._oneShot = null
     this.camera.follow(s.x, s.y); this.camera.snap()
+    if (this._online) net.alive(Math.round(s.x), Math.round(s.y), 7)   // reaparecí en el lugar (co-op)
   }
 
   // Lógica de combate por frame (la llama el tick). dt en segundos.
@@ -1150,6 +1780,8 @@ export class Game {
     // Habilidad pedida desde la barra de acción.
     const cseq = this.store.getCastSeq()
     if (cseq !== this._lastCastSeq) { this._lastCastSeq = cseq; this._castAbility(this.store.getCastAbility()) }
+    // online: si cambiaron las stats (equipo), reenviarlas para que el server tire bien el daño.
+    if (this._online && !this._spectator) { const st = this.store.getStats(); if (st && st !== this._lastStatsObj) this._sendStats() }
 
     // Enemigos: IA + daño al jugador (la defensa del equipo + buff reduce cada golpe).
     const defense = ((this.store.getStats()?.defense) || 0) + this._buffDefense()
@@ -1159,7 +1791,7 @@ export class Game {
       if (e.pendingHit > 0) dmgToPlayer += Math.max(1, e.pendingHit - defense)
     }
     this.enemies = this.enemies.filter((e) => {
-      if (e.remove) { e.view.destroy({ children: true }); return false }
+      if (e.remove) { this._netEnemies?.delete(e.eid); e.destroy(); return false }
       return true
     })
 
@@ -1189,9 +1821,18 @@ export class Game {
           const ms = p.attack(anim) || 400
           playSfx('swing.ogg')
           this._playerAtkCd = Math.max(0.65, ms / 1000)
-          const hit = this._playerMeleeDamage()
-          if (ranged) this._playerShoot(t, hit, kind)
-          else this._pendingHit = { at: (ms / 1000) * 0.5, dmg: hit.dmg, crit: hit.crit, target: t }
+          if (this._online && t.netDriven) {
+            // online: el servidor tira el daño y valida el alcance (autoritativo).
+            net.attack(t.eid)
+            if (ranged) {   // proyectil sólo cosmético (el daño lo aplica el server, llega por edmg)
+              const proj = kind === 'mental' ? 'magic' : 'arrow'
+              this._spawnProjectile(p.view.x, p.view.y - 40, t.view.x, t.view.y + (t._hpY || -40) * 0.5, proj, () => {})
+            }
+          } else {
+            const hit = this._playerMeleeDamage()
+            if (ranged) this._playerShoot(t, hit, kind)
+            else this._pendingHit = { at: (ms / 1000) * 0.5, dmg: hit.dmg, crit: hit.crit, target: t }
+          }
         }
       }
     } else if (t && t.dead) {
@@ -1256,29 +1897,49 @@ export class Game {
   _onResize = () => {
     if (!this.app) return
     this.camera.resize(this.app.screen.width, this.app.screen.height)
+    this.weather?.resize(this.app.screen.width, this.app.screen.height)
+    this.fauna?.resize(this.app.screen.width, this.app.screen.height)
   }
 
   // Minimapa: proyección iso de la ciudad (misma orientación que la vista).
   _buildMinimap(map) {
     const w = map.w, h = map.h
     const co = map.layers.collision, bg = map.layers.background
-    const scale = 0.72
-    const pad = 3
+    const ob = map.layers.object
+    // Más resolución (scale ↑) = más detalle; el marco del HUD lo escala al tamaño visible.
+    const scale = 1.15
+    const pad = 4
     const minMx = -(h - 1)
     const cw = Math.ceil((w + h - 2) * scale) + pad * 2
     const ch = Math.ceil((w + h - 2) * 0.5 * scale) + pad * 2
     const cv = document.createElement('canvas')
     cv.width = cw; cv.height = ch
     const ctx = cv.getContext('2d')
-    const dot = Math.max(1, scale * 1.5)
+    const dot = Math.max(1, Math.ceil(scale * 1.5))
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        const ground = bg[y][x] > 0
-        if (!ground) continue // vacío -> transparente
-        const walk = co[y][x] === 0
-        ctx.fillStyle = walk ? 'rgba(150,138,110,0.72)' : 'rgba(40,34,46,0.85)'
+        const g = bg[y][x]
+        if (g <= 0) continue // vacío -> transparente
+        const blocked = co[y][x] !== 0
+        const hasObj = ob && ob[y] && ob[y][x] > 0
         const mx = x - y, my = (x + y) * 0.5
-        ctx.fillRect((mx - minMx) * scale + pad, my * scale + pad, dot, dot)
+        const px = (mx - minMx) * scale + pad, py = my * scale + pad
+        let col
+        if (blocked) {
+          // muro / edificio / agua: oscuro; si además hay objeto (estructura) un pelín más cálido.
+          col = hasObj ? 'rgba(74,54,44,0.92)' : 'rgba(40,34,46,0.88)'
+        } else {
+          // suelo caminable: tono tierra/pasto con textura sutil derivada del tile (más detalle).
+          const v = ((g * 37) % 22) - 11 // -11..+10 determinista por tile
+          col = `rgba(${(150 + v * 0.5) | 0},${(140 + v * 0.6) | 0},${(112 + v * 0.4) | 0},0.78)`
+        }
+        ctx.fillStyle = col
+        ctx.fillRect(px, py, dot, dot)
+        // decoración/props sobre suelo abierto (árboles, cofres, puestos): marca de detalle.
+        if (hasObj && !blocked) {
+          ctx.fillStyle = 'rgba(96,74,52,0.9)'
+          ctx.fillRect(px, py, dot, dot)
+        }
       }
     }
     return { url: cv.toDataURL('image/png'), scale, minMx, pad, w: cw, h: ch }
@@ -1293,11 +1954,13 @@ export class Game {
       const t = this.iso.toTile(w.x, w.y)
       const tx = Math.round(t.x)
       const ty = Math.round(t.y)
+      if (this._spectator) return   // el mirón mueve la cámara arrastrando, no tocando (ver abajo)
+      this._pendingPickup = null    // tocar el suelo/enemigo cancela el "ir a recoger" pendiente
       // Clic izquierdo sobre (o CERCA de) un enemigo vivo = atacarlo. El tap directo al sprite ya
       // lo maneja Enemy.onTap; esto rescata el caso común de errarle a un enemigo en movimiento
       // (antes caía al piso y caminaba en vez de atacar).
       const foe = this._enemyNear(tx, ty, 1.1)
-      if (foe && !this._safeZone) { this._targetEnemy(foe); return }
+      if (foe && !this._safeZone && !this.store.isSpectator()) { this._targetEnemy(foe); return }
       this._target = null                    // tocar el suelo cancela el ataque
       const path = this.player.walkTo(tx, ty)
       if (path.length) {
@@ -1308,11 +1971,50 @@ export class Game {
     app.stage.on('pointertap', onTap)
     this._onTap = onTap
 
+    // Alt (desktop): revela TODAS las etiquetas de loot del suelo mientras se mantiene (como Diablo).
+    this._onAltDown = (e) => { if (e.key === 'Alt' || e.code === 'AltLeft' || e.code === 'AltRight') { this._altHeld = true; e.preventDefault() } }
+    this._onAltUp = (e) => { if (e.key === 'Alt' || e.code === 'AltLeft' || e.code === 'AltRight') this._altHeld = false }
+    window.addEventListener('keydown', this._onAltDown)
+    window.addEventListener('keyup', this._onAltUp)
+    window.addEventListener('blur', this._onAltUp)   // soltar Alt si la ventana pierde foco
+
+    // Shift (desktop): mantener para CORRER (override temporal del toggle de correr). Gasta stamina
+    // como el modo correr; al soltar, vuelve a caminar. En mobile se usa el botón de la HUD.
+    this._shiftRun = false
+    this._onShiftDown = (e) => { if (e.key === 'Shift') this._shiftRun = true }
+    this._onShiftUp = (e) => { if (e.key === 'Shift') this._shiftRun = false }
+    window.addEventListener('keydown', this._onShiftDown)
+    window.addEventListener('keyup', this._onShiftUp)
+    window.addEventListener('blur', this._onShiftUp)   // soltar Shift si pierde foco
+
     // Click DERECHO (estilo Diablo): acción directa sobre lo que hay bajo el cursor
     // (enemigo -> atacar, cadáver -> inspeccionar). Bloqueamos el menú del navegador.
     this._onContext = (e) => e.preventDefault()
     app.canvas.addEventListener('contextmenu', this._onContext)
     app.stage.on('pointerdown', (e) => { if (e.button === 2) this._rightClick(e.global.x, e.global.y) })
+
+    // Mirón: cámara libre. Arrastrar (dedo o mouse) mueve el mundo 1:1 — la forma más natural
+    // en móvil y desktop. Además WASD / flechas para desplazarse en desktop.
+    if (this._spectator) {
+      let dragging = false, lx = 0, ly = 0
+      app.stage.on('pointerdown', (e) => { if (e.button === 2) return; dragging = true; lx = e.global.x; ly = e.global.y })
+      app.stage.on('pointermove', (e) => {
+        if (!dragging) return
+        this.camera.panScreen(e.global.x - lx, e.global.y - ly)
+        lx = e.global.x; ly = e.global.y
+      })
+      const endDrag = () => { dragging = false }
+      app.stage.on('pointerup', endDrag)
+      app.stage.on('pointerupoutside', endDrag)
+      app.canvas.style.cursor = 'grab'
+
+      const KEYMAP = { KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down',
+                       KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right' }
+      this._onKeyDown = (e) => { const k = KEYMAP[e.code]; if (k) { this._panKeys.add(k); e.preventDefault() } }
+      this._onKeyUp = (e) => { const k = KEYMAP[e.code]; if (k) this._panKeys.delete(k) }
+      window.addEventListener('keydown', this._onKeyDown)
+      window.addEventListener('keyup', this._onKeyUp)
+    }
   }
 
   // Marca el destino con una X (estilo Diablo): queda mientras el personaje camina.
@@ -1348,7 +2050,7 @@ export class Game {
 
     // Correr/caminar con stamina.
     const st = this.store.getRunState()
-    const runningNow = st.running && st.stamina > 0 && this.player.moving
+    const runningNow = (st.running || this._shiftRun) && st.stamina > 0 && this.player.moving
     let stamina = st.stamina
     if (runningNow) stamina = Math.max(0, stamina - STAM_DRAIN * dt)
     else stamina = Math.min(st.staminaMax, stamina + STAM_REGEN * dt)
@@ -1370,6 +2072,14 @@ export class Game {
 
     // NPCs (anim idle + globos).
     for (const npc of this.npcs) npc.update(dt)
+    // Decoraciones animadas (la fuente): avanzar el frame según el reloj.
+    if (this._animDecor) for (const ad of this._animDecor) {
+      ad.t += dt * 1000
+      const f = Math.floor(ad.t / (ad.a.ms / ad.a.frames)) % ad.a.frames
+      const fr = ad.tex.frame
+      fr.x = f * ad.a.cell[0]; fr.y = 0; fr.width = ad.a.cell[0]; fr.height = ad.a.cell[1]
+      ad.tex.updateUvs()
+    }
 
     // Combate: IA de enemigos, ataque del jugador, daño y muerte/reaparición.
     this._combatTick(dt)
@@ -1377,6 +2087,7 @@ export class Game {
     // NPC cercano interactuable (para el botón del HUD): el más próximo dentro de rango.
     let near = null, nd = 1e9
     for (const npc of this.npcs) {
+      if (npc.def.critter) continue   // los animales no se interactúan
       const d = Math.abs(npc.tx - this.player.tx) + Math.abs(npc.ty - this.player.ty)
       if (d < nd) { nd = d; near = npc }
     }
@@ -1393,8 +2104,19 @@ export class Game {
     if (this._pendingChest && !this.player.moving) {
       const c = this._pendingChest
       const near = Math.abs(this.player.tx - c.x) <= 1.6 && Math.abs(this.player.ty - c.y) <= 1.6
-      if (near && !c.opened) this._openChest(c)
+      if (near && !c.opened) {
+        if (this._online && c.cid != null) net.openChest(c.cid)   // el server valida y responde cloot
+        else this._openChest(c)
+      }
       this._pendingChest = null
+    }
+
+    // Romper el barril pendiente al llegar cerca.
+    if (this._pendingBarrel && !this.player.moving) {
+      const b = this._pendingBarrel
+      const near = Math.abs(this.player.tx - b.x) <= 1.6 && Math.abs(this.player.ty - b.y) <= 1.6
+      if (near && !b.broken) this._breakBarrel(b)
+      this._pendingBarrel = null
     }
 
     // Nodos de recursos: bob + juntar al llegar al nodo apuntado.
@@ -1403,7 +2125,10 @@ export class Game {
       if (this._pendingNode && !this.player.moving) {
         const n = this._pendingNode
         const near = Math.abs(this.player.tx - n.tx) <= 1.6 && Math.abs(this.player.ty - n.ty) <= 1.6
-        if (near && !n.depleted) this._doGather(n)
+        if (near && !n.depleted) {
+          if (this._online && n.nid != null) net.gather(n.nid)   // el server valida y responde ngather
+          else this._doGather(n)
+        }
         this._pendingNode = null
       }
       // Nodo cercano recolectable (para el botón del HUD): el más próximo no agotado.
@@ -1424,17 +2149,126 @@ export class Game {
     // Loot en el suelo: bob + recoger al caminarle encima.
     if (this.groundItems.length) {
       const px = this.player.tx, py = this.player.ty
+      const revealLoot = this._altHeld || !!this.store.getLootLabels?.()   // Alt (desktop) o botón (mobile)
       for (const gi of this.groundItems) {
         if (gi.picked) continue
-        gi.update(dt)
-        if (Math.abs(px - gi.tx) <= 0.75 && Math.abs(py - gi.ty) <= 0.75) this._pickup(gi)
+        gi.update(dt)   // bob + envejecimiento (para el despawn)
+        if (gi.expired) { gi.picked = true; gi.destroy(); continue }   // loot ignorado: se fue
+        // Culling: el loot fuera de cámara no se dibuja ni se testea al puntero (visible=false lo
+        // saca del render y del hit-test de Pixi). La distancia en tiles al jugador aproxima "en
+        // cámara" porque la cámara lo sigue.
+        const onCam = (Math.abs(px - gi.tx) + Math.abs(py - gi.ty)) <= 22
+        gi.view.visible = onCam
+        // Etiquetas de loot (estilo Diablo): ocultas por defecto; se revelan con Alt (desktop),
+        // con el botón de loot (mobile) o cuando el jugador está cerca (≤4 tiles).
+        if (onCam) {
+          const near = Math.abs(px - gi.tx) <= 4 && Math.abs(py - gi.ty) <= 4
+          gi.setReveal(revealLoot || near)
+        }
+        // Oro: se recoge al pasarle por encima (auto). Ítems: SÓLO por click (abajo).
+        if (gi.isGold && Math.abs(px - gi.tx) <= 0.9 && Math.abs(py - gi.ty) <= 0.9) this._pickupGold(gi)
+      }
+      // Ítem clickeado: caminar hasta él y recogerlo al llegar. Robusto: si el jugador se detiene
+      // antes de llegar (pathfinding corto), reintenta caminar; sólo se cancela al recogerlo, al
+      // dar otra orden (mover/atacar), o tras varios intentos fallidos.
+      if (this._pendingPickup) {
+        const gi = this._pendingPickup
+        if (gi.picked || !this.groundItems.includes(gi)) {
+          this._pendingPickup = null; this._pickupTries = 0
+        } else if (!this.player.moving) {
+          if (Math.abs(px - gi.tx) <= 1.6 && Math.abs(py - gi.ty) <= 1.6) {
+            this._pickup(gi)   // si el inventario está lleno queda en el piso; igual soltamos el pendiente
+            this._pendingPickup = null; this._pickupTries = 0
+          } else {
+            this._pickupTries = (this._pickupTries || 0) + 1
+            if (this._pickupTries <= 4) this.player.walkTo(gi.tx, gi.ty)
+            else { this._pendingPickup = null; this._pickupTries = 0 }
+          }
+        }
       }
       this.groundItems = this.groundItems.filter((g) => !g.picked)
+    }
+
+    // Tumbas: bob + abrir el modal del ataúd (armadura + cinturón + bolsa) al llegarle encima.
+    // La recuperación se hace desde el modal ("Retirar todo"); acá reconciliamos las que ya no
+    // existen en el store (recuperadas) para sacarlas del canvas.
+    if (this.graves && this.graves.length) {
+      const px = this.player.tx, py = this.player.ty
+      const alive = new Set((this.store.getGravesInZone ? this.store.getGravesInZone(this.mapName) : []).map((g) => g.id))
+      let changed = false
+      for (const m of this.graves) {
+        if (m.taken) continue
+        if (!alive.has(m.grave.id)) { m.taken = true; m.destroy(); changed = true; continue }
+        m.update(dt)
+        const near = Math.abs(px - m.tx) <= 0.9 && Math.abs(py - m.ty) <= 0.9
+        if (near) { if (!m._opened) { m._opened = true; this.store.openGraveModal(m.grave.id) } }
+        else m._opened = false
+      }
+      this.graves = this.graves.filter((m) => !m.taken)
+      if (changed) this._publishGraves()
+    }
+
+    // Alijo personal: bob + abrir el modal al llegarle encima (una vez por acercamiento).
+    if (this.stashChest) {
+      const c = this.stashChest
+      c.update(dt)
+      const near = Math.abs(this.player.tx - c.tx) <= 0.9 && Math.abs(this.player.ty - c.ty) <= 0.9
+      if (near) { if (!c._opened) { c._opened = true; this.store.openStash() } }
+      else c._opened = false
+    }
+
+    // Online: interpolar a los jugadores remotos + difundir mi posición (throttle ~8Hz).
+    if (this._online) {
+      if (this.remotes) for (const r of this.remotes.values()) r.update(dt)
+      // El mirón sólo observa: no difunde posición ni persiste (no tiene personaje real).
+      if (!this._spectator) {
+        this._netAccum = (this._netAccum || 0) + dt
+        if (this._netAccum >= 0.12) {
+          this._netAccum = 0
+          const tx = Math.round(this.player.tx), ty = Math.round(this.player.ty), dir = this.player.dir
+          if (tx !== this._netTx || ty !== this._netTy || dir !== this._netDir) {
+            this._netTx = tx; this._netTy = ty; this._netDir = dir
+            net.move(this.mapName, tx, ty, dir)
+          }
+        }
+        // Difundir mi vida para que los demás vean mi barra (throttle ~4Hz; inmediato si muero).
+        const hst = this.store.getStats()
+        if (hst) {
+          const hp = hst.hp | 0, hpMax = hst.hpMax | 0
+          this._hpAccum = (this._hpAccum || 0) + dt
+          if ((hp !== this._netHp || hpMax !== this._netHpMax) && (this._hpAccum >= 0.25 || hp <= 0)) {
+            this._hpAccum = 0; this._netHp = hp; this._netHpMax = hpMax
+            net.hp(hp, hpMax)
+          }
+        }
+        // Persistencia en el servidor: subo el personaje cada ~20s (respaldo real en la DB).
+        this._netSaveAccum = (this._netSaveAccum || 0) + dt
+        if (this._netSaveAccum >= 20) {
+          this._netSaveAccum = 0
+          const b = this.store.getSaveBlob ? this.store.getSaveBlob() : null
+          if (b) net.save(b.name, b.race, b.char)
+        }
+      }
     }
 
     // Partículas ambientales.
     this._pt = (this._pt || 0) + dt
     this.particles.update(dt, this._pt)
+    if (this.weather) this.weather.update(dt)
+    if (this.dayNight && this._outdoor) this.dayNight.update(dt)
+    // Halo de luz del personaje: intensidad según lo oscuro que esté (noche). De día, apagado.
+    if (this.playerLight) {
+      const dark = this.dayNight ? (1 - this.dayNight.light) : 0
+      if (dark > 0.04 && this.player && !this._spectator && this._outdoor) {
+        this.player.view.getGlobalPosition(this._lightPt)
+        this.playerLight.position.set(this._lightPt.x, this._lightPt.y - 24)
+        this.playerLight.alpha = Math.min(0.72, dark * 0.85)
+        this.playerLight.visible = true
+      } else {
+        this.playerLight.visible = false
+      }
+    }
+    if (this.fauna && this._outdoor) this.fauna.update(dt, this.dayNight?.isNight)
 
     // Portales (waypoints): halo con pulso suave, SIN titilar. Pisar un portal por primera
     // vez descubre su destino (lo activa). El botón abre el menú de destinos.
@@ -1498,20 +2332,41 @@ export class Game {
     this._stamAccum = (this._stamAccum || 0) + dt
     if (this._stamAccum >= 0.08 || (stamina === 0) !== (st.stamina === 0)) {
       this.store.setStamina(Math.round(stamina))
-      this.store.setPlayerTile({ x: this.player.tx, y: this.player.ty })
+      const ptile = this._spectator ? this.iso.toTile(this.camera.x, this.camera.y) : { x: this.player.tx, y: this.player.ty }
+      this.store.setPlayerTile({ x: ptile.x, y: ptile.y })
       const n = this._nearbyNpc
       this.store.setNearby(n ? { name: npcName(n.def, getLang()), shop: !!n.def.shop } : null)
       this._stamAccum = 0
     }
-    this.camera.follow(this.player.tx, this.player.ty)
+    if (this._spectator) {
+      // Pan con teclado (WASD / flechas): en pixel de pantalla, dirección intuitiva.
+      if (this._panKeys && this._panKeys.size) {
+        const sp = 620 * dt   // pixels de mundo por segundo
+        let dx = 0, dy = 0
+        if (this._panKeys.has('up')) dy -= sp
+        if (this._panKeys.has('down')) dy += sp
+        if (this._panKeys.has('left')) dx -= sp
+        if (this._panKeys.has('right')) dx += sp
+        if (dx || dy) this.camera.panWorld(dx, dy)
+      }
+    } else {
+      this.camera.follow(this.player.tx, this.player.ty)
+    }
     this.camera.update(dtFrames)
 
     // Posicionar el mundo según la cámara.
     this.worldContainer.x = this.camera.offsetX
     this.worldContainer.y = this.camera.offsetY
 
+    // Culling de ENTIDADES fuera de cámara: Pixi no cullea solo (regla del proyecto). visible=false
+    // saca al sprite del render y del hit-test. La IA/posición sigue corriendo (para que estén bien
+    // al reaparecer); esto ahorra el draw call de todo lo que está fuera de pantalla.
+    this._cullEntities()
+
     // Culling de tiles.
     this.renderer.update(this.camera)
+    // Tiles animados (agua, lava, cascadas) — intercambia el frame según el reloj.
+    this.renderer.tickAnim(this._pt * 1000)
 
     // Transparencia: si un edificio queda DELANTE del jugador (lo tapa), lo atenuamos
     // para no perderlo de vista al pasar por detrás.
@@ -1548,8 +2403,18 @@ export class Game {
 
   destroy() {
     this.destroyed = true
+    if (this._online) { this._clearRemotes(); net.close() }
     window.removeEventListener('resize', this._onResize)
+    if (this._onKeyDown) window.removeEventListener('keydown', this._onKeyDown)
+    if (this._onKeyUp) window.removeEventListener('keyup', this._onKeyUp)
+    if (this._onAltDown) window.removeEventListener('keydown', this._onAltDown)
+    if (this._onAltUp) { window.removeEventListener('keyup', this._onAltUp); window.removeEventListener('blur', this._onAltUp) }
+    if (this._onShiftDown) window.removeEventListener('keydown', this._onShiftDown)
+    if (this._onShiftUp) { window.removeEventListener('keyup', this._onShiftUp); window.removeEventListener('blur', this._onShiftUp) }
     if (this._onContext && this.app?.canvas) this.app.canvas.removeEventListener('contextmenu', this._onContext)
+    if (this.weather) { this.weather.destroy(); this.weather = null }
+    if (this.dayNight) { this.dayNight.destroy(); this.dayNight = null }
+    if (this.fauna) { this.fauna.destroy(); this.fauna = null }
     if (this._unsub) { this._unsub(); this._unsub = null }
     if (this.app) {
       this.app.ticker.remove(this._tick)
@@ -1564,6 +2429,22 @@ function randInt(range) {
   const a = Array.isArray(range) ? range[0] : range
   const b = Array.isArray(range) ? range[1] : range
   return a + Math.floor(Math.random() * (b - a + 1))
+}
+
+// Textura de halo cálido (gradiente radial) para la luz que acompaña al personaje de noche.
+let _lightTex = null
+function makeLightTexture(size = 512) {
+  if (_lightTex) return _lightTex
+  const cnv = document.createElement('canvas'); cnv.width = cnv.height = size
+  const ctx = cnv.getContext('2d')
+  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.04, size / 2, size / 2, size / 2)
+  g.addColorStop(0, 'rgba(255,238,200,0.78)')
+  g.addColorStop(0.35, 'rgba(255,220,165,0.42)')
+  g.addColorStop(0.70, 'rgba(240,190,130,0.14)')
+  g.addColorStop(1, 'rgba(240,190,130,0)')
+  ctx.fillStyle = g; ctx.fillRect(0, 0, size, size)
+  _lightTex = Texture.from(cnv)
+  return _lightTex
 }
 
 // Tile caminable al azar dentro del rectángulo de un spawner.
@@ -1599,6 +2480,8 @@ const HUB_SPAWN = {
 // dibuja personajes CHICOS respecto de sus edificios; nuestro héroe (fantasycore) es más
 // grande, así que lo achicamos para que encaje con los aldeanos y la escala del pueblo.
 const ENTITY_SCALE = { triston: 0.66 }
+// El pueblo (hub): acá va el alijo personal, y acá no hay cofres/rompibles de loot.
+const TOWN_MAP = 'triston'
 
 // El héroe con equipo pesado se dibuja un pelín más alto que los aldeanos; lo achicamos
 // un poco MÁS que a los NPCs para que coincidan bien.
@@ -1617,17 +2500,44 @@ const MAP_ZOOM = { triston: 1.3 }
 
 // Mapas cuyos portales nativos no sirven: usamos SÓLO esta lista.
 const PORTAL_REPLACE = {
-  // El portal del pueblo va en las afueras (al norte de la plaza), no en el centro.
-  triston: [{ x: 57, y: 41, w: 1, h: 1, to: 'goblin_camp', tx: 29, ty: 31, label: 'Campo de Duendes' }],
+  // Hub del pueblo: los dos arcos curados que flanquean la plaza (tiles caminables verificados).
+  // Oeste = rama de gathering (Granja→Río→Campo Salado); Este = rama de combate (Cueva de Duendes).
+  // Pisar un arco descubre el destino (lo suma a la red de waypoints); el viaje se elige en el menú.
+  triston: [
+    { x: 45, y: 58, w: 1, h: 1, to: 'black_oak_farm', tx: 58, ty: 54, label: 'Granja de Black Oak' },
+    { x: 72, y: 58, w: 1, h: 1, to: 'goblin_cave', tx: 25, ty: 24, label: 'Cueva de Duendes' },
+  ],
 }
 
 // Portales que AGREGAMOS encima de los nativos del mapa (llegada = spawn walkable del destino).
+// Portales curados (Diablo-style): Triston (hub) es un nexo de waypoints. Los pads se plantan en
+// tiles CAMINABLES (verificados contra las capas de colisión). Pisar un pad descubre el destino
+// (lo suma a tu red de waypoints); el viaje se hace desde el menú de waypoints o la Piedra de
+// Retorno (Town Portal). Progresión de arranque (ESCENARIOS.md, 4 realms):
+//   Triston ──Oeste──▶ Granja(1-3) ──▶ Sendero del Río(3-5) ──▶ Campo Salado(4-6)
+//   Triston ──Este───▶ Cueva de Duendes(5-8)
+// Cada realm tiene su pad de "Volver a Triston". Coordenadas calculadas desde collision.
 const PORTAL_EXTRA = {
-  // Vuelta al pueblo desde la zona de entrada.
+  // (El hub Triston usa PORTAL_REPLACE — ver abajo — porque reemplaza sus portales nativos.)
+  // --- Rama Oeste (gathering / progresión temprana) ---
+  black_oak_farm: [
+    { x: 61, y: 54, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 36, y: 26, w: 1, h: 1, to: 'river_trail', tx: 42, ty: 20, label: 'Sendero del Río' },
+  ],
+  river_trail: [
+    { x: 45, y: 20, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 6, y: 4, w: 1, h: 1, to: 'salted_field', tx: 30, ty: 30, label: 'Campo Salado' },
+  ],
+  salted_field: [
+    { x: 33, y: 30, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // --- Rama Este (combate) ---
+  goblin_cave: [
+    { x: 28, y: 24, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // --- clusters futuros (ya cableados, fuera del arranque) ---
   goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],
-  // Puente racimo I (nivel 1-3) -> racimo II (nivel 5-6): del puerto a las minas.
   lochport: [{ x: 43, y: 1, w: 1, h: 1, to: 'abandoned_mines', tx: 76, ty: 71, label: 'Minas Abandonadas' }],
-  // Puente racimo II (nivel 5-6) -> racimo III (nivel 9-10): de la brecha a Black Oak City.
   the_breach: [{ x: 46, y: 98, w: 1, h: 1, to: 'black_oak_city', tx: 98, ty: 50, label: 'Black Oak City' }],
 }
 
@@ -1643,7 +2553,7 @@ const zoneTitle = (mapName, fallback) => zoneName(mapName, getLang(), fallback)
 
 // Decoraciones ambientales de HERESY que sacamos a mano (por mapa). En Triston quitamos
 // al posadero rojo del carro: ese puesto es donde ponemos al mercader (parece un mercado).
-const DECOR_SKIP = { triston: new Set(['Act1_innkeeper_owens']) }
+const DECOR_SKIP = { triston: new Set(['Act1_innkeeper_owens', 'Act1_witch_adriana']) }
 
 // Límite de copias por nombre (por mapa): en Triston el cementerio del noroeste tenía
 // muchos monjes; dejamos uno solo.
