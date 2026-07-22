@@ -200,6 +200,12 @@ export function leave(id) {
   const p = players.get(id)
   if (!p) return
   tradeCancel(id)                // si estaba en un intercambio, se cancela (nadie se queda colgado)
+  // No perder el oro de la tumba al desconectar: p._grave vive SOLO en memoria y se iría al soltar la
+  // sesión (el jugador quedaría con el oro descontado y nada para recuperar). Se lo devolvemos al
+  // saldo (que sí se persiste). Los ítems de la tumba siguen en el save del cliente y se recuperan
+  // aparte (bagGive validado). Sin dupe: al reconectar p._grave arranca en 0, así el recover no
+  // acredita de nuevo (el server es la fuente de verdad del oro).
+  if (p._grave > 0) { p.gold += p._grave; p._grave = 0; p._goldDirty = true }
   persistGold(p)                 // guarda el oro autoritativo antes de soltar la sesión
   players.delete(id)
   combat.dropPlayer(id)
