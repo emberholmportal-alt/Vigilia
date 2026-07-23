@@ -14,6 +14,10 @@ export const ZONE_LORE = {
     es: 'La Torre del Mago se cierra sobre vos como una garganta de piedra. Los Tres estudiaron acá antes de sellarse. Algo siguió estudiando después.',
     en: 'The Wizard\'s Tower closes over you like a throat of stone. The Three studied here before they sealed themselves. Something kept studying after.',
   },
+  underworld: {
+    es: 'Bajo la torre no hay fondo, sólo más abajo. El Inframundo no fue cavado por manos: se abrió solo, y sigue abriéndose.',
+    en: 'Beneath the tower there is no bottom, only further down. The Underworld was not dug by hands: it opened on its own, and it is opening still.',
+  },
   river_trail: {
     es: 'El agua se lleva los pasos que das. Dicen que, más abajo, a veces los devuelve.',
     en: 'The water carries away the steps you take. They say that, further down, it sometimes gives them back.',

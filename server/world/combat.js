@@ -205,6 +205,28 @@ function spawnElite(md, sprite, contractId) {
   }
 }
 
+// Jefe PERMANENTE de zona (clímax), independiente del contrato diario del día. A diferencia del élite
+// del contrato, se planta cerca de la ENTRADA (reachable, no en una sala aislada) y respawnea siempre
+// como jefe. Estadísticas más duras que el élite. Marcado el:true+boss:true => loot de jefe.
+const MAP_BOSS = {
+  // La Torre del Mago: el Nigromante óseo (invoca esbirros) custodia el umbral. Paga el rumor del
+  // Centinela Aldric ("nadie que entró volvió a contarlo").
+  wizards_tower_1: { sprite: 'skeleton_mage_boss', level: 12 },
+}
+function spawnBoss(md, cfg) {
+  const [cx, cy] = md.spawn || [Math.floor(md.w / 2), Math.floor(md.h / 2)]
+  const t = nearWalkable(md, cx, cy, 4, 16, new Set()) || randWalkable(md, new Set())
+  if (!t) return null
+  const st = enemyStats(cfg.sprite, cfg.level)
+  const hp = Math.round(st.hpMax * 2.4)
+  return {
+    i: eidSeq++, s: cfg.sprite, lv: cfg.level, x: t.x + 0.5, y: t.y + 0.5, d: 7,
+    hp, hpm: hp, dmg: Math.round(st.damage * 1.5), xp: st.xp + 120, gold: Math.round(st.gold * 4),
+    rng: isRanged(cfg.sprite), atkCd: 0, home: { x: t.x, y: t.y }, sp: null,
+    el: true, boss: true,
+  }
+}
+
 // Crea (una vez) el mundo de enemigos de un canal si el mapa tiene spawners.
 export function ensureWorld(map, ch) {
   const k = key(map, ch)
@@ -248,6 +270,9 @@ export function ensureWorld(map, ch) {
     const el = spawnElite(md, con.elite, con.id)
     if (el) enemies.set(el.i, el)
   }
+  // Jefe permanente de la zona (clímax), si el mapa tiene uno configurado.
+  const bcfg = MAP_BOSS[map]
+  if (bcfg) { const b = spawnBoss(md, bcfg); if (b) enemies.set(b.i, b) }
   worlds.set(k, { map, ch, md, enemies, dead: [], nodes, nodeDead: [], chests, chestDead: [], emptySince: 0 })
 }
 
@@ -387,8 +412,10 @@ function rollPlayerDamage(st) {
 
 function killEnemy(w, e, killerId) {
   w.enemies.delete(e.i)
-  // La élite reaparece más lento (para que sea un evento); los comunes al ritmo normal.
-  if (e.el) w.dead.push({ el: true, sprite: e.s, contract: e.contract, at: now() + RESPAWN * 3 * 1000 })
+  // El jefe permanente y la élite reaparecen más lento (para que sean un evento); los comunes al
+  // ritmo normal. El jefe respawnea COMO jefe (no degradado a élite de contrato).
+  if (e.boss) w.dead.push({ boss: true, sprite: e.s, level: e.lv, at: now() + RESPAWN * 4 * 1000 })
+  else if (e.el) w.dead.push({ el: true, sprite: e.s, contract: e.contract, at: now() + RESPAWN * 3 * 1000 })
   else w.dead.push({ sp: e.sp, at: now() + respawnDelay(w, RESPAWN, MIN_RESPAWN) * 1000 })
   ctx.broadcast(w.map, w.ch, { t: 'edie', i: e.i, by: killerId })
   // Oro AUTORITATIVO del servidor (Fase A): lo acredita el server (con una variación ±30% para que
@@ -440,7 +467,8 @@ function step() {
       const still = []
       for (const d of w.dead) {
         if (t >= d.at) {
-          const e = d.el ? spawnElite(w.md, d.sprite, d.contract) : spawnEnemy(w.md, d.sp)
+          const e = d.boss ? spawnBoss(w.md, { sprite: d.sprite, level: d.level })
+            : d.el ? spawnElite(w.md, d.sprite, d.contract) : spawnEnemy(w.md, d.sp)
           if (e) { w.enemies.set(e.i, e); ctx.broadcast(w.map, w.ch, { t: 'espawn', es: [pubEnemy(e)] }) }
         } else still.push(d)
       }

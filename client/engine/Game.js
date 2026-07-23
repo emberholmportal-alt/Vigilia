@@ -2473,7 +2473,7 @@ function equipToGfx(equip) {
 // Spawn de hub elegido a mano (plaza/centro) por mapa; si no, centroide abierto.
 const HUB_SPAWN = {
   black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27],
-  greenwood_point: [51, 51], triston: [59, 58], wizards_tower_1: [35, 48],
+  greenwood_point: [51, 51], triston: [59, 58], wizards_tower_1: [35, 48], underworld: [67, 47],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2549,10 +2549,17 @@ const PORTAL_EXTRA = {
     // server densifica el combate. La torre es un dungeon de 3 pisos (conectados por portales nativos).
     { x: 60, y: 50, w: 1, h: 1, to: 'wizards_tower_1', tx: 35, ty: 48, label: 'Torre del Mago' },
   ],
-  // Torre del Mago (entrada, nivel ~11): dungeon. Regreso a Triston (la Piedra de Retorno también
-  // sirve). Pad de regreso unos tiles al lado del spawn (35,48), verificado caminable+reachable.
+  // Torre del Mago (entrada, nivel ~11): dungeon con jefe (el Nigromante óseo custodia el umbral).
+  // Regreso a Triston + descenso al Inframundo (las cimientas de la torre se hunden en él, nivel ~13).
+  // Pads separados del spawn (35,48) y entre sí; verificados caminables+reachable.
   wizards_tower_1: [
     { x: 37, y: 48, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 35, y: 51, w: 1, h: 1, to: 'underworld', tx: 67, ty: 47, label: 'El Inframundo' },
+  ],
+  // El Inframundo (nivel ~13): la caverna profunda. Encadena su propio cluster (Catacumbas, Minas)
+  // por portales nativos. Regreso a Triston + la Piedra de Retorno. Pad al lado del spawn (67,47).
+  underworld: [
+    { x: 64, y: 47, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
   // --- clusters futuros (ya cableados, fuera del arranque) ---
   goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],
