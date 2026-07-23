@@ -2509,7 +2509,8 @@ function equipToGfx(equip) {
 
 // Spawn de hub elegido a mano (plaza/centro) por mapa; si no, centroide abierto.
 const HUB_SPAWN = {
-  black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27],
+  black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [28, 34],
+  lochport_cemetery: [20, 44], family_crypt: [10, 39], merrimead_swamp: [29, 39],
   greenwood_point: [51, 51], triston: [59, 58], wizards_tower_1: [52, 9], underworld: [67, 47],
   st_maria_1: [39, 66], perdition_mines: [52, 18], stormrock_pass: [24, 81],
   underworld_catacombs: [70, 99], underworld_mines: [31, 63], underworld_stronghold_1: [5, 32], underworld_stronghold_2: [36, 8],
@@ -2571,6 +2572,25 @@ const PORTAL_REPLACE = {
   temple_of_mez_3: [ // Entrada (jefe: el wyvern del portón)
     { x: 55, y: 40, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
+  // Cluster costero de Lochport (nivel 2-3): puerto arruinado -> su cementerio -> (cripta + ciénaga).
+  // Mapas sanos salvo la cripta (spawn nativo en bolsón, ver SPAWN_OVERRIDE). Portales curados que
+  // aterrizan en el tile central de cada destino. Corta los nativos hacia Sta. María (nivel 9, no
+  // corresponde a este nivel) y demás mapas sin poblar. Tiles verificados caminables+reachable.
+  lochport: [
+    { x: 30, y: 34, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 2, y: 4, w: 1, h: 1, to: 'lochport_cemetery', tx: 20, ty: 44, label: 'Cementerio de Lochport' },
+  ],
+  lochport_cemetery: [
+    { x: 22, y: 44, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 48, y: 78, w: 1, h: 1, to: 'family_crypt', tx: 10, ty: 39, label: 'Cripta Familiar' },
+    { x: 3, y: 5, w: 1, h: 1, to: 'merrimead_swamp', tx: 29, ty: 39, label: 'Ciénaga de Merrimead' },
+  ],
+  family_crypt: [
+    { x: 12, y: 39, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  merrimead_swamp: [
+    { x: 27, y: 39, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
 }
 
 // Portales que AGREGAMOS encima de los nativos del mapa (llegada = spawn walkable del destino).
@@ -2596,6 +2616,8 @@ const PORTAL_EXTRA = {
     { x: 6, y: 4, w: 1, h: 1, to: 'salted_field', tx: 30, ty: 30, label: 'Campo Salado' },
     // El sendero trepa hasta el Paso Roca-Tormenta (ruina del viento — quest de los Tres Nombres).
     { x: 22, y: 18, w: 1, h: 1, to: 'stormrock_pass', tx: 24, ty: 81, label: 'Paso Roca-Tormenta' },
+    // Río abajo, donde el agua llega al mar: Lochport, el puerto arruinado (nivel ~2, ramal costero).
+    { x: 77, y: 27, w: 1, h: 1, to: 'lochport', tx: 28, ty: 34, label: 'Lochport' },
   ],
   salted_field: [
     { x: 33, y: 30, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
@@ -2673,7 +2695,6 @@ const PORTAL_EXTRA = {
   ],
   // --- clusters futuros (ya cableados, fuera del arranque) ---
   goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],
-  lochport: [{ x: 43, y: 1, w: 1, h: 1, to: 'abandoned_mines', tx: 76, ty: 71, label: 'Minas Abandonadas' }],
   the_breach: [{ x: 46, y: 98, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' }],
 }
 

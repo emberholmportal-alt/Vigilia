@@ -36,6 +36,9 @@ export const POOL = [
   { id: 'hunt_deep', type: 'kill', map: 'underworld_mines', target: 18, xp: 230, gold: 165, seals: 5 },
   { id: 'loot_catacombs', type: 'chest', map: 'underworld_catacombs', target: 3, xp: 200, gold: 140, seals: 5 },
   { id: 'hunt_crypt', type: 'kill', map: 'family_crypt', target: 10, xp: 95, gold: 65, seals: 2 },
+  // Ciénaga de Merrimead (nivel ~2): ramal costero de Lochport, tras el cementerio.
+  { id: 'hunt_marsh', type: 'kill', map: 'merrimead_swamp', target: 12, xp: 60, gold: 42, seals: 2 },
+  { id: 'loot_marsh', type: 'chest', map: 'merrimead_swamp', target: 3, xp: 65, gold: 45, seals: 2 },
   { id: 'mine_crystals', type: 'mine', map: 'abandoned_mines', target: 8, xp: 85, gold: 55, seals: 2 },
   { id: 'mine_cave', type: 'mine', map: 'goblin_cave', target: 6, xp: 65, gold: 40, seals: 2 },
   // Herboristería: las junta la bruja alquimista. La nombramos en el objetivo (giver).

@@ -46,6 +46,13 @@ const SPAWN_OVERRIDE = {
   temple_of_mez_1: [35, 46], // isla #0 (1058 tiles, 8 spawners) — el Sótano
   temple_of_mez_2: [40, 34], // isla #0 (3076 tiles, 19 spawners) — el Gran Salón
   temple_of_mez_3: [53, 40], // isla #0 (1044 tiles, 4 spawners) — la Entrada (jefe)
+  // Cluster costero de Lochport (nivel 2-3): reanclamos a un tile CENTRAL de la isla rica de cada
+  // mapa, para que la llegada del cliente (HUB_SPAWN, mismo tile) coincida con el densificado del
+  // server (near-spawners/cofres/jefe). En family_crypt además el spawn nativo caía en un bolsón.
+  lochport: [28, 34],          // isla #0 (1444 tiles, 12 spawners)
+  lochport_cemetery: [20, 44], // isla #0 (2059 tiles, 20 spawners)
+  family_crypt: [10, 39],      // isla #0 (388 tiles, 7 spawners) — nativo caía en el bolsón #1
+  merrimead_swamp: [29, 39],   // isla #0 (1622 tiles, 16 spawners)
 }
 function loadMap(name) {
   if (mapCache.has(name)) return mapCache.get(name)

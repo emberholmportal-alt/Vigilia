@@ -70,9 +70,17 @@ export const ZONE_LORE = {
     es: 'Las minas cantan cuando el aire baja. Los que picaron mastite acá juran que no es el viento.',
     en: 'The mines sing when the air drops. Those who mined mastite here swear it is not the wind.',
   },
+  lochport: {
+    es: 'Lochport fue un puerto próspero antes de que el mar dejara de traer barcos y empezara a traer otra cosa. Los muelles todavía crujen; ya nadie los pisa por gusto.',
+    en: 'Lochport was a thriving port before the sea stopped bringing ships and started bringing something else. The docks still creak; no one walks them for pleasure now.',
+  },
   lochport_cemetery: {
     es: 'Más muertos que lápidas. Y las lápidas cambian de lugar cuando no mirás.',
     en: 'More dead than headstones. And the headstones move when you are not looking.',
+  },
+  merrimead_swamp: {
+    es: 'La Ciénaga de Merrimead se tragó el camino viejo y a los que lo caminaban. El barro acá guarda todo, y de vez en cuando lo devuelve con hambre.',
+    en: 'Merrimead Swamp swallowed the old road and those who walked it. The mud here keeps everything, and now and then it gives it back hungry.',
   },
   goblin_camp: {
     es: 'Un campamento de duendes en la superficie. Ni ellos quieren estar bajo tierra ya.',
