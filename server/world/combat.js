@@ -18,7 +18,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { pickSprite, enemyStats, isRanged, rangedCousin } from '../../shared/bestiary.js'
+import { pickSprite, enemyStats, isRanged, rangedCousin, enemyAbility } from '../../shared/bestiary.js'
 import { GATHER } from '../../shared/gather.js'
 import { rollLoot, hasLootTable } from '../../shared/loot.js'
 import { rollMonsterDrop } from '../../shared/drops.js'
@@ -221,6 +221,16 @@ const MAP_BOSS = {
   stormrock_pass: { sprite: 'wyvern_air', level: 9 },   // viento / Grisbon
   // Capstone del cluster profundo: lo más hondo que se puede llegar (Fortaleza II, nivel 15).
   underworld_stronghold_2: { sprite: 'skeleton_knight_boss', level: 15 },
+}
+// Esbirro INVOCADO por una habilidad (summon): sprite+nivel fijos en un tile dado. `sp:null` +
+// `_parent` -> no repone al morir (no es un spawner del mapa; ver killEnemy).
+function spawnMinion(md, sprite, level, tile) {
+  const st = enemyStats(sprite, level)
+  return {
+    i: eidSeq++, s: sprite, lv: level, x: tile.x + 0.5, y: tile.y + 0.5, d: 7,
+    hp: st.hpMax, hpm: st.hpMax, dmg: st.damage, xp: st.xp, gold: st.gold,
+    rng: isRanged(sprite), atkCd: 0, home: { x: tile.x, y: tile.y }, sp: null,
+  }
 }
 function spawnBoss(md, cfg) {
   const [cx, cy] = md.spawn || [Math.floor(md.w / 2), Math.floor(md.h / 2)]
@@ -454,7 +464,7 @@ function killEnemy(w, e, killerId) {
   // ritmo normal. El jefe respawnea COMO jefe (no degradado a élite de contrato).
   if (e.boss) w.dead.push({ boss: true, sprite: e.s, level: e.lv, at: now() + RESPAWN * 4 * 1000 })
   else if (e.el) w.dead.push({ el: true, sprite: e.s, contract: e.contract, at: now() + RESPAWN * 3 * 1000 })
-  else w.dead.push({ sp: e.sp, at: now() + respawnDelay(w, RESPAWN, MIN_RESPAWN) * 1000 })
+  else if (e.sp) w.dead.push({ sp: e.sp, at: now() + respawnDelay(w, RESPAWN, MIN_RESPAWN) * 1000 })   // sólo los de spawner reponen (los invocados, sp:null, no)
   ctx.broadcast(w.map, w.ch, { t: 'edie', i: e.i, by: killerId })
   // Oro AUTORITATIVO del servidor (Fase A): lo acredita el server (con una variación ±30% para que
   // se sienta vivo) y le manda el nuevo total al matador; el cliente sólo muestra la pila cosmética.
@@ -546,15 +556,27 @@ function step() {
 
 function stepEnemy(w, e, players, dt) {
   if (e.atkCd > 0) e.atkCd -= dt
+  const ab = e._ab !== undefined ? e._ab : (e._ab = enemyAbility(e.s))   // habilidad del bicho (cacheada)
   // objetivo: jugador más cercano dentro del aggro
   let tgt = null, best = AGGRO * AGGRO
   for (const p of players) {
     const dx = p.x - e.x, dy = p.y - e.y, d2 = dx * dx + dy * dy
     if (d2 < best) { best = d2; tgt = p }
   }
+  // SUMMON: el nigromante invoca esbirros cada `cd` mientras haya un jugador en aggro (aunque no
+  // llegue a rango de golpe). Tope por `cap` esbirros vivos suyos (tag _parent).
+  if (ab && ab.type === 'summon') stepSummon(w, e, ab, tgt, dt)
   if (!tgt) return
   const dx = tgt.x - e.x, dy = tgt.y - e.y
-  const dist = Math.hypot(dx, dy)
+  const dist = Math.hypot(dx, dy) || 0.0001
+  // SKITTISH: con poca vida, huye del jugador (después vuelve al subir la vida / cambiar de target).
+  if (ab && ab.type === 'skittish' && e.hp < e.hpm * (ab.threshold || 0.3)) {
+    const nx = e.x - (dx / dist) * SPEED * dt, ny = e.y - (dy / dist) * SPEED * dt
+    if (isWalkable(w.md, nx, e.y)) e.x = nx
+    if (isWalkable(w.md, e.x, ny)) e.y = ny
+    e.d = vecToDir(-dx, -dy)
+    return
+  }
   const reach = e.rng ? RANGED_REACH : MELEE
   if (dist > reach) {
     // paso hacia el objetivo (greedy, respeta colisión por tile)
@@ -566,10 +588,38 @@ function stepEnemy(w, e, players, dt) {
   } else if (e.atkCd <= 0) {
     e.atkCd = ATK_CD
     e.d = vecToDir(dx, dy)
-    const st = pstats.get(tgt.id) || {}
-    const dmg = Math.max(1, e.dmg - (st.defense || 0))
-    ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg })
+    // SMASH: chance de golpe de ÁREA más fuerte (minotauro/caballero/élites) — pega a todos los
+    // jugadores en radio; si no procea, golpe normal al objetivo.
+    if (ab && ab.type === 'smash' && Math.random() < (ab.chance || 0.4)) {
+      for (const p of players) {
+        if (Math.hypot(p.x - e.x, p.y - e.y) > (ab.radius || 2)) continue
+        const ps = pstats.get(p.id) || {}
+        const dmg = Math.max(1, Math.round(e.dmg * (ab.mult || 2)) - (ps.defense || 0))
+        ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg, smash: 1 })
+      }
+      ctx.broadcast(w.map, w.ch, { t: 'esmash', i: e.i, x: r2(e.x), y: r2(e.y), r: ab.radius || 2 })  // FX (el cliente puede animarlo)
+    } else {
+      const st = pstats.get(tgt.id) || {}
+      const dmg = Math.max(1, e.dmg - (st.defense || 0))
+      ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg })
+    }
   }
+}
+
+// Invocación de esbirros (nigromante). Primer summon tras un `cd`; tope por esbirros vivos propios.
+function stepSummon(w, e, ab, tgt, dt) {
+  if (e._sumAt == null) e._sumAt = ab.cd
+  e._sumAt -= dt
+  if (e._sumAt > 0 || !tgt) return
+  e._sumAt = ab.cd
+  const alive = [...w.enemies.values()].filter((m) => m._parent === e.i).length
+  if (alive >= (ab.cap || 3) || w.enemies.size >= MAX_PER_MAP) return
+  const t = nearWalkable(w.md, Math.round(e.x), Math.round(e.y), 1, 3, new Set())
+  if (!t) return
+  const minion = spawnMinion(w.md, ab.minion, Math.max(1, (e.lv || 1) - 2), t)
+  minion._parent = e.i
+  w.enemies.set(minion.i, minion)
+  ctx.broadcast(w.map, w.ch, { t: 'espawn', es: [pubEnemy(minion)] })
 }
 
 function broadcastState(w, players) {
