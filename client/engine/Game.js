@@ -2473,7 +2473,7 @@ function equipToGfx(equip) {
 // Spawn de hub elegido a mano (plaza/centro) por mapa; si no, centroide abierto.
 const HUB_SPAWN = {
   black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27],
-  greenwood_point: [51, 51], triston: [59, 58],
+  greenwood_point: [51, 51], triston: [59, 58], wizards_tower_1: [35, 48],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2544,6 +2544,15 @@ const PORTAL_EXTRA = {
   // también sirve desde acá. Ambos tiles verificados caminables+reachable.
   black_oak_city: [
     { x: 44, y: 13, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    // Cruzando las avenidas de la ciudad se llega a la Torre del Mago (nivel ~11). Pad en un tile
+    // reachable hacia el interior peligroso; llegada al spawn nativo de la torre (35,48), donde el
+    // server densifica el combate. La torre es un dungeon de 3 pisos (conectados por portales nativos).
+    { x: 60, y: 50, w: 1, h: 1, to: 'wizards_tower_1', tx: 35, ty: 48, label: 'Torre del Mago' },
+  ],
+  // Torre del Mago (entrada, nivel ~11): dungeon. Regreso a Triston (la Piedra de Retorno también
+  // sirve). Pad de regreso unos tiles al lado del spawn (35,48), verificado caminable+reachable.
+  wizards_tower_1: [
+    { x: 37, y: 48, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
   // --- clusters futuros (ya cableados, fuera del arranque) ---
   goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],

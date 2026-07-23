@@ -10,6 +10,10 @@ export const ZONE_LORE = {
     es: 'Black Oak City fue la joya del reino antes de la Caída. Hoy sus avenidas son de otros, y no perdonan al que llega sin filo.',
     en: 'Black Oak City was the jewel of the kingdom before the Fall. Now its avenues belong to others, and they do not forgive those who arrive without a blade.',
   },
+  wizards_tower_1: {
+    es: 'La Torre del Mago se cierra sobre vos como una garganta de piedra. Los Tres estudiaron acá antes de sellarse. Algo siguió estudiando después.',
+    en: 'The Wizard\'s Tower closes over you like a throat of stone. The Three studied here before they sealed themselves. Something kept studying after.',
+  },
   river_trail: {
     es: 'El agua se lleva los pasos que das. Dicen que, más abajo, a veces los devuelve.',
     en: 'The water carries away the steps you take. They say that, further down, it sometimes gives them back.',

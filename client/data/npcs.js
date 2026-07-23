@@ -239,6 +239,36 @@ const TRISTON = [
   { sprite: 'peasant_man1', x: 68, y: 54, dir: 1, critter: true },
 ]
 
+// Black Oak City (la joya caída del reino, nivel ~10): NO es un pueblo. Un puñado de sobrevivientes
+// se aferra a una esquina cerca de la puerta (el hub de llegada, 41,13); las avenidas son de los
+// monstruos. Un mercader carroñero (compra/venta en el lugar, valioso tan lejos de Triston), un
+// centinela solitario y una vieja que recuerda la ciudad en pie. Ambiente + un servicio real.
+const BLACK_OAK_CITY = [
+  { sprite: 'wandering_trader', name: 'Corvin el Carroñero', name_en: 'Corvin the Scavenger', portrait: 'male10.png', x: 39, y: 13, dir: 5, shop: true,
+    lines: ['Compro lo que saques de las avenidas. No pregunto de qué boca lo sacaste.',
+            'Acero de la vieja guardia, todavía sirve. Más de lo que sirvieron ellos.',
+            'Vendé antes de bajar. Los muertos no dan cambio.'],
+    lines_en: ['I buy whatever you pull from the avenues. I do not ask whose mouth you pulled it from.',
+               'Steel from the old guard, still good. More than they turned out to be.',
+               'Sell before you go deeper. The dead do not make change.'] },
+  { sprite: 'knight', name: 'Centinela Aldric', name_en: 'Sentinel Aldric', portrait: 'male07.png', x: 41, y: 11, dir: 7,
+    lines: ['No queda muro que valga acá. Sólo esta esquina, y sólo porque la peleamos cada noche.',
+            'Si vas a las avenidas, andá con filo. La ciudad se come a los que llegan blandos.',
+            'La Torre del Mago sigue en pie al fondo. Nadie que entró volvió a contarlo.'],
+    lines_en: ['No wall worth the name holds here. Just this corner, and only because we fight for it every night.',
+               'If you go to the avenues, go with a blade. The city eats those who arrive soft.',
+               "The Wizard's Tower still stands at the far end. No one who went in came back to tell it."] },
+  { sprite: 'peasant_woman1', name: 'la vieja Maerith', name_en: 'Old Maerith', portrait: 'female02.png', x: 41, y: 15, dir: 3,
+    lines: ['Nací bajo estas torres cuando todavía tenían luz. Black Oak era la joya del reino.',
+            'Ahora la joya está engarzada en la garganta de otra cosa. Y todavía brilla.',
+            'Los Tres se sellaron en su torre, dicen. Yo digo que nunca se fueron.'],
+    lines_en: ['I was born beneath these towers when they still held light. Black Oak was the jewel of the kingdom.',
+               'Now the jewel is set in the throat of something else. And it still shines.',
+               'The Three sealed themselves in their tower, they say. I say they never left.'] },
+  { sprite: 'peasant_man1', x: 43, y: 12, dir: 1, critter: true },
+]
+
 export const NPCS_BY_MAP = {
   lochport: LOCHPORT, black_oak_farm: FARM, greenwood_point: GREENWOOD, triston: TRISTON,
+  black_oak_city: BLACK_OAK_CITY,
 }

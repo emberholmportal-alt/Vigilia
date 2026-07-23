@@ -19,6 +19,9 @@ function hashStr(s) {
 export const POOL = [
   { id: 'hunt_cave', type: 'kill', map: 'goblin_cave', target: 12, xp: 90, gold: 60, seals: 2 },
   { id: 'hunt_camp', type: 'kill', map: 'goblin_camp', target: 10, xp: 70, gold: 45, seals: 2 },
+  // Black Oak City (nivel ~10): la joya caída. Caza y saqueo de mayor riesgo -> mayor recompensa.
+  { id: 'hunt_city', type: 'kill', map: 'black_oak_city', target: 14, xp: 150, gold: 105, seals: 3 },
+  { id: 'loot_city', type: 'chest', map: 'black_oak_city', target: 3, xp: 130, gold: 90, seals: 3 },
   { id: 'hunt_crypt', type: 'kill', map: 'family_crypt', target: 10, xp: 95, gold: 65, seals: 2 },
   { id: 'mine_crystals', type: 'mine', map: 'abandoned_mines', target: 8, xp: 85, gold: 55, seals: 2 },
   { id: 'mine_cave', type: 'mine', map: 'goblin_cave', target: 6, xp: 65, gold: 40, seals: 2 },
