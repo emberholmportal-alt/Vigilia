@@ -701,20 +701,23 @@ export class Game {
     }
   }
 
-  // Hablar con un Guardián: con los tres nombres, despierta y cierra la quest; si no, recibe
-  // la ofrenda del día (si hay y tenés el oro); si no, un diálogo lo explica.
+  // Hablar con un Guardián de los Tres Nombres. Con los tres nombres, es el ENFRENTAMIENTO FINAL:
+  // se pronuncian, los Guardianes despiertan uno a uno y los sellos ceden (cierra la quest con
+  // recompensa). Sin los tres, el Guardián habla su propio lore; con la quest activa, deja un hint;
+  // ya cerrada, una despedida.
   _makeOffering(npc) {
-    const nm = npc ? npcName(npc.def, getLang()) : tt('offering_sleep_name')
+    const nm = npcName(npc.def, getLang())
     if (this.store.canAwakenGuardians()) {
-      this.store.setQuestFlag('q3_finish')   // recompensa incluida en setQuestFlag
-      this.store.openDialogue({ name: nm, portrait: null, lines: [tt('guardians_wake')] })
+      this.store.setQuestFlag('q3_finish')   // recompensa (XP/oro/sellos) incluida en setQuestFlag
+      this.store.openDialogue({ name: nm, portrait: npc.def.portrait || null, lines: [
+        tt('awaken_1'), tt('awaken_2'), tt('awaken_3'), tt('awaken_4'), tt('awaken_5'),
+      ] })
       return
     }
-    Promise.resolve(this.store.deliverOffering()).then((res) => {
-      if (res && !res.ok && res.reason === 'none') {
-        this.store.openDialogue({ name: tt('offering_sleep_name'), portrait: null, lines: [tt('offering_sleep_l1'), tt('offering_sleep_l2')] })
-      }
-    })
+    const lines = npcLines(npc.def, getLang()).slice()
+    if (this.store.hasQuestFlag('q3_finish')) lines.push(tt('guardian_freed'))
+    else if (this.store.hasQuestFlag('q3_init')) lines.push(tt('guardian_asleep'))
+    this.store.openDialogue({ name: nm, portrait: npc.def.portrait || null, lines })
   }
 
   _inspectCorpse(e) {

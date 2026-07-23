@@ -381,6 +381,13 @@ const DICT = {
   name_found: { es: 'Un nombre olvidado resuena: {name}', en: 'A forgotten name echoes: {name}' },
   guardians_wake: { es: 'Pronunciás los tres nombres. Los Guardianes despiertan.', en: 'You speak the three names. The Guardians awaken.' },
   guardian_asleep: { es: 'La estatua duerme. Le falta oír los nombres que la sellaron.', en: 'The statue sleeps. It must hear the names that sealed it.' },
+  // Enfrentamiento final: pronunciás los tres nombres ante los Guardianes y los sellos ceden.
+  awaken_1: { es: 'Ponés los tres nombres ante la piedra. El aire se detiene, y el río deja de sonar.', en: 'You lay the three names before the stone. The air stops, and the river falls silent.' },
+  awaken_2: { es: '«Vesuvvio.» El Guardián de Fuego abre los ojos: —Al fin. El fuego recuerda su nombre… y arde de gratitud.', en: '"Vesuvvio." The Guardian of Fire opens its eyes: —At last. The fire remembers its name… and burns with gratitude.' },
+  awaken_3: { es: '«Scathelocke.» El hielo se quiebra desde adentro: —Guardé las verdades del reino hasta olvidarme. Gracias por devolverme.', en: '"Scathelocke." The ice cracks from within: —I kept the kingdom\'s truths until I forgot myself. Thank you for giving me back.' },
+  awaken_4: { es: '«Grisbon.» El viento se levanta en espiral: —Llevé los nombres de los que no volvieron. El mío era el último. Ya está dicho.', en: '"Grisbon." The wind rises in a spiral: —I carried the names of those who did not return. Mine was the last. Now it is spoken.' },
+  awaken_5: { es: 'Los Tres se yerguen por última vez, juntos, y se deshacen en luz sobre el río. Empyrea suelta un peso viejo. El pueblo, esta noche, respira distinto.', en: 'The Three stand tall one last time, together, and dissolve into light over the river. Empyrea lets go of an old weight. Tonight, the town breathes differently.' },
+  guardian_freed: { es: 'La piedra está tibia y vacía. Lo que dormía acá ya descansa.', en: 'The stone is warm and empty. What slept here rests now.' },
   enemy_summons: { es: '{name} invoca a los muertos', en: '{name} summons the dead' },
   no_combat_town: { es: 'En el pueblo no se combate', en: 'No fighting in town' },
   online_on: { es: 'Conectado al mundo compartido', en: 'Connected to the shared world' },

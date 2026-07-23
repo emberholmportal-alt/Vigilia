@@ -25,6 +25,9 @@ export const POOL = [
   // El Inframundo (nivel ~13): lo más hondo con misión. Recompensa acorde a la profundidad.
   { id: 'hunt_underworld', type: 'kill', map: 'underworld', target: 16, xp: 190, gold: 135, seals: 4 },
   { id: 'loot_underworld', type: 'chest', map: 'underworld', target: 3, xp: 165, gold: 115, seals: 4 },
+  // Cluster profundo (nivel 13→15): Minas y Catacumbas del Inframundo. Lo más duro del mundo.
+  { id: 'hunt_deep', type: 'kill', map: 'underworld_mines', target: 18, xp: 230, gold: 165, seals: 5 },
+  { id: 'loot_catacombs', type: 'chest', map: 'underworld_catacombs', target: 3, xp: 200, gold: 140, seals: 5 },
   { id: 'hunt_crypt', type: 'kill', map: 'family_crypt', target: 10, xp: 95, gold: 65, seals: 2 },
   { id: 'mine_crystals', type: 'mine', map: 'abandoned_mines', target: 8, xp: 85, gold: 55, seals: 2 },
   { id: 'mine_cave', type: 'mine', map: 'goblin_cave', target: 6, xp: 65, gold: 40, seals: 2 },
