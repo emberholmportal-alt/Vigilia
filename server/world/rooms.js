@@ -16,6 +16,7 @@
 import * as combat from './combat.js'
 import * as db from '../db/db.js'
 import { priceOf, sellValueOf, itemById } from '../../shared/items.js'
+import { isVendorItem } from '../../shared/shop.js'
 import { dailyMissions, todayStr } from '../../shared/missions.js'
 import { rollLoot } from '../../shared/loot.js'
 import { recipeByOut } from '../../shared/alchemy.js'
@@ -103,7 +104,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, inv = null, outSeed = null, ledger = null } = {}) {
+export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -139,6 +140,9 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
     for (const oid of outSeed) { if (itemById(oid)) p._out.set(oid, (p._out.get(oid) || 0) + 1) }
     p._ledgerDirty = true   // persistir el ledger inicial para que la próxima sesión ya sea server-owned
   }
+  // Quests narrativas YA reclamadas (server-owned, persistido): así la recompensa no se re-cobra tras
+  // reiniciar/reloguear (antes vivía sólo en memoria -> mint por relogin con cliente tocado).
+  p._qclaimed = new Set(Array.isArray(qclaimed) ? qclaimed : [])
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
@@ -207,6 +211,20 @@ export function leave(id) {
   // acredita de nuevo (el server es la fuente de verdad del oro).
   if (p._grave > 0) { p.gold += p._grave; p._grave = 0; p._goldDirty = true }
   persistGold(p)                 // guarda el oro autoritativo antes de soltar la sesión
+  players.delete(id)
+  combat.dropPlayer(id)
+  broadcast(p.map, p.ch, { t: 'leave', id }, id)
+}
+// Igual que leave() pero AWAITEA la persistencia. Lo usa el login: al echar la sesión vieja de una
+// cuenta (otra pestaña/reconexión), hay que persistir su oro ANTES de que el nuevo login lea el
+// saldo, o cargaría oro viejo (race con el persist async del socket que cierra).
+export async function leaveFlush(id) {
+  if (observers.delete(id)) return
+  const p = players.get(id)
+  if (!p) return
+  tradeCancel(id)
+  if (p._grave > 0) { p.gold += p._grave; p._grave = 0; p._goldDirty = true }
+  await persistGold(p)
   players.delete(id)
   combat.dropPlayer(id)
   broadcast(p.map, p.ch, { t: 'leave', id }, id)
@@ -461,6 +479,7 @@ export function craftRecipe(id, outId) {
 // Comprar un ítem al mercader: el COSTO lo computa el server desde el precio real.
 export function buyItem(id, itemId) {
   const p = players.get(id); if (!p) return { ok: false }
+  if (!isVendorItem(itemId)) return { ok: false, error: 'ese ítem no está a la venta' }   // sólo lo que un vendedor ofrece (no legendarios al precio base)
   const cost = priceOf(itemId)
   if (cost <= 0) return { ok: false, error: 'ítem inválido' }
   if (p.gold < cost) return { ok: false, error: 'no tenés tanto oro', gold: p.gold }
@@ -546,6 +565,20 @@ async function persistGold(p) {
 export async function flushGold(accountId) {
   for (const p of players.values()) if (p.accountId === accountId) { p._goldDirty = false; try { await db.setCharacterGold(p.accountId, p.gold) } catch {} return true }
   return false
+}
+// Persiste YA el bag vivo de una cuenta online. Lo usan los ESCROWS de ítems (subasta/alijo/gremio/
+// tumba): el ítem sale del bag en memoria y el destino se escribe a DB al instante; si el proceso
+// muere sin gracia en esa ventana, al reiniciar el bag persistido todavía tendría el ítem -> dupe.
+// Flusheando el bag tras el escrow, el descuento es tan durable como el destino.
+export async function flushInv(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) { p._invDirty = false; try { await db.setCharacterInventory(p.accountId, p.inv) } catch {} return true }
+  return false
+}
+// Ids de quests narrativas ya reclamadas por una cuenta online (para que el save no las borre del
+// blob: son server-owned, como el ledger). null si la cuenta no está online.
+export function questClaimsOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return [...(p._qclaimed || [])]
+  return null
 }
 // Flush de emergencia ante apagado (SIGTERM de un deploy / SIGINT): persiste oro+bag+ledger de TODOS
 // los jugadores online antes de que el proceso muera, porque el handler de 'close' del socket no
@@ -634,6 +667,7 @@ export function claimQuest(id, questId) {
   if (!p._qclaimed) p._qclaimed = new Set()
   if (p._qclaimed.has(questId)) return { ok: false, error: 'ya reclamada', gold: p.gold }
   p._qclaimed.add(questId)
+  db.setCharacterQuestClaims(p.accountId, [...p._qclaimed]).catch(() => {})   // persistir YA (anti re-claim por relogin)
   const gold = QUEST_GOLD[questId] || 0
   if (gold > 0) { p.gold += gold; p._goldDirty = true }
   const seals = QUEST_SEALS[questId] || 0

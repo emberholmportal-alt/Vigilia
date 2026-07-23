@@ -169,6 +169,7 @@ wss.on('connection', (ws) => {
           const sv = rooms.sealsOf(conn.accountId)
           const inv = rooms.invOf(conn.accountId)
           const led = rooms.ledgerOf(conn.accountId)
+          const qc = rooms.questClaimsOf(conn.accountId)
           const data = { ...(m.char || {}) }
           await db.withAccountLock(conn.accountId, async () => {
             const existing = await db.loadCharacter(conn.accountId)
@@ -183,6 +184,10 @@ wss.on('connection', (ws) => {
             else if (ed) data.inventory = ed.inventory || []
             if (led != null) data._outLedger = led
             else if (ed) { if (ed._outLedger && typeof ed._outLedger === 'object') data._outLedger = ed._outLedger; else delete data._outLedger }
+            // Quests reclamadas (server-owned): igual que el ledger, nunca se toman del blob del
+            // cliente — vienen de la sesión viva o se preservan del personaje. Un save no las borra.
+            if (qc != null) data._qclaimed = qc
+            else if (ed) { if (Array.isArray(ed._qclaimed)) data._qclaimed = ed._qclaimed; else delete data._qclaimed }
             // CREACIÓN (personaje inexistente): el server ASIGNA el kit inicial canónico (oro/equipo/
             // inventario/cinturón + ledger), ignorando el blob del cliente. Cierra "crearse con oro/
             // equipo falso". El ledger canónico se persiste ya, así el 1er join no grandfatherea.
@@ -195,6 +200,7 @@ wss.on('connection', (ws) => {
               data.belt = kit.belt
               data.equippedBelt = null
               data._outLedger = startingLedger(m.race)
+              data._qclaimed = []            // personaje nuevo: ninguna quest reclamada
             }
             await db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data })
           })
@@ -243,6 +249,7 @@ wss.on('connection', (ws) => {
           if (!taken.ok) return send({ t: 'guild_dep', error: taken.error || 'no tenés ese ítem' })
           const dep = await guilds.depositItem(conn.accountId, taken.item)
           if (!dep.ok) { rooms.giveItem(conn.playerId, taken.item) }   // rollback al bag si el depósito falló
+          else await rooms.flushInv(conn.accountId)   // durabilidad: el descuento del bag tan durable como el depósito (anti-dupe por crash)
           return send({ t: 'guild_dep', ...dep, inv: rooms.invOf(conn.accountId) })
         }
         case 'guild_dep_item_out': {  // retirar: el server saca del stash y lo mete en el bag autoritativo
@@ -265,6 +272,7 @@ wss.on('connection', (ws) => {
           if (!taken.ok) return send({ t: 'stash', error: taken.error || 'no tenés ese ítem' })
           const dep = await stash.depositItem(conn.accountId, taken.item)
           if (!dep.ok) { rooms.giveItem(conn.playerId, taken.item); return send({ t: 'stash', ...dep }) }   // rollback al bag
+          await rooms.flushInv(conn.accountId)   // durabilidad: el descuento del bag tan durable como el alijo (anti-dupe por crash)
           return send({ t: 'stash', ...dep, inv: rooms.invOf(conn.accountId) })
         }
         case 'stash_out': {    // retirar: saca del alijo y lo mete en el bag autoritativo
@@ -306,14 +314,20 @@ wss.on('connection', (ws) => {
             try { prev.close(4001, 'another session') } catch {}
           }
           liveConns.set(conn.accountId, ws)
-          if (conn.playerId != null) rooms.leave(conn.playerId)
+          // Sacar + PERSISTIR (awaited) cualquier sesión previa de esta cuenta ANTES de leer el saldo,
+          // o cargaríamos oro viejo (race con el persist async del socket que cierra). Cubre tanto la
+          // reconexión en esta misma ws como una segunda pestaña.
+          const oldPid = rooms.playerIdOfAccount(conn.accountId)
+          if (oldPid != null) await rooms.leaveFlush(oldPid)
+          conn.playerId = null
           // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
-          let gold = 0, seals = 0, inv = null, outSeed = null, ledger = null
+          let gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null
           if (!m.spectator) {
             const ch = await db.loadCharacter(conn.accountId)
             gold = Math.floor(Number(ch?.data?.gold) || 0)
             seals = Math.floor(Number(ch?.data?.seals) || 0)
             inv = ch?.data?.inventory || null
+            qclaimed = Array.isArray(ch?.data?._qclaimed) ? ch.data._qclaimed : null
             const d = ch?.data || {}
             // Ledger "checkout" AUTORITATIVO (Fase A.3): si el personaje ya tiene ledger guardado, se
             // carga de ahí (server-owned, el cliente no lo puede inflar). Si NO (personaje viejo, 1ª vez),
@@ -324,7 +338,7 @@ wss.on('connection', (ws) => {
             // save manipulado (belt/graves con count enorme) en cuentas sin ledger persistido.
             if (!ledger) outSeed = grandfatherSeed(d)
           }
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, inv, outSeed, ledger })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, inv, outSeed, ledger, qclaimed })
           conn.playerId = id
           send({ t: 'present', you: id, players: present, map: m.map, channel })
           if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'seals', seals }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + sellos + bag
@@ -479,7 +493,9 @@ wss.on('connection', (ws) => {
         }
         case 'bag_dump': {   // al morir: vaciar el bag (los ítems van a la tumba client-side)
           if (conn.playerId == null) return
-          return send({ t: 'bagack', op: 'dump', ...rooms.dumpBag(conn.playerId) })
+          const dump = rooms.dumpBag(conn.playerId)
+          await rooms.flushInv(conn.accountId)   // durabilidad: el bag vaciado tan durable como la tumba (anti-dupe por crash)
+          return send({ t: 'bagack', op: 'dump', ...dump })
         }
         case 'spend': {      // sink genérico: reparar / forjar / respec / ofrenda (el efecto local lo aplica el cliente)
           if (conn.playerId == null) return

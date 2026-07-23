@@ -42,6 +42,7 @@ export async function list(playerId, accountId, sellerName, bagIndex, price) {
   const now = Date.now()
   try {
     const id = await db.marketAdd({ seller: accountId, sellerName, item: taken.item, price, createdAt: now, expiresAt: now + DURATION_MS })
+    await rooms.flushInv(accountId)   // durabilidad: el descuento del bag tan durable como el listado (anti-dupe por crash)
     return { ok: true, id, inv: taken.inv }
   } catch {
     rooms.giveFromMarket(playerId, taken.item)   // rollback
