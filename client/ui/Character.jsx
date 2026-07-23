@@ -40,8 +40,10 @@ export default function Character() {
     [t('stat_def'), s.defense || 0],
     ...(s.crit ? [[t('stat_crit'), `${s.crit}%`]] : []),
     ...(s.hpRegen ? [[t('stat_hpregen'), `${s.hpRegen}/s`]] : []),
+    ...(s.itemFind ? [[t('stat_magicfind'), `+${s.itemFind}%`]] : []),
     [t('stat_speed'), s.speedMul ? `×${s.speedMul}` : '×1'],
     [t('stat_xpbonus'), s.xpMul ? `×${s.xpMul.toFixed(2)}` : '×1'],
+    ...(s.set ? [[t('stat_set'), `${s.set.label} ${s.set.pieces}/6`]] : []),
   ]
 
   return (

@@ -55,6 +55,8 @@ const DICT = {
   stat_def: { es: 'Defensa', en: 'Defense' },
   stat_crit: { es: 'Crítico', en: 'Crit' },
   stat_hpregen: { es: 'Regen. vida', en: 'HP regen' },
+  stat_magicfind: { es: 'Hallazgo', en: 'Magic find' },
+  stat_set: { es: 'Conjunto', en: 'Set' },
   stat_speed: { es: 'Velocidad', en: 'Speed' },
   stat_xpbonus: { es: 'Bonus XP', en: 'XP bonus' },
   // herrero
