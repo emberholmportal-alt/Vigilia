@@ -448,17 +448,18 @@ export const useGameStore = create((set, get) => ({
     }
   },
 
-  // Costo de reparar todo el equipo (oro por punto de durabilidad faltante).
+  // Costo de reparar TODO el equipo: tarifa por NIVEL (no por durabilidad faltante). Así el server
+  // la recalcula de SU nivel (no confía en el monto del cliente) sin tener que trackear la durabilidad
+  // pieza por pieza. 0 si no hay nada dañado (no cobra de gusto). Coincide con rooms.repairCostOf.
   repairCost: () => {
     const s = get()
-    let missing = 0
+    let damaged = false
     for (const sl of Object.keys(s.equipment)) {
       const it = s.equipment[sl]
-      if (!isDurable(it)) continue
-      const max = durabilityMax(it)
-      missing += max - (it.dur != null ? it.dur : max)
+      if (isDurable(it) && it.dur != null && it.dur < durabilityMax(it)) { damaged = true; break }
     }
-    return Math.ceil(missing * 1.5)
+    if (!damaged) return 0
+    return 30 + (s.stats?.level || 1) * 20
   },
 
   // Repara todo el equipo (el herrero cobra oro).

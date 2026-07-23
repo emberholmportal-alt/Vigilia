@@ -227,6 +227,14 @@ export function respecCostOf(id) {
   return p ? 50 + 25 * (p.level || 1) : 0
 }
 
+// Costo de reparar TODO el equipo, AUTORITATIVO del server: tarifa por nivel (no por durabilidad,
+// que es client-side). Coincide con store.repairCost. Cierra el under-pay de la reparación sin
+// tener que trackear la durabilidad pieza por pieza en el server.
+export function repairCostOf(id) {
+  const p = players.get(id)
+  return p ? 30 + 20 * (p.level || 1) : 0
+}
+
 export function setStats(id, stats) {
   const p = players.get(id)
   if (p && stats && stats.level) {
