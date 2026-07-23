@@ -128,6 +128,10 @@ wss.on('connection', (ws) => {
           return send({ t: 'auth', ok: true, token: r.token, username: r.username, char: char ? char.data : null })
         }
 
+        case 'velinfo': {            // config pública del token $VEL (para la pantalla de compra). Sin gate: { gate:false }.
+          return send({ t: 'velinfo', ...(await wallet.velConfig()) })
+        }
+
         case 'wallet_challenge': {   // paso 1 del login por wallet: pedir el texto a firmar
           if (!m.pubkey || typeof m.pubkey !== 'string') return send({ t: 'error', error: 'falta la dirección de la wallet' })
           return send({ t: 'challenge', message: wallet.challenge(m.pubkey) })
@@ -135,7 +139,7 @@ wss.on('connection', (ws) => {
 
         case 'wallet_verify': {      // paso 2: verificar la firma -> sesión (cuenta = la wallet)
           const r = await wallet.walletVerify(m.pubkey, m.signature)
-          if (!r.ok) return send({ t: 'auth', ok: false, error: r.error })
+          if (!r.ok) return send({ t: 'auth', ok: false, error: r.error, vel: r.vel })
           conn.accountId = session(r.token).accountId
           conn.username = r.pubkey
           const char = await db.loadCharacter(conn.accountId)

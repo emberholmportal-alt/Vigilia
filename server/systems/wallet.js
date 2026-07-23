@@ -116,14 +116,30 @@ async function meetsTokenGate(pubkey) {
   const total = await velBalance(pubkey, mint, rpc)
   if (total < 0) return false   // error de RPC -> fail-closed
   const usdMin = Number(process.env.VEL_MIN_USD || 0)
+  const fixedMin = Number(process.env.VEL_MIN || 0)
   if (usdMin > 0) {
     // Modo dinámico: exigir el equivalente en tokens de VEL_MIN_USD al precio actual.
     const price = await velPriceUsd(mint)
-    if (!(price > 0)) return false   // sin precio confiable -> fail-closed
-    return total >= usdMin / price
+    if (price > 0) return total >= usdMin / price
+    // Sin precio (token recién nacido en pump.fun / oráculo caído): NO cerramos para todos —eso
+    // lockearía a toda la gente justo en el lanzamiento. Si hay mínimo fijo de respaldo, usamos ese
+    // (sigue gateado); sólo si no hay respaldo caemos a fail-closed.
+    if (fixedMin > 0) return total >= fixedMin
+    return false
   }
   // Modo fijo: mínimo en tokens.
-  return total >= Number(process.env.VEL_MIN || 0)
+  return total >= fixedMin
+}
+
+// Config pública del token para el cliente (pantalla de compra + requisito). El cliente NUNCA
+// necesita claves ni RPC: sólo el símbolo, el link de compra y cuánto exige el gate ahora.
+export async function velConfig() {
+  const mint = process.env.VEL_MINT || ''
+  if (!mint) return { gate: false }
+  const symbol = process.env.VEL_SYMBOL || 'VEL'
+  const buyUrl = process.env.VEL_BUY_URL || ('https://pump.fun/coin/' + mint)
+  const req = await velRequirement()   // { tokens, usd, price, mode }
+  return { gate: true, mint, symbol, buyUrl, minUsd: req.usd || 0, price: req.price || 0, requiredTokens: req.tokens ?? null }
 }
 
 // Verifica la firma del desafío y devuelve { ok, token, pubkey } o { ok:false, error }.
@@ -132,7 +148,9 @@ export async function walletVerify(pubkey, sigHex) {
   if (!rec || rec.exp < Date.now()) return { ok: false, error: 'el desafío venció, reintentá' }
   if (!verifySignature(pubkey, rec.message, sigHex)) return { ok: false, error: 'firma inválida' }
   challenges.delete(pubkey)
-  if (!(await meetsTokenGate(pubkey))) return { ok: false, error: 'no alcanzás el mínimo de $VEL' }
+  // Gate del token: si no alcanza el mínimo, devolvemos la config para que el cliente muestre la
+  // pantalla de compra (símbolo, link de pump.fun, cuánto falta) en vez de un error seco.
+  if (!(await meetsTokenGate(pubkey))) return { ok: false, error: 'gate', vel: await velConfig() }
   let account = await findAccount(pubkey)
   if (!account) account = await createAccount(pubkey, '')  // cuenta = dirección de la wallet
   return { ok: true, token: issueToken(account), pubkey }
