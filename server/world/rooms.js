@@ -529,6 +529,22 @@ async function persistGold(p) {
   if (p._ledgerDirty) { p._ledgerDirty = false; try { await db.setCharacterLedger(p.accountId, ledgerOf(p.accountId)) } catch {} }
 }
 
+// Persiste YA el oro vivo de una cuenta online (durabilidad inmediata). Lo usa el marketplace: la
+// FILA de la orden es durable al instante, así que el descuento/crédito del oro tiene que serlo
+// también, o un reinicio del server entre el cambio en memoria y el autosave del cliente duplicaría
+// (cancelar tras reiniciar reacreditaría un oro que ya se había descontado) o perdería oro. Devuelve
+// true si la cuenta estaba online y se persistió. setCharacterGold preserva el resto del blob.
+export async function flushGold(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) { p._goldDirty = false; try { await db.setCharacterGold(p.accountId, p.gold) } catch {} return true }
+  return false
+}
+// Flush de emergencia ante apagado (SIGTERM de un deploy / SIGINT): persiste oro+bag+ledger de TODOS
+// los jugadores online antes de que el proceso muera, porque el handler de 'close' del socket no
+// corre cuando matan el proceso. index.js lo llama en el shutdown.
+export async function flushAll() {
+  await Promise.all([...players.values()].map((p) => persistGold(p)))
+}
+
 // --- Faucets secundarios (computados por el server desde datos COMPARTIDOS) ------------------
 // Reclamar una misión diaria: el oro se computa del set determinístico del día (shared/missions),
 // no del cliente, y se acredita UNA vez por día. La COMPLETITUD sigue siendo client-side por ahora

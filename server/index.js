@@ -540,3 +540,18 @@ wss.on('connection', (ws) => {
 http_server.listen(PORT, () => {
   console.log(`[velgrim] servidor escuchando en :${PORT} (ws + http)`)
 })
+
+// Apagado ordenado (deploy de Render = SIGTERM; Ctrl-C = SIGINT). El handler de 'close' del socket
+// NO corre cuando matan el proceso, así que las sesiones en memoria perderían el oro/bag/ledger sin
+// guardar. Persistimos todo lo online antes de salir. Idempotente y con timeout de red.
+let _shuttingDown = false
+async function gracefulShutdown(sig) {
+  if (_shuttingDown) return
+  _shuttingDown = true
+  console.log(`[velgrim] ${sig}: persistiendo jugadores online…`)
+  try { await Promise.race([rooms.flushAll(), new Promise((r) => setTimeout(r, 8000))]) } catch {}
+  try { http_server.close() } catch {}
+  process.exit(0)
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))

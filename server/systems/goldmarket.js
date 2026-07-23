@@ -19,7 +19,10 @@ import * as chain from './velchain.js'
 const COMMISSION = 0.05                 // 5% al tesoro (el resto va al vendedor)
 const MAX_ORDERS = 5                    // órdenes activas por vendedor
 const MIN_GOLD = 100                    // oro mínimo por orden (evita spam de órdenes ridículas)
-const LOCK_MS = 3 * 60 * 1000           // ventana para firmar+confirmar el pago on-chain
+const LOCK_MS = 10 * 60 * 1000          // ventana para firmar+confirmar el pago on-chain (holgada:
+                                        // finality de Solana + firma en móvil; si expira y otro
+                                        // reserva, el pago del original no se recupera — ver settle)
+const B58_PUBKEY = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/   // dirección Solana (base58, 32 bytes)
 
 // El marketplace está prendido sólo con las 3 piezas de config puestas (token + tesoro + switch).
 export function enabled() {
@@ -75,6 +78,10 @@ export async function mine(accountId) {
 export async function list(playerId, accountId, sellerName, sellerWallet, gold, price) {
   if (!enabled()) return off()
   if (!accountId || !sellerWallet) return { ok: false, error: 'no autenticado' }
+  // La wallet de cobro DEBE ser una dirección Solana válida (base58). Con la wallet obligatoria en
+  // prod siempre lo es (es la pubkey SIWS), pero validamos igual: una cuenta sin wallet no puede
+  // escrowear oro en una orden impagable (el comprador no podría transferirle nada).
+  if (!B58_PUBKEY.test(sellerWallet)) return { ok: false, error: 'necesitás una wallet para vender oro' }
   gold = Math.floor(Number(gold) || 0)
   price = Math.floor(Number(price) || 0)
   if (gold < MIN_GOLD) return { ok: false, error: 'mínimo ' + MIN_GOLD + ' de oro' }
@@ -84,9 +91,11 @@ export async function list(playerId, accountId, sellerName, sellerWallet, gold, 
   if (!ch.ok) return { ok: false, error: ch.error || 'no tenés tanto oro' }
   try {
     const id = await db.goldOrderAdd({ seller: accountId, sellerName, sellerWallet, gold, price, createdAt: Date.now() })
+    await rooms.flushGold(accountId)                          // durabilidad: el descuento tan durable como la orden
     return { ok: true, id, gold: ch.gold }
   } catch {
-    rooms.creditAccountGold(accountId, gold, 'refund')        // rollback del escrow
+    if (!rooms.creditAccountGold(accountId, gold, 'refund')) await db.updateCharacterGold(accountId, (g) => g + gold)  // rollback del escrow
+    await rooms.flushGold(accountId)
     return { ok: false, error: 'no se pudo publicar' }
   }
 }
@@ -101,6 +110,7 @@ export async function cancel(playerId, accountId, orderId) {
     const removed = await db.goldOrderRemove(orderId)
     if (!removed) return { ok: false, error: 'esa orden ya no está' }
     if (!rooms.creditAccountGold(accountId, removed.gold, 'market_cancel')) await db.updateCharacterGold(accountId, (g) => g + removed.gold)
+    else await rooms.flushGold(accountId)                     // durabilidad: reacreditación tan durable como el borrado de la orden
     const gold = rooms.playerGold(playerId)
     return { ok: true, gold: gold == null ? undefined : gold }
   })
@@ -167,6 +177,7 @@ export async function settle(buyerId, buyerAccountId, orderId, sig) {
     const removed = await db.goldOrderRemove(orderId)
     if (!removed) return release({ ok: false, error: 'esa orden ya no está' })
     if (!rooms.creditAccountGold(buyerAccountId, removed.gold, 'market_buy')) await db.updateCharacterGold(buyerAccountId, (g) => g + removed.gold)
+    else await rooms.flushGold(buyerAccountId)                // durabilidad: el comprador ya pagó on-chain; su oro tiene que persistir sí o sí
     const gold = rooms.playerGold(buyerId)
     return { ok: true, gold: gold == null ? undefined : gold, bought: removed.gold, price: removed.price }
   })

@@ -80,6 +80,8 @@ export async function verifyPayment({ sig, mint, expect, memo }) {
     const delta = ownerBalance(post, owner, mint) - ownerBalance(pre, owner, mint)
     if (delta < minBase) return { ok: false, error: 'el pago no alcanza (' + owner.slice(0, 6) + '…)' }
   }
-  if (memo && !collectMemos(tx).some((m) => m.includes(memo))) return { ok: false, error: 'la transacción no corresponde a esta orden' }
+  // Memo EXACTO (no substring): 'velmkt:70' NO debe validar la orden 7. Un match por prefijo dejaría
+  // que un pago de la orden 70 settlee la orden 7 (mismo vendedor) y le queme el pago al comprador real.
+  if (memo && !collectMemos(tx).some((m) => m === memo)) return { ok: false, error: 'la transacción no corresponde a esta orden' }
   return { ok: true }
 }
