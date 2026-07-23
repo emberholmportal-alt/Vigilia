@@ -200,8 +200,19 @@ firma la transferencia; `@solana/web3.js`+`spl-token` con import dinámico), `cl
 **Apagado por defecto.** Se prende con `VEL_MARKET=on` + `VEL_MINT` + `VEL_TREASURY`. Plan de
 encendido: **devnet** (token SPL de prueba) → mainnet montos chicos → abrir al público.
 
+**Checklist de encendido (el día del token):**
+1. Crear la **cuenta de token (ATA) del tesoro** para `$VEL` — la wallet del tesoro tiene que poder
+   *recibir* el token, o el 5% falla y la compra entera se revierte (nadie pierde plata, pero no se
+   vende). Los jugadores ya tienen ATA de `$VEL` porque el gate los obliga a holdear.
+2. Setear `VEL_MINT`, `VEL_SYMBOL`, `SOLANA_RPC` (una RPC de confianza: el server *confía* en lo que
+   lee de ahí para verificar pagos), `VEL_RPC_PUBLIC` (pública, sin API key), `VEL_TREASURY`.
+3. Probar en **devnet** con un SPL de prueba: publicar → comprar → verificar acreditación del oro.
+4. `VEL_MARKET=on`. Empezar con montos chicos.
+
 **Riesgo que queda (no es código):** legal/regulatorio de facilitar oro↔token con valor real, y la
 salud del balance del oro (§3). El código está listo; la decisión de *cuándo abrirlo* es del negocio.
+El token debe ser **SPL estándar** (pump.fun lo es); un token con *transfer-fee* (Token-2022) haría
+que el vendedor reciba menos de lo pactado y la verificación lo rechace.
 
 ---
 
