@@ -1017,7 +1017,10 @@ export const useGameStore = create((set, get) => ({
 
   // Fragmentos de sello: moneda premium de las misiones diarias (cofres de sello, ofrendas).
   seals: 0,
-  addSeals: (n) => { set((s) => ({ seals: (s.seals || 0) + (n | 0) })); saveGame(get()) },
+  // Online los sellos son AUTORITATIVOS del server: setSeals espeja el saldo que empuja el server
+  // (push 'seals' / acks). addSeals sólo aplica offline (sin server que valide).
+  setSeals: (n) => { set({ seals: Math.max(0, Math.floor(Number(n) || 0)) }); saveGame(get()) },
+  addSeals: (n) => { if (isOnline()) return; set((s) => ({ seals: (s.seals || 0) + (n | 0) })); saveGame(get()) },
 
   // Mete un ítem al inventario. Los apilables (poción/crafting/scroll) se acumulan en
   // una celda con `count`; el resto va a un hueco libre. Devuelve true si entró.
@@ -1241,8 +1244,9 @@ export const useGameStore = create((set, get) => ({
       const r = await net.claimMissionReq(m.id).catch(() => null)
       if (!r || !r.ok) { get().showToast(tt('mission_not_ready')); return }
       const missions = get().missions.slice(); missions[i] = { ...m, claimed: true }; set({ missions })
-      get().addXp(m.xp); if (m.seals) get().addSeals(m.seals)
+      get().addXp(m.xp)
       if (typeof r.gold === 'number') set({ gold: r.gold })
+      if (typeof r.seals === 'number') set({ seals: r.seals })   // sellos AUTORITATIVOS del server
       get().showToast(tt('mission_reward', { xp: m.xp, gold: m.gold || 0, seals: m.seals || 0 }))
       saveGame(get())
       return
@@ -1286,13 +1290,17 @@ export const useGameStore = create((set, get) => ({
     const s = get()
     if ((s.seals || 0) < SEAL_CHEST_COST) { get().showToast(tt('seal_need', { n: SEAL_CHEST_COST })); return { ok: false } }
     const lvl = Math.max(4, Math.min(16, (s.stats?.level || 1) + 2))  // loot un pelín por encima del nivel
-    set({ seals: s.seals - SEAL_CHEST_COST })   // los sellos son moneda premium NO-cripto: client-side
-    // Oro + drops: online los computa el server (tabla de loot compartida); offline, roll local.
+    // Oro + sellos + drops: online los computa/DEBITA el server (sellos AUTORITATIVOS: cierra el mint
+    // del cofre). Offline, débito + roll local.
     let gold = 0, drops = []
     if (isOnline()) {
       const r = await net.sealChestReq(lvl).catch(() => null)
-      if (r && r.ok) { if (typeof r.gold === 'number') set({ gold: r.gold }); gold = r.add || 0; drops = r.drops || [] }
+      if (!r || !r.ok) { if (r && typeof r.seals === 'number') set({ seals: r.seals }); get().showToast(r?.error === 'no tenés tantos sellos' ? tt('seal_need', { n: SEAL_CHEST_COST }) : tt('market_fail')); return { ok: false } }
+      if (typeof r.seals === 'number') set({ seals: r.seals })   // saldo autoritativo del server
+      if (typeof r.gold === 'number') set({ gold: r.gold })
+      gold = r.add || 0; drops = r.drops || []
     } else {
+      set({ seals: s.seals - SEAL_CHEST_COST })   // offline: débito local
       const roll = rollLoot('chest_level_' + lvl); gold = roll.gold || 0; drops = roll.drops || []; if (gold) get().addGold(gold)
     }
     const got = []
@@ -1321,10 +1329,11 @@ export const useGameStore = create((set, get) => ({
     if (done) {
       const r = done.reward || {}
       if (r.xp) get().addXp(r.xp)
-      if (r.seals) get().addSeals(r.seals)
-      // Oro: online lo acredita el server (monto fijo por quest); offline, local.
-      if (isOnline()) { const rr = await net.claimQuestReq(done.id).catch(() => null); if (rr && rr.ok && typeof rr.gold === 'number') set({ gold: rr.gold }) }
-      else if (r.gold) get().addGold(r.gold)
+      // Oro + sellos: online los acredita el server (montos fijos por quest, AUTORITATIVOS); offline, local.
+      if (isOnline()) {
+        const rr = await net.claimQuestReq(done.id).catch(() => null)
+        if (rr && rr.ok) { if (typeof rr.gold === 'number') set({ gold: rr.gold }); if (typeof rr.seals === 'number') set({ seals: rr.seals }) }
+      } else { if (r.seals) get().addSeals(r.seals); if (r.gold) get().addGold(r.gold) }
       get().showToast(tt('quest_done', { name: questName(done) }))
       get().logMessage({ channel: 'sistema', text: tt('quest_reward', { xp: r.xp || 0, gold: r.gold || 0, seals: r.seals || 0 }) })
     } else {

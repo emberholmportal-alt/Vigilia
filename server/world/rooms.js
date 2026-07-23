@@ -103,7 +103,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, inv = null, outSeed = null, ledger = null } = {}) {
+export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, inv = null, outSeed = null, ledger = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -120,7 +120,7 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   const ch = pickChannel(map, channel)
   // `gold` es AUTORITATIVO del servidor a partir de acá (Fase A de la economía): se carga del
   // personaje al entrar y sólo lo mutan las funciones de abajo (faucets del mundo + sinks validados).
-  const p = { id, name: name || 'Vigilante', race: race || null, body: (body === 'female' || body === 'female_dark') ? body : 'male', map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, gold: Math.floor(Number(gold) || 0), send }
+  const p = { id, name: name || 'Vigilante', race: race || null, body: (body === 'female' || body === 'female_dark') ? body : 'male', map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, gold: Math.floor(Number(gold) || 0), seals: Math.floor(Number(seals) || 0), send }
   // `inv` es AUTORITATIVO del servidor (Fase A.2): el bag se carga del personaje al entrar y sólo
   // lo mutan las funciones de abajo (loot otorgado por el server + ops validadas). Se guarda como
   // registros mínimos {id, count?, dur?, upgrade?} (el cliente reconstruye el ítem completo por id).
@@ -474,6 +474,12 @@ export function goldOf(accountId) {
   for (const p of players.values()) if (p.accountId === accountId) return p.gold
   return null
 }
+// Sellos autoritativos actuales de una cuenta con sesión activa (o null). Lo usa el handler `save`
+// para no dejar que el blob del cliente pise los sellos del server (moneda premium).
+export function sealsOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return p.seals
+  return null
+}
 
 // --- Mercado: el ítem sale del bag al escrow del listado (server) y vuelve por grant server-side.
 // Ni el ledger _out ni el cliente deciden nada: es todo autoritativo (como loot/compra/venta).
@@ -525,6 +531,7 @@ export function nameOf(id) { const p = players.get(id); return p ? p.name : '' }
 async function persistGold(p) {
   if (!p || !p.accountId) return
   if (p._goldDirty) { p._goldDirty = false; try { await db.setCharacterGold(p.accountId, p.gold) } catch {} }
+  if (p._sealsDirty) { p._sealsDirty = false; try { await db.setCharacterSeals(p.accountId, p.seals) } catch {} }
   if (p._invDirty) { p._invDirty = false; try { await db.setCharacterInventory(p.accountId, p.inv) } catch {} }
   if (p._ledgerDirty) { p._ledgerDirty = false; try { await db.setCharacterLedger(p.accountId, ledgerOf(p.accountId)) } catch {} }
 }
@@ -580,21 +587,25 @@ export function claimMission(id, missionId) {
   p._claimed.set.add(missionId)
   const gold = m.gold || 0
   if (gold > 0) { p.gold += gold; p._goldDirty = true }
-  return { ok: true, gold: p.gold, add: gold }
+  const seals = m.seals || 0
+  if (seals > 0) { p.seals = (p.seals || 0) + seals; p._sealsDirty = true }   // sellos AUTORITATIVOS
+  return { ok: true, gold: p.gold, add: gold, seals: p.seals, sealsAdd: seals }
 }
-// Cofre de sellos: el server tira el loot de la tabla COMPARTIDA (shared/loot) y acredita el ORO.
-// Los ítems van en la respuesta (el cliente los mete al inventario). El costo en SELLOS lo maneja
-// el cliente (los sellos son moneda premium NO-cripto, todavía client-side).
+// Cofre de sellos (loot box premium): AUTORITATIVO. El server DEBITA los sellos (rechaza si no
+// alcanzan — cierra el mint del cliente tocado), tira el loot de la tabla COMPARTIDA y acredita oro.
+// Los ítems van al bag autoritativo (empuja 'inv'); `drops` es sólo para la animación del cliente.
+export const SEAL_CHEST_COST = 6   // sellos por cofre (debe coincidir con el cliente)
 export function sealChest(id, level) {
   const p = players.get(id); if (!p) return { ok: false }
+  if ((p.seals || 0) < SEAL_CHEST_COST) return { ok: false, error: 'no tenés tantos sellos', seals: p.seals || 0 }
+  p.seals -= SEAL_CHEST_COST; p._sealsDirty = true
   const lvl = Math.max(4, Math.min(16, Math.floor(Number(level) || 4)))
   const roll = rollLoot('chest_level_' + lvl) || { gold: 0, drops: [] }
   const gold = roll.gold || 0
   if (gold > 0) { p.gold += gold; p._goldDirty = true }
-  // Los ítems van al bag AUTORITATIVO del server (empuja 'inv'); `drops` es sólo para la animación del cliente.
   const drops = roll.drops || []
   if (drops.length) { for (const d of drops) invGrant(p, d.id, d.qty || 1); p._invDirty = true; p.send({ t: 'inv', inv: p.inv }) }
-  return { ok: true, gold: p.gold, add: gold, drops }
+  return { ok: true, gold: p.gold, add: gold, seals: p.seals, drops }
 }
 // Al MORIR soltás una fracción de tu oro en una tumba (server-authoritative): el server descuenta y
 // lo guarda como "oro de tumba" pendiente; al recuperar la tumba, te lo devuelve. La granularidad
@@ -615,6 +626,7 @@ export function recoverGrave(id) {
 // pocas y son de una sola vez, así que el oro se acota a estos valores fijos, una vez cada uno.
 // (Duplica el reward de client/data/quests.js — es 1 entrada; si cambia, tocar los dos.)
 const QUEST_GOLD = { guardianes: 150 }
+const QUEST_SEALS = { guardianes: 8 }
 export function claimQuest(id, questId) {
   const p = players.get(id); if (!p) return { ok: false }
   if (!p._qclaimed) p._qclaimed = new Set()
@@ -622,7 +634,9 @@ export function claimQuest(id, questId) {
   p._qclaimed.add(questId)
   const gold = QUEST_GOLD[questId] || 0
   if (gold > 0) { p.gold += gold; p._goldDirty = true }
-  return { ok: true, gold: p.gold, add: gold }
+  const seals = QUEST_SEALS[questId] || 0
+  if (seals > 0) { p.seals = (p.seals || 0) + seals; p._sealsDirty = true }   // sellos AUTORITATIVOS
+  return { ok: true, gold: p.gold, add: gold, seals: p.seals, sealsAdd: seals }
 }
 
 // Equipo visible: el cliente manda sus capas de paperdoll; se guardan y se difunden al canal

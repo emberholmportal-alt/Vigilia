@@ -78,6 +78,8 @@ class Net {
         else if (m.t === 'cspawn' || m.t === 'copen' || m.t === 'cloot') this._emit(m.t, m)
         // oro AUTORITATIVO del servidor (faucet: kill/cofre/misión) — push con el nuevo saldo
         else if (m.t === 'gold') this._emit('gold', m)
+        // sellos AUTORITATIVOS del servidor (faucet: misiones/quest; sink: cofre de sellos)
+        else if (m.t === 'seals') this._emit('seals', m)
         // inventario AUTORITATIVO del servidor (bag) — push con el bag nuevo (loot/compra/venta/uso)
         else if (m.t === 'inv') this._emit('inv', m)
         // trade P2P: pedido entrante, apertura, estado (ofertas + confirmaciones), cierre, cancelación

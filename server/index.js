@@ -166,6 +166,7 @@ wss.on('connection', (ws) => {
           // puede pisarlos. Sólo en la CREACIÓN (personaje inexistente) se aceptan los valores del
           // cliente (kit inicial). Cierra el bypass "guardar sin entrar al mundo".
           const g = rooms.goldOf(conn.accountId)
+          const sv = rooms.sealsOf(conn.accountId)
           const inv = rooms.invOf(conn.accountId)
           const led = rooms.ledgerOf(conn.accountId)
           const data = { ...(m.char || {}) }
@@ -174,6 +175,10 @@ wss.on('connection', (ws) => {
             const ed = existing?.data || null
             if (g != null) data.gold = g
             else if (ed) data.gold = Math.floor(Number(ed.gold) || 0)
+            // Sellos AUTORITATIVOS (moneda premium): igual que el oro, la sesión viva pisa el blob;
+            // sin sesión se preservan del personaje. Cierra "editar el save para tener sellos".
+            if (sv != null) data.seals = sv
+            else if (ed) data.seals = Math.floor(Number(ed.seals) || 0)
             if (inv != null) data.inventory = inv
             else if (ed) data.inventory = ed.inventory || []
             if (led != null) data._outLedger = led
@@ -184,6 +189,7 @@ wss.on('connection', (ws) => {
             if (!ed) {
               const kit = startingKit(m.race)
               data.gold = kit.gold
+              data.seals = 0                 // un personaje nuevo arranca sin sellos (moneda premium)
               data.inventory = kit.inventory
               data.equipment = kit.equipment
               data.belt = kit.belt
@@ -302,10 +308,11 @@ wss.on('connection', (ws) => {
           liveConns.set(conn.accountId, ws)
           if (conn.playerId != null) rooms.leave(conn.playerId)
           // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
-          let gold = 0, inv = null, outSeed = null, ledger = null
+          let gold = 0, seals = 0, inv = null, outSeed = null, ledger = null
           if (!m.spectator) {
             const ch = await db.loadCharacter(conn.accountId)
             gold = Math.floor(Number(ch?.data?.gold) || 0)
+            seals = Math.floor(Number(ch?.data?.seals) || 0)
             inv = ch?.data?.inventory || null
             const d = ch?.data || {}
             // Ledger "checkout" AUTORITATIVO (Fase A.3): si el personaje ya tiene ledger guardado, se
@@ -317,10 +324,10 @@ wss.on('connection', (ws) => {
             // save manipulado (belt/graves con count enorme) en cuentas sin ledger persistido.
             if (!ledger) outSeed = grandfatherSeed(d)
           }
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, inv, outSeed, ledger })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, inv, outSeed, ledger })
           conn.playerId = id
           send({ t: 'present', you: id, players: present, map: m.map, channel })
-          if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + bag
+          if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'seals', seals }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + sellos + bag
           return
         }
 
