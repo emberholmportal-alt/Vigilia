@@ -268,7 +268,27 @@ const BLACK_OAK_CITY = [
   { sprite: 'peasant_man1', x: 43, y: 12, dir: 1, critter: true },
 ]
 
+// El Inframundo (nivel ~13): nadie vive acá; algunos, apenas, no terminan de morirse. Un ermitaño
+// que bajó y no supo volver (lore) y un contrabandista que comercia con los que se atreven (compra/
+// venta — invaluable tan hondo). Cerca del punto de llegada (67,47).
+const UNDERWORLD = [
+  { sprite: 'peasant_man2', name: 'el Descendido', name_en: 'the Descended One', portrait: 'male18.png', x: 65, y: 47, dir: 5,
+    lines: ['Bajé a buscar a mi hija. Bajé y bajé. Ya no sé cuál de los dos se perdió.',
+            'El pozo no tiene fondo, forastero. Sólo tiene más abajo.',
+            'Escuchá. ¿Lo oís? La cosa que abrió todo esto todavía respira ahí en la oscuridad.'],
+    lines_en: ['I came down to find my daughter. I came down and down. I no longer know which of us is lost.',
+               'The pit has no bottom, stranger. It only has further down.',
+               'Listen. Do you hear it? The thing that opened all this still breathes there in the dark.'] },
+  { sprite: 'peddler_goblin', name: 'Grask el Descarnado', name_en: 'Grask the Fleshless', portrait: 'goblin.png', x: 69, y: 47, dir: 0, shop: true,
+    lines: ['¿Comprás, vendés? Nadie más baja tan hondo con mercadería. Aprovechá.',
+            'Todo tiene precio acá abajo. Hasta salir.',
+            'No mirés al Minotauro a los ojos. A los cuernos, tampoco.'],
+    lines_en: ['Buying, selling? No one else comes this deep with goods. Make the most of it.',
+               'Everything has a price down here. Even leaving.',
+               "Don't look the Minotaur in the eyes. Nor at the horns, either."] },
+]
+
 export const NPCS_BY_MAP = {
   lochport: LOCHPORT, black_oak_farm: FARM, greenwood_point: GREENWOOD, triston: TRISTON,
-  black_oak_city: BLACK_OAK_CITY,
+  black_oak_city: BLACK_OAK_CITY, underworld: UNDERWORLD,
 }

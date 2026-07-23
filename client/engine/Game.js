@@ -2474,6 +2474,7 @@ function equipToGfx(equip) {
 const HUB_SPAWN = {
   black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27],
   greenwood_point: [51, 51], triston: [59, 58], wizards_tower_1: [35, 48], underworld: [67, 47],
+  st_maria_1: [39, 66], perdition_mines: [52, 18], stormrock_pass: [24, 81],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2530,14 +2531,25 @@ const PORTAL_EXTRA = {
   river_trail: [
     { x: 45, y: 20, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
     { x: 6, y: 4, w: 1, h: 1, to: 'salted_field', tx: 30, ty: 30, label: 'Campo Salado' },
+    // El sendero trepa hasta el Paso Roca-Tormenta (ruina del viento — quest de los Tres Nombres).
+    { x: 22, y: 18, w: 1, h: 1, to: 'stormrock_pass', tx: 24, ty: 81, label: 'Paso Roca-Tormenta' },
   ],
   salted_field: [
     { x: 33, y: 30, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    // Tierra consagrada junto a las tumbas saladas: las ruinas de Sta. María (nombre en hielo).
+    { x: 31, y: 44, w: 1, h: 1, to: 'st_maria_1', tx: 39, ty: 66, label: 'Ruinas de Sta. María' },
   ],
   // --- Rama Este (combate) ---
   goblin_cave: [
     { x: 28, y: 24, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    // Más hondo que la cueva se abren las Minas de Perdición (nombre en fuego).
+    { x: 30, y: 30, w: 1, h: 1, to: 'perdition_mines', tx: 52, ty: 18, label: 'Minas de Perdición' },
   ],
+  // --- Ruinas de los Tres Nombres (quest de Udana): entrar revela el nombre de cada archimago
+  // sellado. Cada una vuelve a Triston (donde Udana los pronuncia). Tiles verificados reachable. ---
+  st_maria_1: [{ x: 39, y: 63, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  perdition_mines: [{ x: 49, y: 18, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  stormrock_pass: [{ x: 24, y: 84, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
   // Black Oak City (100×100, nivel ~10): la zona insignia. Llegás al hub jugable (41,13) — la región
   // caminable grande, con enemigos grassland y cofres densificados en la entrada. Pad de regreso a
   // Triston unos tiles al lado (no en la baldosa de llegada, para no rebotar). La Piedra de Retorno

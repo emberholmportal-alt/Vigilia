@@ -212,6 +212,8 @@ const MAP_BOSS = {
   // La Torre del Mago: el Nigromante óseo (invoca esbirros) custodia el umbral. Paga el rumor del
   // Centinela Aldric ("nadie que entró volvió a contarlo").
   wizards_tower_1: { sprite: 'skeleton_mage_boss', level: 12 },
+  // El Inframundo: el Minotauro, la bestia que abrió el pozo. Guarda las profundidades.
+  underworld: { sprite: 'minotaur', level: 13 },
 }
 function spawnBoss(md, cfg) {
   const [cx, cy] = md.spawn || [Math.floor(md.w / 2), Math.floor(md.h / 2)]
