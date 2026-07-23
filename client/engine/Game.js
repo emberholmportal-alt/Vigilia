@@ -2513,6 +2513,7 @@ const HUB_SPAWN = {
   greenwood_point: [51, 51], triston: [59, 58], wizards_tower_1: [35, 48], underworld: [67, 47],
   st_maria_1: [39, 66], perdition_mines: [52, 18], stormrock_pass: [24, 81],
   underworld_catacombs: [70, 99], underworld_mines: [31, 63], underworld_stronghold_1: [5, 32], underworld_stronghold_2: [36, 8],
+  dilapidated_sewers: [64, 8],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2545,6 +2546,13 @@ const PORTAL_REPLACE = {
   triston: [
     { x: 45, y: 58, w: 1, h: 1, to: 'black_oak_farm', tx: 58, ty: 54, label: 'Granja de Black Oak' },
     { x: 72, y: 58, w: 1, h: 1, to: 'goblin_cave', tx: 25, ty: 24, label: 'Cueva de Duendes' },
+  ],
+  // Las Cloacas Ruinosas (nivel ~11): dungeon contenido bajo la ciudad. REEMPLAZAMOS sus portales
+  // nativos (van a la granja y a Fuerte Nasu, sin poblar) por dos salidas curadas: Triston y de
+  // vuelta a Black Oak City. Ambos tiles verificados caminables+reachable desde el spawn (64,8).
+  dilapidated_sewers: [
+    { x: 64, y: 10, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 66, y: 8, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' },
   ],
 }
 
@@ -2605,6 +2613,10 @@ const PORTAL_EXTRA = {
     // reachable hacia el interior peligroso; llegada al spawn nativo de la torre (35,48), donde el
     // server densifica el combate. La torre es un dungeon de 3 pisos (conectados por portales nativos).
     { x: 60, y: 50, w: 1, h: 1, to: 'wizards_tower_1', tx: 35, ty: 48, label: 'Torre del Mago' },
+    // Bajo las avenidas de la ciudad se abren las Cloacas Ruinosas (nivel ~11): un dungeon de
+    // no-muertos con jefe (el Zombi profano). Pad cerca del hub (39,13), reachable+caminable;
+    // llegada al spawn nativo de las cloacas (64,8), donde el server densifica el combate.
+    { x: 39, y: 13, w: 1, h: 1, to: 'dilapidated_sewers', tx: 64, ty: 8, label: 'Cloacas Ruinosas' },
   ],
   // Torre del Mago (entrada, nivel ~11): dungeon con jefe (el Nigromante óseo custodia el umbral).
   // Regreso a Triston + descenso al Inframundo (las cimientas de la torre se hunden en él, nivel ~13).

@@ -88,6 +88,9 @@ const ABILITIES = {
   skeleton_weak: { type: 'skittish', threshold: 0.25, flee: 2.5 },
   antlion_small: { type: 'skittish', threshold: 0.3, flee: 2.5 },
   skeleton_mage_boss: { type: 'summon', minion: 'skeleton_weak', cd: 7, cap: 4 },
+  // El Zombi profano (jefe de las Cloacas): hinchado y lento, descarga un golpe pútrido en área,
+  // bien telegrafiado (se esquiva saliendo del círculo). Golpea fuerte pero rara vez.
+  zombie_dark: { type: 'smash', mult: 2.1, radius: 2.0, windup: 0.85, cd: 5.5, chance: 0.38 },
 }
 export const enemyAbility = (sprite) => ABILITIES[sprite] || null
 

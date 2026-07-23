@@ -214,6 +214,9 @@ const MAP_BOSS = {
   wizards_tower_1: { sprite: 'skeleton_mage_boss', level: 12 },
   // El Inframundo: el Minotauro, la bestia que abrió el pozo. Guarda las profundidades.
   underworld: { sprite: 'minotaur', level: 13 },
+  // Las Cloacas Ruinosas, bajo Black Oak City: el Zombi profano, hinchado de todo lo que la ciudad
+  // deja caer. Golpe pútrido en área (telegrafiado). Clímax de la rama de la ciudad (nivel ~11).
+  dilapidated_sewers: { sprite: 'zombie_dark', level: 11 },
   // Los Tres Nombres (quest de Udana): cada ruina guarda el guardián elemental que el archimago dejó
   // atado. Matarlo arranca el nombre sellado (el cliente revela q3_* al caer un jefe en la ruina).
   st_maria_1: { sprite: 'wyvern_water', level: 9 },     // hielo / Scathelocke

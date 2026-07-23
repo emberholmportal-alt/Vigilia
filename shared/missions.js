@@ -22,6 +22,9 @@ export const POOL = [
   // Black Oak City (nivel ~10): la joya caída. Caza y saqueo de mayor riesgo -> mayor recompensa.
   { id: 'hunt_city', type: 'kill', map: 'black_oak_city', target: 14, xp: 150, gold: 105, seals: 3 },
   { id: 'loot_city', type: 'chest', map: 'black_oak_city', target: 3, xp: 130, gold: 90, seals: 3 },
+  // Las Cloacas Ruinosas (nivel ~11): el clímax de la rama de la ciudad, bajo sus avenidas.
+  { id: 'hunt_sewers', type: 'kill', map: 'dilapidated_sewers', target: 14, xp: 165, gold: 115, seals: 3 },
+  { id: 'loot_sewers', type: 'chest', map: 'dilapidated_sewers', target: 3, xp: 145, gold: 100, seals: 3 },
   // El Inframundo (nivel ~13): lo más hondo con misión. Recompensa acorde a la profundidad.
   { id: 'hunt_underworld', type: 'kill', map: 'underworld', target: 16, xp: 190, gold: 135, seals: 4 },
   { id: 'loot_underworld', type: 'chest', map: 'underworld', target: 3, xp: 165, gold: 115, seals: 4 },

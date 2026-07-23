@@ -14,6 +14,10 @@ export const ZONE_LORE = {
     es: 'La Torre del Mago se cierra sobre vos como una garganta de piedra. Los Tres estudiaron acá antes de sellarse. Algo siguió estudiando después.',
     en: 'The Wizard\'s Tower closes over you like a throat of stone. The Three studied here before they sealed themselves. Something kept studying after.',
   },
+  dilapidated_sewers: {
+    es: 'Bajo Black Oak City, las cloacas se tragaron lo que la ciudad no quiso enterrar. Ahora eso camina, y todavía tiene hambre.',
+    en: 'Beneath Black Oak City, the sewers swallowed what the city would not bury. Now it walks, and it is hungry still.',
+  },
   underworld: {
     es: 'Bajo la torre no hay fondo, sólo más abajo. El Inframundo no fue cavado por manos: se abrió solo, y sigue abriéndose.',
     en: 'Beneath the tower there is no bottom, only further down. The Underworld was not dug by hands: it opened on its own, and it is opening still.',
