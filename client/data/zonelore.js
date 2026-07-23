@@ -6,6 +6,10 @@ export const ZONE_LORE = {
     es: 'La granja aguantó la Caída mejor que el reino. Acá, todavía, el peligro tiene cara de duende.',
     en: 'The farm weathered the Fall better than the kingdom. Here, still, danger wears a goblin\'s face.',
   },
+  black_oak_city: {
+    es: 'Black Oak City fue la joya del reino antes de la Caída. Hoy sus avenidas son de otros, y no perdonan al que llega sin filo.',
+    en: 'Black Oak City was the jewel of the kingdom before the Fall. Now its avenues belong to others, and they do not forgive those who arrive without a blade.',
+  },
   river_trail: {
     es: 'El agua se lleva los pasos que das. Dicen que, más abajo, a veces los devuelve.',
     en: 'The water carries away the steps you take. They say that, further down, it sometimes gives them back.',

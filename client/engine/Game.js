@@ -2523,6 +2523,9 @@ const PORTAL_EXTRA = {
   black_oak_farm: [
     { x: 61, y: 54, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
     { x: 36, y: 26, w: 1, h: 1, to: 'river_trail', tx: 42, ty: 20, label: 'Sendero del Río' },
+    // Frontera de la región de Black Oak: de la granja se llega a la CIUDAD (nivel ~10, salto de
+    // dificultad). Tile de la granja verificado caminable+reachable; llegada al hub jugable (41,13).
+    { x: 43, y: 17, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' },
   ],
   river_trail: [
     { x: 45, y: 20, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
@@ -2535,10 +2538,17 @@ const PORTAL_EXTRA = {
   goblin_cave: [
     { x: 28, y: 24, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
+  // Black Oak City (100×100, nivel ~10): la zona insignia. Llegás al hub jugable (41,13) — la región
+  // caminable grande, con enemigos grassland y cofres densificados en la entrada. Pad de regreso a
+  // Triston unos tiles al lado (no en la baldosa de llegada, para no rebotar). La Piedra de Retorno
+  // también sirve desde acá. Ambos tiles verificados caminables+reachable.
+  black_oak_city: [
+    { x: 44, y: 13, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
   // --- clusters futuros (ya cableados, fuera del arranque) ---
   goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],
   lochport: [{ x: 43, y: 1, w: 1, h: 1, to: 'abandoned_mines', tx: 76, ty: 71, label: 'Minas Abandonadas' }],
-  the_breach: [{ x: 46, y: 98, w: 1, h: 1, to: 'black_oak_city', tx: 98, ty: 50, label: 'Black Oak City' }],
+  the_breach: [{ x: 46, y: 98, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' }],
 }
 
 // Tile de llegada al recall a Triston: al lado del Obelisco de Retorno (55,45) de la plaza.
