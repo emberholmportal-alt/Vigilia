@@ -15,6 +15,7 @@ export const HOW_TO_PLAY = {
       icon: 'Sword', title: 'Moverte y pelear',
       body: [
         'Tocá el suelo para caminar; tocá un enemigo para atacarlo.',
+        'Tocá el botón de correr (o mantené Shift en la compu) para ir más rápido: gastás estamina y se recarga sola cuando aflojás.',
         'M1 es tu golpe normal (usa tu arma); M2 es tu habilidad especial, y elegís cuál va ahí. El servidor decide el daño: nadie hace trampa.',
       ],
       tip: 'Sin arma peleás a puños y hacés poco daño: equipate algo antes de salir.',
@@ -55,8 +56,9 @@ export const HOW_TO_PLAY = {
       body: [
         'En Triston tenés un cofre personal: tu alijo. Solamente vos lo ves y lo abrís, para dejar guardado lo que no querés cargar.',
         'Lo encontrás cerca de la plaza. Le caminás encima y se abre: tocás un ítem de tu bolsa para guardarlo, o uno del alijo para retirarlo. Lo guardado está a salvo aunque mueras.',
+        'También tenés una bóveda de oro: depositás y retirás cuando quieras. Y guardás cualquier poción —vida, maná y las demás— para no cargarlas encima.',
       ],
-      tip: 'Antes de salir a pelear, dejá en el alijo el botín valioso que no vas a usar: si caés, no lo perdés.',
+      tip: 'Antes de salir a pelear, dejá en el alijo el botín valioso y el oro que no vas a usar: si caés, no lo perdés.',
     },
     {
       icon: 'Swap', title: 'Comerciar y el mercado',
@@ -76,7 +78,8 @@ export const HOW_TO_PLAY = {
       icon: 'Coin', title: 'La economía',
       body: [
         'Ganás oro peleando, juntando y con las misiones diarias, que además dan sellos. Todo el oro, el loot y las ventas los valida el servidor: nadie fabrica oro de la nada.',
-        'Entre jugadores el oro circula por el comercio y el mercado. Con el tiempo se cambiará por $VEL, el token del juego. Por ahora el token no existe: primero, que el mundo esté vivo.',
+        'Entre jugadores el oro circula por el comercio y el mercado.',
+        'Cuando exista $VEL, el token del juego, vas a poder cambiar oro por $VEL con otros jugadores: publicás oro pidiendo $VEL y quien compra te lo paga directo a tu billetera (el juego nunca toca tu token; el pago se firma en tu wallet). Por ahora el token no existe: primero, que el mundo esté vivo.',
       ],
     },
   ],
@@ -92,6 +95,7 @@ export const HOW_TO_PLAY = {
       icon: 'Sword', title: 'Move and fight',
       body: [
         'Tap the ground to walk; tap an enemy to attack it.',
+        'Tap the run button (or hold Shift on desktop) to move faster: it drains stamina, which refills on its own when you ease off.',
         'M1 is your normal strike (uses your weapon); M2 is your special ability, and you choose which one goes there. The server decides the damage: no one cheats.',
       ],
       tip: 'Without a weapon you fight with fists and do little damage: equip something before heading out.',
@@ -132,8 +136,9 @@ export const HOW_TO_PLAY = {
       body: [
         'In Triston you have a personal chest: your stash. Only you can see and open it, to store what you do not want to carry.',
         'You find it near the square. Walk onto it and it opens: tap a bag item to store it, or a stash item to take it back. What is stored is safe even if you die.',
+        'It also holds a gold vault: deposit and withdraw whenever you like. And you can stash any potion —health, mana and the rest— so you do not have to carry them.',
       ],
-      tip: 'Before heading out to fight, leave your valuable loot in the stash: if you fall, you keep it.',
+      tip: 'Before heading out to fight, leave your valuable loot and spare gold in the stash: if you fall, you keep it.',
     },
     {
       icon: 'Swap', title: 'Trading and the market',
@@ -153,7 +158,8 @@ export const HOW_TO_PLAY = {
       icon: 'Coin', title: 'The economy',
       body: [
         'You earn gold by fighting, gathering and from daily quests, which also grant seals. All gold, loot and sales are validated by the server: no one mints gold from nothing.',
-        'Between players, gold flows through trading and the market. In time it will trade for $VEL, the game token. For now the token does not exist: first, the world must be alive.',
+        'Between players, gold flows through trading and the market.',
+        'Once $VEL, the game token, exists you will be able to trade gold for $VEL with other players: list gold asking for $VEL, and whoever buys pays you straight to your wallet (the game never touches your token; the payment is signed in your wallet). For now the token does not exist: first, the world must be alive.',
       ],
     },
   ],
