@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Velgrim — Grabar clips del trailer</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#000;color:#ece0cc;font-family:Georgia,serif;overflow:hidden}
+  /* Escenario 16:9 centrado (igual encuadre que el trailer). Grabá ESTA zona. */
+  #app{position:fixed;inset:0;display:grid;place-items:center;background:#000}
+  #stage{position:relative;width:100vw;height:56.25vw;max-height:100vh;max-width:177.78vh;
+    background:#0b0809;overflow:hidden;box-shadow:0 0 0 1px rgba(255,120,60,.0)}
+  #stage.guide{box-shadow:0 0 0 2px rgba(255,120,60,.7)}
+  #frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+  /* Barra de control (NO se graba: escondela con la tecla H o el botón). */
+  #bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:8px 12px;background:linear-gradient(180deg,rgba(8,5,4,.96),rgba(8,5,4,.82));
+    border-bottom:1px solid #3a2c22;font-size:13px;transition:transform .25s ease}
+  #bar.hidden{transform:translateY(-110%)}
+  #bar b{color:#ff8a3d;letter-spacing:.04em}
+  .scene-btn{cursor:pointer;border:1px solid #3a2c22;background:#17110f;color:#ece0cc;font:inherit;
+    padding:5px 12px;border-radius:5px}
+  .scene-btn.on{background:linear-gradient(180deg,rgba(255,90,31,.28),rgba(255,90,31,.08));border-color:#ff5a1f;color:#fff}
+  .scene-btn:hover{border-color:#ff8a3d}
+  #bar .sp{flex:1}
+  .toggle{cursor:pointer;border:1px solid #3a2c22;background:#17110f;color:#c9b89f;font:inherit;padding:5px 10px;border-radius:5px}
+  .toggle.on{color:#7fd08a;border-color:#3f6d47}
+  #hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:20;max-width:min(880px,92vw);
+    background:rgba(8,5,4,.9);border:1px solid #3a2c22;border-radius:8px;padding:10px 16px;font-size:13px;line-height:1.5;
+    color:#c9b89f;transition:opacity .25s}
+  #hint.hidden{opacity:0;pointer-events:none}
+  #hint b{color:#ece0cc}#hint code{background:#211812;padding:1px 6px;border-radius:4px;color:#ffb488;font-family:ui-monospace,monospace}
+  #hint .warn{color:#ffcf6b}
+  kbd{background:#211812;border:1px solid #3a2c22;border-bottom-width:2px;border-radius:4px;padding:0 6px;font-family:ui-monospace,monospace;font-size:12px;color:#ffb488}
+</style>
+</head>
+<body>
+<div id="bar">
+  <b>VELGRIM · grabar clip:</b>
+  <button class="scene-btn" data-scene="town">Multiplayer</button>
+  <button class="scene-btn" data-scene="minotaur">Minotauro</button>
+  <button class="scene-btn" data-scene="snow">Nieve</button>
+  <button class="scene-btn" data-scene="temple">Mazmorra</button>
+  <button class="scene-btn" data-scene="oasis">Oasis</button>
+  <span class="sp"></span>
+  <button class="toggle" id="tGuide">Borde guía</button>
+  <button class="toggle on" id="tHint">Ayuda</button>
+  <button class="toggle" id="tHide">Ocultar barra (H)</button>
+</div>
+
+<div id="app"><div id="stage"><iframe id="frame" allow="autoplay" title="Velgrim"></iframe></div></div>
+
+<div id="hint"></div>
+
+<script>
+// Cada escena = el juego real corriendo en un iframe, encuadrado a 16:9 (misma proporción que el trailer).
+// Grabás ESTE recuadro 16:9 en tu PC (con GPU real = 60fps fluido). El trailer le agrega la etiqueta de
+// ubicación y el subtítulo por encima, así que grabá el gameplay LIMPIO (sin texto).
+const BASE = './'; // el juego se sirve desde la misma raíz (npm run dev)
+const SCENES = {
+  town:     { url:'/?online=1&map=triston',            name:'Multiplayer · Triston',
+              hint:`<b>Multiplayer (Triston).</b> Necesita el servidor + bots para poblar el pueblo:
+                    <br>1) En otra terminal: <code>npm run server</code>
+                    <br>2) En otra terminal: <code>node tools/record/bots.mjs</code> (spawnea 10 jugadores con razas y armaduras)
+                    <br>3) Acá: <kbd>PLAY NOW</kbd> → elegí Elfo → nombre → entrá. Cuando veas la multitud, grabá ~6s moviéndote poco.` },
+  minotaur: { url:'/?map=black_oak_farm',               name:'Jefe · Minotauro',
+              hint:`<b>Pelea con el minotauro (Black Oak Farm).</b> El minotauro está en el tile (69,81).
+                    <br>Opción fácil: corré <code>node tools/record/minotaur_near.mjs on</code> para acercarlo al spawn (y <code>off</code> para revertir).
+                    <br>Entrá (elegí Enano, es más resistente), caminá hasta él y hacé click encima para atacar. Grabá la pelea ~6s.
+                    <span class="warn"> Acordate de revertir con <code>off</code> al terminar.</span>` },
+  snow:     { url:'/?map=grot_lagoon',                  name:'Nieve · Grot Lagoon',
+              hint:`<b>Grot Lagoon (nieve).</b> Entrá (elegí Enano), caminá tranquilo por la costa helada y grabá ~6s. Movimientos suaves = se ve mejor.` },
+  temple:   { url:'/?map=temple_of_mez_1',              name:'Mazmorra · Temple of Mez',
+              hint:`<b>Temple of Mez (mazmorra).</b> Entrá (elegí Humano), caminá por el corredor hacia el portal y grabá ~6s.` },
+  oasis:    { url:'/?map=oasis',                        name:'Oasis',
+              hint:`<b>Oasis.</b> Entrá (elegí Elfo), caminá cerca del agua y grabá ~6s.` },
+};
+const COMMON = `<br><br><b>Para todas:</b> ajustá la ventana a 16:9 (o grabá solo el recuadro), ~6 segundos, sin mover mucho la cámara.
+  Guardá el archivo como <code>&lt;escena&gt;.webm</code> (o .mp4) y ponelo en <code>public/trailer_clips/</code> — el trailer lo toma solo.
+  Teclas: <kbd>H</kbd> ocultar barra · <kbd>G</kbd> borde guía · <kbd>?</kbd> ayuda.`;
+
+const frame=document.getElementById('frame'),bar=document.getElementById('bar'),hint=document.getElementById('hint'),stage=document.getElementById('stage');
+function qs(){return new URLSearchParams(location.search).get('scene')||'temple';}
+function setScene(s){
+  const cfg=SCENES[s]||SCENES.temple;
+  frame.src=cfg.url;
+  document.querySelectorAll('.scene-btn').forEach(b=>b.classList.toggle('on',b.dataset.scene===s));
+  hint.innerHTML=cfg.hint+COMMON;
+  history.replaceState(null,'','?scene='+s);
+  document.title='Velgrim — grabar: '+cfg.name;
+}
+document.querySelectorAll('.scene-btn').forEach(b=>b.onclick=()=>setScene(b.dataset.scene));
+const tGuide=document.getElementById('tGuide'),tHint=document.getElementById('tHint'),tHide=document.getElementById('tHide');
+tGuide.onclick=()=>{stage.classList.toggle('guide');tGuide.classList.toggle('on');};
+tHint.onclick=()=>{hint.classList.toggle('hidden');tHint.classList.toggle('on');};
+tHide.onclick=()=>{bar.classList.add('hidden');};
+addEventListener('keydown',e=>{
+  if(e.key==='h'||e.key==='H'){bar.classList.toggle('hidden');}
+  else if(e.key==='g'||e.key==='G'){tGuide.click();}
+  else if(e.key==='?'){tHint.click();}
+});
+setScene(qs());
+</script>
+</body>
+</html>
