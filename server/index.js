@@ -11,6 +11,7 @@ import * as wallet from './systems/wallet.js'
 import * as guilds from './systems/guilds.js'
 import * as rooms from './world/rooms.js'
 import * as market from './systems/market.js'
+import * as goldmarket from './systems/goldmarket.js'
 import * as stash from './systems/stash.js'
 import { startingKit, startingLedger } from '../shared/starterkit.js'
 
@@ -412,6 +413,37 @@ wss.on('connection', (ws) => {
         case 'market_cancel': {  // retirar mi publicación (recupero el ítem)
           if (conn.playerId == null || !conn.accountId) return
           return send({ t: 'market', op: 'cancel', ...(await market.cancel(conn.playerId, conn.accountId, m.id)) })
+        }
+        // ---------- Marketplace oro↔$VEL (order book P2P, pago on-chain, no-custodial) ----------
+        case 'goldmkt_config': {  // config pública del mercado de $VEL (apagado -> { on:false })
+          return send({ t: 'goldmkt', op: 'config', ...(await goldmarket.config()) })
+        }
+        case 'goldmkt_browse': {  // órdenes de oro disponibles para comprar (con $VEL)
+          return send({ t: 'goldmkt', op: 'browse', ...(await goldmarket.browse()) })
+        }
+        case 'goldmkt_mine': {    // mis órdenes de venta de oro
+          if (!conn.accountId) return send({ t: 'goldmkt', op: 'mine', ok: false, error: 'no autenticado' })
+          return send({ t: 'goldmkt', op: 'mine', ...(await goldmarket.mine(conn.accountId)) })
+        }
+        case 'goldmkt_list': {    // publicar oro (escrow) pidiendo $VEL. La wallet de cobro la pone el server.
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'goldmkt', op: 'list', ...(await goldmarket.list(conn.playerId, conn.accountId, rooms.nameOf(conn.playerId), conn.username, m.gold, m.price)) })
+        }
+        case 'goldmkt_cancel': {  // cancelar mi orden y recuperar el oro escrowed
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'goldmkt', op: 'cancel', ...(await goldmarket.cancel(conn.playerId, conn.accountId, m.id)) })
+        }
+        case 'goldmkt_lock': {    // reservar una orden para comprarla -> instrucciones de pago on-chain
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'goldmkt', op: 'lock', id: m.id, ...(await goldmarket.lock(conn.playerId, conn.accountId, conn.username, m.id)) })
+        }
+        case 'goldmkt_unlock': {  // soltar la reserva sin comprar
+          if (!conn.accountId) return
+          return send({ t: 'goldmkt', op: 'unlock', id: m.id, ...(await goldmarket.unlock(conn.accountId, m.id)) })
+        }
+        case 'goldmkt_settle': {  // cerré el pago on-chain (firma) -> verificar y recibir el oro
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'goldmkt', op: 'settle', id: m.id, ...(await goldmarket.settle(conn.playerId, conn.accountId, m.id, m.sig)) })
         }
         // ---------- Bag autoritativo: transferencias entre el bag y equipo/cinturón/tumba/forja ----------
         case 'bag_take': {   // sacar un ítem del bag por índice (equipar / mandar al cinturón)

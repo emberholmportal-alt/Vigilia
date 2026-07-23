@@ -74,6 +74,24 @@ export async function init() {
         account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
         items JSONB DEFAULT '[]'::jsonb,
         gold BIGINT DEFAULT 0
+      );
+      CREATE TABLE IF NOT EXISTS gold_orders (
+        id SERIAL PRIMARY KEY,
+        seller INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+        seller_name TEXT,
+        seller_wallet TEXT NOT NULL,
+        gold BIGINT NOT NULL,
+        price BIGINT NOT NULL,
+        status TEXT DEFAULT 'open',
+        locked_by INTEGER,
+        locked_wallet TEXT,
+        lock_expires BIGINT DEFAULT 0,
+        created_at BIGINT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS gold_order_sigs (
+        sig TEXT PRIMARY KEY,
+        order_id INTEGER,
+        used_at BIGINT NOT NULL
       );`)
     // Migración: sumar la columna de oro del alijo a tablas ya creadas sin ella.
     await pg.query(`ALTER TABLE player_stash ADD COLUMN IF NOT EXISTS gold BIGINT DEFAULT 0;`)
@@ -92,6 +110,9 @@ export async function init() {
   if (!file.market) file.market = []                 // [{id, seller, seller_name, item, price, created_at, expires_at}]
   if (!file.stash) file.stash = {}                   // account_id -> items[] (alijo privado)
   if (!file.stashGold) file.stashGold = {}           // account_id -> gold (bóveda del alijo)
+  if (!file.goldOrders) file.goldOrders = []         // [{id, seller, seller_name, seller_wallet, gold, price, status, locked_by, locked_wallet, lock_expires, created_at}]
+  if (!file.goldOrderSigs) file.goldOrderSigs = {}   // sig -> { order_id, used_at } (anti-replay global)
+  if (file.goldOrderSeq == null) file.goldOrderSeq = file.goldOrders.reduce((m, o) => Math.max(m, o.id), 0) + 1
   if (file.marketSeq == null) file.marketSeq = file.market.reduce((m, l) => Math.max(m, l.id), 0) + 1
   if (file.guildSeq == null) file.guildSeq = file.guilds.reduce((m, g) => Math.max(m, g.id), 0) + 1
   seq = file.accounts.reduce((m, a) => Math.max(m, a.id), 0) + 1
@@ -442,6 +463,54 @@ export async function marketClaim(id) {
   if (pg) { const r = await pg.query('DELETE FROM market_listings WHERE id=$1 RETURNING id, seller, seller_name, item, price, created_at, expires_at', [id | 0]); const l = r.rows[0]; return l ? { ...l, price: Number(l.price), created_at: Number(l.created_at), expires_at: Number(l.expires_at) } : null }
   const i = file.market.findIndex((l) => l.id === (id | 0)); if (i < 0) return null; const [l] = file.market.splice(i, 1); flush(); return l
 }
+// --- Marketplace oro↔$VEL (order book P2P, oro escrowed en el server, pago on-chain) ---
+// El oro del vendedor vive escrowed en la fila de la orden (no en su bag). El $VEL nunca lo toca el
+// server: fluye on-chain del comprador al vendedor+tesoro; acá sólo verificamos la firma.
+const goView = (o) => ({ ...o, gold: Number(o.gold), price: Number(o.price), lock_expires: Number(o.lock_expires || 0) })
+export async function goldOrderAll() {
+  if (pg) { const r = await pg.query('SELECT id, seller, seller_name, seller_wallet, gold, price, status, locked_by, locked_wallet, lock_expires, created_at FROM gold_orders ORDER BY id DESC'); return r.rows.map(goView) }
+  return file.goldOrders.slice().reverse().map(goView)
+}
+export async function goldOrderBySeller(accountId) {
+  if (pg) { const r = await pg.query('SELECT id, seller, seller_name, seller_wallet, gold, price, status, locked_by, locked_wallet, lock_expires, created_at FROM gold_orders WHERE seller=$1 ORDER BY id DESC', [accountId]); return r.rows.map(goView) }
+  return file.goldOrders.filter((o) => o.seller === accountId).map(goView)
+}
+export async function goldOrderGet(id) {
+  if (pg) { const r = await pg.query('SELECT id, seller, seller_name, seller_wallet, gold, price, status, locked_by, locked_wallet, lock_expires, created_at FROM gold_orders WHERE id=$1', [id | 0]); return r.rows[0] ? goView(r.rows[0]) : null }
+  const o = file.goldOrders.find((x) => x.id === (id | 0)); return o ? goView(o) : null
+}
+export async function goldOrderAdd({ seller, sellerName, sellerWallet, gold, price, createdAt }) {
+  if (pg) { const r = await pg.query("INSERT INTO gold_orders (seller, seller_name, seller_wallet, gold, price, status, lock_expires, created_at) VALUES ($1,$2,$3,$4,$5,'open',0,$6) RETURNING id", [seller, sellerName || '', sellerWallet, gold, price, createdAt]); return r.rows[0].id }
+  const id = file.goldOrderSeq++; file.goldOrders.push({ id, seller, seller_name: sellerName || '', seller_wallet: sellerWallet, gold, price, status: 'open', locked_by: null, locked_wallet: null, lock_expires: 0, created_at: createdAt }); flush(); return id
+}
+// Toma la orden para el comprador (open -> locked) de forma ATÓMICA: sólo un comprador la bloquea.
+export async function goldOrderLock(id, { lockedBy, lockedWallet, lockExpires }) {
+  if (pg) { const r = await pg.query("UPDATE gold_orders SET status='locked', locked_by=$2, locked_wallet=$3, lock_expires=$4 WHERE id=$1 AND (status='open' OR (status='locked' AND lock_expires < $5)) RETURNING id", [id | 0, lockedBy, lockedWallet, lockExpires, Date.now()]); return r.rowCount > 0 }
+  const o = file.goldOrders.find((x) => x.id === (id | 0)); if (!o) return false
+  if (o.status !== 'open' && !(o.status === 'locked' && o.lock_expires < Date.now())) return false
+  o.status = 'locked'; o.locked_by = lockedBy; o.locked_wallet = lockedWallet; o.lock_expires = lockExpires; flush(); return true
+}
+// Libera el lock (locked -> open) si sigue bloqueada por ese comprador (cancelar compra / vencer).
+export async function goldOrderUnlock(id, lockedBy) {
+  if (pg) { await pg.query("UPDATE gold_orders SET status='open', locked_by=NULL, locked_wallet=NULL, lock_expires=0 WHERE id=$1 AND status='locked' AND locked_by=$2", [id | 0, lockedBy]); return }
+  const o = file.goldOrders.find((x) => x.id === (id | 0)); if (o && o.status === 'locked' && o.locked_by === lockedBy) { o.status = 'open'; o.locked_by = null; o.locked_wallet = null; o.lock_expires = 0; flush() }
+}
+// Saca la orden (settle/cancel). Devuelve la orden removida o null (si ya no está). ATÓMICO.
+export async function goldOrderRemove(id) {
+  if (pg) { const r = await pg.query('DELETE FROM gold_orders WHERE id=$1 RETURNING id, seller, seller_name, seller_wallet, gold, price, status, locked_by, locked_wallet, lock_expires, created_at', [id | 0]); return r.rows[0] ? goView(r.rows[0]) : null }
+  const i = file.goldOrders.findIndex((x) => x.id === (id | 0)); if (i < 0) return null; const [o] = file.goldOrders.splice(i, 1); flush(); return goView(o)
+}
+// Anti-replay: registra una firma como usada (única global). Devuelve true si la reservó, false si ya estaba.
+export async function goldSigClaim(sig, orderId) {
+  if (pg) { try { await pg.query('INSERT INTO gold_order_sigs (sig, order_id, used_at) VALUES ($1,$2,$3)', [sig, orderId | 0, Date.now()]); return true } catch { return false } }
+  if (file.goldOrderSigs[sig]) return false
+  file.goldOrderSigs[sig] = { order_id: orderId | 0, used_at: Date.now() }; flush(); return true
+}
+export async function goldSigRelease(sig) {
+  if (pg) { await pg.query('DELETE FROM gold_order_sigs WHERE sig=$1', [sig]); return }
+  if (file.goldOrderSigs[sig]) { delete file.goldOrderSigs[sig]; flush() }
+}
+
 // Agrega un ítem al inventario (bag) persistido de un personaje OFFLINE (devolución de vencidos).
 // Al primer hueco libre dentro de las 55 celdas; si no entra, se pierde (raro: bag lleno + offline).
 export async function addToCharacterInventory(accountId, rec) {
