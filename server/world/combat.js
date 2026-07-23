@@ -381,6 +381,7 @@ export function setStats(pid, s) {
     dmgMul: clampNum(s.dmgMul, 4) || 1, str: clampNum(s.str, 999),
     crit: clampNum(s.crit, 60), defense: clampNum(s.defense, 3000),
     reach: clampNum(s.reach, 8) || 1.6,
+    itemFind: clampNum(s.itemFind, 300),   // magic-find (acotado): mejora la rareza del loot de kills
     weaponKind: (s.weaponKind === 'ranged' || s.weaponKind === 'mental') ? s.weaponKind : 'melee',
   })
 }
@@ -471,7 +472,7 @@ function killEnemy(w, e, killerId) {
   if (e.gold > 0 && ctx.awardGold) ctx.awardGold(killerId, Math.max(1, Math.round(e.gold * (0.7 + Math.random() * 0.6))), 'kill', e.x, e.y)
   // Botín de ítems AUTORITATIVO (Fase A.2): el server tira el drop y lo otorga al bag del matador.
   const boss = !!e.boss || /boss|minotaur|elite/.test(e.s)   // jefe de zona (MAP_BOSS) también da loot de jefe
-  const roll = rollMonsterDrop(e.lv, boss, 0)
+  const roll = rollMonsterDrop(e.lv, boss, (pstats.get(killerId) || {}).itemFind || 0)   // magic-find del matador (antes 0 online)
   if (roll.drops.length && ctx.grantLoot) ctx.grantLoot(killerId, roll.drops)
   // Avance de misiones AUTORITATIVO (matar / contrato): el server cuenta el kill en el mapa del mundo.
   if (ctx.missionTick) { ctx.missionTick(killerId, 'kill', w.map, 1); if (e.contract) ctx.missionTick(killerId, 'contract', w.map, 1) }

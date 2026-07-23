@@ -439,6 +439,7 @@ export class Game {
       str: st.str || 10, crit: st.crit || 0, weaponKind: st.weaponKind || 'melee',
       defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
       level: st.level || 1,   // capacidad usable del bag autoritativo (parity con el HUD)
+      itemFind: st.itemFind || 0,   // magic-find: el server lo usa al tirar el loot de kills
     })
   }
 
@@ -2575,6 +2576,13 @@ const PORTAL_EXTRA = {
     { x: 33, y: 30, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
     // Tierra consagrada junto a las tumbas saladas: las ruinas de Sta. María (nombre en hielo).
     { x: 31, y: 44, w: 1, h: 1, to: 'st_maria_1', tx: 39, ty: 66, label: 'Ruinas de Sta. María' },
+    // Pasado el campo, un segundo pueblo que aguantó: Greenwood Point (mercader, gremio, guardias).
+    { x: 30, y: 33, w: 1, h: 1, to: 'greenwood_point', tx: 51, ty: 51, label: 'Greenwood Point' },
+  ],
+  // Greenwood Point: segundo pueblo (mod noname). Pacífico (sin enemigos), con sus propios NPCs de
+  // servicio. Regreso a Triston. Estaba armado pero inalcanzable — ahora es el final vivo de la rama oeste.
+  greenwood_point: [
+    { x: 54, y: 51, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
   // --- Rama Este (combate) ---
   goblin_cave: [
