@@ -18,6 +18,22 @@ export const ZONE_LORE = {
     es: 'Bajo la torre no hay fondo, sólo más abajo. El Inframundo no fue cavado por manos: se abrió solo, y sigue abriéndose.',
     en: 'Beneath the tower there is no bottom, only further down. The Underworld was not dug by hands: it opened on its own, and it is opening still.',
   },
+  underworld_catacombs: {
+    es: 'Las Catacumbas guardan a los que el reino quiso olvidar. La memoria, acá abajo, tiene dientes.',
+    en: 'The Catacombs keep those the kingdom wished to forget. Down here, memory has teeth.',
+  },
+  underworld_mines: {
+    es: 'En las Minas del Inframundo se cavó demasiado hondo, y algo cavó de vuelta.',
+    en: 'In the Underworld Mines they dug too deep, and something dug back.',
+  },
+  underworld_stronghold_1: {
+    es: 'Una fortaleza al final del mundo, levantada por los que bajaron a pelear lo que subía. Perdieron.',
+    en: 'A stronghold at the end of the world, raised by those who went down to fight what was rising. They lost.',
+  },
+  underworld_stronghold_2: {
+    es: 'Lo más hondo que se puede llegar y volver. Detrás de esta puerta, el Caballero de hueso vela lo que queda del reino de abajo.',
+    en: 'The deepest you can go and still return. Behind this door, the Bone Knight guards what remains of the kingdom below.',
+  },
   river_trail: {
     es: 'El agua se lleva los pasos que das. Dicen que, más abajo, a veces los devuelve.',
     en: 'The water carries away the steps you take. They say that, further down, it sometimes gives them back.',

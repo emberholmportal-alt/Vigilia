@@ -332,11 +332,14 @@ export class Game {
       if (lore) this.store.logMessage({ channel: 'mundo', text: lore[getLang()] || lore.en })
     }
     this._refreshWaypoints()
-    // Quest "Los Tres Nombres": ciertas ruinas revelan un nombre olvidado al llegar.
-    const revealed = this.store.revealForZone(mapName)
-    if (revealed) {
-      this.store.showToast(tt('name_found', { name: revealed }))
-      this.store.logMessage({ channel: 'sistema', text: tt('name_found', { name: revealed }) })
+    // Quest "Los Tres Nombres": OFFLINE (sin jefes de server) el nombre se revela al LLEGAR a la ruina.
+    // ONLINE se arranca matando al guardián elemental de la ruina (ver _onEkill) — la ruina tiene jefe.
+    if (!ONLINE) {
+      const revealed = this.store.revealForZone(mapName)
+      if (revealed) {
+        this.store.showToast(tt('name_found', { name: revealed }))
+        this.store.logMessage({ channel: 'sistema', text: tt('name_found', { name: revealed }) })
+      }
     }
     this._loading = false
 
@@ -1527,6 +1530,15 @@ export class Game {
     this.store.addXp(xp)
     this.store.missionProgress('kill', 1)
     if (m.contract) this.store.missionProgress('contract', 1)   // élite del contrato del día
+    // Quest "Los Tres Nombres": matar al guardián elemental de la ruina (jefe de zona) arranca el
+    // nombre sellado. revealForZone es no-op si el mapa no es ruina / ya se reveló / quest inactiva.
+    if (m.boss) {
+      const revealed = this.store.revealForZone(this.mapName)
+      if (revealed) {
+        this.store.showToast(tt('name_found', { name: revealed }))
+        this.store.logMessage({ channel: 'sistema', text: tt('name_found', { name: revealed }) })
+      }
+    }
     const e = (this.enemies || []).find((x) => x.eid === m.i)   // sigue en la lista (muriendo)
     const fx = e ? e.view.x : this.player.view.x, fy = e ? e.view.y + (e._hpY || -40) : this.player.view.y - 80
     this._floatText(fx, fy, `+${xp} XP`, '#9fe0ff')
@@ -2475,6 +2487,7 @@ const HUB_SPAWN = {
   black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27],
   greenwood_point: [51, 51], triston: [59, 58], wizards_tower_1: [35, 48], underworld: [67, 47],
   st_maria_1: [39, 66], perdition_mines: [52, 18], stormrock_pass: [24, 81],
+  underworld_catacombs: [70, 99], underworld_mines: [31, 63], underworld_stronghold_1: [5, 32], underworld_stronghold_2: [36, 8],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2572,6 +2585,25 @@ const PORTAL_EXTRA = {
   // por portales nativos. Regreso a Triston + la Piedra de Retorno. Pad al lado del spawn (67,47).
   underworld: [
     { x: 64, y: 47, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 86, y: 36, w: 1, h: 1, to: 'underworld_catacombs', tx: 70, ty: 99, label: 'Catacumbas' },
+  ],
+  // --- Cluster profundo del Inframundo (nivel 13→15): Catacumbas → Minas → Fortaleza I → II.
+  // Cada zona: avance a la siguiente (tile lejano, se viaja hasta él) + regreso a Triston (tile
+  // cercano al spawn, sin rebote). La Fortaleza II tiene el jefe capstone. Tiles verificados reachable.
+  underworld_catacombs: [
+    { x: 73, y: 99, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 59, y: 80, w: 1, h: 1, to: 'underworld_mines', tx: 31, ty: 63, label: 'Minas del Inframundo' },
+  ],
+  underworld_mines: [
+    { x: 34, y: 63, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 53, y: 63, w: 1, h: 1, to: 'underworld_stronghold_1', tx: 5, ty: 32, label: 'Fortaleza del Inframundo' },
+  ],
+  underworld_stronghold_1: [
+    { x: 8, y: 32, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 24, y: 43, w: 1, h: 1, to: 'underworld_stronghold_2', tx: 36, ty: 8, label: 'Fortaleza: lo más hondo' },
+  ],
+  underworld_stronghold_2: [
+    { x: 39, y: 8, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
   // --- clusters futuros (ya cableados, fuera del arranque) ---
   goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],

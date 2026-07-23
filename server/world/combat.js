@@ -214,6 +214,13 @@ const MAP_BOSS = {
   wizards_tower_1: { sprite: 'skeleton_mage_boss', level: 12 },
   // El Inframundo: el Minotauro, la bestia que abrió el pozo. Guarda las profundidades.
   underworld: { sprite: 'minotaur', level: 13 },
+  // Los Tres Nombres (quest de Udana): cada ruina guarda el guardián elemental que el archimago dejó
+  // atado. Matarlo arranca el nombre sellado (el cliente revela q3_* al caer un jefe en la ruina).
+  st_maria_1: { sprite: 'wyvern_water', level: 9 },     // hielo / Scathelocke
+  perdition_mines: { sprite: 'wyvern_fire', level: 9 }, // fuego / Vesuvvio
+  stormrock_pass: { sprite: 'wyvern_air', level: 9 },   // viento / Grisbon
+  // Capstone del cluster profundo: lo más hondo que se puede llegar (Fortaleza II, nivel 15).
+  underworld_stronghold_2: { sprite: 'skeleton_knight_boss', level: 15 },
 }
 function spawnBoss(md, cfg) {
   const [cx, cy] = md.spawn || [Math.floor(md.w / 2), Math.floor(md.h / 2)]
@@ -424,7 +431,7 @@ function killEnemy(w, e, killerId) {
   // se sienta vivo) y le manda el nuevo total al matador; el cliente sólo muestra la pila cosmética.
   if (e.gold > 0 && ctx.awardGold) ctx.awardGold(killerId, Math.max(1, Math.round(e.gold * (0.7 + Math.random() * 0.6))), 'kill', e.x, e.y)
   // Botín de ítems AUTORITATIVO (Fase A.2): el server tira el drop y lo otorga al bag del matador.
-  const boss = /boss|minotaur|elite/.test(e.s)
+  const boss = !!e.boss || /boss|minotaur|elite/.test(e.s)   // jefe de zona (MAP_BOSS) también da loot de jefe
   const roll = rollMonsterDrop(e.lv, boss, 0)
   if (roll.drops.length && ctx.grantLoot) ctx.grantLoot(killerId, roll.drops)
   // Avance de misiones AUTORITATIVO (matar / contrato): el server cuenta el kill en el mapa del mundo.
@@ -433,6 +440,7 @@ function killEnemy(w, e, killerId) {
   // cliente; el bag ya lo actualizó el push 'inv'). Así el suelo muestra lo que de verdad cayó.
   const ek = { t: 'ekill', i: e.i, xp: e.xp, sprite: e.s, lv: e.lv, drops: roll.drops || [] }
   if (e.contract) ek.contract = e.contract   // acredita la misión Contrato del que lo mata
+  if (e.boss) ek.boss = 1                     // jefe de zona: el cliente puede gatear eventos (quest de las ruinas)
   ctx.sendTo(killerId, ek)
   // Contrato semanal del GREMIO del matador: si la categoría del enemigo matchea, suma al pozo
   // común del gremio. Fire-and-forget (no bloquea el hot-path del combate).
