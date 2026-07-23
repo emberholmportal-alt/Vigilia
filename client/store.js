@@ -480,9 +480,12 @@ export const useGameStore = create((set, get) => ({
 
   // --- forja: mejorar equipo con Cristal de maná (excavación) + oro (skill forja) ---
   // Costo de mejorar una pieza: cristales + oro, crece con el nivel de forja actual.
+  // Costo de mejorar: cristales (escalan con el upgrade, los verifica el server vía bagConsume) +
+  // ORO por NIVEL (server-recalculable como repair/respec, no confía en el monto del cliente). Antes
+  // el oro dependía del tier/upgrade de la pieza (client-side) → se podía pagar de menos.
   upgradeCost: (it) => {
     const up = upgradeLevel(it)
-    return { crystals: 2 + up, gold: 60 + (it.tier || 1) * 10 + up * 50, max: up >= FORGE_MAX }
+    return { crystals: 2 + up, gold: 60 + (get().stats?.level || 1) * 30, max: up >= FORGE_MAX }
   },
   // Mejora la pieza del slot dado: +1 a su nivel de forja (más defensa/daño). Gasta materiales.
   upgradeGear: async (slot) => {

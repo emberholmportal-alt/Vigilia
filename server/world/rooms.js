@@ -235,6 +235,13 @@ export function repairCostOf(id) {
   return p ? 30 + 20 * (p.level || 1) : 0
 }
 
+// Costo en ORO de forjar (mejorar una pieza), AUTORITATIVO del server: por nivel. Coincide con
+// store.upgradeCost. Los cristales (que escalan con el upgrade) se validan aparte por bagConsume.
+export function forgeCostOf(id) {
+  const p = players.get(id)
+  return p ? 60 + 30 * (p.level || 1) : 0
+}
+
 export function setStats(id, stats) {
   const p = players.get(id)
   if (p && stats && stats.level) {

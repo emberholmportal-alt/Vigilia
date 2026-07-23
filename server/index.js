@@ -439,12 +439,13 @@ wss.on('connection', (ws) => {
         }
         case 'spend': {      // sink genérico: reparar / forjar / respec / ofrenda (el efecto local lo aplica el cliente)
           if (conn.playerId == null) return
-          // Respec y reparar: el costo lo RECALCULA el server del nivel real (no confía en el monto del
-          // cliente), cerrando el under-pay. Reparar es por nivel (la durabilidad sigue client-side pero
-          // ya no define el costo). Forjar todavía depende del upgrade del equipo (próxima etapa).
-          // Ofrenda es inofensiva (pagar de menos sólo avanza menos la misión).
+          // Respec / reparar / forjar: el ORO lo RECALCULA el server del nivel real (no confía en el
+          // monto del cliente), cerrando el under-pay. Reparar y forjar pasaron a costo por nivel para
+          // no depender de la durabilidad/upgrade (client-side); los cristales de forja se validan
+          // aparte por bagConsume. Ofrenda es inofensiva (pagar de menos sólo avanza menos la misión).
           const amount = m.reason === 'respec' ? rooms.respecCostOf(conn.playerId)
             : m.reason === 'repair' ? rooms.repairCostOf(conn.playerId)
+            : m.reason === 'forge' ? rooms.forgeCostOf(conn.playerId)
             : m.amount
           return send({ t: 'spendack', reason: m.reason, amount, ...rooms.spendGold(conn.playerId, amount, m.reason) })
         }
