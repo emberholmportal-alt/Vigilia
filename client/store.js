@@ -867,7 +867,7 @@ export const useGameStore = create((set, get) => ({
     }
     const alloc = { str: 0, dex: 0, int: 0, vit: 0, ...(attrAlloc || {}) }
     const ranks = skillRanks || {}
-    const st = computeStats(race.id, level, equip, alloc, ranks)   // stats incluyen equipo + atributos + árbol
+    const st = computeStats(race.id, level, equip, alloc, ranks, 0, skills)   // stats incluyen equipo + atributos + árbol + oficios
     const b = (belt || []).slice(0, 4)
     while (b.length < 4) b.push(null)
     // Botón derecho: si no viene del save, se liga por defecto a la 1ª habilidad desbloqueada.
@@ -894,7 +894,7 @@ export const useGameStore = create((set, get) => ({
   recomputeStats: () => {
     const s = get()
     if (!s.race || !s.stats) return
-    const fresh = computeStats(s.race.id, s.stats.level, s.equipment, s.attrAlloc, s.skillRanks, s.guild?.level || 0)
+    const fresh = computeStats(s.race.id, s.stats.level, s.equipment, s.attrAlloc, s.skillRanks, s.guild?.level || 0, s.skills)
     const hp = Math.min(s.stats.hp, fresh.hpMax)
     const mp = Math.min(s.stats.mp, fresh.mpMax)
     set({ stats: { ...fresh, hp, mp } })
@@ -906,7 +906,7 @@ export const useGameStore = create((set, get) => ({
     const xp = s.xp + Math.max(0, n | 0)
     const level = playerLevelFromXp(xp)
     if (s.stats && level !== s.stats.level) {
-      const fresh = computeStats(s.race?.id, level, s.equipment, s.attrAlloc, s.skillRanks, s.guild?.level || 0) // subir de nivel cura
+      const fresh = computeStats(s.race?.id, level, s.equipment, s.attrAlloc, s.skillRanks, s.guild?.level || 0, s.skills) // subir de nivel cura
       set({ xp, stats: fresh })
       get().showToast(tt('levelup_toast', { n: level }))
     } else {
@@ -915,14 +915,17 @@ export const useGameStore = create((set, get) => ({
     saveGame(get())
   },
 
-  // Suma XP a una de las 6 acciones (cap nivel 20); recalcula su nivel y persiste.
+  // Suma XP a una de las 6 acciones (cap nivel 20); recalcula su nivel y persiste. Al SUBIR de nivel
+  // recomputa stats (el oficio da un bonus pasivo: daño/defensa/magic-find/regen/maná/vida).
   addSkillXp: (skill, n) => {
     const s = get()
     const cur = s.skills[skill]
     if (!cur || cur.level >= SKILL_CAP) return
     const xp = cur.xp + Math.max(0, n | 0)
-    const skills = { ...s.skills, [skill]: { xp, level: skillLevelFromXp(xp) } }
+    const level = skillLevelFromXp(xp)
+    const skills = { ...s.skills, [skill]: { xp, level } }
     set({ skills })
+    if (level > cur.level) get().recomputeStats()   // el bonus pasivo del oficio ya se siente
     saveGame(get())
   },
 

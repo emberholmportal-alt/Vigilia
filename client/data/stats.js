@@ -126,7 +126,24 @@ export function guildPerks(guildLevel = 0) {
   }
 }
 
-export function computeStats(raceId, level = 1, equipment = null, attrAlloc = null, skillRanks = null, guildLevel = 0) {
+// Bonus PASIVO por nivel de las 6 habilidades de oficio (arrancan en 1, cap 20). Cada oficio empuja
+// un stat de combate/supervivencia, así TODAS rinden y —al salir por computeStats— viajan por
+// setStats al server (que las clampea y las usa: daño, magic-find, defensa). Nivel 1 = sin bonus.
+//   Combate → +daño · Forja → +defensa · Saqueo → +magic-find ·
+//   Herboristería → +regen de vida · Alquimia → +maná máx · Excavación → +vida máx.
+function skillBonus(skills) {
+  const lv = (k) => Math.max(0, (((skills && skills[k] && skills[k].level) || 1) - 1))
+  return {
+    dmgMul: lv('combate') * 0.01,       // +1% daño por nivel (hasta +19% a 20)
+    defense: lv('forja') * 1,           // +1 defensa por nivel
+    itemFind: lv('saqueo') * 2,         // +2% magic-find por nivel
+    hpRegen: lv('herboristeria') * 0.2, // +0.2 regen de vida por nivel
+    mp: lv('alquimia') * 2,             // +2 maná máx por nivel
+    hp: lv('excavacion') * 3,           // +3 vida máx por nivel
+  }
+}
+
+export function computeStats(raceId, level = 1, equipment = null, attrAlloc = null, skillRanks = null, guildLevel = 0, skills = null) {
   const r = RACE_RULES[raceId] || {}
   const a = attrAlloc || {}
   // Atributos: base + raza + puntos repartidos al subir de nivel.
@@ -138,11 +155,12 @@ export function computeStats(raceId, level = 1, equipment = null, attrAlloc = nu
   const aff = affinityBonus(raceId, equipment)   // bonus si la raza porta equipo afín
   const tb = treeBonus(skillRanks)               // bonus pasivo de los nodos del árbol
   const gp = guildPerks(guildLevel)              // ventajas del gremio (por nivel)
+  const sb = skillBonus(skills)                  // bonus pasivo de las 6 habilidades de oficio
   const lv = Math.max(1, level | 0)
 
-  // Vida/maná: base por atributo + crecimiento por nivel + bonus plano del equipo + afinidad + árbol.
-  const hpMax = Math.round(40 + vit * 4 + (r.hpFlat || 0) + (lv - 1) * 8 + e.hp + aff.hp + tb.hp)
-  const mpMax = Math.round((15 + int * 3 + (r.mpFlat || 0)) * (r.mpMul || 1) + (lv - 1) * 3 + e.mp + aff.mp + tb.mp)
+  // Vida/maná: base por atributo + crecimiento por nivel + bonus plano del equipo + afinidad + árbol + oficios.
+  const hpMax = Math.round(40 + vit * 4 + (r.hpFlat || 0) + (lv - 1) * 8 + e.hp + aff.hp + tb.hp + sb.hp)
+  const mpMax = Math.round((15 + int * 3 + (r.mpFlat || 0)) * (r.mpMul || 1) + (lv - 1) * 3 + e.mp + aff.mp + tb.mp + sb.mp)
   const staminaMax = Math.round(90 + vit * 6)
   const wd = weaponDamage(equipment)
 
@@ -152,14 +170,14 @@ export function computeStats(raceId, level = 1, equipment = null, attrAlloc = nu
     hp: hpMax, hpMax,
     mp: mpMax, mpMax,
     staminaMax,
-    defense: e.absorb + aff.absorb + tb.absorb + gp.defense, // reduce el daño recibido (+ afinidad + árbol + gremio)
-    hpRegen: e.hpRegen, mpRegen: e.mpRegen + tb.mpRegen,
+    defense: e.absorb + aff.absorb + tb.absorb + gp.defense + sb.defense, // reduce el daño recibido (+ afinidad + árbol + gremio + Forja)
+    hpRegen: e.hpRegen + sb.hpRegen, mpRegen: e.mpRegen + tb.mpRegen,
     crit: e.crit + tb.crit, accuracy: e.accuracy + tb.accuracy, avoidance: e.avoidance,
-    itemFind: e.itemFind + tb.itemFind, // +% de hallazgo (magic find) para el loot
+    itemFind: e.itemFind + tb.itemFind + sb.itemFind, // +% de hallazgo (magic find) para el loot (+ Saqueo)
     fireResist: e.fireResist, iceResist: e.iceResist,
     dmgMin: wd.min, dmgMax: wd.max, // daño del arma
     weaponKind: weaponKind(equipment), // melee / ranged / mental (define ataque a distancia)
-    dmgMul: (r.dmgMul || 1) * aff.dmgMul * (1 + tb.dmgMul),
+    dmgMul: (r.dmgMul || 1) * aff.dmgMul * (1 + tb.dmgMul + sb.dmgMul),
     speedMul: (r.speedMul || 1) * (1 + tb.speedMul),
     xpMul: (r.xpMul || 1) * (1 + e.xpGain / 100) * (1 + tb.xpMul) * gp.xpMul,
     guildGoldMul: gp.goldMul, // +oro de botín del gremio (se aplica en addGold)
