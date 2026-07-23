@@ -40,7 +40,8 @@ export async function walletSignIn(net) {
   const sigHex = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('')
 
   const auth = await net.walletVerify(pubkey, sigHex)
-  if (!auth.ok) return { ok: false, error: auth.error || 'no se pudo verificar' }
+  // Gate del token: el server rechaza con error 'gate' + la config (vel) para la pantalla de compra.
+  if (!auth.ok) return { ok: false, error: auth.error || 'no se pudo verificar', vel: auth.vel, pubkey }
   saveSession({ pubkey, token: auth.token })
   return { ok: true, pubkey, token: auth.token, char: auth.char }
 }

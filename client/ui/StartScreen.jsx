@@ -21,6 +21,7 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
   const [serverId, setServerId] = useState(loadServerId())
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
+  const [gate, setGate] = useState(null)   // config del token cuando el gate rechaza: { symbol, buyUrl, requiredTokens, minUsd }
   const [stats, setStats] = useState(null)
   const [showGuide, setShowGuide] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
@@ -44,14 +45,21 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
       if (r.ok) { setWallet(sess.pubkey); return { ok: true, char: r.char } }
     }
     const r = await walletSignIn(net)
-    if (!r.ok) return { ok: false, error: r.error }
+    if (!r.ok) return { ok: false, error: r.error, vel: r.vel }
     setWallet(r.pubkey)
     return { ok: true, char: r.char }
   }
 
+  // Traduce el resultado de un login fallido a la UI: el gate del token abre la pantalla de compra;
+  // el resto, un error de texto.
+  function showAuthError(r) {
+    if (r.error === 'gate' && r.vel) { setGate(r.vel); return }
+    setErr(r.error === 'no-wallet' ? t('wallet_none') : t('wallet_fail'))
+  }
+
   async function connect() {
-    setBusy(true); setErr(null)
-    try { const r = await ensureWallet(); if (!r.ok) setErr(r.error === 'no-wallet' ? t('wallet_none') : t('wallet_fail')) }
+    setBusy(true); setErr(null); setGate(null)
+    try { const r = await ensureWallet(); if (!r.ok) showAuthError(r) }
     catch { setErr(t('wallet_fail')) }
     setBusy(false)
   }
@@ -62,13 +70,13 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
   // se permite una cuenta de dispositivo (deviceAuth) para testear sin extensión de wallet.
   async function handlePlay() {
     if (!ONLINE) { onPlay(null); return }
-    setBusy(true); setErr(null)
+    setBusy(true); setErr(null); setGate(null)
     try {
       await net.connect(serverById(serverId).url)
       let auth
       if (WALLET_REQUIRED) {
         auth = await ensureWallet()   // conecta + firma (o reanuda) — sin wallet no se juega
-        if (!auth.ok) { setBusy(false); setErr(auth.error === 'no-wallet' ? t('wallet_none') : t('wallet_fail')); return }
+        if (!auth.ok) { setBusy(false); showAuthError(auth); return }
       } else {
         auth = await deviceAuth(net)  // dev/local: wallet si ya está, si no cuenta de dispositivo
       }
@@ -152,6 +160,21 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
           </a>
         </p>
       </div>
+      {gate && (
+        <div className="gate-backdrop" onClick={() => setGate(null)}>
+          <div className="gate-card" onClick={(e) => e.stopPropagation()}>
+            <h2 className="gate-title">{t('gate_title')}</h2>
+            <p className="gate-need">
+              {t('gate_need', { sym: gate.symbol || 'VEL' })}
+              {gate.requiredTokens ? <> <b>{gate.requiredTokens.toLocaleString('es-AR')} ${gate.symbol || 'VEL'}</b></> : <> <b>${gate.symbol || 'VEL'}</b></>}
+              {gate.minUsd ? <span className="gate-usd"> (≈ ${gate.minUsd})</span> : null}
+            </p>
+            <a className="gate-buy" href={gate.buyUrl} target="_blank" rel="noreferrer">{t('gate_buy', { sym: gate.symbol || 'VEL' })}</a>
+            <button className="gate-retry" onClick={() => { setGate(null); handlePlay() }} disabled={busy}>{t('gate_retry')}</button>
+            <button className="gate-close" onClick={() => setGate(null)}>{t('gate_close')}</button>
+          </div>
+        </div>
+      )}
       {showGuide && <HowToPlay onClose={() => setShowGuide(false)} />}
       {showDocs && <Docs onClose={() => setShowDocs(false)} />}
     </div>
