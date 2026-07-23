@@ -22,6 +22,9 @@ export default function Market() {
   const buy = useGameStore((s) => s.marketBuy)
   const cancel = useGameStore((s) => s.marketCancel)
   const listItem = useGameStore((s) => s.marketListItem)
+  const goldMktOn = useGameStore((s) => s.goldMktOn)
+  const goldSym = useGameStore((s) => s.goldCfg?.symbol || 'VEL')
+  const openGoldMarket = useGameStore((s) => s.openGoldMarket)
   const [tab, setTab] = useState('browse')
   const [sel, setSel] = useState(null)   // índice del bag elegido para vender
   const [price, setPrice] = useState('')
@@ -44,6 +47,11 @@ export default function Market() {
             <h2 className="gframe-title">{t('market_title')}</h2>
             <p className="gframe-sub">{t('market_commission')} · <Gold n={gold} /></p>
           </div>
+          {goldMktOn && (
+            <button className="gm-open-btn" onClick={openGoldMarket} title={t('gm_open', { sym: goldSym })}>
+              💱 ${goldSym}
+            </button>
+          )}
         </div>
 
         <div className="market-tabs">

@@ -10,6 +10,7 @@ import StartScreen from './ui/StartScreen.jsx'
 import Welcome from './ui/Welcome.jsx'
 import Trade from './ui/Trade.jsx'
 import Market from './ui/Market.jsx'
+import GoldMarket from './ui/GoldMarket.jsx'
 import PlayerMenu from './ui/PlayerMenu.jsx'
 import GraveModal from './ui/GraveModal.jsx'
 import Stash from './ui/Stash.jsx'
@@ -154,6 +155,7 @@ export default function App() {
       {phase === 'game' && panel === 'alchemy' && <Alchemy />}
       {phase === 'game' && panel === 'guild' && <Guild />}
       {phase === 'game' && panel === 'market' && <Market />}
+      {phase === 'game' && panel === 'goldmarket' && <GoldMarket />}
       {phase === 'game' && panel === 'stash' && <Stash />}
       {phase === 'game' && panel === 'missions' && <Missions />}
       {phase === 'game' && panel === 'mousebind' && <MouseBind />}

@@ -609,7 +609,7 @@ export const useGameStore = create((set, get) => ({
   marketMine: [],            // mis publicaciones
   marketBusy: false,
   marketError: '',
-  openMarket: () => { set({ panel: 'market', marketError: '' }); get().refreshMarket(); get().refreshMyListings() },
+  openMarket: () => { set({ panel: 'market', marketError: '' }); get().refreshMarket(); get().refreshMyListings(); get().loadGoldConfig() },
   refreshMarket: async () => {
     if (!isOnline()) { set({ marketListings: [] }); return }
     set({ marketBusy: true })
@@ -645,6 +645,88 @@ export const useGameStore = create((set, get) => ({
     if (!r || !r.ok) { get().showToast(r?.error || tt('market_fail')); return { ok: false } }
     if (r.inv) get()._mirrorInv(r.inv)
     get().showToast(tt('market_cancelled')); get().refreshMyListings()
+    return { ok: true }
+  },
+
+  // --- marketplace oro↔$VEL (order book P2P, NO-CUSTODIAL, pago on-chain) ---
+  // Vendés ORO (escrowed en el server) pidiendo $VEL; comprás oro pagando $VEL directo on-chain
+  // (95% al vendedor + 5% al tesoro). El server verifica la transacción y libera el oro. Todo esto
+  // está APAGADO hasta que exista el token: goldMktOn refleja la config pública del server.
+  goldMktOn: false,          // ¿el mercado de $VEL está prendido? (config del server)
+  goldCfg: null,             // { mint, symbol, treasury, decimals, commission, rpc, minGold, buyUrl }
+  goldOrders: [],            // órdenes de oro a la venta (browse)
+  goldMine: [],              // mis órdenes de venta
+  goldBusy: false,
+  goldPaying: null,          // { id, step: 'lock'|'sign'|'settle' } durante una compra on-chain
+  loadGoldConfig: async () => {
+    if (!isOnline()) { set({ goldMktOn: false, goldCfg: null }); return }
+    const r = await net.goldConfig().catch(() => null)
+    set({ goldMktOn: !!r?.on, goldCfg: r?.on ? r : null })
+  },
+  openGoldMarket: async () => {
+    await get().loadGoldConfig()
+    if (!get().goldMktOn) { get().showToast(tt('gm_closed')); return }
+    set({ panel: 'goldmarket' })
+    get().refreshGoldOrders(); get().refreshGoldMine()
+  },
+  refreshGoldOrders: async () => {
+    if (!isOnline()) { set({ goldOrders: [] }); return }
+    set({ goldBusy: true })
+    const r = await net.goldBrowse().catch(() => null)
+    set({ goldOrders: r?.ok ? r.orders : [], goldBusy: false })
+  },
+  refreshGoldMine: async () => {
+    if (!isOnline()) { set({ goldMine: [] }); return }
+    const r = await net.goldMine().catch(() => null)
+    set({ goldMine: r?.ok ? r.orders : [] })
+  },
+  // Publicar oro pidiendo $VEL. El server saca el oro del saldo vivo (escrow).
+  goldListOrder: async (goldAmt, price) => {
+    if (!isOnline()) return { ok: false }
+    const r = await net.goldList(goldAmt, price).catch(() => null)
+    if (!r || !r.ok) { get().showToast(r?.error || tt('gm_fail')); return { ok: false } }
+    if (typeof r.gold === 'number') set({ gold: r.gold })
+    get().showToast(tt('gm_listed')); get().refreshGoldMine()
+    return { ok: true }
+  },
+  goldCancelOrder: async (id) => {
+    if (!isOnline()) return { ok: false }
+    const r = await net.goldCancel(id).catch(() => null)
+    if (!r || !r.ok) { get().showToast(r?.error || tt('gm_fail')); return { ok: false } }
+    if (typeof r.gold === 'number') set({ gold: r.gold })
+    get().showToast(tt('gm_cancelled')); get().refreshGoldMine(); get().refreshGoldOrders()
+    return { ok: true }
+  },
+  // Compra on-chain en 3 pasos: lock (reserva + instrucciones) -> firmar+pagar en la wallet ->
+  // settle (el server verifica la tx y entrega el oro). velpay.js se importa dinámico (bundle aparte).
+  goldBuyOrder: async (order) => {
+    if (!isOnline()) return { ok: false }
+    set({ goldPaying: { id: order.id, step: 'lock' } })
+    const lk = await net.goldLock(order.id).catch(() => null)
+    if (!lk || !lk.ok) { set({ goldPaying: null }); get().showToast(lk?.error || tt('gm_taken')); get().refreshGoldOrders(); return { ok: false } }
+    set({ goldPaying: { id: order.id, step: 'sign' } })
+    let sig
+    try {
+      const { payOrder } = await import('./net/velpay.js')
+      sig = await payOrder({ ...lk.pay, rpc: get().goldCfg?.rpc })
+    } catch (e) {
+      await net.goldUnlock(order.id).catch(() => {})
+      set({ goldPaying: null })
+      get().showToast(e?.message === 'no-wallet' ? tt('wallet_none') : tt('gm_pay_cancel'))
+      return { ok: false }
+    }
+    // Avisar al server. Si la tx todavía no finalizó, reintenta con espera (hasta ~30s).
+    set({ goldPaying: { id: order.id, step: 'settle' } })
+    let r = null
+    for (let tries = 0; tries < 6; tries++) {
+      r = await net.goldSettle(order.id, sig).catch(() => null)
+      if (r?.ok || !r?.retry) break
+      await new Promise((res) => setTimeout(res, 4000))
+    }
+    set({ goldPaying: null })
+    if (!r || !r.ok) { get().showToast(r?.error || tt('gm_verify_fail')); get().refreshGoldOrders(); return { ok: false, sig } }
+    if (typeof r.gold === 'number') set({ gold: r.gold })
+    get().showToast(tt('gm_bought')); get().refreshGoldOrders()
     return { ok: true }
   },
 

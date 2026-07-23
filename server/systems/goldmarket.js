@@ -49,6 +49,9 @@ export async function config() {
     symbol: process.env.VEL_SYMBOL || 'VEL',
     commission: COMMISSION,
     buyUrl: process.env.VEL_BUY_URL || ('https://pump.fun/coin/' + mint),
+    // RPC PÚBLICO para que el cliente arme la transacción (blockhash). Separado de SOLANA_RPC (que
+    // puede llevar API key privada): NUNCA exponemos esa. Para devnet, poné VEL_RPC_PUBLIC a devnet.
+    rpc: process.env.VEL_RPC_PUBLIC || 'https://api.mainnet-beta.solana.com',
     minGold: MIN_GOLD, lockMs: LOCK_MS,
   }
 }

@@ -304,6 +304,31 @@ html, body, #root {
 .market-sell-form .gframe-close { margin: 0; }
 .market-sell-form .gframe-close:disabled { opacity: 0.6; cursor: default; }
 
+/* Marketplace oro↔$VEL (order book P2P, pago on-chain) */
+.gm-open-btn {
+  align-self: center; margin-left: auto; font-family: 'BonaNova', Georgia, serif; font-size: 13px; cursor: pointer;
+  color: #14100a; background: linear-gradient(180deg, #7bd0a0, #3f9c6c); border: 1px solid #245c3f;
+  border-radius: 5px; padding: 6px 12px; box-shadow: inset 0 1px 0 rgba(210, 255, 230, 0.4); white-space: nowrap;
+}
+.gm-row .gm-price { color: #8fe3b4; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.gm-row .gm-price b { color: #b8f0d0; }
+.gm-sell .gm-form { display: flex; flex-direction: column; gap: 6px; }
+.gm-sell .gm-form label { color: #c2b189; font-size: 12px; }
+.gm-sell .gm-form input { width: 100%; background: #14111a; border: 1px solid #4a3f52; border-radius: 4px; color: #e8dcc4; padding: 8px; font-family: inherit; }
+.gm-sell .gm-form .gframe-close { margin: 8px 0 0; }
+.gm-sell .gm-form .gframe-close:disabled { opacity: 0.5; cursor: default; }
+.gm-net { color: #8fe3b4; font-size: 13px; margin: 2px 0; }
+.gm-warn { color: #e08a6a; font-size: 12px; margin: 2px 0 0; }
+.gm-buy-link { display: inline-block; margin-top: 14px; color: #8fbfe3; font-size: 12px; text-decoration: underline; }
+/* Overlay durante la compra on-chain (reserva → firma → verificación) */
+.gm-paying { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(8, 6, 10, 0.82); border-radius: inherit; }
+.gm-paying-card { text-align: center; color: #ece0c4; padding: 22px; max-width: 280px; }
+.gm-paying-card p { font-family: 'BonaNova', Georgia, serif; font-size: 15px; margin: 12px 0 4px; }
+.gm-paying-hint { color: #9a8a6a; font-size: 12px; }
+.gm-spinner { width: 34px; height: 34px; margin: 0 auto; border: 3px solid #3a3128; border-top-color: #8fe3b4; border-radius: 50%; animation: gm-spin 0.8s linear infinite; }
+@keyframes gm-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .gm-spinner { animation-duration: 2.4s; } }
+
 /* Aviso de expulsión (single-session) */
 .kicked-backdrop { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: rgba(6, 5, 9, 0.88); }
 .kicked-card {

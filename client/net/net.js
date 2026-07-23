@@ -152,6 +152,15 @@ class Net {
   async marketList(index, price) { this._send({ t: 'market_list', index, price }); return this._once('market', 6000, 'list') }
   async marketBuy(id) { this._send({ t: 'market_buy', id }); return this._once('market', 6000, 'buy') }
   async marketCancel(id) { this._send({ t: 'market_cancel', id }); return this._once('market', 6000, 'cancel') }
+  // Marketplace oro↔$VEL (order book P2P, pago on-chain). Responden t:'goldmkt' con su `op`.
+  async goldConfig() { this._send({ t: 'goldmkt_config' }); return this._once('goldmkt', 6000, 'config') }
+  async goldBrowse() { this._send({ t: 'goldmkt_browse' }); return this._once('goldmkt', 6000, 'browse') }
+  async goldMine() { this._send({ t: 'goldmkt_mine' }); return this._once('goldmkt', 6000, 'mine') }
+  async goldList(gold, price) { this._send({ t: 'goldmkt_list', gold, price }); return this._once('goldmkt', 6000, 'list') }
+  async goldCancel(id) { this._send({ t: 'goldmkt_cancel', id }); return this._once('goldmkt', 6000, 'cancel') }
+  async goldLock(id) { this._send({ t: 'goldmkt_lock', id }); return this._once('goldmkt', 8000, 'lock') }
+  async goldUnlock(id) { this._send({ t: 'goldmkt_unlock', id }); return this._once('goldmkt', 6000, 'unlock') }
+  async goldSettle(id, sig) { this._send({ t: 'goldmkt_settle', id, sig }); return this._once('goldmkt', 20000, 'settle') }
   async spendReq(amount, reason) { this._send({ t: 'spend', amount, reason }); return this._once('spendack') }
   async claimMissionReq(id) { this._send({ t: 'claimmission', id }); return this._once('claimack') }
   async claimQuestReq(id) { this._send({ t: 'claimquest', id }); return this._once('claimack') }
