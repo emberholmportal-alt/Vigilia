@@ -18,6 +18,18 @@ export const ZONE_LORE = {
     es: 'Bajo Black Oak City, las cloacas se tragaron lo que la ciudad no quiso enterrar. Ahora eso camina, y todavía tiene hambre.',
     en: 'Beneath Black Oak City, the sewers swallowed what the city would not bury. Now it walks, and it is hungry still.',
   },
+  temple_of_mez_1: {
+    es: 'El Sótano del Templo de Mez huele a incienso viejo y a algo que se pudrió rezando. Los duendes cavaron hasta acá y no se atrevieron a seguir.',
+    en: 'The Basement of the Temple of Mez smells of old incense and of something that rotted while praying. The goblins dug this far and dared go no further.',
+  },
+  temple_of_mez_2: {
+    es: 'El Gran Salón guarda a los que velaban a Mez. Siguen velando. Ninguno te va a mirar a los ojos hasta que sea tarde.',
+    en: 'The Main Hall keeps those who kept vigil for Mez. They keep it still. None will meet your eyes until it is too late.',
+  },
+  temple_of_mez_3: {
+    es: 'La Entrada quedó por dentro, no por fuera: acá el templo se abría al cielo. Ahora un wyvern anida en el portón, y el cielo hace mucho que no baja.',
+    en: 'The Entrance was left within, not without: here the temple once opened to the sky. Now a wyvern nests in its gate, and the sky has long since stopped coming down.',
+  },
   underworld: {
     es: 'Bajo la torre no hay fondo, sólo más abajo. El Inframundo no fue cavado por manos: se abrió solo, y sigue abriéndose.',
     en: 'Beneath the tower there is no bottom, only further down. The Underworld was not dug by hands: it opened on its own, and it is opening still.',

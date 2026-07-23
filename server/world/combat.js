@@ -42,6 +42,10 @@ const mapCache = new Map()   // name -> { w, h, coll, spawners } | null
 // una sola fuente. El cliente usa el mismo tile en HUB_SPAWN/portales.
 const SPAWN_OVERRIDE = {
   wizards_tower_1: [52, 9], // isla rica (16 spawners) en vez del bolsón de la entrada (2 spawners)
+  // Templo de Mez (3 pisos): cada planta quedó troceada; anclamos a la isla más poblada de cada una.
+  temple_of_mez_1: [35, 46], // isla #0 (1058 tiles, 8 spawners) — el Sótano
+  temple_of_mez_2: [40, 34], // isla #0 (3076 tiles, 19 spawners) — el Gran Salón
+  temple_of_mez_3: [53, 40], // isla #0 (1044 tiles, 4 spawners) — la Entrada (jefe)
 }
 function loadMap(name) {
   if (mapCache.has(name)) return mapCache.get(name)
@@ -234,6 +238,9 @@ const MAP_BOSS = {
   stormrock_pass: { sprite: 'wyvern_air', level: 9 },   // viento / Grisbon
   // Capstone del cluster profundo: lo más hondo que se puede llegar (Fortaleza II, nivel 15).
   underworld_stronghold_2: { sprite: 'skeleton_knight_boss', level: 15 },
+  // Templo de Mez (la Entrada, piso 3): el último wyvern que anida en el portón del templo. Bruto
+  // de cuerpo a cuerpo (no elemental — distinto de los Tres Nombres). Clímax del ramal (nivel ~9).
+  temple_of_mez_3: { sprite: 'wyvern', level: 9 },
 }
 // Esbirro INVOCADO por una habilidad (summon): sprite+nivel fijos en un tile dado. `sp:null` +
 // `_parent` -> no repone al morir (no es un spawner del mapa; ver killEnemy).

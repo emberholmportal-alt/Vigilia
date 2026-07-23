@@ -2514,6 +2514,7 @@ const HUB_SPAWN = {
   st_maria_1: [39, 66], perdition_mines: [52, 18], stormrock_pass: [24, 81],
   underworld_catacombs: [70, 99], underworld_mines: [31, 63], underworld_stronghold_1: [5, 32], underworld_stronghold_2: [36, 8],
   dilapidated_sewers: [64, 8],
+  temple_of_mez_1: [35, 46], temple_of_mez_2: [40, 34], temple_of_mez_3: [53, 40],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2553,6 +2554,22 @@ const PORTAL_REPLACE = {
   dilapidated_sewers: [
     { x: 64, y: 10, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
     { x: 66, y: 8, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' },
+  ],
+  // Templo de Mez (3 pisos, nivel ~7-9): mapas de Flare fragmentados en islas. Cosemos los pisos
+  // con pads curados cuyo destino elegimos para aterrizar siempre en la isla RICA de cada planta
+  // (ver SPAWN_OVERRIDE en combat.js, que ancla ahí también el jefe y el densificado del server).
+  // El pad de avance se planta lejos de la llegada para cruzar la planta; el de regreso, cerca.
+  // Todos los tiles verificados caminables+reachable desde la llegada de su piso.
+  temple_of_mez_1: [ // Sótano -> Gran Salón
+    { x: 37, y: 46, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 75, y: 75, w: 1, h: 1, to: 'temple_of_mez_2', tx: 40, ty: 34, label: 'Templo de Mez: Gran Salón' },
+  ],
+  temple_of_mez_2: [ // Gran Salón -> Entrada
+    { x: 42, y: 34, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 76, y: 12, w: 1, h: 1, to: 'temple_of_mez_3', tx: 53, ty: 40, label: 'Templo de Mez: Entrada' },
+  ],
+  temple_of_mez_3: [ // Entrada (jefe: el wyvern del portón)
+    { x: 55, y: 40, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
 }
 
@@ -2597,6 +2614,9 @@ const PORTAL_EXTRA = {
     { x: 28, y: 24, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
     // Más hondo que la cueva se abren las Minas de Perdición (nombre en fuego).
     { x: 30, y: 30, w: 1, h: 1, to: 'perdition_mines', tx: 52, ty: 18, label: 'Minas de Perdición' },
+    // En el fondo de la cueva, tras la guarida de duendes, una boca sellada más vieja: el Templo de
+    // Mez (nivel ~7-8, 3 pisos). Pad reachable; llegada a la sala rica del Sótano (35,46).
+    { x: 4, y: 3, w: 1, h: 1, to: 'temple_of_mez_1', tx: 35, ty: 46, label: 'Templo de Mez' },
   ],
   // --- Ruinas de los Tres Nombres (quest de Udana): entrar revela el nombre de cada archimago
   // sellado. Cada una vuelve a Triston (donde Udana los pronuncia). Tiles verificados reachable. ---

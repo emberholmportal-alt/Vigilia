@@ -19,6 +19,10 @@ function hashStr(s) {
 export const POOL = [
   { id: 'hunt_cave', type: 'kill', map: 'goblin_cave', target: 12, xp: 90, gold: 60, seals: 2 },
   { id: 'hunt_camp', type: 'kill', map: 'goblin_camp', target: 10, xp: 70, gold: 45, seals: 2 },
+  // Templo de Mez (nivel ~7-9): ramal profundo tras la Cueva de Duendes. Caza en el Gran Salón
+  // (19 spawners) y saqueo en el Sótano (6 cofres).
+  { id: 'hunt_temple', type: 'kill', map: 'temple_of_mez_2', target: 13, xp: 115, gold: 78, seals: 3 },
+  { id: 'loot_temple', type: 'chest', map: 'temple_of_mez_1', target: 3, xp: 105, gold: 70, seals: 3 },
   // Black Oak City (nivel ~10): la joya caída. Caza y saqueo de mayor riesgo -> mayor recompensa.
   { id: 'hunt_city', type: 'kill', map: 'black_oak_city', target: 14, xp: 150, gold: 105, seals: 3 },
   { id: 'loot_city', type: 'chest', map: 'black_oak_city', target: 3, xp: 130, gold: 90, seals: 3 },
