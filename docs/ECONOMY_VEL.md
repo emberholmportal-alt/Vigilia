@@ -150,7 +150,16 @@ El número lo calcula el oráculo en vivo — vos solo fijás el USD.
 | `VEL_MIN_USD` | Mínimo en USD (ej. `3`). Prende el modo dinámico. | `0` |
 | `VEL_MIN` | Mínimo fijo en tokens (fallback si no hay USD). | `0` |
 | `VEL_ORACLE` | Endpoint de precio (Jupiter Price API por defecto). | Jupiter |
-| `SOLANA_RPC` | RPC para leer el balance. | mainnet-beta |
+| `SOLANA_RPC` | RPC para leer el balance (y verificar pagos del marketplace). | mainnet-beta |
+| `VEL_SYMBOL` | Símbolo mostrado en la UI (ej. `VEL`). | `VEL` |
+| `VEL_BUY_URL` | Link de compra (pump.fun por defecto). | pump.fun/coin/`<mint>` |
+| `VEL_MARKET` | Prende el marketplace oro↔$VEL (`on`). Requiere mint + tesoro. | `off` |
+| `VEL_TREASURY` | **Wallet aparte** que cobra el 5% de cada venta de oro. | (vacío) |
+| `VEL_RPC_PUBLIC` | RPC público que el cliente usa para armar la transacción (blockhash). NO pongas acá una RPC con API key privada. | mainnet-beta |
+
+> **Lanzamiento = completar estas variables.** Todo el código (gate + marketplace) ya está construido
+> y **dormido**. El día del token: seteás `VEL_MINT` (prende el gate), y si querés el marketplace,
+> `VEL_MARKET=on` + `VEL_TREASURY=<wallet del 5%>`. Nada más que tocar código.
 
 ---
 
@@ -163,20 +172,36 @@ ruleta de loot, cosméticos, estandartes de gremio.
 
 ---
 
-## 7. Fase 3 — Marketplace oro↔$VEL P2P (**futuro, alto riesgo**)
+## 7. Fase 3 — Marketplace oro↔$VEL P2P (**construido, dormido**)
 
-El modelo completo tipo Kintara: los jugadores intercambian **oro ↔ $VEL entre ellos** (dos lados,
-el juego escrow + comisión). Es la visión final, pero es un **salto grande**:
+El modelo completo tipo Kintara: los jugadores intercambian **oro ↔ $VEL entre ellos**. Un jugador
+publica **oro** (que el server escrowea) pidiendo **$VEL**; otro lo compra pagando el $VEL. Resuelto
+**no-custodial**: el server nunca toca el $VEL.
 
-1. **Legal/regulatorio:** facilitar oro↔token con valor real = play-to-earn / RMT con plata real.
-   Otra liga de exposición.
-2. **Liquidación on-chain:** el $VEL tiene que moverse de verdad entre wallets. Implica settlement
-   firmado (no-custodial) o custodia (riesgoso). Es ~10× el trabajo del gate (que solo *lee*).
-3. **El balance del oro se vuelve existencial:** si el oro se infla, tira el precio del token. Los
-   sumideros de §3 dejan de ser opcionales.
+**Cómo funciona (implementado):**
+1. **List** — el vendedor publica oro pidiendo X $VEL. El oro sale de su saldo vivo y queda en
+   garantía en el server (`gold_orders`).
+2. **Lock** — el comprador reserva la orden (~3 min). El server le devuelve las instrucciones de pago
+   exactas: 95% a la wallet del vendedor + 5% al **tesoro** (`VEL_TREASURY`), en unidades base, con un
+   memo `velmkt:<id>` que ata la transacción a esa orden.
+3. **Pago on-chain** — el comprador firma en **su** wallet (Phantom) una transferencia SPL de $VEL con
+   esos montos. El server no firma ni custodia nada.
+4. **Settle** — el comprador le pasa la firma; el server **verifica on-chain** (delta de balance del
+   token a vendedor+tesoro + memo) y libera el oro escrowed al comprador. Firma única global
+   (anti-replay). Si la orden no se cierra, el vendedor recupera su oro (`cancel`).
 
-**No se toca hasta que:** el mundo esté vivo, el server sea sólido, los sumideros de oro estén
-apretados y lo legal/custodia esté resuelto.
+**Comisión:** 5% al tesoro (sumidero de $VEL). **Split 95/5.** El vendedor cobra el $VEL directo a su
+wallet (que es su cuenta, por Sign-In-With-Solana).
+
+**Piezas:** `server/systems/velchain.js` (lectura/verificación on-chain, sin dependencias),
+`server/systems/goldmarket.js` (order book + escrow + lock + settle), `client/net/velpay.js` (arma y
+firma la transferencia; `@solana/web3.js`+`spl-token` con import dinámico), `client/ui/GoldMarket.jsx`.
+
+**Apagado por defecto.** Se prende con `VEL_MARKET=on` + `VEL_MINT` + `VEL_TREASURY`. Plan de
+encendido: **devnet** (token SPL de prueba) → mainnet montos chicos → abrir al público.
+
+**Riesgo que queda (no es código):** legal/regulatorio de facilitar oro↔token con valor real, y la
+salud del balance del oro (§3). El código está listo; la decisión de *cuándo abrirlo* es del negocio.
 
 ---
 
@@ -184,10 +209,10 @@ apretados y lo legal/custodia esté resuelto.
 
 | Fase | Qué | Riesgo | Cuándo |
 |---|---|---|---|
-| **1 — Membership** | Gate de acceso dinámico (holdear $VEL de pump.fun). Oro cerrado. | Bajo | Ahora (apagado hasta que exista el token) |
-| **2 — Apretar el oro** | Sumideros de endgame + recalcular costos en server (§3) | Bajo | Antes de Fase 3 |
-| **3 — Marketplace oro↔$VEL** | El P2P bidireccional, con settlement on-chain | **Alto** | Cuando las bases aguanten plata real |
-| **(paralelo) Premium** | Spinner/cosméticos que queman $VEL | Medio | Cuando exista el token |
+| **1 — Membership** | Gate de acceso dinámico (holdear $VEL de pump.fun). Oro cerrado. | Bajo | ✅ Construido (apagado hasta que exista el token) |
+| **2 — Apretar el oro** | Sumideros de endgame + recalcular costos en server (§3) | Bajo | ✅ Costos server-autoritativos por nivel; cofres sin oro |
+| **3 — Marketplace oro↔$VEL** | El P2P, con settlement on-chain no-custodial | **Alto** | ✅ Construido y dormido; abrir tras devnet + decisión de negocio |
+| **(paralelo) Premium** | Spinner/cosméticos que queman $VEL | Medio | ⛔ Promesa futura (punto 4, diferido) |
 
 No se pasa de fase sin que la anterior esté **terminada de punta a punta** (regla 4 del CLAUDE.md).
 
@@ -198,6 +223,7 @@ No se pasa de fase sin que la anterior esté **terminada de punta a punta** (reg
 - ✅ Login por wallet (Sign-In-With-Solana, ed25519) — `server/systems/wallet.js`.
 - ✅ Gate scaffoldeado (mínimo fijo `VEL_MIN`) — **apagado** sin `VEL_MINT`.
 - ✅ Wallet obligatoria en producción (`WALLET_REQUIRED`).
-- ⏳ **Gate dinámico en USD** (`VEL_MIN_USD` + oráculo) — este documento.
-- ⛔ Premium/spinner — promesa futura.
+- ✅ **Gate dinámico en USD** (`VEL_MIN_USD` + oráculo) con pantalla de compra.
+- ✅ **Marketplace oro↔$VEL no-custodial** (§7) — construido y dormido (`VEL_MARKET=off`).
+- ⛔ Premium/spinner — promesa futura (diferido).
 - ⛔ Marketplace oro↔$VEL — Fase 3.

@@ -34,6 +34,27 @@ services:
       # WALLET_REQUIRED=1 en el dashboard del server (Environment).
       - key: WALLET_REQUIRED
         value: "1"
+      # --- Token $VEL: gate de acceso + marketplace oro↔$VEL (ver docs/ECONOMY_VEL.md) ---
+      # TODO el código está construido y DORMIDO. Lanzar = completar estas variables en el dashboard
+      # del server (Environment). sync:false = Render NO las pisa desde este archivo; las setea el
+      # operador el día del token. Sin VEL_MINT el gate está apagado; sin VEL_MARKET=on el mercado
+      # está cerrado.
+      - key: VEL_MINT          # dirección del token en Solana. Prende el gate de acceso.
+        sync: false
+      - key: VEL_MIN_USD       # mínimo de acceso en USD (ej. 3). Modo dinámico por oráculo.
+        sync: false
+      - key: VEL_SYMBOL        # símbolo mostrado (ej. VEL)
+        sync: false
+      - key: VEL_BUY_URL       # link de compra (pump.fun/coin/<mint> por defecto)
+        sync: false
+      - key: SOLANA_RPC        # RPC para leer balances y verificar pagos del marketplace
+        sync: false
+      - key: VEL_MARKET        # 'on' para abrir el marketplace oro↔$VEL (requiere mint + tesoro)
+        sync: false
+      - key: VEL_TREASURY      # wallet APARTE que cobra el 5% de cada venta de oro
+        sync: false
+      - key: VEL_RPC_PUBLIC    # RPC público para el cliente (blockhash). NO una RPC con API key.
+        sync: false
 
   # --- Cliente (sitio estático de Vite) ---
   - type: web
