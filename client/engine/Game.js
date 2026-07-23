@@ -1359,6 +1359,20 @@ export class Game {
 
   // Lanza una habilidad activa (pedida desde la barra). Valida desbloqueo, recarga, objetivo
   // y maná; si pasa, ejecuta su efecto y arranca la recarga.
+  // Aplica el daño de una habilidad. ONLINE lo resuelve el SERVER: mandamos los enemigos alcanzados
+  // + el daño que computó el cliente, y el server valida alcance/cadencia, clampea y aplica →
+  // HP/muerte/XP/oro/loot AUTORITATIVOS (el enemigo muere de verdad, no revive ni da loot falso).
+  // OFFLINE se aplica local. `hits` = [{ e, dmg }].
+  _applyAbilityHits(hits) {
+    if (!hits || !hits.length) return
+    if (this._online) {
+      const netHits = hits.filter((h) => h.e && h.e.eid != null).map((h) => ({ eid: h.e.eid, dmg: h.dmg }))
+      if (netHits.length) net.cast(netHits)
+    } else {
+      for (const h of hits) if (h.e.takeDamage(h.dmg)) this._enemyKilled(h.e)
+    }
+  }
+
   _castAbility(id) {
     if (this._dead || !this.player || this.store.isSpectator()) return
     if (this._safeZone) { this.store.showToast(tt('no_combat_town')); return }
@@ -1379,14 +1393,16 @@ export class Game {
       p.attack('swing'); playSfx('swing.ogg')
       this._castRing(p.view.x, p.view.y - 20, ab.lifesteal ? 0xd05a5a : 0xffcf6a)
       let dealt = 0
+      const hits = []
       for (const e of this.enemies) {
         if (e.dead) continue
         if (Math.abs(e.tx - p.tx) + Math.abs(e.ty - p.ty) > ab.radius) continue
         const dmg = Math.max(1, Math.round(this._abilityRoll() * ab.dmgMul))
         dealt += dmg
         this._floatText(e.view.x, e.view.y + e._hpY, `¡${dmg}!`, '#ff9a3a')
-        if (e.takeDamage(dmg)) this._enemyKilled(e)
+        hits.push({ e, dmg })
       }
+      this._applyAbilityHits(hits)
       // Robo de vida (ultimate del guerrero): te curás una fracción del daño total infligido.
       if (ab.lifesteal && dealt > 0) {
         const heal = Math.max(1, Math.round(dealt * ab.lifesteal))
@@ -1401,7 +1417,7 @@ export class Game {
       this._spawnProjectile(p.view.x, p.view.y - 40, target.view.x, target.view.y + (target._hpY || -40) * 0.5, 'arrow', () => {
         if (!target || target.dead) return
         this._floatText(target.view.x, target.view.y + target._hpY, `¡${dmg}!`, '#ff9a3a')
-        if (target.takeDamage(dmg)) this._enemyKilled(target)
+        this._applyAbilityHits([{ e: target, dmg }])
       })
       playSfx('swing.ogg', 0.5)
     } else if (ab.kind === 'fireball') {
@@ -1410,13 +1426,15 @@ export class Game {
       const dmg = Math.round((ab.base + (st.int || 10) * ab.intMul) * (st.dmgMul || 1))
       this._spawnProjectile(p.view.x, p.view.y - 40, target.view.x, target.view.y + (target._hpY || -40) * 0.5, 'magic', () => {
         this._castRing(target.view.x, target.view.y + (target._hpY || -40) * 0.5, 0xff7a3a)
+        const hits = []
         for (const e of this.enemies) {
           if (e.dead) continue
           if (Math.abs(e.tx - target.tx) + Math.abs(e.ty - target.ty) > ab.radius) continue
           const dd = Math.max(1, Math.round(dmg * (0.85 + Math.random() * 0.3)))
           this._floatText(e.view.x, e.view.y + e._hpY, `${dd}`, '#ff9a3a')
-          if (e.takeDamage(dd)) this._enemyKilled(e)
+          hits.push({ e, dmg: dd })
         }
+        this._applyAbilityHits(hits)
       })
       playSfx('swing.ogg', 0.5)
     } else if (ab.kind === 'area_phys') {
@@ -1424,13 +1442,15 @@ export class Game {
       p.faceTile(target.tx, target.ty); p.attack('shoot')
       this._spawnProjectile(p.view.x, p.view.y - 40, target.view.x, target.view.y + (target._hpY || -40) * 0.5, 'arrow', () => {
         this._castRing(target.view.x, target.view.y + (target._hpY || -40) * 0.5, 0xffcf6a)
+        const hits = []
         for (const e of this.enemies) {
           if (e.dead) continue
           if (Math.abs(e.tx - target.tx) + Math.abs(e.ty - target.ty) > ab.radius) continue
           const dmg = Math.max(1, Math.round(this._abilityRoll() * ab.dmgMul))
           this._floatText(e.view.x, e.view.y + e._hpY, `${dmg}`, '#ffd08a')
-          if (e.takeDamage(dmg)) this._enemyKilled(e)
+          hits.push({ e, dmg })
         }
+        this._applyAbilityHits(hits)
       })
       playSfx('swing.ogg', 0.5)
     } else if (ab.kind === 'buff') {

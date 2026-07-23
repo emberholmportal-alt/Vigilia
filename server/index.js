@@ -363,6 +363,11 @@ wss.on('connection', (ws) => {
           return rooms.attack(conn.playerId, m.eid)
         }
 
+        case 'cast': {       // habilidad especial M2: enemigos alcanzados + daño (server valida/clampea/aplica)
+          if (conn.playerId == null) return
+          return rooms.cast(conn.playerId, m.hits)
+        }
+
         // ---------- Economía: oro autoritativo del servidor (Fase A) ----------
         case 'sell': {       // vender un ítem del bag (por índice); el VALOR lo computa el server
           if (conn.playerId == null) return

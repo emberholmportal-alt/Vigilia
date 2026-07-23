@@ -419,6 +419,35 @@ function rollPlayerDamage(st) {
   return { dmg: Math.max(1, Math.round(raw * (crit ? 2 : 1))), crit }
 }
 
+// Habilidad especial M2 AUTORITATIVA. El cliente computa qué enemigos alcanzó su habilidad y cuánto
+// daño (las fórmulas —AoE por arma, bola de fuego por intelecto— viven en el cliente); el server
+// VALIDA alcance + cadencia y CLAMPEA el daño (mismo modelo de confianza que el golpe normal: el
+// cliente propone, el server acota), luego lo aplica de verdad: HP, muerte, XP, oro y loot son
+// autoritativos. Cierra el bug online donde la habilidad pegaba local, el enemigo revivía al
+// re-sincronizar y otorgaba XP/loot falso. `hits` = [{ eid, dmg }].
+const pcastAt = new Map()          // playerId -> próximo cast permitido (ms)
+const MIN_CAST_CD = 350            // piso entre casts (anti-spam; el cooldown real por habilidad es client-side)
+const CAST_DMG_MAX = 900           // techo de daño por golpe de habilidad (anti-cheat; > que el melee)
+const CAST_RANGE = 14              // alcance máximo de un golpe de habilidad desde el jugador (tiles)
+export function playerCast(pid, hits) {
+  if (!ctx || !Array.isArray(hits) || !hits.length) return
+  const pl = ctx.getPlayer(pid); if (!pl) return
+  const w = worlds.get(key(pl.map, pl.ch)); if (!w) return
+  const tnow = now()
+  if (tnow < (pcastAt.get(pid) || 0)) return   // cadencia: descarta ráfagas de casts
+  pcastAt.set(pid, tnow + MIN_CAST_CD)
+  for (const h of hits.slice(0, 24)) {         // tope de objetivos por cast
+    const e = w.enemies.get((h && h.eid) | 0)
+    if (!e || e.hp <= 0) continue
+    const dx = pl.x - e.x, dy = pl.y - e.y
+    if (dx * dx + dy * dy > CAST_RANGE * CAST_RANGE) continue   // fuera de alcance: se ignora
+    const dmg = Math.max(1, Math.min(CAST_DMG_MAX, Math.round(Number(h.dmg) || 0)))
+    e.hp -= dmg
+    ctx.broadcast(pl.map, pl.ch, { t: 'edmg', i: e.i, hp: Math.max(0, e.hp), dmg, crit: false, by: pid })
+    if (e.hp <= 0) killEnemy(w, e, pid)
+  }
+}
+
 function killEnemy(w, e, killerId) {
   w.enemies.delete(e.i)
   // El jefe permanente y la élite reaparecen más lento (para que sean un evento); los comunes al

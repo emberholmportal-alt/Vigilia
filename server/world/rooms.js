@@ -214,6 +214,8 @@ export function leave(id) {
 
 // Pedido de ataque a un enemigo (del cliente). Lo resuelve la simulación autoritativa.
 export function attack(id, eid) { combat.playerAttack(id, eid) }
+// Habilidad especial M2: el cliente manda los enemigos alcanzados + daño; el server valida y aplica.
+export function cast(id, hits) { combat.playerCast(id, hits) }
 // Pedido de juntar un nodo de recurso (del cliente).
 export function gather(id, nid) { combat.playerGather(id, nid) }
 // Pedido de abrir un cofre (del cliente).

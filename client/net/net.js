@@ -127,6 +127,7 @@ class Net {
   chat(text) { this._send({ t: 'chat', text }) }
   setStats(stats) { this._send({ t: 'setstats', stats }) }   // stats de combate (server tira el daño)
   attack(eid) { this._send({ t: 'atk', eid }) }              // pedir ataque a un enemigo del server
+  cast(hits) { this._send({ t: 'cast', hits }) }             // habilidad M2: enemigos alcanzados + daño (server valida/aplica)
   gather(nid) { this._send({ t: 'gather', nid }) }           // pedir juntar un nodo de recurso
   openChest(cid) { this._send({ t: 'openchest', cid }) }     // pedir abrir un cofre del server
 
