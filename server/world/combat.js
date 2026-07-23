@@ -34,6 +34,15 @@ export function init(c) { ctx = c }
 
 // --- carga de mapas (spawners + colisión) ---------------------------------------------------
 const mapCache = new Map()   // name -> { w, h, coll, spawners } | null
+// Algunos mapas de Flare quedaron FRAGMENTADOS al convertir: Flare teletransportaba entre salas,
+// y nuestro modelo es caminata pura, así que las salas quedaron como islas de colisión inconexas.
+// Cuando el spawn nativo cae en un bolsón chico (poca acción), lo reanclamos a la isla con MÁS
+// contenido para que la zona rinda como el dungeon que debía ser. El spawn manda para el servidor
+// (jefe + densificado de entrada) y para el cliente (llegada + pads); por eso se corrige acá, en
+// una sola fuente. El cliente usa el mismo tile en HUB_SPAWN/portales.
+const SPAWN_OVERRIDE = {
+  wizards_tower_1: [52, 9], // isla rica (16 spawners) en vez del bolsón de la entrada (2 spawners)
+}
 function loadMap(name) {
   if (mapCache.has(name)) return mapCache.get(name)
   let data = null
@@ -41,6 +50,7 @@ function loadMap(name) {
     const raw = JSON.parse(fs.readFileSync(path.join(MAPS_DIR, name + '.json'), 'utf8'))
     const coll = raw.layers && raw.layers.collision
     data = { w: raw.w, h: raw.h, coll, spawn: raw.spawn || null, spawners: raw.spawners || [], chests: raw.chests || [] }
+    if (data && SPAWN_OVERRIDE[name]) data.spawn = SPAWN_OVERRIDE[name]
   } catch { data = null }
   mapCache.set(name, data)
   return data

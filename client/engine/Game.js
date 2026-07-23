@@ -2510,7 +2510,7 @@ function equipToGfx(equip) {
 // Spawn de hub elegido a mano (plaza/centro) por mapa; si no, centroide abierto.
 const HUB_SPAWN = {
   black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27],
-  greenwood_point: [51, 51], triston: [59, 58], wizards_tower_1: [35, 48], underworld: [67, 47],
+  greenwood_point: [51, 51], triston: [59, 58], wizards_tower_1: [52, 9], underworld: [67, 47],
   st_maria_1: [39, 66], perdition_mines: [52, 18], stormrock_pass: [24, 81],
   underworld_catacombs: [70, 99], underworld_mines: [31, 63], underworld_stronghold_1: [5, 32], underworld_stronghold_2: [36, 8],
   dilapidated_sewers: [64, 8],
@@ -2610,20 +2610,22 @@ const PORTAL_EXTRA = {
   black_oak_city: [
     { x: 44, y: 13, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
     // Cruzando las avenidas de la ciudad se llega a la Torre del Mago (nivel ~11). Pad en un tile
-    // reachable hacia el interior peligroso; llegada al spawn nativo de la torre (35,48), donde el
-    // server densifica el combate. La torre es un dungeon de 3 pisos (conectados por portales nativos).
-    { x: 60, y: 50, w: 1, h: 1, to: 'wizards_tower_1', tx: 35, ty: 48, label: 'Torre del Mago' },
+    // reachable hacia el interior peligroso; llegada a la sala rica de la torre (52,9), donde el
+    // server densifica el combate (16 spawners + jefe). El mapa de Flare quedó fragmentado en islas
+    // al convertir; aterrizamos en la más poblada (ver SPAWN_OVERRIDE en combat.js).
+    { x: 60, y: 50, w: 1, h: 1, to: 'wizards_tower_1', tx: 52, ty: 9, label: 'Torre del Mago' },
     // Bajo las avenidas de la ciudad se abren las Cloacas Ruinosas (nivel ~11): un dungeon de
     // no-muertos con jefe (el Zombi profano). Pad cerca del hub (39,13), reachable+caminable;
     // llegada al spawn nativo de las cloacas (64,8), donde el server densifica el combate.
     { x: 39, y: 13, w: 1, h: 1, to: 'dilapidated_sewers', tx: 64, ty: 8, label: 'Cloacas Ruinosas' },
   ],
   // Torre del Mago (entrada, nivel ~11): dungeon con jefe (el Nigromante óseo custodia el umbral).
-  // Regreso a Triston + descenso al Inframundo (las cimientas de la torre se hunden en él, nivel ~13).
-  // Pads separados del spawn (35,48) y entre sí; verificados caminables+reachable.
+  // Regreso a Triston cerca de la llegada (54,9). El descenso al Inframundo se planta en lo más HONDO
+  // de la sala (89,53, a 85 tiles) para obligar a cruzar el dungeon entero antes de bajar (nivel ~13).
+  // Todos los tiles verificados caminables+reachable desde la llegada (52,9).
   wizards_tower_1: [
-    { x: 37, y: 48, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
-    { x: 35, y: 51, w: 1, h: 1, to: 'underworld', tx: 67, ty: 47, label: 'El Inframundo' },
+    { x: 54, y: 9, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 89, y: 53, w: 1, h: 1, to: 'underworld', tx: 67, ty: 47, label: 'El Inframundo' },
   ],
   // El Inframundo (nivel ~13): la caverna profunda. Encadena su propio cluster (Catacumbas, Minas)
   // por portales nativos. Regreso a Triston + la Piedra de Retorno. Pad al lado del spawn (67,47).
