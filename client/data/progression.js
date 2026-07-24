@@ -18,18 +18,9 @@ export const SKILL_DESC = {
 }
 export const SKILL_CAP = 20
 
-// XP acumulada necesaria para ALCANZAR un nivel de jugador (curva suave).
-export function playerXpForLevel(level) {
-  if (level <= 1) return 0
-  return Math.round(60 * Math.pow(level - 1, 1.55))
-}
-
-// Nivel de jugador a partir de la XP total.
-export function playerLevelFromXp(xp) {
-  let lvl = 1
-  while (playerXpForLevel(lvl + 1) <= xp) lvl++
-  return lvl
-}
+// La curva XP->nivel vive en shared/ (la usa también el server para el Poder del gremio).
+export { playerXpForLevel, playerLevelFromXp } from '../../shared/progression.js'
+import { playerXpForLevel, playerLevelFromXp } from '../../shared/progression.js'
 
 // Progreso dentro del nivel actual: { level, into, need, pct }.
 export function playerProgress(xp) {

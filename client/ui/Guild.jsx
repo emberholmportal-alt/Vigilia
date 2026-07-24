@@ -261,11 +261,12 @@ function Deposit({ guild, t }) {
   )
 }
 
-// --- Ranking público ---
+// --- Ranking público (ordenado por Poder del gremio) ---
 function Ranking({ ranking, inGuild, busy, onJoin, myId, t }) {
   if (!ranking || !ranking.length) return <div className="guild-body"><div className="guild-empty">{t('guild_ranking_empty')}</div></div>
   return (
     <div className="guild-body">
+      <div className="guild-rank-hint">{t('guild_power_hint')}</div>
       <div className="guild-rank-list">
         {ranking.map((g, i) => (
           <div key={g.id} className={'guild-rank-row' + (g.id === myId ? ' mine' : '')}>
@@ -273,7 +274,8 @@ function Ranking({ ranking, inGuild, busy, onJoin, myId, t }) {
             <span className="guild-tag-chip" style={{ background: g.color }}>{g.tag}</span>
             <div className="guild-rank-txt">
               <b>{g.name}{g.id === myId ? ` · ${t('guild_you_tag')}` : ''}</b>
-              <span>{t('guild_level_n', { n: g.level })} · {t('guild_members_n', { n: g.members })} · {t('guild_donated_total', { n: g.donated })}</span>
+              <span className="guild-rank-power">{t('guild_power_n', { n: g.power ?? 0 })}</span>
+              <span>{t('guild_level_n', { n: g.level })} · {t('guild_members_n', { n: g.members })} · {t('guild_pw_levels', { n: g.sumLevels ?? 0 })} ({t('guild_pw_avg', { n: g.avgLevel ?? 0 })}) · {t('guild_pw_gold', { n: kGold(g.sumGold || 0) })}</span>
             </div>
             {!inGuild && <button className="guild-btn small" disabled={busy} onClick={() => onJoin(g.id)}>{t('guild_join_btn')}</button>}
           </div>

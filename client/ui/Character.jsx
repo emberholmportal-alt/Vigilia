@@ -134,7 +134,7 @@ export default function Character() {
                       <span className="char-guild-n">{i + 1}</span>
                       <span className="char-guild-chip sm" style={{ background: g.color }}>{g.tag}</span>
                       <span className="char-guild-name">{g.name}</span>
-                      <span className="char-guild-meta">{t('guild_level_n', { n: g.level })} · {t('guild_members_n', { n: g.members })}</span>
+                      <span className="char-guild-meta">{t('guild_power_n', { n: g.power ?? 0 })} · {t('guild_members_n', { n: g.members })}</span>
                     </div>
                   ))}
                 </div>

@@ -7,6 +7,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { playerLevelFromXp } from '../../shared/progression.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.join(__dirname, '..', '.data')
@@ -430,6 +431,41 @@ export async function listGuilds(limit = 20) {
     .map((g) => ({ ...g, members: Object.values(file.guildMembers).filter((m) => m.guild_id === g.id).length }))
     .sort((a, b) => b.level - a.level || b.donated - a.donated || a.id - b.id)
     .slice(0, limit)
+}
+
+// Todos los gremios con agregados por miembro para el Poder del gremio: cantidad de miembros,
+// suma de niveles de personaje (nivel derivado del XP autoritativo) y suma del oro de los
+// miembros. El orden y el cálculo del Poder los hace guilds.ranking; acá sólo agregamos.
+export async function listGuildsWithStats() {
+  if (pg) {
+    const guilds = (await pg.query(
+      `SELECT g.*, (SELECT count(*)::int FROM guild_members m WHERE m.guild_id=g.id) AS members FROM guilds g`)).rows
+    // XP y oro de cada miembro (una fila por miembro). El nivel se deriva en JS con la curva compartida.
+    const mem = (await pg.query(
+      `SELECT m.guild_id, (c.data->>'xp') AS xp, (c.data->>'gold') AS gold
+       FROM guild_members m JOIN characters c ON c.account_id = m.account_id`)).rows
+    const agg = new Map()
+    for (const row of mem) {
+      const a = agg.get(row.guild_id) || { sumLevels: 0, sumGold: 0 }
+      a.sumLevels += playerLevelFromXp(Number(row.xp) || 0)
+      a.sumGold += Math.max(0, Math.floor(Number(row.gold) || 0))
+      agg.set(row.guild_id, a)
+    }
+    return guilds.map((g) => ({ ...g, sumLevels: agg.get(g.id)?.sumLevels || 0, sumGold: agg.get(g.id)?.sumGold || 0 }))
+  }
+  return file.guilds.map((g) => {
+    let sumLevels = 0, sumGold = 0, members = 0
+    for (const [aid, m] of Object.entries(file.guildMembers)) {
+      if (m.guild_id !== g.id) continue
+      members++
+      const ch = file.chars[+aid]
+      if (ch && ch.data) {
+        sumLevels += playerLevelFromXp(Number(ch.data.xp) || 0)
+        sumGold += Math.max(0, Math.floor(Number(ch.data.gold) || 0))
+      }
+    }
+    return { ...g, members, sumLevels, sumGold }
+  })
 }
 
 // --- Contrato semanal del gremio ---

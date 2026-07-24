@@ -143,12 +143,34 @@ export async function info(accountId, guildId) {
   return { ok: true, guild: pubGuild(g), members, mine: mem?.guild_id === id ? (mem.role || 'member') : null, you: accountId }
 }
 
-// Ranking público. El límite lo pide el cliente; lo acotamos server-side (1..200) para no
-// filtrar toda la tabla de un pedido malicioso.
+// Poder del gremio: un puntaje que mezcla tamaño, fuerza y riqueza colectiva, con una parte de
+// promedio para que no gane sólo el gremio más numeroso de alts nivel 1. Todo sale de datos
+// server-autoritativos (nivel de miembro derivado del XP, oro del blob del personaje, nivel del
+// gremio del pozo donado), así no se puede inflar desde el cliente.
+//   Poder = Σniveles×10 + promedioNivel×20 + nivelGremio×40 + floor(Σoro/2000)
+export function guildPower({ sumLevels = 0, members = 0, level = 1, sumGold = 0 }) {
+  const avg = members > 0 ? sumLevels / members : 0
+  return Math.round(sumLevels * 10 + avg * 20 + (level || 1) * 40 + Math.floor((sumGold || 0) / 2000))
+}
+
+// Ranking público, ordenado por Poder. El límite lo pide el cliente; lo acotamos server-side
+// (1..200) para no filtrar toda la tabla de un pedido malicioso. Devuelve el desglose del Poder
+// (Σniveles, promedio, Σoro) para mostrarlo en el ranking.
 export async function ranking(limit = 20) {
   const lim = Math.max(1, Math.min(200, (limit | 0) || 20))
-  const rows = await db.listGuilds(lim)
-  return { ok: true, guilds: rows.map((g) => ({ ...pubGuild(g), members: g.members | 0 })) }
+  const rows = await db.listGuildsWithStats()
+  const scored = rows.map((g) => {
+    const members = g.members | 0
+    const sumLevels = g.sumLevels | 0
+    const sumGold = Math.max(0, Math.floor(Number(g.sumGold) || 0))
+    return {
+      ...pubGuild(g), members, sumLevels, sumGold,
+      avgLevel: members > 0 ? Math.round((sumLevels / members) * 10) / 10 : 0,
+      power: guildPower({ sumLevels, members, level: g.level, sumGold }),
+    }
+  })
+  scored.sort((a, b) => b.power - a.power || b.level - a.level || a.id - b.id)
+  return { ok: true, guilds: scored.slice(0, lim) }
 }
 
 // Fundar un gremio. Cobra FOUND_COST del oro persistido del fundador.
