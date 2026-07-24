@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import ItemIcon from './ItemIcon.jsx'
 import { useGameStore } from '../store.js'
 import { ABILITY_BY_ID } from '../data/abilities.js'
-import { Lock, Fist, Gear } from './Icon.jsx'
+import { Lock, Fist, Gear, Shield, Coin } from './Icon.jsx'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
@@ -131,14 +131,45 @@ const MENU = [
   { icon: 'btn_log', panel: 'settings' },
 ]
 
+// Gremio y Mercado no tienen ícono grabado en el arte de Flare, así que van como botones de
+// primera clase con ícono SVG (escudo/moneda) sobre un slot vacío, para que sean igual de
+// accesibles que Inventario/Personaje sin salir del pueblo. Como abrir cada panel necesita
+// refrescar datos del server (no sólo mostrarlo), se enrutan por sus openers del store.
+const MENU_IC = [
+  { panel: 'guild', Icon: Shield },
+  { panel: 'market', Icon: Coin },
+]
+
+// Enruta un panel de menú: guild/market pasan por sus openers (refrescan del server) y siguen
+// alternando cerrado; el resto usa el toggle normal del HUD.
+function usePanelRoute(onPanel) {
+  const openGuild = useGameStore((s) => s.openGuild)
+  const openMarket = useGameStore((s) => s.openMarket)
+  const setPanel = useGameStore((s) => s.setPanel)
+  return (panel) => {
+    if (panel !== 'guild' && panel !== 'market') return onPanel(panel)
+    const open = panel === 'guild' ? openGuild : openMarket
+    if (useGameStore.getState().panel === panel) setPanel(null)
+    else open()
+  }
+}
+
 export function MenuRow({ onPanel }) {
   const t = useT()
+  const route = usePanelRoute(onPanel)
   return (
     <div className="menu-row">
       {MENU.map((m) => (
         <button key={m.panel} className="ab-btn" title={t(m.panel)}
                 style={{ backgroundImage: `url(${UI}${m.icon}.png)` }}
-                onClick={() => onPanel(m.panel)} />
+                onClick={() => route(m.panel)} />
+      ))}
+      {MENU_IC.map((m) => (
+        <button key={m.panel} className="ab-btn ab-btn-ic" title={t(m.panel)}
+                style={{ backgroundImage: `url(${UI}slot_empty.png)` }}
+                onClick={() => route(m.panel)}>
+          <m.Icon />
+        </button>
       ))}
     </div>
   )
@@ -162,8 +193,19 @@ const MENU_CX = [
 
 export function DesktopBar({ belt, onPanel, onUseBelt, beltCap = 4 }) {
   const t = useT()
+  const route = usePanelRoute(onPanel)
   return (
     <div className="desktop-bar" style={{ backgroundImage: `url(${UI}actionbar_trim.png)` }}>
+      {/* Gremio + Mercado: el marco grabado de Flare sólo trae 4 botones de menú, así que estos
+          dos van como par flotante (ícono SVG) anclado sobre el extremo derecho de la barra. */}
+      <div className="db-extra">
+        {MENU_IC.map((m) => (
+          <button key={m.panel} className="db-extra-btn" title={t(m.panel)}
+                  onClick={() => route(m.panel)}>
+            <m.Icon /><span>{t(m.panel)}</span>
+          </button>
+        ))}
+      </div>
       {HOT_CX.map((cx, i) => {
         const it = belt[i]
         // sólo los primeros `beltCap` slots del hotbar son del cinturón; el resto quedan

@@ -12,6 +12,8 @@ const DICT = {
   character: { es: 'Personaje', en: 'Character' },
   inventory: { es: 'Inventario', en: 'Inventory' },
   powers: { es: 'Acciones', en: 'Actions' },
+  guild: { es: 'Gremio', en: 'Guild' },
+  market: { es: 'Mercado', en: 'Market' },
   settings: { es: 'Ajustes', en: 'Settings' },
   gold: { es: 'oro', en: 'gold' },
   gold_word: { es: 'Oro', en: 'Gold' },
