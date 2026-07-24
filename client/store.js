@@ -1438,15 +1438,20 @@ export const useGameStore = create((set, get) => ({
     saveGame(get())
     return true
   },
-  // Al entrar a una zona con la quest de los Guardianes activa, revela un nombre olvidado.
-  // Devuelve el nombre revelado (para que el loop lo anuncie) o null.
-  revealForZone: (zone) => {
+  // Al entrar a (o limpiar) una zona con la quest correspondiente activa, revela algo (un nombre
+  // olvidado, un fragmento de diario). `filter.quest` acota a una quest (el loop llama por separado
+  // para cada mecánica). Devuelve el texto revelado (en el idioma actual) para anunciarlo, o null.
+  revealForZone: (zone, filter) => {
     const s = get()
-    if (!s.questFlags.q3_init || s.questFlags.q3_finish) return null
     const r = ZONE_REVEALS[zone]
-    if (!r || s.questFlags[r.flag]) return null
+    if (!r) return null
+    if (filter && filter.quest && r.quest !== filter.quest) return null
+    if (r.gate && !s.questFlags[r.gate]) return null      // la quest tiene que estar activa
+    if (r.done && s.questFlags[r.done]) return null        // ya cerrada
+    if (s.questFlags[r.flag]) return null                  // ya revelado
     get().setQuestFlag(r.flag)
-    return r.name
+    const lang = s.lang === 'es' ? 'es' : 'en'
+    return lang === 'es' ? r.name : (r.name_en || r.name)
   },
   // ¿Se puede despertar a los Guardianes? (los tres nombres, quest sin cerrar)
   canAwakenGuardians: () => {

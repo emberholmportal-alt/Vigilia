@@ -792,8 +792,8 @@ export function recoverGrave(id) {
 // Recompensa de quest narrativa (montos fijos; el cliente trackea la bandera de completado). Hay
 // pocas y son de una sola vez, así que el oro se acota a estos valores fijos, una vez cada uno.
 // (Duplica el reward de client/data/quests.js — es 1 entrada; si cambia, tocar los dos.)
-const QUEST_GOLD = { guardianes: 150 }
-const QUEST_SEALS = { guardianes: 8 }
+const QUEST_GOLD = { guardianes: 150, diario: 180 }
+const QUEST_SEALS = { guardianes: 8, diario: 10 }
 export function claimQuest(id, questId) {
   const p = players.get(id); if (!p) return { ok: false }
   if (!p._qclaimed) p._qclaimed = new Set()

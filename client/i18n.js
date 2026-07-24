@@ -412,6 +412,7 @@ const DICT = {
   quest_done: { es: '¡Aventura completa: {name}!', en: 'Quest complete: {name}!' },
   quest_reward: { es: 'Recompensa: +{xp} XP, +{gold} oro, +{seals} sellos', en: 'Reward: +{xp} XP, +{gold} gold, +{seals} seals' },
   name_found: { es: 'Un nombre olvidado resuena: {name}', en: 'A forgotten name echoes: {name}' },
+  journal_found: { es: 'Encontraste un fragmento del diario de Aldwin.', en: "You found a page of Aldwin's journal." },
   guardians_wake: { es: 'Pronunciás los tres nombres. Los Guardianes despiertan.', en: 'You speak the three names. The Guardians awaken.' },
   guardian_asleep: { es: 'La estatua duerme. Le falta oír los nombres que la sellaron.', en: 'The statue sleeps. It must hear the names that sealed it.' },
   // Enfrentamiento final: pronunciás los tres nombres ante los Guardianes y los sellos ceden.

@@ -335,11 +335,17 @@ export class Game {
     // Quest "Los Tres Nombres": OFFLINE (sin jefes de server) el nombre se revela al LLEGAR a la ruina.
     // ONLINE se arranca matando al guardián elemental de la ruina (ver _onEkill) — la ruina tiene jefe.
     if (!ONLINE) {
-      const revealed = this.store.revealForZone(mapName)
+      const revealed = this.store.revealForZone(mapName, { quest: 'guardianes' })
       if (revealed) {
         this.store.showToast(tt('name_found', { name: revealed }))
         this.store.logMessage({ channel: 'sistema', text: tt('name_found', { name: revealed }) })
       }
+    }
+    // Quest "El Diario del Vigilante": los fragmentos se revelan al LLEGAR a la zona (online y offline).
+    const frag = this.store.revealForZone(mapName, { quest: 'diario' })
+    if (frag) {
+      this.store.showToast(tt('journal_found'))
+      this.store.logMessage({ channel: 'sistema', text: frag })
     }
     this._loading = false
 
@@ -1579,7 +1585,7 @@ export class Game {
     // Quest "Los Tres Nombres": matar al guardián elemental de la ruina (jefe de zona) arranca el
     // nombre sellado. revealForZone es no-op si el mapa no es ruina / ya se reveló / quest inactiva.
     if (m.boss) {
-      const revealed = this.store.revealForZone(this.mapName)
+      const revealed = this.store.revealForZone(this.mapName, { quest: 'guardianes' })
       if (revealed) {
         this.store.showToast(tt('name_found', { name: revealed }))
         this.store.logMessage({ channel: 'sistema', text: tt('name_found', { name: revealed }) })

@@ -153,7 +153,9 @@ zona más profunda), server-autoritativas y persistidas · **Salón de la Fama**
 los jugadores por nivel / jefes / profundidad) · estamina al correr.
 
 **Mundo:** 40 mapas conectados y sellados (sin fugas a mapas sin terminar) · spawn/nivel
-corregidos por mapa · docs in-game (Cómo Jugar + Documentación) bilingües.
+corregidos por mapa · docs in-game (Cómo Jugar + Documentación) bilingües · sistema de quests
+narrativas generalizado (reveals por zona, multi-quest) con 2 líneas: "Los Tres Nombres" y
+"El Diario del Vigilante" (fragmentos en cloacas/cripta/fuerte → el viejo Garrick).
 
 ## Lo que NO hacemos todavía
 
