@@ -143,9 +143,11 @@ export async function info(accountId, guildId) {
   return { ok: true, guild: pubGuild(g), members, mine: mem?.guild_id === id ? (mem.role || 'member') : null, you: accountId }
 }
 
-// Ranking público.
+// Ranking público. El límite lo pide el cliente; lo acotamos server-side (1..200) para no
+// filtrar toda la tabla de un pedido malicioso.
 export async function ranking(limit = 20) {
-  const rows = await db.listGuilds(limit)
+  const lim = Math.max(1, Math.min(200, (limit | 0) || 20))
+  const rows = await db.listGuilds(lim)
   return { ok: true, guilds: rows.map((g) => ({ ...pubGuild(g), members: g.members | 0 })) }
 }
 

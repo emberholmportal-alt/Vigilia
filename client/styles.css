@@ -1219,7 +1219,10 @@ html, body, #root {
   font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
   color: #8f7c52; margin: 9px 0 4px;
 }
-.char-guild-rank { display: flex; flex-direction: column; gap: 3px; }
+.char-guild-rank {
+  display: flex; flex-direction: column; gap: 3px;
+  max-height: 168px; overflow-y: auto; padding-right: 2px;
+}
 .char-guild-row {
   display: flex; align-items: center; gap: 7px; font-size: 11px; color: #c3b491;
 }

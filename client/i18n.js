@@ -51,7 +51,7 @@ const DICT = {
   char_title: { es: 'Personaje', en: 'Character' },
   char_no_guild: { es: 'Sin gremio', en: 'No guild' },
   char_guild: { es: 'Gremio', en: 'Guild' },
-  char_guild_top: { es: 'Top gremios', en: 'Top guilds' },
+  char_guild_top: { es: 'Ranking de gremios', en: 'Guild ranking' },
   char_guild_hall: { es: 'Fundá o unite hablando con el Maestro de Gremios.', en: 'Found or join by talking to the Guildmaster.' },
   char_guild_rank_you: { es: '#{n} en el ranking', en: '#{n} in the ranking' },
   stat_hp: { es: 'Vida', en: 'Health' },

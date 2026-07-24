@@ -40,9 +40,8 @@ export default function Character() {
   const prog = playerProgress(xp || 0)
   // Puntos de atributo disponibles (se reparten con el botón "+" de cada atributo).
   const attrPts = attrEarned(s.level || 1) - attrSpent(attrAlloc)
-  // Gremio (solo lectura): top público y tu posición en él.
+  // Gremio (solo lectura): ranking público completo y tu posición en él.
   const ranking = guildRanking || []
-  const topGuilds = ranking.slice(0, 5)
   const myRank = guild ? ranking.findIndex((g) => g.id === guild.id) + 1 : 0
 
   // Derivados que mostramos en la lista (reflejan raza/nivel + equipo).
@@ -126,11 +125,11 @@ export default function Character() {
               </div>
             )}
 
-            {topGuilds.length > 0 && (
+            {ranking.length > 0 && (
               <>
                 <div className="char-guild-sub">{t('char_guild_top')}</div>
                 <div className="char-guild-rank">
-                  {topGuilds.map((g, i) => (
+                  {ranking.map((g, i) => (
                     <div key={g.id} className={'char-guild-row' + (guild && g.id === guild.id ? ' mine' : '')}>
                       <span className="char-guild-n">{i + 1}</span>
                       <span className="char-guild-chip sm" style={{ background: g.color }}>{g.tag}</span>

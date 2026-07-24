@@ -1156,7 +1156,7 @@ export const useGameStore = create((set, get) => ({
     set({ guildBusy: true })
     try {
       const info = await net.guildInfo()
-      const list = await net.guildList(20)
+      const list = await net.guildList(200)   // ranking completo (el server lo acota)
       set({ guild: info.guild || null, guildRole: info.mine || null, guildMembers: info.members || [],
             guildYou: info.you ?? null, guildRanking: list.guilds || [], guildBusy: false })
       get().recomputeStats()
