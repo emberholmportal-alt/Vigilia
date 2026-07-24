@@ -8,6 +8,8 @@ import ItemIcon from './ItemIcon.jsx'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
+// Oro compacto para la lista de miembros (1.2k / 15k).
+const kGold = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : String(n | 0)
 const PW = 640, PH = 832
 const BANNERS = ['#c9a227', '#b060ff', '#4aa3e0', '#e0894a', '#6bd08a', '#d0506a']
 
@@ -174,6 +176,7 @@ function MyGuild({ guild, role, members, gold, busy, you, onKick, onRole, onTran
             return (
               <div key={i} className={'guild-member' + (isSelf ? ' me' : '')}>
                 <span>{m.username}</span>
+                <span className="guild-mstat" title={t('guild_contrib')}>{kGold(m.donated || 0)}◈ · {m.kills || 0}⚔</span>
                 <em>{roleLabel(m.role)}</em>
                 {showActs && (
                   <span className="guild-acts">

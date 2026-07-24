@@ -56,6 +56,9 @@ export async function init() {
         role TEXT DEFAULT 'member',
         joined_at TIMESTAMPTZ DEFAULT now()
       );
+      ALTER TABLE guild_members ADD COLUMN IF NOT EXISTS donated BIGINT DEFAULT 0;
+      ALTER TABLE guild_members ADD COLUMN IF NOT EXISTS contract_kills INTEGER DEFAULT 0;
+      ALTER TABLE guild_members ADD COLUMN IF NOT EXISTS contract_week TEXT;
       CREATE TABLE IF NOT EXISTS guild_deposit (
         guild_id INTEGER PRIMARY KEY REFERENCES guilds(id) ON DELETE CASCADE,
         gold BIGINT DEFAULT 0,
@@ -386,16 +389,34 @@ export async function guildMemberCount(guildId) {
 export async function guildMembers(guildId) {
   if (pg) {
     const r = await pg.query(
-      `SELECT a.id AS account_id, a.username, m.role, extract(epoch from m.joined_at)*1000 AS joined_at
+      `SELECT a.id AS account_id, a.username, m.role, extract(epoch from m.joined_at)*1000 AS joined_at,
+              m.donated, m.contract_kills, m.contract_week
        FROM guild_members m JOIN accounts a ON a.id=m.account_id
        WHERE m.guild_id=$1 ORDER BY (m.role='founder') DESC, (m.role='officer') DESC, m.joined_at ASC`, [guildId])
-    return r.rows.map((x) => ({ account_id: x.account_id, username: x.username, role: x.role, joined_at: Number(x.joined_at) || 0 }))
+    return r.rows.map((x) => ({ account_id: x.account_id, username: x.username, role: x.role, joined_at: Number(x.joined_at) || 0,
+      donated: Number(x.donated) || 0, contract_kills: x.contract_kills | 0, contract_week: x.contract_week || null }))
   }
   const rank = (role) => role === 'founder' ? 0 : role === 'officer' ? 1 : 2
   return Object.entries(file.guildMembers)
     .filter(([, m]) => m.guild_id === guildId)
-    .map(([aid, m]) => ({ account_id: +aid, username: (file.accounts.find((a) => a.id === +aid) || {}).username, role: m.role, joined_at: m.joined_at || 0 }))
+    .map(([aid, m]) => ({ account_id: +aid, username: (file.accounts.find((a) => a.id === +aid) || {}).username, role: m.role, joined_at: m.joined_at || 0,
+      donated: Number(m.donated) || 0, contract_kills: m.contract_kills | 0, contract_week: m.contract_week || null }))
     .sort((a, b) => rank(a.role) - rank(b.role) || a.joined_at - b.joined_at)
+}
+// Suma al oro donado ACUMULADO del miembro (stat de contribución individual, display).
+export async function bumpMemberDonated(accountId, amt) {
+  if (pg) { await pg.query('UPDATE guild_members SET donated=donated+$2 WHERE account_id=$1', [accountId, Math.floor(amt) || 0]); return }
+  const m = file.guildMembers[accountId]; if (m) { m.donated = (Number(m.donated) || 0) + (Math.floor(amt) || 0); flush() }
+}
+// Suma kills del miembro al contrato de la semana `week` (reinicia si cambió la semana).
+export async function bumpMemberContract(accountId, week, inc) {
+  if (pg) {
+    await pg.query(
+      `UPDATE guild_members SET contract_kills = CASE WHEN contract_week=$2 THEN contract_kills ELSE 0 END + $3,
+       contract_week=$2 WHERE account_id=$1`, [accountId, week, inc | 0])
+    return
+  }
+  const m = file.guildMembers[accountId]; if (m) { m.contract_kills = (m.contract_week === week ? (m.contract_kills | 0) : 0) + (inc | 0); m.contract_week = week; flush() }
 }
 // Ranking público: gremios por nivel y oro donado, con conteo de miembros.
 export async function listGuilds(limit = 20) {

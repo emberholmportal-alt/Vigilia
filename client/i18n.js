@@ -469,6 +469,7 @@ const DICT = {
   guild_invite_msg: { es: '{name} te invita a su gremio: {guild}', en: '{name} invites you to their guild: {guild}' },
   guild_invite_accept: { es: 'Unirme', en: 'Join' },
   pm_invite_guild: { es: 'Invitar al gremio', en: 'Invite to guild' },
+  guild_contrib: { es: 'Donado · kills al contrato de la semana', en: 'Donated · kills toward this week\'s contract' },
   guild_join_btn: { es: 'Unirme', en: 'Join' },
   guild_ranking_empty: { es: 'Todavía no hay gremios. Fundá el primero.', en: 'No guilds yet. Found the first.' },
   guild_you_tag: { es: 'vos', en: 'you' },

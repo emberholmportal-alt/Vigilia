@@ -1413,6 +1413,7 @@ html, body, #root {
 .guild-member > span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .guild-member.me > span:first-child { color: #e8c66a; }
 .guild-member em { color: var(--dim); font-style: normal; font-size: 10px; flex: none; }
+.guild-mstat { flex: none; font-size: 10px; color: #b89a5e; font-variant-numeric: tabular-nums; }
 .guild-acts { display: flex; gap: 3px; flex: none; }
 .guild-act { background: rgba(120, 104, 80, 0.16); border: 1px solid rgba(156, 122, 46, 0.3); color: #cdbb92;
   border-radius: 4px; width: 20px; height: 20px; line-height: 1; font-size: 11px; cursor: pointer; padding: 0; }

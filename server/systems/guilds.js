@@ -91,6 +91,7 @@ export async function onKill(accountId, category) {
   const wasWeek = (await db.getGuild(guildId))?.contract_week
   const progress = await db.bumpContract(guildId, wc.week, 1)
   if (progress == null) return null
+  db.bumpMemberContract(accountId, wc.week, 1).catch(() => {})   // aporte individual al contrato (esta semana)
   // ¿recién se completó? (cruzó el target esta semana) -> recompensa colectiva.
   const prevInWeek = wasWeek === wc.week ? before : 0
   if (prevInWeek < wc.target && progress >= wc.target) {
@@ -134,7 +135,11 @@ export async function info(accountId, guildId) {
   if (!id) return { ok: true, guild: null, mine: null, members: [] }
   const g = await db.getGuild(id)
   if (!g) return { ok: true, guild: null, mine: null, members: [] }
-  const members = await db.guildMembers(id)
+  const wc = weeklyContract()
+  const members = (await db.guildMembers(id)).map((m) => ({
+    account_id: m.account_id, username: m.username, role: m.role,
+    donated: m.donated || 0, kills: m.contract_week === wc.week ? (m.contract_kills || 0) : 0,   // aporte al contrato de ESTA semana
+  }))
   return { ok: true, guild: pubGuild(g), members, mine: mem?.guild_id === id ? (mem.role || 'member') : null, you: accountId }
 }
 
@@ -280,6 +285,7 @@ export async function donate(accountId, amount) {
   // oro viejo pise el descuento — eso es economía server-autoritativa, pendiente con la $VEL.)
   const r = await db.txDonate(accountId, mem.guild_id, amt, levelForDonated)
   if (!r.ok) return r
+  db.bumpMemberDonated(accountId, amt).catch(() => {})   // contribución individual (display, fire-and-forget)
   return { ok: true, guild: pubGuild(r.guild), gold: r.gold, leveledUp: r.leveledUp }
 }
 
