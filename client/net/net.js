@@ -92,6 +92,8 @@ class Net {
         else if (m.t === 'php') this._emit(m.t, m)
         // nivel de otro jugador (cambió al subir) — para el menú de jugador
         else if (m.t === 'plvl') this._emit(m.t, m)
+        // tarjeta pública de otro jugador (respuesta a inspect)
+        else if (m.t === 'inspect') this._emit(m.t, m)
       }
     })
   }
@@ -126,6 +128,8 @@ class Net {
   move(map, x, y, dir) { this._send({ t: 'move', map, x, y, dir }) }
   chat(text) { this._send({ t: 'chat', text }) }
   setStats(stats) { this._send({ t: 'setstats', stats }) }   // stats de combate (server tira el daño)
+  setCard(card) { this._send({ t: 'setcard', card }) }       // tarjeta pública (lo que ven al inspeccionarme)
+  inspect(id) { this._send({ t: 'inspect', id }) }           // pedir la tarjeta pública de otro jugador
   attack(eid) { this._send({ t: 'atk', eid }) }              // pedir ataque a un enemigo del server
   cast(hits) { this._send({ t: 'cast', hits }) }             // habilidad M2: enemigos alcanzados + daño (server valida/aplica)
   gather(nid) { this._send({ t: 'gather', nid }) }           // pedir juntar un nodo de recurso

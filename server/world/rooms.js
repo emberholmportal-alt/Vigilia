@@ -548,6 +548,43 @@ export function playerIdOfAccount(accountId) {
   return null
 }
 export function nameOf(id) { const p = players.get(id); return p ? p.name : '' }
+
+// --- Inspeccionar jugador: tarjeta pública (estilo "look") -------------------------------------
+// El cliente del objetivo arma su propia tarjeta (display) y la manda con setCard; acá la guardamos
+// saneada (clamps, para que nadie rompa la UI de otro con números basura). inspectCard la devuelve
+// SÓLO si el que pide y el objetivo están en el mismo canal (se ven). Es de display, no autoritativa.
+const RACES_OK = new Set(['humano', 'elfo', 'enano', 'orco'])
+const SKILL_KEYS = ['combate', 'excavacion', 'herboristeria', 'alquimia', 'forja', 'saqueo']
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)))
+const clampF = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || lo))
+function sanitizeCard(c) {
+  if (!c || typeof c !== 'object') return null
+  const skills = {}
+  for (const k of SKILL_KEYS) skills[k] = clampN(c.skills && c.skills[k], 1, 20)
+  let guild = null
+  if (c.guild && typeof c.guild === 'object' && c.guild.tag) {
+    guild = { tag: String(c.guild.tag).slice(0, 3), color: /^#[0-9a-fA-F]{6}$/.test(c.guild.color || '') ? c.guild.color : '#c9a227' }
+  }
+  let set = null
+  if (c.set && c.set.label) set = { label: String(c.set.label).slice(0, 24), pieces: clampN(c.set.pieces, 0, 6) }
+  return {
+    level: clampN(c.level, 1, 999), race: RACES_OK.has(c.race) ? c.race : null,
+    hp: clampN(c.hp, 0, 9999999), hpMax: clampN(c.hpMax, 1, 9999999),
+    mp: clampN(c.mp, 0, 9999999), mpMax: clampN(c.mpMax, 0, 9999999),
+    dmgMin: clampN(c.dmgMin, 0, 99999), dmgMax: clampN(c.dmgMax, 0, 99999), defense: clampN(c.defense, 0, 99999),
+    crit: clampN(c.crit, 0, 100), hpRegen: clampF(c.hpRegen, 0, 999), itemFind: clampN(c.itemFind, 0, 9999),
+    fireResist: clampN(c.fireResist, 0, 100), iceResist: clampN(c.iceResist, 0, 100),
+    speedMul: clampF(c.speedMul, 0.1, 9), xpMul: clampF(c.xpMul, 1, 9),
+    set, skills, guild,
+  }
+}
+export function setCard(id, card) { const p = players.get(id); if (p) p.card = sanitizeCard(card) }
+export function inspectCard(viewerId, targetId) {
+  const v = players.get(viewerId), t = players.get(targetId)
+  if (!v || !t) return { error: 'no está' }
+  if (v.map !== t.map || v.ch !== t.ch) return { error: 'fuera de vista' }   // sólo se inspecciona a quien ves
+  return { id: t.id, name: t.name, level: t.level || 1, race: t.race || null, hp: t.hp, hpMax: t.hpMax, card: t.card || null }
+}
 // Persiste el oro autoritativo al personaje (al salir). setCharacterGold preserva el resto del blob.
 async function persistGold(p) {
   if (!p || !p.accountId) return

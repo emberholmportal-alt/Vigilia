@@ -402,6 +402,7 @@ export class Game {
     net.on('seals', (m) => { if (typeof m.seals === 'number') this.store.setSeals(m.seals) })   // sellos autoritativos
     net.on('inv', (m) => this.store.mirrorInv(m.inv))   // bag autoritativo del server (Fase A.2)
     // Trade P2P (Kintara #3): pedido / apertura / estado / cierre / cancelación -> store.
+    net.on('inspect', (m) => this.store.onInspect(m))   // tarjeta pública de otro jugador (respuesta a inspect)
     net.on('trade_req', (m) => this.store.onTradeReq(m))
     net.on('trade_open', (m) => this.store.onTradeOpen(m))
     net.on('trade_state', (m) => this.store.onTradeState(m))
@@ -441,6 +442,9 @@ export class Game {
       level: st.level || 1,   // capacidad usable del bag autoritativo (parity con el HUD)
       itemFind: st.itemFind || 0,   // magic-find: el server lo usa al tirar el loot de kills
     })
+    // Tarjeta pública (lo que ven los demás al inspeccionarme). Se reenvía junto con las stats.
+    const card = this.store.getPublicCard()
+    if (card) net.setCard(card)
   }
 
   // Reconexión: re-autentica (resume) y reconstruye el mapa actual para reenganchar el estado

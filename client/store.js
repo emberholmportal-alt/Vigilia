@@ -584,8 +584,31 @@ export const useGameStore = create((set, get) => ({
 
   // --- menú de jugador (al tocar a otro: comerciar / ver stats) ---
   playerMenu: null,          // { id, name, race, level, hp, hpMax, near } o null
-  openPlayerMenu: (info) => set({ playerMenu: info }),
-  closePlayerMenu: () => set({ playerMenu: null }),
+  openPlayerMenu: (info) => set({ playerMenu: info, inspectCard: null }),
+  closePlayerMenu: () => set({ playerMenu: null, inspectCard: null }),
+
+  // --- inspeccionar jugador: tarjeta pública (estilo "look" de Tibia) ---
+  // La arma el propio cliente del objetivo (getPublicCard) y el server la reenvía. Es de display:
+  // nadie gana ventaja mintiendo sobre sus propios números. Se pide al abrir la vista de stats.
+  inspectCard: null,         // { id, name, level, race, hp, hpMax, card:{...} } o null (cargando)
+  requestInspect: (id) => { if (isOnline()) { set({ inspectCard: null }); net.inspect(id) } },
+  onInspect: (m) => { const pm = get().playerMenu; if (pm && m && m.id === pm.id) set({ inspectCard: m }) },
+  // Tarjeta pública de MI jugador (lo que ven los demás al inspeccionarme). Sólo display.
+  getPublicCard: () => {
+    const s = get(); const st = s.stats; if (!st) return null
+    const g = s.guild
+    return {
+      level: st.level || 1, race: s.race?.id || null,
+      hp: st.hp | 0, hpMax: st.hpMax | 0, mp: st.mp | 0, mpMax: st.mpMax | 0,
+      dmgMin: st.dmgMin | 0, dmgMax: st.dmgMax | 0, defense: st.defense | 0,
+      crit: st.crit | 0, hpRegen: +(st.hpRegen || 0), itemFind: st.itemFind | 0,
+      fireResist: st.fireResist | 0, iceResist: st.iceResist | 0,
+      speedMul: +(st.speedMul || 1), xpMul: +(st.xpMul || 1),
+      set: st.set ? { label: st.set.label, pieces: st.set.pieces } : null,
+      skills: Object.fromEntries(Object.entries(s.skills || {}).map(([k, v]) => [k, (v && v.level) || 1])),
+      guild: g ? { tag: g.tag, color: g.color } : null,
+    }
+  },
 
   // --- trade P2P (ítems + oro; el server hace el swap atómico) ---
   tradeReq: null,            // { from, name } — pedido entrante (prompt)
@@ -1689,6 +1712,8 @@ export const storeApi = {
   // Trade P2P (Kintara #3): el loop de Pixi enruta los eventos de red y el tap a un jugador.
   requestTrade: (id, name) => useGameStore.getState().requestTrade(id, name),
   openPlayerMenu: (info) => useGameStore.getState().openPlayerMenu(info),
+  getPublicCard: () => useGameStore.getState().getPublicCard(),
+  onInspect: (m) => useGameStore.getState().onInspect(m),
   onTradeReq: (m) => useGameStore.getState().onTradeReq(m),
   onTradeOpen: (m) => useGameStore.getState().onTradeOpen(m),
   onTradeState: (m) => useGameStore.getState().onTradeState(m),

@@ -367,6 +367,16 @@ wss.on('connection', (ws) => {
           return rooms.setGfx(conn.playerId, m.gfx)
         }
 
+        case 'setcard': {    // tarjeta pública del jugador (lo que ven al inspeccionarlo)
+          if (conn.playerId == null) return
+          return rooms.setCard(conn.playerId, m.card)
+        }
+
+        case 'inspect': {    // pedir la tarjeta pública de otro jugador (sólo si lo ves)
+          if (conn.playerId == null) return
+          return send({ t: 'inspect', ...rooms.inspectCard(conn.playerId, m.id) })
+        }
+
         case 'php': {        // vida del jugador (para su barra que ven los demás)
           if (conn.playerId == null) return
           return rooms.playerHp(conn.playerId, m.hp, m.hpMax)

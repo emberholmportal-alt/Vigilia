@@ -275,6 +275,15 @@ html, body, #root {
 .pm-hpbar { height: 8px; border-radius: 3px; background: #1a1510; overflow: hidden; border: 1px solid #0c0a08; box-shadow: inset 0 0 4px rgba(0,0,0,0.6); }
 .pm-hpbar i { display: block; height: 100%; background: linear-gradient(90deg, #8f2f26, #c8463c); }
 .pm-close { display: block; margin: 12px auto 0; background: transparent; border: 0; color: #9a8a6a; font-size: 12px; cursor: pointer; text-decoration: underline; font-family: 'BonaNova', Georgia, serif; }
+/* Inspeccionar jugador: tarjeta pública (sección, set/hallazgo en verde, gremio, skills con barra) */
+.pm-guild { font-family: 'BonaNova', Georgia, serif; font-weight: 700; margin-right: 5px; }
+.pm-good { color: #8fce7a !important; }
+.pm-sec { font-family: 'BonaNova', Georgia, serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: #9c7a2e; margin: 8px 0 1px; padding-top: 6px; border-top: 1px solid rgba(156, 122, 46, 0.22); }
+.pm-skill { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #c2b189; }
+.pm-skill-nm { flex: 0 0 82px; }
+.pm-skill-bar { flex: 1; height: 6px; border-radius: 3px; background: #1a1510; overflow: hidden; border: 1px solid #0c0a08; }
+.pm-skill-bar i { display: block; height: 100%; background: linear-gradient(90deg, #6b8f3a, #9ece5a); }
+.pm-skill-lv { flex: 0 0 22px; text-align: right; color: #ece0c4; font-variant-numeric: tabular-nums; }
 
 /* Mercado (Kintara #4) */
 .shop-market-btn { font-size: 12px !important; padding: 4px 10px !important; }
