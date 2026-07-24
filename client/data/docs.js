@@ -247,7 +247,10 @@ export const DOCS = {
             id: 'quests', title: 'Misiones y diarias',
             blocks: [
               { p: 'Cada día hay tres misiones diarias (matar X enemigos, juntar X hierbas, vencer al élite del día). Se renuevan a medianoche del servidor y conservan el progreso si es el mismo día. Dan XP, oro y sellos.' },
-              { p: 'Los sellos son la moneda especial: se gastan en cofres de sello (loot mejor) y en ofrendas. Además hay una quest narrativa, los Tres Nombres, que despierta a los Guardianes.' },
+              { p: 'Los sellos son la moneda especial: se gastan en cofres de sello (loot mejor) y en ofrendas.' },
+              { h: 'Aventuras (quests narrativas)' },
+              { p: 'Aparte de las diarias, ciertos NPCs con nombre te abren aventuras: líneas narrativas que cruzan varias zonas del mundo. Se anotan solas en tu registro; vas cumpliendo etapas (llegar a una zona, encontrar algo, volver con quien te la dio) y al cerrarlas ganás XP, oro y sellos, una sola vez.' },
+              { p: 'Son de una sola vez y el servidor valida la recompensa (no se re-reclaman). Hoy hay tres hilos entrelazados que tejen la historia de los Tres y de la Caída — quién los da y adónde llevan, lo descubrís hablando y explorando.' },
             ],
           },
           {
@@ -669,7 +672,10 @@ export const DOCS = {
             id: 'quests', title: 'Quests & dailies',
             blocks: [
               { p: 'Each day there are three daily quests (kill X enemies, gather X herbs, defeat the day\'s elite). They refresh at server midnight and keep progress within the same day. They grant XP, gold and seals.' },
-              { p: 'Seals are the special currency: spend them on seal chests (better loot) and on offerings. There is also a story quest, the Three Names, that wakes the Guardians.' },
+              { p: 'Seals are the special currency: spend them on seal chests (better loot) and on offerings.' },
+              { h: 'Adventures (story quests)' },
+              { p: 'Apart from the dailies, certain named NPCs open adventures: storylines that cross several zones of the world. They track themselves in your journal; you clear stages (reach a zone, find something, return to whoever gave it) and on completion you earn XP, gold and seals, once.' },
+              { p: 'They are one-time and the server validates the reward (no re-claiming). Today there are three intertwined threads weaving the story of the Three and the Fall — who gives them and where they lead, you discover by talking and exploring.' },
             ],
           },
           {

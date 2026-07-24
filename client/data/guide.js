@@ -36,6 +36,14 @@ export const HOW_TO_PLAY = {
       ],
     },
     {
+      icon: 'Scroll', title: 'Aventuras',
+      body: [
+        'Algunos aldeanos no te dan un dato: te dan una historia. Hablales y te abren una aventura — una línea narrativa que cruza varias zonas del mundo.',
+        'Las aventuras se anotan solas en tu registro (el ícono del pergamino). Vas cumpliendo etapas —llegar a una ruina, encontrar algo, volver con quien te la dio— y al cerrarla ganás XP, oro y sellos.',
+      ],
+      tip: 'Prestá atención a los NPCs con nombre: casi siempre apuntan a algo real que podés ir a buscar.',
+    },
+    {
       icon: 'Boots', title: 'Viajar',
       body: [
         'Los dos arcos de Triston llevan a la Granja de Black Oak (recolección) y a la Cueva de Duendes (combate).',
@@ -117,6 +125,14 @@ export const HOW_TO_PLAY = {
         'Leave town, kill, gather resources and loot chests.',
         'Come back, forge your gear at the Forge and brew potions at the Alchemy Table. Better gear takes you deeper.',
       ],
+    },
+    {
+      icon: 'Scroll', title: 'Adventures',
+      body: [
+        "Some villagers don't give you a tip: they give you a story. Talk to them and they open an adventure — a storyline that crosses several zones of the world.",
+        'Adventures track themselves in your journal (the scroll icon). You clear stages — reach a ruin, find something, return to whoever gave it — and on completion you earn XP, gold and seals.',
+      ],
+      tip: 'Pay attention to named NPCs: they almost always point to something real you can go and find.',
     },
     {
       icon: 'Boots', title: 'Travel',
