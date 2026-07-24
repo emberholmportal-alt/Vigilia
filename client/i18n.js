@@ -509,7 +509,8 @@ const DICT = {
   guild_contract_goblin: { es: 'Cazar {n} duendes', en: 'Hunt {n} goblins' },
   guild_contract_beast: { es: 'Abatir {n} bestias', en: 'Slay {n} beasts' },
   guild_contract_done: { es: '¡Contrato cumplido! +{n} de oro al pozo', en: 'Contract complete! +{n} gold to the vault' },
-  guild_contract_reward_hint: { es: 'Recompensa: +{n} de oro al gremio', en: 'Reward: +{n} guild gold' },
+  guild_contract_reward_hint: { es: 'Recompensa: +{n} de oro al gremio + sellos a los que aporten', en: 'Reward: +{n} guild gold + seals to contributors' },
+  guild_contract_seals: { es: '¡Contrato del gremio cumplido! +{n} sellos por tu aporte', en: 'Guild contract complete! +{n} seals for your part' },
   // depósito
   guild_tab_deposit: { es: 'Depósito', en: 'Deposit' },
   guild_deposit_locked: { es: 'El Depósito del Gremio se desbloquea al nivel {n}.', en: 'The Guild Deposit unlocks at level {n}.' },

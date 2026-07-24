@@ -562,6 +562,23 @@ export function setGuildTag(id, tag) {
   broadcast(p.map, p.ch, { t: 'gtag', id, tag: p.guildTag }, null)
 }
 export function notify(id, msg) { const p = players.get(id); if (p) p.send(msg) }             // empujar un mensaje a un jugador visible
+function onlineByAccount(accountId) { for (const p of players.values()) if (p.accountId === accountId) return p; return null }
+// Otorga la recompensa individual de un contrato de gremio completado (sellos a cada contribuyente).
+// Los ONLINE se actualizan por su estado vivo (p.seals + flush diferido) y reciben aviso; los OFFLINE
+// se persisten leyendo su saldo actual. Así no se pisa el saldo vivo de nadie.
+async function grantContractRewards(r) {
+  if (!r || !Array.isArray(r.rewards)) return
+  for (const rw of r.rewards) {
+    if (!rw || !rw.accountId || !(rw.seals > 0)) continue
+    const on = onlineByAccount(rw.accountId)
+    if (on) {
+      on.seals = (on.seals || 0) + rw.seals; on._sealsDirty = true
+      on.send({ t: 'seals', seals: on.seals, add: rw.seals, reason: 'guild_contract' })
+    } else {
+      try { const ch = await db.loadCharacter(rw.accountId); const cur = Math.floor(Number(ch?.data?.seals) || 0); await db.setCharacterSeals(rw.accountId, cur + rw.seals) } catch {}
+    }
+  }
+}
 // Difunde a los jugadores ONLINE cuya cuenta está en `accountIds` (chat de gremio, sin importar mapa).
 export function guildBroadcast(accountIds, msg) {
   const set = accountIds instanceof Set ? accountIds : new Set(accountIds)
@@ -929,6 +946,7 @@ combat.init({
   grantLoot: (id, drops) => grantLoot(id, drops),                           // ítems de loot (kill), autoritativos
   missionTick: (id, type, map, n) => missionTick(id, type, map, n),         // avance de misiones autoritativo
   recordBoss: (id, map) => recordBoss(id, map),                             // hazaña: jefe permanente derrotado
+  guildContractDone: (r) => grantContractRewards(r),                        // recompensa a los que aportaron al contrato
 })
 combat.start()
 

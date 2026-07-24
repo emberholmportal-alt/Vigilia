@@ -121,7 +121,9 @@ No son un chat con nombre. Son una estructura con la que el mundo interactúa:
   **Prestigio (n6–n10):** +10% oro (n6), contrato ×1.5 (n7), +10% XP (n8), +8 defensa (n9),
   contrato ×2 (n10). Pasado n10 el nivel sigue subiendo como prestigio puro (sólo ranking).
 - **Contratos de gremio:** misiones semanales que requieren aporte de varios miembros
-  ("el gremio debe matar 200 no-muertos"). Progreso compartido y visible.
+  ("el gremio debe matar 200 no-muertos"). Progreso compartido y visible. Al completarse: oro al
+  pozo del gremio **y sellos a cada contribuyente** (proporcional a su aporte, con piso/techo,
+  online u offline). Colaborar rinde en lo colectivo y en lo individual.
 - **Ranking** público en la Casa de Gremios y en la hoja de personaje, ordenado por el
   **Poder del gremio** (no sólo oro donado): `Σniveles×10 + promedio×30 + miembros×10 +
   nivelGremio×40 + ⌊donado/500⌋`. Cinco ejes, **todos sin tope**: fuerza (suma de niveles de

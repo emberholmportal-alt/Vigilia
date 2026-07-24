@@ -41,6 +41,10 @@ export function nextThreshold(level) {
 // recibe una recompensa colectiva (oro al pozo -> sube el nivel).
 export const NEED_DEPOSIT_LEVEL = 4   // el Depósito se desbloquea a nivel 4 (WORLD.md)
 const CONTRACT_REWARD = 2500          // oro al pozo del gremio al completar (empuja el nivel)
+// Sellos a CADA contribuyente al completar el contrato, proporcional a sus kills (con piso y techo).
+// Premia participar: no sólo el pozo del gremio, también el bolsillo del que aportó.
+const CONTRACT_SEAL_BASE = 4
+export function contribSeals(kills) { return Math.max(3, Math.min(15, CONTRACT_SEAL_BASE + Math.floor((kills | 0) / 4))) }
 
 const CONTRACTS = [
   { id: 'undead', target: 120, match: (c) => /zombie|undead|skeleton|ghoul|ghost|wraith/i.test(c || '') },
@@ -110,7 +114,14 @@ export async function onKill(accountId, category) {
     const reward = Math.round(CONTRACT_REWARD * guildContractMul(g.level))   // prestigio n7/n10
     const newDonated = (Number(g.donated) || 0) + reward
     await db.addGuildDonation(guildId, reward, levelForDonated(newDonated))
-    return { guildId, completed: true, reward }
+    // Recompensa individual a los que aportaron kills ESTA semana (sellos, proporcional al aporte).
+    // No la otorga acá: la devuelve para que rooms la aplique (los online por su estado vivo, así no
+    // se pisan los sellos; los offline los persiste). Ver rooms.grantContractRewards.
+    const mem = await db.guildMembers(guildId)
+    const rewards = mem
+      .filter((m) => m.contract_week === wc.week && (m.contract_kills | 0) > 0)
+      .map((m) => ({ accountId: m.account_id, name: m.username, seals: contribSeals(m.contract_kills) }))
+    return { guildId, completed: true, reward, rewards }
   }
   return { guildId, progress }
 }

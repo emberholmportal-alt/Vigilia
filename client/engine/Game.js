@@ -401,7 +401,10 @@ export class Game {
     net.on('copen', (m) => this._onCopen(m))
     net.on('cloot', (m) => this._onCloot(m))
     net.on('gold', (m) => this._onGold(m))   // oro autoritativo del server (faucet kill/cofre)
-    net.on('seals', (m) => { if (typeof m.seals === 'number') this.store.setSeals(m.seals) })   // sellos autoritativos
+    net.on('seals', (m) => {   // sellos autoritativos
+      if (typeof m.seals === 'number') this.store.setSeals(m.seals)
+      if (m.reason === 'guild_contract' && m.add > 0) this.store.showToast(tt('guild_contract_seals', { n: m.add }))
+    })
     net.on('inv', (m) => this.store.mirrorInv(m.inv))   // bag autoritativo del server (Fase A.2)
     // Trade P2P (Kintara #3): pedido / apertura / estado / cierre / cancelación -> store.
     net.on('inspect', (m) => this.store.onInspect(m))   // tarjeta pública de otro jugador (respuesta a inspect)

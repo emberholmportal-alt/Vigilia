@@ -319,7 +319,7 @@ export const DOCS = {
             id: 'guild-contracts', title: 'Contratos semanales',
             blocks: [
               { p: 'Cada semana el gremio recibe un contrato compartido: un objetivo grande (purgar no-muertos, cazar duendes o abatir bestias). Cada miembro que mata enemigos de esa categoría suma al progreso común y visible.' },
-              { p: 'Al completarlo, el gremio recibe una recompensa colectiva de oro al pozo, que empuja su nivel. El contrato se renueva cada semana (el mismo para todos).' },
+              { p: 'Al completarlo, el gremio recibe una recompensa colectiva de oro al pozo, que empuja su nivel. Además, cada miembro que aportó kills esta semana gana sellos, proporcional a su aporte (con piso y techo): colaborar rinde también en lo individual, estés online u offline cuando se complete. El contrato se renueva cada semana (el mismo para todos).' },
             ],
           },
           {
@@ -741,7 +741,7 @@ export const DOCS = {
             id: 'guild-contracts', title: 'Weekly contracts',
             blocks: [
               { p: 'Each week the guild receives a shared contract: a big goal (purge undead, hunt goblins or slay beasts). Every member who kills enemies of that category adds to the shared, visible progress.' },
-              { p: 'On completion, the guild gets a collective gold reward to its vault, which pushes its level. The contract refreshes weekly (the same for everyone).' },
+              { p: 'On completion, the guild gets a collective gold reward to its vault, which pushes its level. On top of that, every member who contributed kills this week earns seals, proportional to their part (with a floor and a cap): contributing pays off individually too, whether you are online or offline when it completes. The contract refreshes weekly (the same for everyone).' },
             ],
           },
           {

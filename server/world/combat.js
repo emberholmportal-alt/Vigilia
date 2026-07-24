@@ -562,7 +562,9 @@ function killEnemy(w, e, killerId) {
   const killer = ctx.getPlayer && ctx.getPlayer(killerId)
   if (killer && killer.accountId) {
     const cat = (e.sp && e.sp.category) || e.s
-    guilds.onKill(killer.accountId, cat).catch(() => {})
+    guilds.onKill(killer.accountId, cat)
+      .then((r) => { if (r && r.completed && r.rewards && ctx.guildContractDone) ctx.guildContractDone(r) })
+      .catch(() => {})
   }
 }
 
