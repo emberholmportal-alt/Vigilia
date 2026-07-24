@@ -26,6 +26,14 @@ export const ZONE_REVEALS = {
   fort_amir: { quest: 'diario', gate: 'd_init', done: 'd_finish', flag: 'd_p3',
     name: 'Fragmento del diario de Aldwin: «El Fuerte cayó al alba. Soy el último. Si alguien lee esto: los Tres no se sellaron. Se escondieron.»',
     name_en: "A page of Aldwin's journal: “The Fort fell at dawn. I am the last. If anyone reads this: the Three did not seal themselves. They hid.”" },
+  // "Bajo la Torre": el descenso real bajo Black Oak City — la Torre del Mago y el Inframundo que
+  // se abrió debajo. Se revela al LLEGAR a cada zona (online y offline).
+  wizards_tower_1: { quest: 'torre', gate: 't_init', done: 't_finish', flag: 't_p1',
+    name: 'Bajo la Torre del Mago, la escalera sigue más allá de donde la piedra debería terminar. Los Tres cavaron hacia abajo antes de "sellarse".',
+    name_en: 'Beneath the Wizard\'s Tower, the stair goes on past where the stone should end. The Three dug downward before they "sealed" themselves.' },
+  underworld: { quest: 'torre', gate: 't_init', done: 't_finish', flag: 't_p2',
+    name: 'El Inframundo no fue cavado por manos: se abrió. En las paredes hay marcas de estudio recientes. Algo, acá abajo, sigue trabajando.',
+    name_en: 'The Underworld was not dug by hands: it opened. On the walls, marks of recent study. Something, down here, is still working.' },
 }
 
 export const QUESTS = [
@@ -68,6 +76,23 @@ export const QUESTS = [
       { req: ['d_init', 'd_p1', 'd_p2', 'd_p3'], not: ['d_finish'],
         text: 'Llevá los tres fragmentos al viejo Garrick, en Triston.',
         text_en: 'Bring the three fragments to Old Garrick, in Triston.' },
+    ],
+  },
+  {
+    id: 'torre',
+    name: 'Bajo la Torre', name_en: 'Beneath the Tower',
+    complete: 't_finish',
+    reward: { xp: 380, gold: 280, seals: 15 },
+    stages: [
+      { req: ['t_init'], not: ['t_p1'],
+        text: 'Bajá a la Torre del Mago, al fondo de las avenidas de Black Oak City.',
+        text_en: 'Descend into the Wizard\'s Tower, at the end of the Black Oak City avenues.' },
+      { req: ['t_init', 't_p1'], not: ['t_p2'],
+        text: 'Seguí bajando: cruzá al Inframundo que se abrió bajo la Torre.',
+        text_en: 'Keep going down: cross into the Underworld that opened beneath the Tower.' },
+      { req: ['t_init', 't_p1', 't_p2'], not: ['t_finish'],
+        text: 'Volvé con el Centinela Aldric, en Black Oak City, con lo que viste.',
+        text_en: 'Return to Sentinel Aldric, in Black Oak City, with what you saw.' },
     ],
   },
 ]

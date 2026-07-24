@@ -347,6 +347,12 @@ export class Game {
       this.store.showToast(tt('journal_found'))
       this.store.logMessage({ channel: 'sistema', text: frag })
     }
+    // Quest "Bajo la Torre": el descenso se revela al LLEGAR a la Torre y al Inframundo.
+    const sign = this.store.revealForZone(mapName, { quest: 'torre' })
+    if (sign) {
+      this.store.showToast(tt('tower_sign'))
+      this.store.logMessage({ channel: 'sistema', text: sign })
+    }
     this._loading = false
 
     // Online: anunciar el mapa y ESPERAR el 'present' (entrar al canal poblado) antes de soltar el
