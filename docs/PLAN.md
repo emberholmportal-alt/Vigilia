@@ -142,6 +142,17 @@ distinguen por la armadura.
 Trade P2P entre jugadores · casa de subastas en oro · marketplace oro↔$VEL (no-custodial, dormido) ·
 wallet Sign-In-With-Solana · selección de servidor · economía de sellos + ofrendas.
 
+**Gremios (expansión social):** rangos (fundador/oficial/miembro) · invitaciones (tocando a un
+jugador) · expulsar/transferir/herencia del liderazgo · chat de gremio · aporte por miembro ·
+ranking por **Poder** (5 ejes sin tope: Σniveles, promedio, miembros, nivel de gremio, oro donado) ·
+nivel de gremio sin tope (prestigio pasado n5).
+
+**Social/mundo:** ficha pública al inspeccionar a otro jugador · hazañas (jefes derrotados +
+zona más profunda), server-autoritativas y persistidas · estamina al correr.
+
+**Mundo:** 40 mapas conectados y sellados (sin fugas a mapas sin terminar) · spawn/nivel
+corregidos por mapa · docs in-game (Cómo Jugar + Documentación) bilingües.
+
 ## Lo que NO hacemos todavía
 
 PvP · Arena · crafteo profundo · monturas · raids · pool colaborativo de gremio.
