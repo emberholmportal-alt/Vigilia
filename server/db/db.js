@@ -232,6 +232,18 @@ export async function allCharacters() {
   return Object.entries(file.chars || {}).map(([aid, ch]) => ({ accountId: Number(aid), data: (ch && ch.data) || {} }))
 }
 
+// Datos mínimos de TODOS los personajes para el Salón de la Fama: nombre, raza, XP (para el nivel)
+// y hazañas persistidas. No trae el blob entero para no arrastrar inventarios enteros.
+export async function allCharacterVitals() {
+  if (pg) {
+    const r = await pg.query(`SELECT name, race, (data->>'xp') AS xp, data->'_feats' AS feats FROM characters`)
+    return r.rows.map((x) => ({ name: x.name, race: x.race, xp: Number(x.xp) || 0, feats: x.feats || null }))
+  }
+  return Object.values(file.chars || {}).map((ch) => ({
+    name: ch.name, race: ch.race, xp: Number(ch.data?.xp) || 0, feats: (ch.data && ch.data._feats) || null,
+  }))
+}
+
 // ---------- Gremios ----------
 // El oro de fundación/donación lo descuenta el server del blob persistido del personaje
 // (la única fuente de verdad del oro), no del cliente. Ver server/systems/guilds.js.

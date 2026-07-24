@@ -1151,6 +1151,16 @@ export const useGameStore = create((set, get) => ({
     try { await net.save(s.playerName, s.race?.id, snapshot(s)) } catch {}
   },
   openGuild: () => { set({ panel: 'guild', guildError: '' }); get().refreshGuild() },
+  // Salón de la Fama: rankings públicos de jugadores (nivel / jefes / zona más profunda).
+  hallData: null,
+  hallBusy: false,
+  openHall: () => { set({ panel: 'hall' }); get().requestHall() },
+  requestHall: async () => {
+    if (!ONLINE || !net.connected) { set({ hallData: null }); return }
+    set({ hallBusy: true })
+    try { const r = await net.hall(25); set({ hallData: r, hallBusy: false }) }
+    catch { set({ hallBusy: false }) }
+  },
   refreshGuild: async () => {
     if (!ONLINE || !net.connected) { set({ guild: null, guildRole: null, guildMembers: [], guildRanking: [] }); return }
     set({ guildBusy: true })

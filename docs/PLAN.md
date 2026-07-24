@@ -148,7 +148,8 @@ ranking por **Poder** (5 ejes sin tope: Σniveles, promedio, miembros, nivel de 
 nivel de gremio sin tope (prestigio pasado n5).
 
 **Social/mundo:** ficha pública al inspeccionar a otro jugador · hazañas (jefes derrotados +
-zona más profunda), server-autoritativas y persistidas · estamina al correr.
+zona más profunda), server-autoritativas y persistidas · **Salón de la Fama** (ranking de todos
+los jugadores por nivel / jefes / profundidad) · estamina al correr.
 
 **Mundo:** 40 mapas conectados y sellados (sin fugas a mapas sin terminar) · spawn/nivel
 corregidos por mapa · docs in-game (Cómo Jugar + Documentación) bilingües.

@@ -20,6 +20,7 @@ import { isVendorItem } from '../../shared/shop.js'
 import { dailyMissions, todayStr } from '../../shared/missions.js'
 import { rollLoot } from '../../shared/loot.js'
 import { recipeByOut } from '../../shared/alchemy.js'
+import { playerLevelFromXp } from '../../shared/progression.js'
 
 const GRAVE_FRACTION = 0.25   // fracción del oro que soltás al morir (coincide con GRAVE_GOLD_FRACTION del cliente)
 
@@ -642,6 +643,25 @@ export function enterZone(id, map) {
   const p = players.get(id); if (!p || !p.feats) return
   const lv = MAP_LEVEL[map] || 0
   if (lv > (p.feats.deepest.level || 0)) { p.feats.deepest = { level: lv, map }; persistFeats(p); sendFeats(p) }
+}
+
+// Salón de la Fama: rankings públicos de TODOS los personajes (online y offline), sobre datos
+// server-autoritativos (nivel derivado del XP, hazañas persistidas). Tres tablas: por nivel, por
+// jefes derrotados y por zona más profunda alcanzada. El límite lo acotamos server-side.
+export async function hallOfFame(limit = 20) {
+  const lim = Math.max(1, Math.min(50, (limit | 0) || 20))
+  const rows = await db.allCharacterVitals()
+  const list = rows.filter((r) => r.name).map((r) => {
+    const f = normalizeFeats(r.feats)
+    return { name: r.name, race: r.race || null, level: playerLevelFromXp(r.xp), bosses: f.bosses.length, deepest: f.deepest }
+  })
+  const top = (arr, cmp) => [...arr].sort(cmp).slice(0, lim)
+  return {
+    ok: true, bossTotal: combat.bossTotal(),
+    byLevel: top(list, (a, b) => b.level - a.level || b.bosses - a.bosses),
+    byBosses: top(list.filter((x) => x.bosses > 0), (a, b) => b.bosses - a.bosses || b.level - a.level),
+    byDeepest: top(list.filter((x) => x.deepest.level > 0), (a, b) => b.deepest.level - a.deepest.level || b.level - a.level),
+  }
 }
 // Persiste el oro autoritativo al personaje (al salir). setCharacterGold preserva el resto del blob.
 async function persistGold(p) {

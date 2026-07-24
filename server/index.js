@@ -220,6 +220,9 @@ wss.on('connection', (ws) => {
         case 'guild_list': {   // ranking público
           return send({ t: 'guild_list', ...(await guilds.ranking(m.limit)) })
         }
+        case 'hall': {   // Salón de la Fama: rankings públicos de jugadores (nivel/jefes/profundidad)
+          return send({ t: 'hall', ...(await rooms.hallOfFame(m.limit)) })
+        }
         case 'guild_create': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
           const r = await guilds.create(conn.accountId, { name: m.name, tag: m.tag, color: m.color })

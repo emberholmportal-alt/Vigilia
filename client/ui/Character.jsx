@@ -32,6 +32,7 @@ export default function Character() {
   const guildRole = useGameStore((s) => s.guildRole)
   const guildRanking = useGameStore((s) => s.guildRanking)
   const refreshGuild = useGameStore((s) => s.refreshGuild)
+  const openHall = useGameStore((s) => s.openHall)
   const t = useT()
   // Refrescá membresía + ranking al abrir la hoja (el server es autoritativo). Los datos ya
   // vienen cacheados del arranque, así que esto sólo los mantiene frescos, no bloquea la UI.
@@ -141,6 +142,12 @@ export default function Character() {
               </>
             )}
           </div>
+
+          <button className="char-hall-btn" onClick={openHall}>
+            <span className="char-hall-ic">♛</span>
+            <span>{t('hof_open')}</span>
+            <span className="char-hall-cta">›</span>
+          </button>
         </div>
       </div>
     </div>
