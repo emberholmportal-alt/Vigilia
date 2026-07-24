@@ -107,12 +107,20 @@ verse distinta.
 No son un chat con nombre. Son una estructura con la que el mundo interactúa:
 
 - **Fundar** cuesta 500 oro. Nombre + sigla de 3 letras + estandarte (color elegible).
-- **Nivel de gremio** sube con oro donado y misiones de gremio completadas.
+  Fundar y gestionar es sólo con Halvard (el NPC); no hay atajo para crear gremios.
+- **Rangos:** fundador > oficial > miembro. Fundador y oficiales **invitan** (tocando a un
+  jugador cercano) y **expulsan**; el fundador asciende/desciende oficiales y **transfiere** el
+  liderazgo. Al salir el fundador, hereda el miembro más antiguo. Chat de gremio propio.
+- **Nivel de gremio** sube con oro donado y contratos completados.
 - **Ventajas por nivel:** +oro de botín (n1), +defensa a todos (n2), +XP compartida (n3),
   acceso al **Depósito del Gremio** (n4), estandarte visible sobre la cabeza en ciudad (n5).
 - **Contratos de gremio:** misiones semanales que requieren aporte de varios miembros
   ("el gremio debe matar 200 no-muertos"). Progreso compartido y visible.
-- **Ranking** público en la Casa de Gremios. La competencia es contenido gratis.
+- **Ranking** público en la Casa de Gremios y en la hoja de personaje, ordenado por el
+  **Poder del gremio** (no sólo oro donado): `Σniveles×10 + promedioNivel×20 + nivelGremio×40
+  + ⌊Σoro/2000⌋`. Mezcla fuerza (niveles de miembros), calidad (promedio), progreso
+  institucional (nivel del gremio) y riqueza (oro de todos). Todo server-autoritativo. La
+  competencia es contenido gratis.
 
 ---
 

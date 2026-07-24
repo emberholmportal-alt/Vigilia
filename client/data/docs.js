@@ -201,6 +201,15 @@ export const DOCS = {
               { p: 'Tres ramas gateadas por un atributo: Guerrero (FUE), Cazador (DES) y Mago (INT). Los nodos son pasivos y suben stats derivados; cada vía además desbloquea una habilidad activa para el botón M2. Podés reespecializar pagando oro.' },
             ],
           },
+          {
+            id: 'inspect', title: 'Inspeccionar jugadores y hazañas',
+            blocks: [
+              { p: 'Tocá a otro jugador para ver su ficha pública: nivel, raza, vida y maná, daño y defensa, el conjunto que lleva equipado, su gremio y sus hazañas. Es una tarjeta de sólo lectura que arma el servidor; no revela inventario ni oro.' },
+              { h: 'Hazañas' },
+              { p: 'Cada personaje acumula hazañas server-autoritativas: los jefes que derrotó (sobre el total del mundo) y la zona más profunda a la que llegó. Se ven en tu hoja de personaje y en la ficha pública de cualquier jugador, y quedan guardadas entre sesiones.' },
+              { p: 'Correr consume estamina (la barra bajo los globos): sirve para ráfagas cortas, no para cruzar el mundo a la carrera. Se regenera sola al caminar o parar.' },
+            ],
+          },
         ],
       },
       {
@@ -263,9 +272,23 @@ export const DOCS = {
           {
             id: 'guild-basics', title: 'Fundar y unirse',
             blocks: [
-              { p: 'Un gremio es una estructura persistente con nombre, sigla de tres letras y estandarte, compartida entre todos los que juegan. Hablás con Halvard en la Casa de Gremios.' },
-              { list: ['Fundar — cuesta 500 de oro; elegís nombre, sigla (3 letras) y color de estandarte. Quedás como fundador.', 'Unirse — en la pestaña Ranking ves los gremios públicos ordenados por nivel; tocás "Unirme".'] },
-              { p: 'Un gremio por cuenta. Podés salir cuando quieras; si eras el último, el gremio se disuelve.' },
+              { p: 'Un gremio es una estructura persistente con nombre, sigla de tres letras y estandarte, compartida entre todos los que juegan. Fundar, unirse y gestionar se hace sólo con Halvard, el Maestro de Gremios, en la Casa de Gremios.' },
+              { list: ['Fundar — cuesta 500 de oro; elegís nombre, sigla (3 letras) y color de estandarte. Quedás como fundador.', 'Unirse — en la pestaña Ranking ves los gremios públicos ordenados por Poder; tocás "Unirme". También te pueden invitar (ver abajo).'] },
+              { p: 'Un gremio por cuenta. Podés salir cuando quieras; si eras el último, el gremio se disuelve; si eras el fundador y quedan otros, el liderazgo pasa al miembro más antiguo.' },
+              { tip: 'En la hoja de personaje (pestaña de gremio) ves a qué gremio pertenecés, tu rango y el ranking completo sin ir hasta el NPC. Fundar y gestionar siguen siendo sólo con Halvard.' },
+            ],
+          },
+          {
+            id: 'guild-roles', title: 'Rangos, invitaciones y chat',
+            blocks: [
+              { p: 'Dentro del gremio hay tres rangos: fundador, oficial y miembro.' },
+              { list: [
+                'Invitar — el fundador y los oficiales invitan a jugadores: tocás a un jugador cercano y elegís "Invitar al gremio". Le llega un aviso que acepta o rechaza (caduca a los 2 minutos). No se puede invitar a alguien que ya está en un gremio.',
+                'Roles — el fundador asciende miembros a oficial y los desciende. Los oficiales ayudan a invitar y expulsar.',
+                'Expulsar — el fundador y los oficiales expulsan miembros; nadie expulsa al fundador y un oficial no expulsa a otro oficial.',
+                'Transferir — el fundador puede pasarle el liderazgo a otro miembro.',
+              ] },
+              { p: 'El gremio tiene su propio canal de chat: los mensajes llegan a todos los miembros conectados, estén donde estén en el mundo. En el roster ves el aporte de cada miembro (oro donado y kills del contrato de la semana).' },
             ],
           },
           {
@@ -289,6 +312,21 @@ export const DOCS = {
             blocks: [
               { p: 'Cada semana el gremio recibe un contrato compartido: un objetivo grande (purgar no-muertos, cazar duendes o abatir bestias). Cada miembro que mata enemigos de esa categoría suma al progreso común y visible.' },
               { p: 'Al completarlo, el gremio recibe una recompensa colectiva de oro al pozo, que empuja su nivel. El contrato se renueva cada semana (el mismo para todos).' },
+            ],
+          },
+          {
+            id: 'guild-ranking', title: 'Ranking y Poder del gremio',
+            blocks: [
+              { p: 'El ranking público no premia sólo el oro donado: ordena los gremios por su Poder, un puntaje que mezcla el tamaño, la fuerza y la riqueza de sus miembros. Así gana el gremio más fuerte, no el más numeroso.' },
+              { p: 'El Poder combina cuatro cosas, todas server-autoritativas (no se pueden inflar desde el cliente):' },
+              { list: [
+                'Suma de niveles de personaje de todos los miembros (fuerza colectiva).',
+                'Promedio de nivel de los miembros (calidad: castiga llenar el gremio de personajes nivel 1).',
+                'Nivel del gremio, que sale del oro donado al pozo (progreso institucional).',
+                'Suma del oro actual de todos los miembros (riqueza colectiva).',
+              ] },
+              { p: 'La fórmula es: Poder = Σniveles×10 + promedio×20 + nivelGremio×40 + ⌊Σoro / 2000⌋. En empate, desempata el nivel del gremio y luego la antigüedad.' },
+              { p: 'Cada fila del ranking muestra el Poder y su desglose (miembros, suma y promedio de nivel, oro total), tanto en la Casa de Gremios como en la hoja de personaje.' },
             ],
           },
           {
@@ -576,6 +614,15 @@ export const DOCS = {
               { p: 'Three branches gated by an attribute: Warrior (STR), Hunter (DEX) and Mage (INT). Nodes are passive and raise derived stats; each path also unlocks an active ability for the M2 button. You can respec by paying gold.' },
             ],
           },
+          {
+            id: 'inspect', title: 'Inspecting players & feats',
+            blocks: [
+              { p: 'Tap another player to see their public card: level, race, health and mana, damage and defense, the set they have equipped, their guild and their feats. It is a read-only card built by the server; it never reveals inventory or gold.' },
+              { h: 'Feats' },
+              { p: 'Every character accrues server-authoritative feats: the bosses they have defeated (out of the world total) and the deepest zone they have reached. They show on your character sheet and on any player’s public card, and persist between sessions.' },
+              { p: 'Running drains stamina (the bar under the globes): it is for short bursts, not for crossing the world at a sprint. It regenerates on its own while walking or standing still.' },
+            ],
+          },
         ],
       },
       {
@@ -638,9 +685,23 @@ export const DOCS = {
           {
             id: 'guild-basics', title: 'Found & join',
             blocks: [
-              { p: 'A guild is a persistent structure with a name, a three-letter tag and a banner, shared across everyone who plays. You talk to Halvard at the Guild Hall.' },
-              { list: ['Found — costs 500 gold; you choose a name, tag (3 letters) and banner color. You become the founder.', 'Join — in the Ranking tab you see the public guilds ordered by level; tap "Join".'] },
-              { p: 'One guild per account. You can leave whenever you want; if you were the last, the guild disbands.' },
+              { p: 'A guild is a persistent structure with a name, a three-letter tag and a banner, shared across everyone who plays. Founding, joining and managing happen only with Halvard, the Guildmaster, at the Guild Hall.' },
+              { list: ['Found — costs 500 gold; you choose a name, tag (3 letters) and banner color. You become the founder.', 'Join — in the Ranking tab you see the public guilds ordered by Power; tap "Join". You can also be invited (see below).'] },
+              { p: 'One guild per account. You can leave whenever you want; if you were the last, the guild disbands; if you were the founder and others remain, leadership passes to the oldest member.' },
+              { tip: 'Your character sheet (guild tab) shows which guild you belong to, your rank and the full ranking without walking to the NPC. Founding and managing still happen only with Halvard.' },
+            ],
+          },
+          {
+            id: 'guild-roles', title: 'Ranks, invites & chat',
+            blocks: [
+              { p: 'Inside a guild there are three ranks: founder, officer and member.' },
+              { list: [
+                'Invite — founders and officers invite players: tap a nearby player and pick "Invite to guild". They get a prompt to accept or decline (expires after 2 minutes). You cannot invite someone already in a guild.',
+                'Roles — the founder promotes members to officer and demotes them. Officers help invite and kick.',
+                'Kick — founders and officers kick members; no one kicks the founder and an officer cannot kick another officer.',
+                'Transfer — the founder can hand leadership to another member.',
+              ] },
+              { p: 'The guild has its own chat channel: messages reach every online member, wherever they are in the world. The roster shows each member’s contribution (gold donated and this week’s contract kills).' },
             ],
           },
           {
@@ -664,6 +725,21 @@ export const DOCS = {
             blocks: [
               { p: 'Each week the guild receives a shared contract: a big goal (purge undead, hunt goblins or slay beasts). Every member who kills enemies of that category adds to the shared, visible progress.' },
               { p: 'On completion, the guild gets a collective gold reward to its vault, which pushes its level. The contract refreshes weekly (the same for everyone).' },
+            ],
+          },
+          {
+            id: 'guild-ranking', title: 'Ranking & guild Power',
+            blocks: [
+              { p: 'The public ranking does not reward donated gold alone: it orders guilds by their Power, a score that blends the size, strength and wealth of their members. The strongest guild wins, not the biggest.' },
+              { p: 'Power combines four things, all server-authoritative (they cannot be faked from the client):' },
+              { list: [
+                'Sum of the character levels of every member (collective strength).',
+                'Average member level (quality: it punishes stuffing the guild with level-1 characters).',
+                'Guild level, which comes from gold donated to the pool (institutional progress).',
+                'Sum of the current gold of every member (collective wealth).',
+              ] },
+              { p: 'The formula is: Power = Σlevels×10 + average×20 + guildLevel×40 + ⌊Σgold / 2000⌋. Ties break by guild level, then by age.' },
+              { p: 'Each ranking row shows the Power and its breakdown (members, sum and average level, total gold), both at the Guild Hall and on the character sheet.' },
             ],
           },
           {

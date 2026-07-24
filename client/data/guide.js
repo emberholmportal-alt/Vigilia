@@ -70,9 +70,12 @@ export const HOW_TO_PLAY = {
     {
       icon: 'Shield', title: 'Gremios',
       body: [
-        'Hablá con Halvard para fundar un gremio (500 de oro, una sigla de tres letras) o unirte a uno del ranking.',
-        'Donás oro para subir su nivel y darle ventajas a todos los miembros. Cada semana hay un contrato compartido, y a nivel 4 se abre el Depósito común.',
+        'Hablá con Halvard, el Maestro de Gremios, para fundar uno (500 de oro, una sigla de tres letras) o unirte a otro. Fundar y gestionar se hace sólo con él.',
+        'Hay tres rangos: fundador, oficial y miembro. El fundador y los oficiales invitan (tocá a un jugador cercano y elegí "Invitar al gremio"), expulsan, y el fundador asciende oficiales o transfiere el liderazgo. El gremio tiene su propio canal de chat.',
+        'Donás oro al pozo para subir el nivel del gremio y darle ventajas a todos: más oro de botín, defensa, XP compartida, el Depósito común a nivel 4 y el estandarte a nivel 5. Cada semana hay un contrato compartido.',
+        'El ranking ordena por el Poder del gremio, que mezcla la suma y el promedio de nivel de sus miembros, el nivel del gremio y el oro de todos. Gana el más fuerte, no el más numeroso.',
       ],
+      tip: 'En la hoja de personaje ves a qué gremio pertenecés y el ranking completo, sin salir del pueblo.',
     },
     {
       icon: 'Coin', title: 'La economía',
@@ -150,9 +153,12 @@ export const HOW_TO_PLAY = {
     {
       icon: 'Shield', title: 'Guilds',
       body: [
-        'Talk to Halvard to found a guild (500 gold, a three-letter tag) or join one from the ranking.',
-        'Donate gold to raise its level and grant perks to every member. Each week there is a shared contract, and at level 4 the shared Deposit opens.',
+        'Talk to Halvard, the Guildmaster, to found one (500 gold, a three-letter tag) or join another. Founding and managing happen only with him.',
+        'There are three ranks: founder, officer and member. Founders and officers invite (tap a nearby player and pick "Invite to guild"), kick, and the founder promotes officers or transfers leadership. The guild has its own chat channel.',
+        'Donate gold to the pool to raise the guild level and grant perks to everyone: more loot gold, defense, shared XP, the shared Deposit at level 4 and the banner at level 5. Each week there is a shared contract.',
+        'The ranking is ordered by the guild Power, which blends the sum and average of member levels, the guild level, and everyone’s gold. The strongest guild wins, not the biggest.',
       ],
+      tip: 'Your character sheet shows which guild you belong to and the full ranking, without leaving town.',
     },
     {
       icon: 'Coin', title: 'The economy',
