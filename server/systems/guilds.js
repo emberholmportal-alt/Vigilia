@@ -152,16 +152,18 @@ export async function info(accountId, guildId) {
   return { ok: true, guild: pubGuild(g), members, mine: mem?.guild_id === id ? (mem.role || 'member') : null, you: accountId }
 }
 
-// Poder del gremio: cuatro ejes, todos server-autoritativos y SIN TOPE, así el ranking siempre
+// Poder del gremio: cinco ejes, todos server-autoritativos y SIN TOPE, así el ranking siempre
 // puede seguir subiendo.
-//   Poder = Σniveles×10 + miembros×20 + nivelGremio×30 + floor(donado/500)
+//   Poder = Σniveles×10 + promedioNivel×20 + miembros×20 + nivelGremio×30 + floor(donado/500)
 // - Σniveles: suma del nivel de personaje (experiencia) de cada miembro — fuerza colectiva.
+// - promedioNivel: nivel medio de los miembros — calidad del roster (no gana sólo por tamaño).
 // - miembros: cantidad de miembros — tamaño del gremio.
 // - nivelGremio: nivel institucional del gremio (ya sin tope: sube donando).
 // - donado: oro donado acumulado al pozo (sin techo).
 export function guildPower({ sumLevels = 0, members = 0, level = 1, donated = 0 }) {
+  const avg = members > 0 ? sumLevels / members : 0
   return Math.round(
-    Math.max(0, sumLevels) * 10 + Math.max(0, members) * 20 +
+    Math.max(0, sumLevels) * 10 + avg * 20 + Math.max(0, members) * 20 +
     Math.max(1, level) * 30 + Math.floor(Math.max(0, donated) / 500))
 }
 
@@ -176,6 +178,7 @@ export async function ranking(limit = 20) {
     const sumLevels = g.sumLevels | 0
     return {
       ...pubGuild(g), members, sumLevels,
+      avgLevel: members > 0 ? Math.round((sumLevels / members) * 10) / 10 : 0,
       power: guildPower({ sumLevels, members, level: g.level, donated: Number(g.donated) || 0 }),
     }
   })
