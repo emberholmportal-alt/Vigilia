@@ -451,6 +451,7 @@ export function setStats(pid, s) {
     crit: clampNum(s.crit, 60), defense: clampNum(s.defense, 3000),
     reach: clampNum(s.reach, 8) || 1.6,
     itemFind: clampNum(s.itemFind, 300),   // magic-find (acotado): mejora la rareza del loot de kills
+    goldMul: Math.max(1, Math.min(1.1, Number(s.goldMul) || 1)),   // +oro de botín del gremio (acotado a +10%)
     weaponKind: (s.weaponKind === 'ranged' || s.weaponKind === 'mental') ? s.weaponKind : 'melee',
   })
 }
@@ -538,7 +539,10 @@ function killEnemy(w, e, killerId) {
   ctx.broadcast(w.map, w.ch, { t: 'edie', i: e.i, by: killerId })
   // Oro AUTORITATIVO del servidor (Fase A): lo acredita el server (con una variación ±30% para que
   // se sienta vivo) y le manda el nuevo total al matador; el cliente sólo muestra la pila cosmética.
-  if (e.gold > 0 && ctx.awardGold) ctx.awardGold(killerId, Math.max(1, Math.round(e.gold * (0.7 + Math.random() * 0.6))), 'kill', e.x, e.y)
+  if (e.gold > 0 && ctx.awardGold) {
+    const gm = (pstats.get(killerId) || {}).goldMul || 1   // +oro de botín del gremio (ventaja n1, autoritativa)
+    ctx.awardGold(killerId, Math.max(1, Math.round(e.gold * (0.7 + Math.random() * 0.6) * gm)), 'kill', e.x, e.y)
+  }
   // Botín de ítems AUTORITATIVO (Fase A.2): el server tira el drop y lo otorga al bag del matador.
   const boss = !!e.boss || /boss|minotaur|elite/.test(e.s)   // jefe de zona (MAP_BOSS) también da loot de jefe
   const roll = rollMonsterDrop(e.lv, boss, (pstats.get(killerId) || {}).itemFind || 0)   // magic-find del matador (antes 0 online)

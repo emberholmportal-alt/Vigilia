@@ -225,6 +225,14 @@ export async function acceptInvite(accountId) {
 }
 export function declineInvite(accountId) { invites.delete(accountId); return { ok: true } }
 
+// Sigla del gremio de una cuenta (para el estandarte sobre la cabeza), o null.
+export async function tagOf(accountId) {
+  const mem = await db.getGuildMembership(accountId)
+  if (!mem) return null
+  const g = await db.getGuild(mem.guild_id)
+  return g ? g.tag : null
+}
+
 // Datos para difundir un mensaje al chat del gremio: la sigla + los ids de cuenta de todos los
 // miembros (para que rooms difunda a los que estén online). null si no está en un gremio.
 export async function chatInfo(accountId) {

@@ -197,7 +197,7 @@ export class Game {
       player.view.visible = false
       this._panKeys = new Set()   // teclas de pan sostenidas (WASD / flechas)
     } else {
-      player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'))
+      player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'), this.store.getGuildTag())
       this._nameLevel = this.store.getPlayerLevel()
       player.setBody(this.store.getBody())              // cuerpo elegido (male/female/female_dark)
       player.setRace(this.store.getRaceAppearance())    // tinte de piel + cabeza según la raza (antes del equipo)
@@ -378,7 +378,8 @@ export class Game {
     net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
     net.on('gfx', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGfx(m.gfx) })   // gear de otro jugador
     net.on('php', (m) => { const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax) })   // vida de otro jugador
-    net.on('plvl', (m) => { const r = this.remotes?.get(m.id); if (r) r.level = m.level })          // nivel de otro jugador
+    net.on('plvl', (m) => { const r = this.remotes?.get(m.id); if (r) r.setLevel(m.level) })          // nivel de otro jugador
+    net.on('gtag', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGuildTag(m.tag) })         // estandarte de gremio (n5)
     // Reconexión (clave en móvil): al caerse la red, net reintenta con backoff; al reabrir
     // el socket, re-autenticamos (resume) y reconstruimos el mapa actual (snapshots frescos).
     net.on('close', () => this.store.logMessage({ channel: 'sistema', text: tt('online_lost') }))
@@ -444,6 +445,7 @@ export class Game {
       defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
       level: st.level || 1,   // capacidad usable del bag autoritativo (parity con el HUD)
       itemFind: st.itemFind || 0,   // magic-find: el server lo usa al tirar el loot de kills
+      goldMul: st.guildGoldMul || 1,   // +oro de botín del gremio (ventaja n1): el server lo aplica al oro de kill
     })
     // Tarjeta pública (lo que ven los demás al inspeccionarme). Se reenvía junto con las stats.
     const card = this.store.getPublicCard()
@@ -513,7 +515,7 @@ export class Game {
 
   // Reetiqueta todo lo que dibuja el motor cuando cambia el idioma.
   _onLangChange() {
-    if (this.player && !this._spectator) this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'))
+    if (this.player && !this._spectator) this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'), this.store.getGuildTag())
     this.store.setMapTitle(zoneTitle(this.mapName))
     for (const p of (this.portals || [])) {
       const nl = zoneTitle(p.to, p.label)
@@ -2435,7 +2437,9 @@ export class Game {
       const fps = Math.round((this._fpsFrames * 1000) / this._fpsAccum)
       this.store.setFps(fps)
       const lvl = this.store.getPlayerLevel()
-      if (lvl !== this._nameLevel) { this._nameLevel = lvl; this.player.setName(this.store.getPlayerName(), lvl, this.store.getRaceName(), tt('lv')) }
+      if (lvl !== this._nameLevel) { this._nameLevel = lvl; this.player.setName(this.store.getPlayerName(), lvl, this.store.getRaceName(), tt('lv'), this.store.getGuildTag()) }
+      const gt = this.store.getGuildTag()
+      if (gt !== this._guildTag) { this._guildTag = gt; this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'), gt) }
       this.store.setDebug({
         tile: `${Math.round(this.player.tx)},${Math.round(this.player.ty)}`,
         visibleTiles: this.renderer.visibleTiles,

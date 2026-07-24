@@ -62,8 +62,8 @@ export class Player {
     this._bubbleText = ''
   }
 
-  setName(name, level, race, lvLabel = 'Nv') {
-    const parts = [name || '']
+  setName(name, level, race, lvLabel = 'Nv', guildTag = null) {
+    const parts = [(guildTag ? `[${guildTag}] ` : '') + (name || '')]
     if (race) parts.push(race)
     if (level) parts.push(lvLabel + ' ' + level)
     this.nameText.text = parts.join(' · ')

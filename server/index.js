@@ -222,15 +222,21 @@ wss.on('connection', (ws) => {
         }
         case 'guild_create': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
-          return send({ t: 'guild', ...(await guilds.create(conn.accountId, { name: m.name, tag: m.tag, color: m.color })) })
+          const r = await guilds.create(conn.accountId, { name: m.name, tag: m.tag, color: m.color })
+          if (r.ok && conn.playerId != null) rooms.setGuildTag(conn.playerId, r.guild?.tag || null)
+          return send({ t: 'guild', ...r })
         }
         case 'guild_join': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
-          return send({ t: 'guild', ...(await guilds.join(conn.accountId, { guildId: m.id, tag: m.tag })) })
+          const r = await guilds.join(conn.accountId, { guildId: m.id, tag: m.tag })
+          if (r.ok && conn.playerId != null) rooms.setGuildTag(conn.playerId, r.guild?.tag || null)
+          return send({ t: 'guild', ...r })
         }
         case 'guild_leave': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
-          return send({ t: 'guild', ...(await guilds.leave(conn.accountId)), left: true })
+          const r = await guilds.leave(conn.accountId)
+          if (r.ok && conn.playerId != null) rooms.setGuildTag(conn.playerId, null)
+          return send({ t: 'guild', ...r, left: true })
         }
         case 'guild_donate': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
@@ -258,7 +264,9 @@ wss.on('connection', (ws) => {
         }
         case 'guild_accept_invite': {   // aceptar la invitación pendiente
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
-          return send({ t: 'guild', ...(await guilds.acceptInvite(conn.accountId)) })
+          const r = await guilds.acceptInvite(conn.accountId)
+          if (r.ok && conn.playerId != null) rooms.setGuildTag(conn.playerId, r.guild?.tag || null)
+          return send({ t: 'guild', ...r })
         }
         case 'guild_decline_invite': {  // rechazar (silencioso)
           if (!conn.accountId) return
@@ -363,7 +371,7 @@ wss.on('connection', (ws) => {
           if (oldPid != null) await rooms.leaveFlush(oldPid)
           conn.playerId = null
           // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
-          let gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null
+          let gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null
           if (!m.spectator) {
             const ch = await db.loadCharacter(conn.accountId)
             gold = Math.floor(Number(ch?.data?.gold) || 0)
@@ -371,6 +379,7 @@ wss.on('connection', (ws) => {
             inv = ch?.data?.inventory || null
             qclaimed = Array.isArray(ch?.data?._qclaimed) ? ch.data._qclaimed : null
             feats = (ch?.data?._feats && typeof ch.data._feats === 'object') ? ch.data._feats : null   // hazañas server-owned
+            guildTag = await guilds.tagOf(conn.accountId)   // estandarte sobre la cabeza (sigla del gremio)
             const d = ch?.data || {}
             // Ledger "checkout" AUTORITATIVO (Fase A.3): si el personaje ya tiene ledger guardado, se
             // carga de ahí (server-owned, el cliente no lo puede inflar). Si NO (personaje viejo, 1ª vez),

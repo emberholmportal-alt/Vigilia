@@ -43,7 +43,7 @@ export function playerCount() { return players.size }
 
 // Vista pública de un jugador (lo que ven los demás). Incluye `gfx` = capas del paperdoll
 // (equipo visible) y `dead` para que un recién llegado vea el estado correcto.
-function pub(p) { return { id: p.id, name: p.name, race: p.race, body: p.body || 'male', x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax, level: p.level || 1 } }
+function pub(p) { return { id: p.id, name: p.name, race: p.race, body: p.body || 'male', x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax, level: p.level || 1, guildTag: p.guildTag || null } }
 
 function inChannel(map, ch) {
   const out = []
@@ -104,7 +104,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null } = {}) {
+export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -144,6 +144,7 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   // reiniciar/reloguear (antes vivía sólo en memoria -> mint por relogin con cliente tocado).
   p._qclaimed = new Set(Array.isArray(qclaimed) ? qclaimed : [])
   p.feats = normalizeFeats(feats)   // hazañas server-owned (jefes derrotados + zona más profunda)
+  p.guildTag = guildTag || null     // estandarte sobre la cabeza (sigla del gremio)
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
@@ -553,6 +554,12 @@ export function playerIdOfAccount(accountId) {
 }
 export function nameOf(id) { const p = players.get(id); return p ? p.name : '' }
 export function accountOf(id) { const p = players.get(id); return p ? p.accountId : null }   // playerId -> accountId (para invitar)
+// Actualiza el estandarte (sigla) del jugador y avisa a su canal para que los demás re-etiqueten.
+export function setGuildTag(id, tag) {
+  const p = players.get(id); if (!p) return
+  p.guildTag = tag || null
+  broadcast(p.map, p.ch, { t: 'gtag', id, tag: p.guildTag }, null)
+}
 export function notify(id, msg) { const p = players.get(id); if (p) p.send(msg) }             // empujar un mensaje a un jugador visible
 // Difunde a los jugadores ONLINE cuya cuenta está en `accountIds` (chat de gremio, sin importar mapa).
 export function guildBroadcast(accountIds, msg) {

@@ -1757,6 +1757,7 @@ export const storeApi = {
   openStash: () => useGameStore.getState().openStash(),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
+  getGuildTag: () => useGameStore.getState().guild?.tag || null,
   getLootLabels: () => useGameStore.getState().lootLabels,
   isSpectator: () => useGameStore.getState().spectator,
   getSaveBlob: () => { const s = useGameStore.getState(); return { name: s.playerName, race: s.race?.id, char: snapshot(s) } },

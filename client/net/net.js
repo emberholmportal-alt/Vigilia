@@ -92,6 +92,8 @@ class Net {
         else if (m.t === 'php') this._emit(m.t, m)
         // nivel de otro jugador (cambió al subir) — para el menú de jugador
         else if (m.t === 'plvl') this._emit(m.t, m)
+        // estandarte de gremio de otro jugador (cambió su gremio)
+        else if (m.t === 'gtag') this._emit(m.t, m)
         // tarjeta pública de otro jugador (respuesta a inspect)
         else if (m.t === 'inspect') this._emit(m.t, m)
         // mis propias hazañas (server-owned): al entrar y al ganar un jefe / alcanzar una zona
