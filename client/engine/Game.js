@@ -2615,6 +2615,12 @@ const PORTAL_REPLACE = {
   grot_lagoon: [
     { x: 47, y: 49, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
+  // Ruinas de los Tres Nombres (quest de Udana): de un solo propósito — entrás, matás al guardián
+  // elemental (revela el nombre sellado), volvés a Triston. REPLACE corta sus portales nativos, que
+  // iban a mapas sin poblar o a zonas de otro nivel (Sta. María->Lochport, Perdición->Campo Salado).
+  st_maria_1: [{ x: 39, y: 63, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  perdition_mines: [{ x: 49, y: 18, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  stormrock_pass: [{ x: 24, y: 84, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
 }
 
 // Portales que AGREGAMOS encima de los nativos del mapa (llegada = spawn walkable del destino).
@@ -2666,11 +2672,8 @@ const PORTAL_EXTRA = {
     // Otra veta de la cueva baja a las Minas Abandonadas (nivel ~5-6): el hub de un cluster minero.
     { x: 7, y: 40, w: 1, h: 1, to: 'abandoned_mines', tx: 40, ty: 53, label: 'Minas Abandonadas' },
   ],
-  // --- Ruinas de los Tres Nombres (quest de Udana): entrar revela el nombre de cada archimago
-  // sellado. Cada una vuelve a Triston (donde Udana los pronuncia). Tiles verificados reachable. ---
-  st_maria_1: [{ x: 39, y: 63, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
-  perdition_mines: [{ x: 49, y: 18, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
-  stormrock_pass: [{ x: 24, y: 84, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  // (Las Ruinas de los Tres Nombres — st_maria_1, perdition_mines, stormrock_pass — usan
+  // PORTAL_REPLACE: son de un solo propósito, entrás/matás al guardián/volvés. Ver abajo.)
   // Black Oak City (100×100, nivel ~10): la zona insignia. Llegás al hub jugable (41,13) — la región
   // caminable grande, con enemigos grassland y cofres densificados en la entrada. Pad de regreso a
   // Triston unos tiles al lado (no en la baldosa de llegada, para no rebotar). La Piedra de Retorno
@@ -2729,7 +2732,22 @@ const OBELISK_RETURN = [55, 46]
 
 // Destinos que NO conectamos (nexos de fast-travel / mapas de sistema de Flare).
 const PORTAL_BLOCK = new Set(['hyperspace', 'World_map', 'spawn', 'arrival'])
-const portalAllowed = (to) => !!to && !PORTAL_BLOCK.has(to) && !/^Act\d|^World/i.test(to)
+// Sellado de bordes: mapas convertidos pero SIN TERMINAR (vacíos, fragmentados o sin curar). Los
+// portales nativos de Flare a veces apuntan a ellos; los filtramos acá para que el jugador NUNCA
+// caiga en una sala muerta. Cuando se pueble uno (p.ej. el próximo cluster de endgame), se saca de
+// esta lista y se cablea con su SPAWN_OVERRIDE + PORTAL_REPLACE. Ver docs de auditoría de progresión.
+const UNFINISHED = new Set([
+  // vacíos (sin spawners): entrar = sala muerta
+  'book_of_the_dead', 'perdition_harbor', 'perdition_harbor_cave', 'halls_of_infinity', 'fort_nasu',
+  'iron_labyrinth_f1', 'iron_labyrinth_f2', 'iron_labyrinth_f3', 'iron_labyrinth_chasm',
+  'fern_valley', 'woods', 'river_road', 'end', 'sage_home', 'dungeon10', 'dungeon_way',
+  // fragmentados / rotos (contenido inalcanzable desde su spawn)
+  'stormrock_ruins', 'torture_chambers', 'the_breach', 'st_maria_2', 'st_maria_3',
+  // sanos pero SIN CURAR todavía (materia prima del próximo cluster de endgame)
+  'antlion_nest', 'mog_caverns', 'oasis', 'the_pit', 'stonewood', 'southern_ridge',
+  'nazia_highlands', 'nazia_mines', 'nazia_underground',
+])
+const portalAllowed = (to) => !!to && !PORTAL_BLOCK.has(to) && !UNFINISHED.has(to) && !/^Act\d|^World/i.test(to)
 
 // Nombre de zona según el idioma actual (definiciones ES/EN en i18n.js).
 const zoneTitle = (mapName, fallback) => zoneName(mapName, getLang(), fallback)
