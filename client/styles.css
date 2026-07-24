@@ -1493,6 +1493,16 @@ html, body, #root {
 .guild-rank-txt b { color: #f2ead6; font-size: 13px; }
 .guild-rank-txt span { color: var(--dim); font-size: 10px; }
 .guild-rank-hint { color: var(--dim); font-size: 10px; line-height: 1.35; margin-bottom: 7px; font-style: italic; }
+.guild-rank-lock { flex: none; font-size: 15px; opacity: 0.75; }
+/* Privacidad del gremio: estado + toggle del fundador */
+.guild-privacy { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 2px 0 8px; }
+.guild-privacy-state { color: #c3b491; font-size: 12px; }
+.guild-privacy-btn {
+  background: linear-gradient(180deg, #221c15, #17130e); border: 1px solid #4a3c22; color: #d8b552;
+  border-radius: 4px; padding: 4px 9px; cursor: pointer; font-family: 'BonaNova', Georgia, serif; font-size: 11px;
+}
+.guild-privacy-btn:hover:not(:disabled) { border-color: var(--ember); color: #ffe9a8; }
+.guild-privacy-btn:disabled { opacity: 0.5; cursor: default; }
 .guild-rank-power { color: var(--gold) !important; font-size: 11px !important; font-weight: 700; letter-spacing: 0.02em; }
 /* contrato semanal */
 .guild-contract { display: flex; flex-direction: column; gap: 4px;

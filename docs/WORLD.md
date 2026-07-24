@@ -111,6 +111,8 @@ No son un chat con nombre. Son una estructura con la que el mundo interactúa:
 - **Rangos:** fundador > oficial > miembro. Fundador y oficiales **invitan** (tocando a un
   jugador cercano) y **expulsan**; el fundador asciende/desciende oficiales y **transfiere** el
   liderazgo. Al salir el fundador, hereda el miembro más antiguo. Chat de gremio propio.
+- **Privacidad:** el fundador marca el gremio **privado** (sólo por invitación; sin "Unirme" en el
+  ranking) o **público** (ingreso abierto). Las invitaciones andan igual en ambos casos.
 - **Nivel de gremio** sube con oro donado y contratos completados. **Sin tope:** las ventajas
   llegan hasta n5, pero pasado el 5 cada +30k de oro donado suma un nivel de prestigio (sin
   ventaja nueva) que sigue pesando en el ranking.

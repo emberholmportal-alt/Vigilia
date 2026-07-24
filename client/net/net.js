@@ -197,6 +197,7 @@ class Net {
   async guildKick(target) { this._send({ t: 'guild_kick', target }); return this._once('guild') }
   async guildRole(target, role) { this._send({ t: 'guild_role', target, role }); return this._once('guild') }
   async guildTransfer(target) { this._send({ t: 'guild_transfer', target }); return this._once('guild') }
+  async guildPrivacy(priv) { this._send({ t: 'guild_privacy', private: !!priv }); return this._once('guild') }
   async guildInvite(target) { this._send({ t: 'guild_invite', target }); return this._once('guild') }
   async guildAccept() { this._send({ t: 'guild_accept_invite' }); return this._once('guild') }
   guildDecline() { this._send({ t: 'guild_decline_invite' }) }

@@ -257,6 +257,10 @@ wss.on('connection', (ws) => {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
           return send({ t: 'guild', ...(await guilds.transfer(conn.accountId, m.target)) })
         }
+        case 'guild_privacy': {   // privado (sólo invitación) / público (ingreso abierto) — sólo fundador
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.setPrivacy(conn.accountId, !!m.private)) })
+        }
         case 'guild_invite': {     // invitar a un jugador visible (m.target = su playerId) al gremio
           if (!conn.accountId || conn.playerId == null) return send({ t: 'guild', error: 'sin sesión' })
           const targetAcct = rooms.accountOf(m.target)

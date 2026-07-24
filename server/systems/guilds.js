@@ -123,6 +123,7 @@ function pubGuild(g) {
     level: g.level, donated: Number(g.donated) || 0,
     next: nextThreshold(g.level),
     contract: contractStatus(g),
+    private: !!g.private,   // privado = sólo ingreso por invitación
   }
 }
 
@@ -213,9 +214,19 @@ export async function join(accountId, { guildId, tag }) {
   if (await db.getGuildMembership(accountId)) return { ok: false, error: 'ya pertenecés a un gremio' }
   const g = guildId ? await db.getGuild(guildId) : await db.findGuildByTag(tag)
   if (!g) return { ok: false, error: 'ese gremio no existe' }
+  if (g.private) return { ok: false, error: 'gremio privado: sólo se entra por invitación' }
   await db.setGuildMembership(accountId, g.id, 'member')
   invalidateGuildCache(accountId)
   return { ok: true, guild: pubGuild(g), role: 'member' }
+}
+
+// El fundador marca el gremio como privado (sólo por invitación) o público (ingreso abierto).
+export async function setPrivacy(actorId, priv) {
+  const a = await db.getGuildMembership(actorId)
+  if (!a || a.role !== 'founder') return { ok: false, error: 'sólo el fundador cambia la privacidad' }
+  await db.setGuildPrivate(a.guild_id, !!priv)
+  const g = await db.getGuild(a.guild_id)
+  return { ok: true, guild: pubGuild(g), role: a.role }
 }
 
 // Salir del gremio. Si era el último miembro, el gremio se disuelve. Si se va el FUNDADOR y quedan

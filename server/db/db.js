@@ -51,6 +51,7 @@ export async function init() {
       );
       ALTER TABLE guilds ADD COLUMN IF NOT EXISTS contract_week TEXT;
       ALTER TABLE guilds ADD COLUMN IF NOT EXISTS contract_progress INTEGER DEFAULT 0;
+      ALTER TABLE guilds ADD COLUMN IF NOT EXISTS private BOOLEAN DEFAULT false;
       CREATE TABLE IF NOT EXISTS guild_members (
         account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
         guild_id INTEGER REFERENCES guilds(id) ON DELETE CASCADE,
@@ -351,9 +352,14 @@ export async function createGuild({ name, tag, color, founder }) {
       [name, String(tag).toUpperCase(), color || null, founder])
     return r.rows[0]
   }
-  const g = { id: file.guildSeq++, name, tag: String(tag).toUpperCase(), color: color || null, level: 1, donated: 0, founder }
+  const g = { id: file.guildSeq++, name, tag: String(tag).toUpperCase(), color: color || null, level: 1, donated: 0, founder, private: false }
   file.guilds.push(g); flush()
   return g
+}
+// Marca un gremio como privado (sólo ingreso por invitación) o público (ingreso abierto).
+export async function setGuildPrivate(guildId, priv) {
+  if (pg) { await pg.query('UPDATE guilds SET private=$2 WHERE id=$1', [guildId, !!priv]); return }
+  const g = file.guilds.find((x) => x.id === guildId); if (g) { g.private = !!priv; flush() }
 }
 export async function addGuildDonation(guildId, amount, newLevel) {
   if (pg) {

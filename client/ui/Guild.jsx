@@ -110,6 +110,7 @@ function FoundGuild({ gold, busy, onCreate, error, t }) {
 function MyGuild({ guild, role, members, gold, busy, you, onKick, onRole, onTransfer, onDonate, onLeave, error, t }) {
   const roleLabel = (r) => r === 'founder' ? t('guild_founder') : r === 'officer' ? t('guild_officer') : t('guild_member')
   const canManage = role === 'founder' || role === 'officer'
+  const setGuildPrivacy = useGameStore((s) => s.setGuildPrivacy)
   const [amt, setAmt] = useState('')
   const perks = [t('guild_perk1'), t('guild_perk2'), t('guild_perk3'), t('guild_perk4'), t('guild_perk5'),
                  t('guild_perk6'), t('guild_perk7'), t('guild_perk8'), t('guild_perk9'), t('guild_perk10')]
@@ -124,6 +125,15 @@ function MyGuild({ guild, role, members, gold, busy, you, onKick, onRole, onTran
           <b>{guild.name}</b>
           <span>{t('guild_level_n', { n: guild.level })} · {t('guild_members_n', { n: members.length })}</span>
         </div>
+      </div>
+
+      <div className="guild-privacy">
+        <span className="guild-privacy-state">{guild.private ? `🔒 ${t('guild_private')}` : `🌐 ${t('guild_public')}`}</span>
+        {role === 'founder' && (
+          <button className="guild-privacy-btn" disabled={busy} onClick={() => setGuildPrivacy(!guild.private)}>
+            {guild.private ? t('guild_make_public') : t('guild_make_private')}
+          </button>
+        )}
       </div>
 
       <div className="guild-level-bar">
@@ -278,7 +288,9 @@ function Ranking({ ranking, inGuild, busy, onJoin, myId, t }) {
               <span className="guild-rank-power">{t('guild_power_n', { n: g.power ?? 0 })}</span>
               <span>{t('guild_level_n', { n: g.level })} · {t('guild_members_n', { n: g.members })} · {t('guild_pw_levels', { n: g.sumLevels ?? 0 })} ({t('guild_pw_avg', { n: g.avgLevel ?? 0 })}) · {t('guild_pw_donated', { n: kGold(g.donated || 0) })}</span>
             </div>
-            {!inGuild && <button className="guild-btn small" disabled={busy} onClick={() => onJoin(g.id)}>{t('guild_join_btn')}</button>}
+            {!inGuild && (g.private
+              ? <span className="guild-rank-lock" title={t('guild_private_hint')}>🔒</span>
+              : <button className="guild-btn small" disabled={busy} onClick={() => onJoin(g.id)}>{t('guild_join_btn')}</button>)}
           </div>
         ))}
       </div>

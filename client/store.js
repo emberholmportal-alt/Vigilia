@@ -1245,6 +1245,13 @@ export const useGameStore = create((set, get) => ({
     set({ guildBusy: false })
     if (get()._applyGuildResult(r)) { get().showToast(tt('guild_transferred', { name: name || '' })); get().refreshGuild() }
   },
+  setGuildPrivacy: async (priv) => {
+    if (!ONLINE || !net.connected) return
+    set({ guildBusy: true })
+    const r = await net.guildPrivacy(priv).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt(priv ? 'guild_now_private' : 'guild_now_public')); get().refreshGuild() }
+  },
 
   // --- Depósito del Gremio (banco compartido, nivel 4+) ---
   guildDeposit: null,       // { gold, items } o null
