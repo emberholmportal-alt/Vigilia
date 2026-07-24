@@ -220,6 +220,17 @@ export async function acceptInvite(accountId) {
 }
 export function declineInvite(accountId) { invites.delete(accountId); return { ok: true } }
 
+// Datos para difundir un mensaje al chat del gremio: la sigla + los ids de cuenta de todos los
+// miembros (para que rooms difunda a los que estén online). null si no está en un gremio.
+export async function chatInfo(accountId) {
+  const mem = await db.getGuildMembership(accountId)
+  if (!mem) return null
+  const g = await db.getGuild(mem.guild_id)
+  if (!g) return null
+  const members = await db.guildMembers(mem.guild_id)
+  return { tag: g.tag, ids: members.map((x) => x.account_id) }
+}
+
 // ---------- Gestión de miembros (roles: founder > officer > member) ----------
 // El fundador asciende/desciende oficiales y transfiere el liderazgo. Fundador y oficiales expulsan;
 // nadie expulsa al fundador; un oficial no expulsa a otro oficial.

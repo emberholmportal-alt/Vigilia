@@ -98,6 +98,8 @@ class Net {
         else if (m.t === 'feats') this._emit(m.t, m)
         // invitación de gremio entrante
         else if (m.t === 'guild_invite') this._emit(m.t, m)
+        // chat de gremio entrante
+        else if (m.t === 'gchat') this._emit(m.t, m)
       }
     })
   }
@@ -195,6 +197,7 @@ class Net {
   async guildInvite(target) { this._send({ t: 'guild_invite', target }); return this._once('guild') }
   async guildAccept() { this._send({ t: 'guild_accept_invite' }); return this._once('guild') }
   guildDecline() { this._send({ t: 'guild_decline_invite' }) }
+  guildChat(text) { this._send({ t: 'guild_chat', text }) }   // chat del gremio
   // Depósito del Gremio (banco compartido). Responden `t:'guild_dep'`.
   async guildDepView() { this._send({ t: 'guild_dep_view' }); return this._once('guild_dep') }
   async guildDepGold(dir, amount) { this._send({ t: 'guild_dep_gold', dir, amount }); return this._once('guild_dep') }

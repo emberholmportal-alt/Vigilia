@@ -72,6 +72,9 @@ const DICT = {
   // chat
   chan_sistema: { es: 'Sistema', en: 'System' },
   chan_mundo: { es: 'Mundo', en: 'World' },
+  chan_gremio: { es: 'Gremio', en: 'Guild' },
+  say_guild: { es: 'Al gremio…', en: 'To guild…' },
+  chat_toggle_channel: { es: 'Cambiar canal (Mundo / Gremio)', en: 'Toggle channel (World / Guild)' },
   // inicio
   start_tag: { es: 'Triston es el último refugio antes de la oscuridad.', en: 'Triston is the last refuge before the dark.' },
   start_new: { es: 'Nueva partida', en: 'New game' },

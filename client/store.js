@@ -313,14 +313,21 @@ export const useGameStore = create((set, get) => ({
       return { chatLog: log, _chatId: id }
     })
   },
-  // El jugador dice algo: globo sobre la cabeza + línea en el chat.
+  // Canal de chat activo: 'mundo' (mapa) o 'gremio' (miembros del gremio, sin importar mapa).
+  chatChannel: 'mundo',
+  setChatChannel: (c) => set({ chatChannel: c }),
+  // El jugador dice algo. En 'gremio' se difunde a los miembros del gremio (el server reenvía el eco
+  // a todos, incluido yo, así que no lo logueo local). En 'mundo' es chat de mapa + globo local.
   sayChat: (text) => {
     const t = (text || '').toString().trim().slice(0, 120)
     if (!t) return
+    if (get().chatChannel === 'gremio' && get().guild) { net.guildChat(t); return }
     get().say(t)
     get().logMessage({ channel: 'yo', name: get().playerName, text: t })
     net.chat(t)   // si hay conexión, lo oyen los del mismo mapa (si no, no-op)
   },
+  // Chat de gremio entrante (eco del server, incluye mis propios mensajes). Va a un canal aparte.
+  onGuildChat: (m) => { if (m && m.text) get().logMessage({ channel: 'gremio', name: m.from, text: m.text }) },
 
   // Usar un consumible del cinturón (índice). Cura vida/maná; si no hace falta (ya al
   // máximo) avisa con un toast y NO gasta la poción. Al usarla, la descuenta del slot.
@@ -1762,6 +1769,7 @@ export const storeApi = {
   onInspect: (m) => useGameStore.getState().onInspect(m),
   onFeats: (m) => useGameStore.getState().onFeats(m),
   onGuildInvite: (m) => useGameStore.getState().onGuildInvite(m),
+  onGuildChat: (m) => useGameStore.getState().onGuildChat(m),
   onTradeReq: (m) => useGameStore.getState().onTradeReq(m),
   onTradeOpen: (m) => useGameStore.getState().onTradeOpen(m),
   onTradeState: (m) => useGameStore.getState().onTradeState(m),

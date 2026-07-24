@@ -264,6 +264,15 @@ wss.on('connection', (ws) => {
           if (!conn.accountId) return
           return void guilds.declineInvite(conn.accountId)
         }
+        case 'guild_chat': {   // chat del gremio: se difunde a todos los miembros ONLINE (sin importar mapa)
+          if (!conn.accountId || conn.playerId == null) return
+          const text = String(m.text || '').replace(/\s+/g, ' ').trim().slice(0, 200)
+          if (!text) return
+          const ci = await guilds.chatInfo(conn.accountId)
+          if (!ci) return
+          rooms.guildBroadcast(ci.ids, { t: 'gchat', from: rooms.nameOf(conn.playerId), tag: ci.tag, text })
+          return
+        }
         // Depósito del Gremio (banco compartido)
         case 'guild_dep_view': {
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })

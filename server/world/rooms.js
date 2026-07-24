@@ -554,6 +554,11 @@ export function playerIdOfAccount(accountId) {
 export function nameOf(id) { const p = players.get(id); return p ? p.name : '' }
 export function accountOf(id) { const p = players.get(id); return p ? p.accountId : null }   // playerId -> accountId (para invitar)
 export function notify(id, msg) { const p = players.get(id); if (p) p.send(msg) }             // empujar un mensaje a un jugador visible
+// Difunde a los jugadores ONLINE cuya cuenta está en `accountIds` (chat de gremio, sin importar mapa).
+export function guildBroadcast(accountIds, msg) {
+  const set = accountIds instanceof Set ? accountIds : new Set(accountIds)
+  for (const p of players.values()) if (p.accountId != null && set.has(p.accountId)) p.send(msg)
+}
 
 // --- Inspeccionar jugador: tarjeta pública (estilo "look") -------------------------------------
 // El cliente del objetivo arma su propia tarjeta (display) y la manda con setCard; acá la guardamos
