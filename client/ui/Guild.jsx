@@ -275,7 +275,7 @@ function Ranking({ ranking, inGuild, busy, onJoin, myId, t }) {
             <div className="guild-rank-txt">
               <b>{g.name}{g.id === myId ? ` · ${t('guild_you_tag')}` : ''}</b>
               <span className="guild-rank-power">{t('guild_power_n', { n: g.power ?? 0 })}</span>
-              <span>{t('guild_level_n', { n: g.level })} · {t('guild_members_n', { n: g.members })} · {t('guild_pw_levels', { n: g.sumLevels ?? 0 })} ({t('guild_pw_avg', { n: g.avgLevel ?? 0 })}) · {t('guild_pw_gold', { n: kGold(g.sumGold || 0) })}</span>
+              <span>{t('guild_level_n', { n: g.level })} · {t('guild_members_n', { n: g.members })} · {t('guild_pw_levels', { n: g.sumLevels ?? 0 })} · {t('guild_pw_donated', { n: kGold(g.donated || 0) })}</span>
             </div>
             {!inGuild && <button className="guild-btn small" disabled={busy} onClick={() => onJoin(g.id)}>{t('guild_join_btn')}</button>}
           </div>

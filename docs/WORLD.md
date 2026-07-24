@@ -111,17 +111,18 @@ No son un chat con nombre. Son una estructura con la que el mundo interactúa:
 - **Rangos:** fundador > oficial > miembro. Fundador y oficiales **invitan** (tocando a un
   jugador cercano) y **expulsan**; el fundador asciende/desciende oficiales y **transfiere** el
   liderazgo. Al salir el fundador, hereda el miembro más antiguo. Chat de gremio propio.
-- **Nivel de gremio** sube con oro donado y contratos completados.
+- **Nivel de gremio** sube con oro donado y contratos completados. **Sin tope:** las ventajas
+  llegan hasta n5, pero pasado el 5 cada +30k de oro donado suma un nivel de prestigio (sin
+  ventaja nueva) que sigue pesando en el ranking.
 - **Ventajas por nivel:** +oro de botín (n1), +defensa a todos (n2), +XP compartida (n3),
   acceso al **Depósito del Gremio** (n4), estandarte visible sobre la cabeza en ciudad (n5).
 - **Contratos de gremio:** misiones semanales que requieren aporte de varios miembros
   ("el gremio debe matar 200 no-muertos"). Progreso compartido y visible.
 - **Ranking** público en la Casa de Gremios y en la hoja de personaje, ordenado por el
-  **Poder del gremio** (no sólo oro donado): `Σniveles×10 + promedioNivel×20 + nivelGremio×50
-  + ⌊donado/500⌋ + ⌊Σoro/3000⌋`. Mezcla fuerza (niveles de miembros), calidad (promedio),
-  progreso institucional (nivel del gremio, tope 5), donación al pozo (**sin techo**: donar
-  siempre sube el ranking aun pasado el nivel máximo) y riqueza (oro de todos). Todo
-  server-autoritativo. La competencia es contenido gratis.
+  **Poder del gremio** (no sólo oro donado): `Σniveles×10 + miembros×20 + nivelGremio×30 +
+  ⌊donado/500⌋`. Cuatro ejes, **todos sin tope**: fuerza (suma de niveles de experiencia de los
+  miembros), tamaño (cantidad de miembros), progreso institucional (nivel del gremio) y donación
+  al pozo. Todo server-autoritativo. La competencia es contenido gratis.
 
 ---
 

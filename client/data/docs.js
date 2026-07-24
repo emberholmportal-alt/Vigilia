@@ -305,6 +305,7 @@ export const DOCS = {
                   ['5', 'Estandarte visible en ciudad'],
                 ],
               } },
+              { p: 'Las ventajas llegan hasta el nivel 5, pero el nivel en sí NO tiene tope: pasado el 5, cada 30.000 de oro donado suma un nivel más (prestigio, sin ventaja nueva). Ese nivel sigue pesando en el ranking.' },
             ],
           },
           {
@@ -317,17 +318,16 @@ export const DOCS = {
           {
             id: 'guild-ranking', title: 'Ranking y Poder del gremio',
             blocks: [
-              { p: 'El ranking público no premia sólo el oro donado: ordena los gremios por su Poder, un puntaje que mezcla el tamaño, la fuerza y la riqueza de sus miembros. Así gana el gremio más fuerte, no el más numeroso.' },
-              { p: 'El Poder combina cinco cosas, todas server-autoritativas (no se pueden inflar desde el cliente):' },
+              { p: 'El ranking público no premia sólo el oro donado: ordena los gremios por su Poder, un puntaje que mezcla el tamaño, la fuerza y la actividad del gremio. Todos sus componentes son SIN TOPE, así que el ranking siempre puede seguir subiendo.' },
+              { p: 'El Poder suma cuatro cosas, todas server-autoritativas (no se pueden inflar desde el cliente):' },
               { list: [
-                'Suma de niveles de personaje de todos los miembros (fuerza colectiva).',
-                'Promedio de nivel de los miembros (calidad: castiga llenar el gremio de personajes nivel 1).',
-                'Nivel del gremio, que sale del oro donado al pozo (progreso institucional; tope nivel 5).',
-                'Oro donado al pozo, sin techo: aunque el nivel tope en 5, seguir donando siempre sube el Poder.',
-                'Suma del oro actual de todos los miembros (riqueza colectiva).',
+                'Suma de niveles de personaje (experiencia) de todos los miembros — fuerza colectiva.',
+                'Cantidad de miembros — tamaño del gremio.',
+                'Nivel del gremio — progreso institucional (ya sin tope: sube donando).',
+                'Oro donado acumulado al pozo — sin techo.',
               ] },
-              { p: 'La fórmula es: Poder = Σniveles×10 + promedio×20 + nivelGremio×50 + ⌊donado / 500⌋ + ⌊Σoro / 3000⌋. En empate, desempata el nivel del gremio y luego la antigüedad.' },
-              { p: 'Cada fila del ranking muestra el Poder y su desglose (miembros, suma y promedio de nivel, oro total), tanto en la Casa de Gremios como en la hoja de personaje.' },
+              { p: 'La fórmula es: Poder = Σniveles×10 + miembros×20 + nivelGremio×30 + ⌊donado / 500⌋. En empate, desempata el nivel del gremio y luego la antigüedad.' },
+              { p: 'Cada fila del ranking muestra el Poder y su desglose (nivel del gremio, miembros, suma de niveles, oro donado), tanto en la Casa de Gremios como en la hoja de personaje.' },
             ],
           },
           {
@@ -719,6 +719,7 @@ export const DOCS = {
                   ['5', 'Banner shown in town'],
                 ],
               } },
+              { p: 'Perks stop at level 5, but the level itself has NO cap: past 5, every 30,000 donated gold adds another level (prestige, no new perk). That level keeps weighing on the ranking.' },
             ],
           },
           {
@@ -731,17 +732,16 @@ export const DOCS = {
           {
             id: 'guild-ranking', title: 'Ranking & guild Power',
             blocks: [
-              { p: 'The public ranking does not reward donated gold alone: it orders guilds by their Power, a score that blends the size, strength and wealth of their members. The strongest guild wins, not the biggest.' },
-              { p: 'Power combines five things, all server-authoritative (they cannot be faked from the client):' },
+              { p: 'The public ranking does not reward donated gold alone: it orders guilds by their Power, a score that blends the guild’s size, strength and activity. Every component is UNCAPPED, so the ranking can always keep climbing.' },
+              { p: 'Power adds four things, all server-authoritative (they cannot be faked from the client):' },
               { list: [
-                'Sum of the character levels of every member (collective strength).',
-                'Average member level (quality: it punishes stuffing the guild with level-1 characters).',
-                'Guild level, which comes from gold donated to the pool (institutional progress; capped at level 5).',
-                'Gold donated to the pool, uncapped: even though the level caps at 5, donating more always raises Power.',
-                'Sum of the current gold of every member (collective wealth).',
+                'Sum of the character (experience) levels of every member — collective strength.',
+                'Member count — guild size.',
+                'Guild level — institutional progress (now uncapped: it rises by donating).',
+                'Accumulated gold donated to the pool — no ceiling.',
               ] },
-              { p: 'The formula is: Power = Σlevels×10 + average×20 + guildLevel×50 + ⌊donated / 500⌋ + ⌊Σgold / 3000⌋. Ties break by guild level, then by age.' },
-              { p: 'Each ranking row shows the Power and its breakdown (members, sum and average level, total gold), both at the Guild Hall and on the character sheet.' },
+              { p: 'The formula is: Power = Σlevels×10 + members×20 + guildLevel×30 + ⌊donated / 500⌋. Ties break by guild level, then by age.' },
+              { p: 'Each ranking row shows the Power and its breakdown (guild level, members, sum of levels, donated gold), both at the Guild Hall and on the character sheet.' },
             ],
           },
           {

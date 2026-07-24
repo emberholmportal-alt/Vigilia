@@ -9,19 +9,28 @@ import * as db from '../db/db.js'
 
 export const FOUND_COST = 500
 
-// Umbrales de oro DONADO acumulado por nivel (nivel 1 al fundar; cap 5). Ver ventajas en WORLD.md:
-// n1 +oro de botín · n2 +defensa a todos · n3 +XP compartida · n4 Depósito · n5 estandarte.
+// Umbrales de oro DONADO acumulado por nivel. Los primeros 5 son explícitos (definen cuándo se
+// desbloquea cada VENTAJA — n1 +oro de botín · n2 +defensa · n3 +XP · n4 Depósito · n5 estandarte).
+// El NIVEL en sí NO tiene tope: pasado el nivel 5, cada +POST_STEP de oro donado suma un nivel más
+// (prestigio, sin ventaja nueva). Las ventajas se saturan en el nivel 5.
 const LEVEL_THRESHOLDS = [0, 1500, 5000, 12000, 30000] // índice 0 => nivel 1
-export const MAX_LEVEL = LEVEL_THRESHOLDS.length
+export const PERK_LEVELS = LEVEL_THRESHOLDS.length      // 5 = último nivel con ventaja nueva
+const POST_STEP = 30000                                 // oro donado por cada nivel pasado el 5
 
 export function levelForDonated(donated) {
+  const d = Math.max(0, Number(donated) || 0)
   let lvl = 1
-  for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) if (donated >= LEVEL_THRESHOLDS[i]) lvl = i + 1
-  return Math.min(lvl, MAX_LEVEL)
+  for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) if (d >= LEVEL_THRESHOLDS[i]) lvl = i + 1
+  const top = LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]   // 30000 = nivel 5
+  if (d > top) lvl = LEVEL_THRESHOLDS.length + Math.floor((d - top) / POST_STEP)
+  return lvl
 }
-// Oro que falta para el siguiente nivel (0 si está al tope).
+// Oro DONADO acumulado necesario para ALCANZAR el próximo nivel (nunca null: el nivel no topa).
 export function nextThreshold(level) {
-  return level >= MAX_LEVEL ? null : LEVEL_THRESHOLDS[level]
+  const L = Math.max(1, level | 0)
+  if (L < LEVEL_THRESHOLDS.length) return LEVEL_THRESHOLDS[L]  // próximo umbral explícito
+  const top = LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]
+  return top + (L - LEVEL_THRESHOLDS.length + 1) * POST_STEP   // prestigio: +POST_STEP por nivel
 }
 
 // ---------- Contrato semanal (WORLD.md) ----------
@@ -143,34 +152,31 @@ export async function info(accountId, guildId) {
   return { ok: true, guild: pubGuild(g), members, mine: mem?.guild_id === id ? (mem.role || 'member') : null, you: accountId }
 }
 
-// Poder del gremio: un puntaje que mezcla tamaño, fuerza y riqueza colectiva, con una parte de
-// promedio para que no gane sólo el gremio más numeroso de alts nivel 1. Todo sale de datos
-// server-autoritativos (nivel de miembro derivado del XP, oro del blob del personaje, nivel del
-// gremio y oro donado al pozo), así no se puede inflar desde el cliente.
-//   Poder = Σniveles×10 + promedioNivel×20 + nivelGremio×50 + floor(donado/500) + floor(Σoro/3000)
-// El término de oro DONADO no tiene techo (el nivel de gremio sí, tope 5): así donar al pozo
-// siempre sigue subiendo el ranking, incluso pasado el nivel máximo.
-export function guildPower({ sumLevels = 0, members = 0, level = 1, donated = 0, sumGold = 0 }) {
-  const avg = members > 0 ? sumLevels / members : 0
+// Poder del gremio: cuatro ejes, todos server-autoritativos y SIN TOPE, así el ranking siempre
+// puede seguir subiendo.
+//   Poder = Σniveles×10 + miembros×20 + nivelGremio×30 + floor(donado/500)
+// - Σniveles: suma del nivel de personaje (experiencia) de cada miembro — fuerza colectiva.
+// - miembros: cantidad de miembros — tamaño del gremio.
+// - nivelGremio: nivel institucional del gremio (ya sin tope: sube donando).
+// - donado: oro donado acumulado al pozo (sin techo).
+export function guildPower({ sumLevels = 0, members = 0, level = 1, donated = 0 }) {
   return Math.round(
-    sumLevels * 10 + avg * 20 + (level || 1) * 50 +
-    Math.floor(Math.max(0, donated) / 500) + Math.floor(Math.max(0, sumGold) / 3000))
+    Math.max(0, sumLevels) * 10 + Math.max(0, members) * 20 +
+    Math.max(1, level) * 30 + Math.floor(Math.max(0, donated) / 500))
 }
 
 // Ranking público, ordenado por Poder. El límite lo pide el cliente; lo acotamos server-side
-// (1..200) para no filtrar toda la tabla de un pedido malicioso. Devuelve el desglose del Poder
-// (Σniveles, promedio, Σoro) para mostrarlo en el ranking.
+// (1..200) para no filtrar toda la tabla de un pedido malicioso. Cada fila trae el desglose del
+// Poder (nivel de gremio, miembros, Σniveles, oro donado) para mostrarlo en el ranking.
 export async function ranking(limit = 20) {
   const lim = Math.max(1, Math.min(200, (limit | 0) || 20))
   const rows = await db.listGuildsWithStats()
   const scored = rows.map((g) => {
     const members = g.members | 0
     const sumLevels = g.sumLevels | 0
-    const sumGold = Math.max(0, Math.floor(Number(g.sumGold) || 0))
     return {
-      ...pubGuild(g), members, sumLevels, sumGold,
-      avgLevel: members > 0 ? Math.round((sumLevels / members) * 10) / 10 : 0,
-      power: guildPower({ sumLevels, members, level: g.level, donated: Number(g.donated) || 0, sumGold }),
+      ...pubGuild(g), members, sumLevels,
+      power: guildPower({ sumLevels, members, level: g.level, donated: Number(g.donated) || 0 }),
     }
   })
   scored.sort((a, b) => b.power - a.power || b.level - a.level || a.id - b.id)
