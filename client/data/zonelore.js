@@ -106,6 +106,18 @@ export const ZONE_LORE = {
     es: 'En el fondo de Nazia la veta se secó y los duendes se quedaron igual, apretados alrededor de su señor de la guerra, defendiendo una mina sin oro.',
     en: 'At the bottom of Nazia the vein ran dry and the goblins stayed anyway, packed around their warlord, defending a mine with no gold left.',
   },
+  antlion_nest: {
+    es: 'Bajo el Sótano del Templo, la piedra cede a la arena y la arena a los embudos. Las hormigas león no adoran a Mez; simplemente esperan que algo caiga.',
+    en: 'Beneath the Temple Basement, stone gives way to sand and sand to funnels. The antlions do not worship Mez; they simply wait for something to fall.',
+  },
+  southern_ridge: {
+    es: 'La Cornisa del Sur fue pastura de la ciudad. Ahora la maleza esconde lo que bajó de las cavernas a comer, y todavía sube cuando tiene hambre.',
+    en: 'The Southern Ridge was the city\'s pasture. Now the scrub hides what came up from the caverns to feed, and it still climbs when it is hungry.',
+  },
+  mog_caverns: {
+    es: 'Las Cavernas de Mog huelen a hueso mojado. Un nigromante baja acá a levantar lo que Nazia dejó tirado; nunca le faltan manos.',
+    en: 'The Mog Caverns smell of wet bone. A necromancer comes down here to raise what Nazia left lying; he never runs short of hands.',
+  },
   lochport: {
     es: 'Lochport fue un puerto próspero antes de que el mar dejara de traer barcos y empezara a traer otra cosa. Los muelles todavía crujen; ya nadie los pisa por gusto.',
     en: 'Lochport was a thriving port before the sea stopped bringing ships and started bringing something else. The docks still creak; no one walks them for pleasure now.',

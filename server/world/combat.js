@@ -65,6 +65,10 @@ const SPAWN_OVERRIDE = {
   nazia_mines: [14, 20],       // lo más hondo (jefe)
   oasis: [6, 8],               // endgame lv14: llegada nativa = spawn = isla rica (no hace falta mover)
   the_pit: [71, 71],           // endgame: idem
+  // Ensanche (mapas sanos sin usar): antecámara del Templo + bolsón lv9 de Black Oak.
+  antlion_nest: [29, 35],      // lv6, antecámara del Templo de Mez
+  southern_ridge: [35, 36],    // lv9, off Black Oak City
+  mog_caverns: [26, 19],       // lv9-10, dungeon final del bolsón (jefe)
 }
 // Piso de nivel por mapa: algunos mapas de Flare traen los spawners con niveles MEZCLADOS (p.ej.
 // the_pit: 13 en lv1 + 4 en lv15-16). Para el endgame subimos cada spawner a un piso, así la zona
@@ -280,6 +284,9 @@ const MAP_BOSS = {
   // El Pozo (lo más hondo del mundo, tras la Fortaleza II): el Minotauro del fondo, más grande y más
   // viejo que el que abrió el pozo. Golpe en área (smash). El jefe más duro del juego (nivel ~17).
   the_pit: { sprite: 'minotaur', level: 17 },
+  // Cavernas de Mog (fondo del bolsón de Black Oak): un nigromante que baja a las cuevas a levantar
+  // lo que Nazia dejó. Invoca esbirros. Capstone del bolsón (nivel ~10).
+  mog_caverns: { sprite: 'skeleton_mage_boss', level: 10 },
 }
 // Esbirro INVOCADO por una habilidad (summon): sprite+nivel fijos en un tile dado. `sp:null` +
 // `_parent` -> no repone al morir (no es un spawner del mapa; ver killEnemy).

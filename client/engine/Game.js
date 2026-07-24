@@ -2519,6 +2519,7 @@ const HUB_SPAWN = {
   abandoned_mines: [40, 53], blackmire_mines: [32, 36], lake_kuuma: [70, 52], fort_amir: [40, 34], grot_lagoon: [45, 49],
   nazia_highlands: [22, 21], nazia_underground: [42, 21], nazia_mines: [14, 20],
   oasis: [6, 8], the_pit: [71, 71],
+  antlion_nest: [29, 35], southern_ridge: [35, 36], mog_caverns: [26, 19],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2552,6 +2553,14 @@ const PORTAL_REPLACE = {
     { x: 45, y: 58, w: 1, h: 1, to: 'black_oak_farm', tx: 58, ty: 54, label: 'Granja de Black Oak' },
     { x: 72, y: 58, w: 1, h: 1, to: 'goblin_cave', tx: 25, ty: 24, label: 'Cueva de Duendes' },
   ],
+  // La Granja: primer realm de la rama oeste. REPLACE porque sus portales nativos filtraban a mapas
+  // de nivel muy superior (Cloacas lv11) sin curar la transición. Sus 3 salidas reales: volver al
+  // pueblo, seguir al Sendero del Río (oeste), o cruzar a Black Oak City (salto deliberado a lv10).
+  black_oak_farm: [
+    { x: 61, y: 54, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 36, y: 26, w: 1, h: 1, to: 'river_trail', tx: 42, ty: 20, label: 'Sendero del Río' },
+    { x: 43, y: 17, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' },
+  ],
   // Las Cloacas Ruinosas (nivel ~11): dungeon contenido bajo la ciudad. REEMPLAZAMOS sus portales
   // nativos (van a la granja y a Fuerte Nasu, sin poblar) por dos salidas curadas: Triston y de
   // vuelta a Black Oak City. Ambos tiles verificados caminables+reachable desde el spawn (64,8).
@@ -2564,9 +2573,10 @@ const PORTAL_REPLACE = {
   // (ver SPAWN_OVERRIDE en combat.js, que ancla ahí también el jefe y el densificado del server).
   // El pad de avance se planta lejos de la llegada para cruzar la planta; el de regreso, cerca.
   // Todos los tiles verificados caminables+reachable desde la llegada de su piso.
-  temple_of_mez_1: [ // Sótano -> Gran Salón
+  temple_of_mez_1: [ // Sótano -> Gran Salón (+ antecámara: los túneles de hormigas león)
     { x: 37, y: 46, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
     { x: 75, y: 75, w: 1, h: 1, to: 'temple_of_mez_2', tx: 40, ty: 34, label: 'Templo de Mez: Gran Salón' },
+    { x: 16, y: 52, w: 1, h: 1, to: 'antlion_nest', tx: 29, ty: 35, label: 'Nido de Hormigas León' },
   ],
   temple_of_mez_2: [ // Gran Salón -> Entrada
     { x: 42, y: 34, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
@@ -2637,6 +2647,20 @@ const PORTAL_REPLACE = {
   nazia_mines: [ // fondo (jefe: el señor de la guerra hobgoblin)
     { x: 16, y: 20, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
+  // Ensanche de mapas sanos sueltos:
+  // Nido de Hormigas León (lv6): antecámara del Templo de Mez (los túneles bajo el Sótano). Hoja:
+  // se entra desde el Sótano, se vuelve a Triston (o por la Piedra de Retorno).
+  antlion_nest: [
+    { x: 31, y: 35, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // Bolsón lv9 de Black Oak: la Cornisa del Sur -> las Cavernas de Mog (dungeon con jefe).
+  southern_ridge: [
+    { x: 37, y: 36, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 72, y: 68, w: 1, h: 1, to: 'mog_caverns', tx: 26, ty: 19, label: 'Cavernas de Mog' },
+  ],
+  mog_caverns: [ // fondo del bolsón (jefe: el nigromante de las cuevas)
+    { x: 24, y: 19, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
 }
 
 // Portales que AGREGAMOS encima de los nativos del mapa (llegada = spawn walkable del destino).
@@ -2648,15 +2672,8 @@ const PORTAL_REPLACE = {
 //   Triston ──Este───▶ Cueva de Duendes(5-8)
 // Cada realm tiene su pad de "Volver a Triston". Coordenadas calculadas desde collision.
 const PORTAL_EXTRA = {
-  // (El hub Triston usa PORTAL_REPLACE — ver abajo — porque reemplaza sus portales nativos.)
+  // (El hub Triston y la Granja usan PORTAL_REPLACE — ver abajo.)
   // --- Rama Oeste (gathering / progresión temprana) ---
-  black_oak_farm: [
-    { x: 61, y: 54, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
-    { x: 36, y: 26, w: 1, h: 1, to: 'river_trail', tx: 42, ty: 20, label: 'Sendero del Río' },
-    // Frontera de la región de Black Oak: de la granja se llega a la CIUDAD (nivel ~10, salto de
-    // dificultad). Tile de la granja verificado caminable+reachable; llegada al hub jugable (41,13).
-    { x: 43, y: 17, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' },
-  ],
   river_trail: [
     { x: 45, y: 20, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
     { x: 6, y: 4, w: 1, h: 1, to: 'salted_field', tx: 30, ty: 30, label: 'Campo Salado' },
@@ -2708,6 +2725,8 @@ const PORTAL_EXTRA = {
     // Al este de la ciudad se alzan las Tierras Altas de Nazia (nivel ~9-10): descenso de 3 zonas
     // hasta las Minas de Nazia (jefe). Pad reachable; llegada a la sala rica de las Tierras Altas.
     { x: 19, y: 27, w: 1, h: 1, to: 'nazia_highlands', tx: 22, ty: 21, label: 'Tierras Altas de Nazia' },
+    // Al sur, la Cornisa (nivel ~9): un bolsón de pastura arruinada que baja a las Cavernas de Mog.
+    { x: 73, y: 20, w: 1, h: 1, to: 'southern_ridge', tx: 35, ty: 36, label: 'la Cornisa del Sur' },
   ],
   // Torre del Mago (entrada, nivel ~11): dungeon con jefe (el Nigromante óseo custodia el umbral).
   // Regreso a Triston cerca de la llegada (54,9). El descenso al Inframundo se planta en lo más HONDO
@@ -2769,8 +2788,8 @@ const UNFINISHED = new Set([
   // fragmentados / rotos (contenido inalcanzable desde su spawn)
   'stormrock_ruins', 'torture_chambers', 'the_breach', 'st_maria_2', 'st_maria_3',
   // sanos pero SIN CURAR todavía (materia prima de futuros clusters)
-  'antlion_nest', 'mog_caverns', 'stonewood', 'southern_ridge',
-  // (Nazia — highlands/underground/mines — y el endgame oasis/the_pit ya están curados)
+  'stonewood',
+  // (Ya curados: Nazia, endgame oasis/the_pit, antlion_nest, southern_ridge, mog_caverns)
 ])
 const portalAllowed = (to) => !!to && !PORTAL_BLOCK.has(to) && !UNFINISHED.has(to) && !/^Act\d|^World/i.test(to)
 
