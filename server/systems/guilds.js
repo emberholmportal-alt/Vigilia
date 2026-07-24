@@ -6,6 +6,7 @@
 // server-autoritativos: el cliente guarda su estado, pide la operación y el server confirma el
 // oro resultante. El cliente adopta ese oro.
 import * as db from '../db/db.js'
+import { guildContractMul } from '../../shared/guildperks.js'
 
 export const FOUND_COST = 500
 
@@ -74,7 +75,8 @@ function contractMatches(category) {
 function contractStatus(g) {
   const wc = weeklyContract()
   const progress = g.contract_week === wc.week ? Math.min(wc.target, g.contract_progress || 0) : 0
-  return { id: wc.id, target: wc.target, progress, done: progress >= wc.target, reward: CONTRACT_REWARD }
+  const reward = Math.round(CONTRACT_REWARD * guildContractMul(g.level))   // prestigio n7/n10
+  return { id: wc.id, target: wc.target, progress, done: progress >= wc.target, reward }
 }
 
 // Cache en memoria de a qué gremio pertenece cada cuenta (para no pegarle a la DB en cada kill).
@@ -105,9 +107,10 @@ export async function onKill(accountId, category) {
   const prevInWeek = wasWeek === wc.week ? before : 0
   if (prevInWeek < wc.target && progress >= wc.target) {
     const g = await db.getGuild(guildId)
-    const newDonated = (Number(g.donated) || 0) + CONTRACT_REWARD
-    await db.addGuildDonation(guildId, CONTRACT_REWARD, levelForDonated(newDonated))
-    return { guildId, completed: true }
+    const reward = Math.round(CONTRACT_REWARD * guildContractMul(g.level))   // prestigio n7/n10
+    const newDonated = (Number(g.donated) || 0) + reward
+    await db.addGuildDonation(guildId, reward, levelForDonated(newDonated))
+    return { guildId, completed: true, reward }
   }
   return { guildId, progress }
 }

@@ -72,7 +72,7 @@ export const HOW_TO_PLAY = {
       body: [
         'Hablá con Halvard, el Maestro de Gremios, para fundar uno (500 de oro, una sigla de tres letras) o unirte a otro. Fundar y gestionar se hace sólo con él.',
         'Hay tres rangos: fundador, oficial y miembro. El fundador y los oficiales invitan (tocá a un jugador cercano y elegí "Invitar al gremio"), expulsan, y el fundador asciende oficiales o transfiere el liderazgo. El gremio tiene su propio canal de chat.',
-        'Donás oro al pozo para subir el nivel del gremio y darle ventajas a todos: más oro de botín, defensa, XP compartida, el Depósito común a nivel 4 y el estandarte a nivel 5. Las ventajas llegan hasta el nivel 5, pero el nivel en sí no tiene tope: seguir donando lo sigue subiendo. Cada semana hay un contrato compartido.',
+        'Donás oro al pozo para subir el nivel del gremio y darle ventajas a todos: más oro de botín, defensa, XP compartida, el Depósito común a nivel 4 y el estandarte a nivel 5. Del 6 al 10 hay ventajas de prestigio (más oro y XP, contrato reforzado); pasado el 10 el nivel sigue subiendo (pesa en el ranking). Cada semana hay un contrato compartido.',
         'El ranking ordena por el Poder del gremio, que suma cinco cosas sin tope: los niveles de todos los miembros, su promedio de nivel, la cantidad de miembros, el nivel del gremio y el oro donado al pozo. El promedio premia la calidad del roster, así que no gana sólo el más numeroso.',
       ],
       tip: 'En la hoja de personaje ves a qué gremio pertenecés y el ranking completo, sin salir del pueblo.',
@@ -155,7 +155,7 @@ export const HOW_TO_PLAY = {
       body: [
         'Talk to Halvard, the Guildmaster, to found one (500 gold, a three-letter tag) or join another. Founding and managing happen only with him.',
         'There are three ranks: founder, officer and member. Founders and officers invite (tap a nearby player and pick "Invite to guild"), kick, and the founder promotes officers or transfers leadership. The guild has its own chat channel.',
-        'Donate gold to the pool to raise the guild level and grant perks to everyone: more loot gold, defense, shared XP, the shared Deposit at level 4 and the banner at level 5. Perks stop at level 5, but the level itself has no cap: keep donating and it keeps climbing. Each week there is a shared contract.',
+        'Donate gold to the pool to raise the guild level and grant perks to everyone: more loot gold, defense, shared XP, the shared Deposit at level 4 and the banner at level 5. Levels 6 to 10 give prestige perks (more gold and XP, a reinforced contract); past 10 the level keeps climbing (it weighs on the ranking). Each week there is a shared contract.',
         'The ranking is ordered by the guild Power, which adds five uncapped things: the levels of all members, their average level, the member count, the guild level, and the gold donated to the pool. The average rewards roster quality, so the biggest guild does not simply win.',
       ],
       tip: 'Your character sheet shows which guild you belong to and the full ranking, without leaving town.',

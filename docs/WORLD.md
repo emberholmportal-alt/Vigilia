@@ -116,6 +116,8 @@ No son un chat con nombre. Son una estructura con la que el mundo interactúa:
   ventaja nueva) que sigue pesando en el ranking.
 - **Ventajas por nivel:** +oro de botín (n1), +defensa a todos (n2), +XP compartida (n3),
   acceso al **Depósito del Gremio** (n4), estandarte visible sobre la cabeza en ciudad (n5).
+  **Prestigio (n6–n10):** +10% oro (n6), contrato ×1.5 (n7), +10% XP (n8), +8 defensa (n9),
+  contrato ×2 (n10). Pasado n10 el nivel sigue subiendo como prestigio puro (sólo ranking).
 - **Contratos de gremio:** misiones semanales que requieren aporte de varios miembros
   ("el gremio debe matar 200 no-muertos"). Progreso compartido y visible.
 - **Ranking** público en la Casa de Gremios y en la hoja de personaje, ordenado por el

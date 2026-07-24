@@ -111,7 +111,8 @@ function MyGuild({ guild, role, members, gold, busy, you, onKick, onRole, onTran
   const roleLabel = (r) => r === 'founder' ? t('guild_founder') : r === 'officer' ? t('guild_officer') : t('guild_member')
   const canManage = role === 'founder' || role === 'officer'
   const [amt, setAmt] = useState('')
-  const perks = [t('guild_perk1'), t('guild_perk2'), t('guild_perk3'), t('guild_perk4'), t('guild_perk5')]
+  const perks = [t('guild_perk1'), t('guild_perk2'), t('guild_perk3'), t('guild_perk4'), t('guild_perk5'),
+                 t('guild_perk6'), t('guild_perk7'), t('guild_perk8'), t('guild_perk9'), t('guild_perk10')]
   // progreso hacia el próximo nivel: donado actual vs umbral siguiente.
   const pct = guild.next ? Math.min(1, guild.donated / guild.next) : 1
 

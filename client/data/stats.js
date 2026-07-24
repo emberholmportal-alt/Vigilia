@@ -113,18 +113,10 @@ export function weaponDamage(equipment) {
   return { min: base.min + up, max: base.max + up }
 }
 
-// Ventajas de gremio por nivel (WORLD.md): n1 +oro de botín · n2 +defensa a todos ·
-// n3 +XP compartida · n4 Depósito · n5 estandarte. Devuelve los modificadores derivados.
-export function guildPerks(guildLevel = 0) {
-  const L = guildLevel | 0
-  return {
-    goldMul: L >= 1 ? 1.05 : 1,       // +5% oro de botín
-    defense: L >= 2 ? 4 : 0,          // +4 defensa a todos
-    xpMul: L >= 3 ? 1.05 : 1,         // +5% XP
-    deposit: L >= 4,                  // acceso al Depósito del Gremio
-    banner: L >= 5,                   // estandarte visible en ciudad
-  }
-}
+// Ventajas de gremio por nivel: la curva vive en shared/ (la usa también el server para la
+// recompensa de contrato). Incluye el prestigio n6..n10. Ver shared/guildperks.js.
+export { guildPerks } from '../../shared/guildperks.js'
+import { guildPerks } from '../../shared/guildperks.js'
 
 // Bonus PASIVO por nivel de las 6 habilidades de oficio (arrancan en 1, cap 20). Cada oficio empuja
 // un stat de combate/supervivencia, así TODAS rinden y —al salir por computeStats— viajan por
