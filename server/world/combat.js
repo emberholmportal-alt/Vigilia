@@ -53,6 +53,12 @@ const SPAWN_OVERRIDE = {
   lochport_cemetery: [20, 44], // isla #0 (2059 tiles, 20 spawners)
   family_crypt: [10, 39],      // isla #0 (388 tiles, 7 spawners) — nativo caía en el bolsón #1
   merrimead_swamp: [29, 39],   // isla #0 (1622 tiles, 16 spawners)
+  // Cluster de las Minas Abandonadas (nivel 5-6): reanclado central (spawn nativo en esquina).
+  abandoned_mines: [40, 53],   // hub del cluster
+  blackmire_mines: [32, 36],
+  lake_kuuma: [70, 52],
+  fort_amir: [40, 34],         // dungeon final (jefe)
+  grot_lagoon: [45, 49],
 }
 function loadMap(name) {
   if (mapCache.has(name)) return mapCache.get(name)
@@ -248,6 +254,9 @@ const MAP_BOSS = {
   // Templo de Mez (la Entrada, piso 3): el último wyvern que anida en el portón del templo. Bruto
   // de cuerpo a cuerpo (no elemental — distinto de los Tres Nombres). Clímax del ramal (nivel ~9).
   temple_of_mez_3: { sprite: 'wyvern', level: 9 },
+  // Fuerte Amir (final del cluster de minas): el castellano caído, un Caballero de hueso que todavía
+  // monta guardia sobre una guarnición muerta. Golpe en área (smash). Clímax del ramal (nivel ~7).
+  fort_amir: { sprite: 'skeleton_knight_boss', level: 7 },
 }
 // Esbirro INVOCADO por una habilidad (summon): sprite+nivel fijos en un tile dado. `sp:null` +
 // `_parent` -> no repone al morir (no es un spawner del mapa; ver killEnemy).

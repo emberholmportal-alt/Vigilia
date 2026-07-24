@@ -70,6 +70,22 @@ export const ZONE_LORE = {
     es: 'Las minas cantan cuando el aire baja. Los que picaron mastite acá juran que no es el viento.',
     en: 'The mines sing when the air drops. Those who mined mastite here swear it is not the wind.',
   },
+  blackmire_mines: {
+    es: 'Más abajo que las minas, la roca supura. En la Ciénaga Negra el agua es espesa y recuerda cada nombre que se ahogó en ella.',
+    en: 'Deeper than the mines, the rock weeps. In the Blackmire the water runs thick and remembers every name that drowned in it.',
+  },
+  lake_kuuma: {
+    es: 'El Lago Kuuma se congeló en una sola noche, con todo lo que nadaba en él adentro. Todavía se mueve bajo el hielo.',
+    en: 'Lake Kuuma froze in a single night, with everything that swam in it still inside. It moves under the ice yet.',
+  },
+  fort_amir: {
+    es: 'El Fuerte Amir cayó sin que nadie lo asediara. La guarnición sigue en sus puestos, y el castellano todavía no aceptó que perdió.',
+    en: 'Fort Amir fell with no one besieging it. The garrison still holds its posts, and the castellan has yet to accept that he lost.',
+  },
+  grot_lagoon: {
+    es: 'La Laguna Grot es un ojo de agua quieta en la nieve. Lo que la mira demasiado tiempo, se queda.',
+    en: 'Grot Lagoon is an eye of still water in the snow. Whatever stares into it too long, stays.',
+  },
   lochport: {
     es: 'Lochport fue un puerto próspero antes de que el mar dejara de traer barcos y empezara a traer otra cosa. Los muelles todavía crujen; ya nadie los pisa por gusto.',
     en: 'Lochport was a thriving port before the sea stopped bringing ships and started bringing something else. The docks still creak; no one walks them for pleasure now.',

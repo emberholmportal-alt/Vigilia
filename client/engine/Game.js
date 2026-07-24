@@ -2516,6 +2516,7 @@ const HUB_SPAWN = {
   underworld_catacombs: [70, 99], underworld_mines: [31, 63], underworld_stronghold_1: [5, 32], underworld_stronghold_2: [36, 8],
   dilapidated_sewers: [64, 8],
   temple_of_mez_1: [35, 46], temple_of_mez_2: [40, 34], temple_of_mez_3: [53, 40],
+  abandoned_mines: [40, 53], blackmire_mines: [32, 36], lake_kuuma: [70, 52], fort_amir: [40, 34], grot_lagoon: [45, 49],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2591,6 +2592,29 @@ const PORTAL_REPLACE = {
   merrimead_swamp: [
     { x: 27, y: 39, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
+  // Cluster de las Minas Abandonadas (nivel 5-6): Minas (hub) -> Ciénaga Negra -> Lago Kuuma ->
+  // Fuerte Amir (dungeon con jefe). La Laguna Grot cuelga del hub como hoja. Mapas sanos, reanclados
+  // al centro (ver SPAWN_OVERRIDE). Pads curados; cortan los nativos hacia mapas sin poblar (La
+  // Brecha, hyperspace). Avance lejos de la llegada, regreso cerca. Tiles verificados reachable.
+  abandoned_mines: [
+    { x: 38, y: 53, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 60, y: 33, w: 1, h: 1, to: 'blackmire_mines', tx: 32, ty: 36, label: 'Minas de Ciénaga Negra' },
+    { x: 49, y: 0, w: 1, h: 1, to: 'grot_lagoon', tx: 45, ty: 49, label: 'Laguna Grot' },
+  ],
+  blackmire_mines: [
+    { x: 34, y: 36, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 60, y: 40, w: 1, h: 1, to: 'lake_kuuma', tx: 70, ty: 52, label: 'Lago Kuuma' },
+  ],
+  lake_kuuma: [
+    { x: 72, y: 52, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 97, y: 49, w: 1, h: 1, to: 'fort_amir', tx: 40, ty: 34, label: 'Fuerte Amir' },
+  ],
+  fort_amir: [ // dungeon final (jefe: el Caballero de hueso, castellano del fuerte)
+    { x: 42, y: 34, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  grot_lagoon: [
+    { x: 47, y: 49, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
 }
 
 // Portales que AGREGAMOS encima de los nativos del mapa (llegada = spawn walkable del destino).
@@ -2639,6 +2663,8 @@ const PORTAL_EXTRA = {
     // En el fondo de la cueva, tras la guarida de duendes, una boca sellada más vieja: el Templo de
     // Mez (nivel ~7-8, 3 pisos). Pad reachable; llegada a la sala rica del Sótano (35,46).
     { x: 4, y: 3, w: 1, h: 1, to: 'temple_of_mez_1', tx: 35, ty: 46, label: 'Templo de Mez' },
+    // Otra veta de la cueva baja a las Minas Abandonadas (nivel ~5-6): el hub de un cluster minero.
+    { x: 7, y: 40, w: 1, h: 1, to: 'abandoned_mines', tx: 40, ty: 53, label: 'Minas Abandonadas' },
   ],
   // --- Ruinas de los Tres Nombres (quest de Udana): entrar revela el nombre de cada archimago
   // sellado. Cada una vuelve a Triston (donde Udana los pronuncia). Tiles verificados reachable. ---
