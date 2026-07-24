@@ -288,6 +288,9 @@ const MAP_BOSS = {
   // lo que Nazia dejó. Invoca esbirros. Capstone del bolsón (nivel ~10).
   mog_caverns: { sprite: 'skeleton_mage_boss', level: 10 },
 }
+// Total de jefes permanentes del mundo (para la hazaña "Jefes N/total"). Lo expone el server.
+export function bossTotal() { return Object.keys(MAP_BOSS).length }
+
 // Esbirro INVOCADO por una habilidad (summon): sprite+nivel fijos en un tile dado. `sp:null` +
 // `_parent` -> no repone al morir (no es un spawner del mapa; ver killEnemy).
 function spawnMinion(md, sprite, level, tile) {
@@ -548,6 +551,8 @@ function killEnemy(w, e, killerId) {
   if (e.contract) ek.contract = e.contract   // acredita la misión Contrato del que lo mata
   if (e.boss) ek.boss = 1                     // jefe de zona: el cliente puede gatear eventos (quest de las ruinas)
   ctx.sendTo(killerId, ek)
+  // Hazaña AUTORITATIVA: matar al jefe permanente de una zona lo suma a las hazañas del matador.
+  if (e.boss && ctx.recordBoss) ctx.recordBoss(killerId, w.map)
   // Contrato semanal del GREMIO del matador: si la categoría del enemigo matchea, suma al pozo
   // común del gremio. Fire-and-forget (no bloquea el hot-path del combate).
   const killer = ctx.getPlayer && ctx.getPlayer(killerId)

@@ -277,6 +277,19 @@ export async function setCharacterQuestClaims(accountId, ids) {
   })
 }
 
+// Persiste las HAZAÑAS del personaje (jefes derrotados + zona más profunda), server-authoritative.
+// Eventos raros (matar un jefe / entrar a una zona nueva más honda), así que persistir al instante no
+// hace churn. Preserva el resto del blob.
+export async function setCharacterFeats(accountId, feats) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), _feats: feats && typeof feats === 'object' ? feats : null }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
+}
+
 // Escribe el inventario (bag) autoritativo del server al blob del personaje, preservando el resto.
 // Bajo el lock de la cuenta para no pisarse con el autosave del cliente.
 export async function setCharacterInventory(accountId, inv) {

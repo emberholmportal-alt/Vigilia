@@ -5,7 +5,7 @@ import { useGameStore } from '../store.js'
 import { playerProgress } from '../data/progression.js'
 import { attrEarned, attrSpent } from '../data/skilltree.js'
 import { useT } from './useT.js'
-import { raceName } from '../i18n.js'
+import { raceName, zoneName } from '../i18n.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 const PW = 640, PH = 832
@@ -26,6 +26,7 @@ export default function Character() {
   const attrAlloc = useGameStore((s) => s.attrAlloc)
   const allocAttr = useGameStore((s) => s.allocAttr)
   const setPanel = useGameStore((s) => s.setPanel)
+  const myFeats = useGameStore((s) => s.myFeats)
   const t = useT()
   const s = stats || {}
   const prog = playerProgress(xp || 0)
@@ -44,6 +45,8 @@ export default function Character() {
     [t('stat_speed'), s.speedMul ? `×${s.speedMul}` : '×1'],
     [t('stat_xpbonus'), s.xpMul ? `×${s.xpMul.toFixed(2)}` : '×1'],
     ...(s.set ? [[t('stat_set'), `${s.set.label} ${s.set.pieces}/6`]] : []),
+    ...(myFeats ? [[t('feat_bosses'), `${myFeats.bosses}/${myFeats.bossTotal}`]] : []),
+    ...(myFeats && myFeats.deepest?.level > 0 ? [[t('feat_deepest'), `${zoneName(myFeats.deepest.map, t.lang)} · ${t('pm_lvl')} ${myFeats.deepest.level}`]] : []),
   ]
 
   return (

@@ -403,6 +403,7 @@ export class Game {
     net.on('inv', (m) => this.store.mirrorInv(m.inv))   // bag autoritativo del server (Fase A.2)
     // Trade P2P (Kintara #3): pedido / apertura / estado / cierre / cancelación -> store.
     net.on('inspect', (m) => this.store.onInspect(m))   // tarjeta pública de otro jugador (respuesta a inspect)
+    net.on('feats', (m) => this.store.onFeats(m))       // mis propias hazañas (server-owned)
     net.on('trade_req', (m) => this.store.onTradeReq(m))
     net.on('trade_open', (m) => this.store.onTradeOpen(m))
     net.on('trade_state', (m) => this.store.onTradeState(m))

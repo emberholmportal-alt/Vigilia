@@ -590,9 +590,17 @@ export const useGameStore = create((set, get) => ({
   // --- inspeccionar jugador: tarjeta pública (estilo "look" de Tibia) ---
   // La arma el propio cliente del objetivo (getPublicCard) y el server la reenvía. Es de display:
   // nadie gana ventaja mintiendo sobre sus propios números. Se pide al abrir la vista de stats.
-  inspectCard: null,         // { id, name, level, race, hp, hpMax, card:{...} } o null (cargando)
+  inspectCard: null,         // { id, name, level, race, hp, hpMax, card:{...}, feats:{...} } o null (cargando)
   requestInspect: (id) => { if (isOnline()) { set({ inspectCard: null }); net.inspect(id) } },
   onInspect: (m) => { const pm = get().playerMenu; if (pm && m && m.id === pm.id) set({ inspectCard: m }) },
+  // Mis hazañas (server-owned): jefes derrotados + zona más profunda. El server me las manda al entrar
+  // y cada vez que gano una. Toast al derrotar un jefe nuevo (feedback del hito).
+  myFeats: null,             // { bosses, bossList, bossTotal, deepest:{level,map} }
+  onFeats: (m) => {
+    const prev = get().myFeats
+    if (prev && m?.feats && m.feats.bosses > prev.bosses) get().showToast(tt('feat_boss_earned', { n: m.feats.bosses, total: m.feats.bossTotal }))
+    set({ myFeats: m?.feats || null })
+  },
   // Tarjeta pública de MI jugador (lo que ven los demás al inspeccionarme). Sólo display.
   getPublicCard: () => {
     const s = get(); const st = s.stats; if (!st) return null
@@ -1714,6 +1722,7 @@ export const storeApi = {
   openPlayerMenu: (info) => useGameStore.getState().openPlayerMenu(info),
   getPublicCard: () => useGameStore.getState().getPublicCard(),
   onInspect: (m) => useGameStore.getState().onInspect(m),
+  onFeats: (m) => useGameStore.getState().onFeats(m),
   onTradeReq: (m) => useGameStore.getState().onTradeReq(m),
   onTradeOpen: (m) => useGameStore.getState().onTradeOpen(m),
   onTradeState: (m) => useGameStore.getState().onTradeState(m),

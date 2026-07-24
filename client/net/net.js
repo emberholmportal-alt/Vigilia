@@ -94,6 +94,8 @@ class Net {
         else if (m.t === 'plvl') this._emit(m.t, m)
         // tarjeta pública de otro jugador (respuesta a inspect)
         else if (m.t === 'inspect') this._emit(m.t, m)
+        // mis propias hazañas (server-owned): al entrar y al ganar un jefe / alcanzar una zona
+        else if (m.t === 'feats') this._emit(m.t, m)
       }
     })
   }

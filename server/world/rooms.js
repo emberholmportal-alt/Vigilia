@@ -104,7 +104,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null } = {}) {
+export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -143,6 +143,7 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   // Quests narrativas YA reclamadas (server-owned, persistido): así la recompensa no se re-cobra tras
   // reiniciar/reloguear (antes vivía sólo en memoria -> mint por relogin con cliente tocado).
   p._qclaimed = new Set(Array.isArray(qclaimed) ? qclaimed : [])
+  p.feats = normalizeFeats(feats)   // hazañas server-owned (jefes derrotados + zona más profunda)
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
@@ -150,6 +151,8 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   const es = combat.snapshot(map, ch); if (es && es.length) send({ t: 'espawn', es })
   const ns = combat.nodeSnapshot(map, ch); if (ns && ns.length) send({ t: 'nspawn', ns })
   const cs = combat.chestSnapshot(map, ch); if (cs && cs.length) send({ t: 'cspawn', cs })
+  sendFeats(p)                   // el jugador ve sus propias hazañas
+  enterZone(id, map)             // registra la zona de entrada (por si es la más profunda)
   return { id, channel: ch, present }
 }
 
@@ -172,6 +175,7 @@ export function move(id, map, x, y, dir) {
     const es = combat.snapshot(map, p.ch); if (es && es.length) p.send({ t: 'espawn', es })
     const ns = combat.nodeSnapshot(map, p.ch); if (ns && ns.length) p.send({ t: 'nspawn', ns })
     const cs = combat.chestSnapshot(map, p.ch); if (cs && cs.length) p.send({ t: 'cspawn', cs })
+    enterZone(id, map)              // hazaña: registra si esta zona es la más profunda alcanzada
     return { channel: p.ch, present }
   }
   // Anti-teleport: clampeá el salto al máximo plausible según el tiempo transcurrido. Legítimo =
@@ -583,7 +587,47 @@ export function inspectCard(viewerId, targetId) {
   const v = players.get(viewerId), t = players.get(targetId)
   if (!v || !t) return { error: 'no está' }
   if (v.map !== t.map || v.ch !== t.ch) return { error: 'fuera de vista' }   // sólo se inspecciona a quien ves
-  return { id: t.id, name: t.name, level: t.level || 1, race: t.race || null, hp: t.hp, hpMax: t.hpMax, card: t.card || null }
+  return { id: t.id, name: t.name, level: t.level || 1, race: t.race || null, hp: t.hp, hpMax: t.hpMax, card: t.card || null, feats: publicFeats(t) }
+}
+
+// --- Hazañas: jefes derrotados + zona más profunda alcanzada (server-authoritative, persistidas) ---
+// Nivel de referencia por zona curada (tope del rango de ESCENARIOS.md). Sólo para "zona más profunda
+// alcanzada"; los mapas fuera de la tabla no cuentan (nivel 0). Se actualiza al ENTRAR (no al matar).
+const MAP_LEVEL = {
+  black_oak_farm: 3, river_trail: 5, salted_field: 6, greenwood_point: 1,
+  lochport: 2, lochport_cemetery: 3, family_crypt: 2, merrimead_swamp: 2,
+  goblin_cave: 8, goblin_camp: 2,
+  abandoned_mines: 5, blackmire_mines: 5, lake_kuuma: 5, fort_amir: 7, grot_lagoon: 6,
+  temple_of_mez_1: 8, temple_of_mez_2: 8, temple_of_mez_3: 9, antlion_nest: 6,
+  st_maria_1: 9, perdition_mines: 9, stormrock_pass: 9,
+  black_oak_city: 10, dilapidated_sewers: 11, wizards_tower_1: 12, wizards_tower_2: 12, wizards_tower_3: 12,
+  southern_ridge: 9, mog_caverns: 10, nazia_highlands: 9, nazia_underground: 9, nazia_mines: 11,
+  underworld: 13, underworld_catacombs: 13, underworld_mines: 14, underworld_stronghold_1: 14, underworld_stronghold_2: 15,
+  oasis: 15, the_pit: 17,
+}
+function normalizeFeats(f) {
+  const bosses = f && Array.isArray(f.bosses) ? [...new Set(f.bosses.filter((x) => typeof x === 'string'))] : []
+  const dl = f && f.deepest && typeof f.deepest === 'object' ? f.deepest : null
+  const deepest = dl ? { level: Math.max(0, dl.level | 0), map: typeof dl.map === 'string' ? dl.map : '' } : { level: 0, map: '' }
+  return { bosses, deepest }
+}
+export function featsOf(accountId) { for (const p of players.values()) if (p.accountId === accountId) return p.feats || null; return null }
+function publicFeats(p) {
+  const f = (p && p.feats) || { bosses: [], deepest: { level: 0, map: '' } }
+  return { bosses: f.bosses.length, bossList: f.bosses.slice(0, 16), bossTotal: combat.bossTotal(), deepest: f.deepest }
+}
+function persistFeats(p) { if (p.accountId) db.setCharacterFeats(p.accountId, p.feats).catch(() => {}) }
+function sendFeats(p) { p.send({ t: 'feats', feats: publicFeats(p) }) }
+// Suma un jefe permanente a las hazañas del jugador (dedupe por mapa). Lo llama combat al matarlo.
+export function recordBoss(id, map) {
+  const p = players.get(id); if (!p || !p.feats || p.feats.bosses.includes(map)) return
+  p.feats.bosses.push(map); persistFeats(p); sendFeats(p)
+}
+// Marca la zona más profunda alcanzada (monótona). Se llama al entrar a un mapa.
+export function enterZone(id, map) {
+  const p = players.get(id); if (!p || !p.feats) return
+  const lv = MAP_LEVEL[map] || 0
+  if (lv > (p.feats.deepest.level || 0)) { p.feats.deepest = { level: lv, map }; persistFeats(p); sendFeats(p) }
 }
 // Persiste el oro autoritativo al personaje (al salir). setCharacterGold preserva el resto del blob.
 async function persistGold(p) {
@@ -850,6 +894,7 @@ combat.init({
   awardGold: (id, amt, reason, x, y) => awardGold(id, amt, reason, x, y),   // faucets del mundo (kill/cofre)
   grantLoot: (id, drops) => grantLoot(id, drops),                           // ítems de loot (kill), autoritativos
   missionTick: (id, type, map, n) => missionTick(id, type, map, n),         // avance de misiones autoritativo
+  recordBoss: (id, map) => recordBoss(id, map),                             // hazaña: jefe permanente derrotado
 })
 combat.start()
 

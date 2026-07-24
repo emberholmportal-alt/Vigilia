@@ -7,6 +7,7 @@ import { useT } from './useT.js'
 import { useGameStore } from '../store.js'
 import { RACES } from '../data/characters.js'
 import { SKILLS } from '../data/progression.js'
+import { zoneName } from '../i18n.js'
 import { Swap, Stats } from './Icon.jsx'
 
 const pct = (v, max) => Math.max(0, Math.min(100, ((v || 0) / (max || 1)) * 100))
@@ -55,6 +56,16 @@ export default function PlayerMenu() {
             {archetype && <div className="pm-row"><span>{t('pm_class')}</span><b>{archetype}{raceName ? ' · ' + raceName : ''}</b></div>}
             <div className="pm-row"><span>{t('pm_hp')}</span><b>{hp ?? '—'} / {hpMax ?? '—'}</b></div>
             <div className="pm-hpbar"><i style={{ width: pct(hp, hpMax) + '%' }} /></div>
+
+            {info?.feats && (
+              <>
+                <div className="pm-sec">{t('pm_feats')}</div>
+                <div className="pm-row"><span>{t('feat_bosses')}</span><b className="pm-good">{info.feats.bosses}/{info.feats.bossTotal}</b></div>
+                {info.feats.deepest?.level > 0 && (
+                  <div className="pm-row"><span>{t('feat_deepest')}</span><b>{zoneName(info.feats.deepest.map, lang)} · {t('pm_lvl')} {info.feats.deepest.level}</b></div>
+                )}
+              </>
+            )}
 
             {view === 'stats' && !info ? (
               <p className="pm-far">{t('pm_loading')}</p>

@@ -170,6 +170,7 @@ wss.on('connection', (ws) => {
           const inv = rooms.invOf(conn.accountId)
           const led = rooms.ledgerOf(conn.accountId)
           const qc = rooms.questClaimsOf(conn.accountId)
+          const ft = rooms.featsOf(conn.accountId)
           const data = { ...(m.char || {}) }
           await db.withAccountLock(conn.accountId, async () => {
             const existing = await db.loadCharacter(conn.accountId)
@@ -188,6 +189,10 @@ wss.on('connection', (ws) => {
             // cliente — vienen de la sesión viva o se preservan del personaje. Un save no las borra.
             if (qc != null) data._qclaimed = qc
             else if (ed) { if (Array.isArray(ed._qclaimed)) data._qclaimed = ed._qclaimed; else delete data._qclaimed }
+            // Hazañas (server-owned): jefes derrotados + zona más profunda. Igual que las quests: de la
+            // sesión viva o preservadas del personaje; un save del cliente no las inventa ni las borra.
+            if (ft != null) data._feats = ft
+            else if (ed) { if (ed._feats && typeof ed._feats === 'object') data._feats = ed._feats; else delete data._feats }
             // CREACIÓN (personaje inexistente): el server ASIGNA el kit inicial canónico (oro/equipo/
             // inventario/cinturón + ledger), ignorando el blob del cliente. Cierra "crearse con oro/
             // equipo falso". El ledger canónico se persiste ya, así el 1er join no grandfatherea.
@@ -321,13 +326,14 @@ wss.on('connection', (ws) => {
           if (oldPid != null) await rooms.leaveFlush(oldPid)
           conn.playerId = null
           // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
-          let gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null
+          let gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null
           if (!m.spectator) {
             const ch = await db.loadCharacter(conn.accountId)
             gold = Math.floor(Number(ch?.data?.gold) || 0)
             seals = Math.floor(Number(ch?.data?.seals) || 0)
             inv = ch?.data?.inventory || null
             qclaimed = Array.isArray(ch?.data?._qclaimed) ? ch.data._qclaimed : null
+            feats = (ch?.data?._feats && typeof ch.data._feats === 'object') ? ch.data._feats : null   // hazañas server-owned
             const d = ch?.data || {}
             // Ledger "checkout" AUTORITATIVO (Fase A.3): si el personaje ya tiene ledger guardado, se
             // carga de ahí (server-owned, el cliente no lo puede inflar). Si NO (personaje viejo, 1ª vez),
@@ -338,7 +344,7 @@ wss.on('connection', (ws) => {
             // save manipulado (belt/graves con count enorme) en cuentas sin ledger persistido.
             if (!ledger) outSeed = grandfatherSeed(d)
           }
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, inv, outSeed, ledger, qclaimed })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, inv, outSeed, ledger, qclaimed, feats })
           conn.playerId = id
           send({ t: 'present', you: id, players: present, map: m.map, channel })
           if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'seals', seals }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + sellos + bag
