@@ -63,7 +63,13 @@ const SPAWN_OVERRIDE = {
   nazia_highlands: [22, 21],
   nazia_underground: [42, 21],
   nazia_mines: [14, 20],       // lo más hondo (jefe)
+  oasis: [6, 8],               // endgame lv14: llegada nativa = spawn = isla rica (no hace falta mover)
+  the_pit: [71, 71],           // endgame: idem
 }
+// Piso de nivel por mapa: algunos mapas de Flare traen los spawners con niveles MEZCLADOS (p.ej.
+// the_pit: 13 en lv1 + 4 en lv15-16). Para el endgame subimos cada spawner a un piso, así la zona
+// se siente pareja y dura. Se aplica en loadMap (afecta spawnEnemy, near-spawners y entryLevel).
+const LEVEL_FLOOR = { the_pit: 15, oasis: 14 }
 function loadMap(name) {
   if (mapCache.has(name)) return mapCache.get(name)
   let data = null
@@ -72,6 +78,10 @@ function loadMap(name) {
     const coll = raw.layers && raw.layers.collision
     data = { w: raw.w, h: raw.h, coll, spawn: raw.spawn || null, spawners: raw.spawners || [], chests: raw.chests || [] }
     if (data && SPAWN_OVERRIDE[name]) data.spawn = SPAWN_OVERRIDE[name]
+    const floor = LEVEL_FLOOR[name]
+    if (data && floor) data.spawners = data.spawners.map((s) => ({
+      ...s, level: Array.isArray(s.level) ? s.level.map((l) => Math.max(floor, l)) : Math.max(floor, s.level || 1),
+    }))
   } catch { data = null }
   mapCache.set(name, data)
   return data
@@ -264,6 +274,12 @@ const MAP_BOSS = {
   // Minas de Nazia (fondo de la región de Nazia): un señor de la guerra hobgoblin que apretó la
   // veta hasta secarla. Golpe en área (smash). Clímax del ramal (nivel ~11).
   nazia_mines: { sprite: 'goblin_elite', level: 11 },
+  // El Oasis (bolsón de endgame colgado del cluster profundo, nivel ~14): un wyvern se adueñó de la
+  // última agua tan hondo. Bruto de cuerpo a cuerpo (nivel ~15).
+  oasis: { sprite: 'wyvern', level: 15 },
+  // El Pozo (lo más hondo del mundo, tras la Fortaleza II): el Minotauro del fondo, más grande y más
+  // viejo que el que abrió el pozo. Golpe en área (smash). El jefe más duro del juego (nivel ~17).
+  the_pit: { sprite: 'minotaur', level: 17 },
 }
 // Esbirro INVOCADO por una habilidad (summon): sprite+nivel fijos en un tile dado. `sp:null` +
 // `_parent` -> no repone al morir (no es un spawner del mapa; ver killEnemy).

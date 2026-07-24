@@ -2518,6 +2518,7 @@ const HUB_SPAWN = {
   temple_of_mez_1: [35, 46], temple_of_mez_2: [40, 34], temple_of_mez_3: [53, 40],
   abandoned_mines: [40, 53], blackmire_mines: [32, 36], lake_kuuma: [70, 52], fort_amir: [40, 34], grot_lagoon: [45, 49],
   nazia_highlands: [22, 21], nazia_underground: [42, 21], nazia_mines: [14, 20],
+  oasis: [6, 8], the_pit: [71, 71],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2740,6 +2741,12 @@ const PORTAL_EXTRA = {
   underworld_stronghold_2: [
     { x: 39, y: 8, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
+  // --- Endgame (bolsones colgados del cluster profundo por portales nativos, nivel 14-17) ---
+  // El Oasis (lv14) baja de las Minas del Inframundo; el Pozo (lv15-16, jefe más duro del juego)
+  // baja de la Fortaleza II. Sólo agregamos el pad de regreso a Triston; el nativo de vuelta al
+  // cluster queda. Piso de nivel de the_pit en combat.js (LEVEL_FLOOR).
+  oasis: [{ x: 9, y: 8, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  the_pit: [{ x: 74, y: 71, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
   // --- clusters futuros (ya cableados, fuera del arranque) ---
   goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],
   the_breach: [{ x: 46, y: 98, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' }],
@@ -2762,8 +2769,8 @@ const UNFINISHED = new Set([
   // fragmentados / rotos (contenido inalcanzable desde su spawn)
   'stormrock_ruins', 'torture_chambers', 'the_breach', 'st_maria_2', 'st_maria_3',
   // sanos pero SIN CURAR todavía (materia prima de futuros clusters)
-  'antlion_nest', 'mog_caverns', 'oasis', 'the_pit', 'stonewood', 'southern_ridge',
-  // (la región de Nazia — highlands/underground/mines — ya está curada; ver PORTAL_REPLACE)
+  'antlion_nest', 'mog_caverns', 'stonewood', 'southern_ridge',
+  // (Nazia — highlands/underground/mines — y el endgame oasis/the_pit ya están curados)
 ])
 const portalAllowed = (to) => !!to && !PORTAL_BLOCK.has(to) && !UNFINISHED.has(to) && !/^Act\d|^World/i.test(to)
 

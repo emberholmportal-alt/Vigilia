@@ -50,6 +50,14 @@ export const ZONE_LORE = {
     es: 'Lo más hondo que se puede llegar y volver. Detrás de esta puerta, el Caballero de hueso vela lo que queda del reino de abajo.',
     en: 'The deepest you can go and still return. Behind this door, the Bone Knight guards what remains of the kingdom below.',
   },
+  oasis: {
+    es: 'Un oasis, tan hondo que ya no debería haber cielo. El agua sigue verde y algo grande bebe de ella. No fuiste el primero en encontrarla; sí podés ser el último.',
+    en: 'An oasis, so deep there should be no sky left. The water is still green and something large drinks from it. You are not the first to find it; you may be the last.',
+  },
+  the_pit: {
+    es: 'El Pozo no tiene fondo, tiene dueño. Más viejo que el minotauro que abrió el mundo, espera abajo desde antes de que hubiera un abajo. Llegaste al final de todo.',
+    en: 'The Pit has no bottom; it has an owner. Older than the minotaur that broke the world, it has waited below since before there was a below. You have reached the end of everything.',
+  },
   river_trail: {
     es: 'El agua se lleva los pasos que das. Dicen que, más abajo, a veces los devuelve.',
     en: 'The water carries away the steps you take. They say that, further down, it sometimes gives them back.',

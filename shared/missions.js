@@ -37,6 +37,9 @@ export const POOL = [
   { id: 'loot_underworld', type: 'chest', map: 'underworld', target: 3, xp: 165, gold: 115, seals: 4 },
   // Cluster profundo (nivel 13→15): Minas y Catacumbas del Inframundo. Lo más duro del mundo.
   { id: 'hunt_deep', type: 'kill', map: 'underworld_mines', target: 18, xp: 230, gold: 165, seals: 5 },
+  // Endgame (nivel 14-16): el Oasis y el Pozo, lo más hondo del mundo.
+  { id: 'hunt_oasis', type: 'kill', map: 'oasis', target: 16, xp: 250, gold: 180, seals: 5 },
+  { id: 'hunt_pit', type: 'kill', map: 'the_pit', target: 14, xp: 300, gold: 220, seals: 6 },
   { id: 'loot_catacombs', type: 'chest', map: 'underworld_catacombs', target: 3, xp: 200, gold: 140, seals: 5 },
   { id: 'hunt_crypt', type: 'kill', map: 'family_crypt', target: 10, xp: 95, gold: 65, seals: 2 },
   // Ciénaga de Merrimead (nivel ~2): ramal costero de Lochport, tras el cementerio.
