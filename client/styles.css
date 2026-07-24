@@ -752,10 +752,6 @@ html, body, #root {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
 }
 .ab-btn:active { filter: brightness(1.35); }
-/* Gremio/Mercado: ícono SVG centrado sobre el slot vacío de Flare (sin ícono grabado propio). */
-.ab-btn-ic { display: grid; place-items: center; }
-.ab-btn-ic svg { width: 24px; height: 24px; color: #e6cf8f; }
-.ab-btn-ic:active svg { color: #ffe9a8; }
 
 /* slots del mouse M1 (ataque normal) / M2 (especial), estilo Flare */
 .ab-mouse { display: flex; gap: 3px; margin-left: 4px; }
@@ -840,22 +836,6 @@ html, body, #root {
   -webkit-tap-highlight-color: transparent;
 }
 .db-menu:active { filter: brightness(1.4); }
-/* Gremio + Mercado en escritorio: par flotante sobre el extremo derecho de la barra grabada
-   (el marco de Flare no tiene slots para ellos). Chips temáticos con ícono SVG + etiqueta. */
-.db-extra {
-  position: absolute; right: 6px; bottom: calc(100% + 6px);
-  display: flex; gap: 6px; pointer-events: auto;
-}
-.db-extra-btn {
-  display: flex; align-items: center; gap: 5px; cursor: pointer;
-  padding: 4px 9px; font-size: 12px; color: var(--parch);
-  background: rgba(20, 16, 12, 0.86); border: 1px solid var(--edge);
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-  -webkit-tap-highlight-color: transparent;
-}
-.db-extra-btn svg { width: 16px; height: 16px; color: #d9a24a; }
-.db-extra-btn:hover { border-color: var(--ember); color: #ece0c4; }
-.db-extra-btn:hover svg { color: #ffe9a8; }
 
 /* chip de oro arriba a la izquierda (para escritorio, donde la barra Flare no lo muestra) */
 .hud-gold {
@@ -1211,18 +1191,42 @@ html, body, #root {
   text-shadow: 0 1px 2px #000; letter-spacing: 0.04em;
 }
 .char-stats { display: flex; flex-direction: column; gap: 5px; }
-/* Social: botón de acceso al gremio dentro del modal de personaje */
-.char-social-btn {
-  display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 12px;
-  background: rgba(120, 104, 80, 0.14); border: 1px solid rgba(156, 122, 46, 0.4);
-  border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #d9caa4;
-  font-family: 'BonaNova', Georgia, serif; font-size: 13px; text-align: left;
+/* Gremio (solo lectura) dentro del modal de personaje: membresía + top público. Fundar/unirse
+   se hace sólo en la Casa de Gremios (NPC), así que acá no hay botones de acción. */
+.char-guild {
+  margin-top: 12px; padding: 9px 12px;
+  background: rgba(120, 104, 80, 0.12); border: 1px solid rgba(156, 122, 46, 0.35); border-radius: 6px;
+  font-family: 'BonaNova', Georgia, serif;
 }
-.char-social-btn:hover { background: rgba(156, 122, 46, 0.24); }
-.char-social-icon { flex: none; color: #d9a24a; font-size: 15px; }
-.char-social-txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.char-social-txt b { color: #ece0c4; }
-.char-social-cta { flex: none; color: #d9a24a; font-size: 12px; }
+.char-guild-head {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #b79a5e; margin-bottom: 6px;
+}
+.char-guild-mine { display: flex; align-items: center; gap: 8px; }
+.char-guild-chip {
+  flex: none; min-width: 30px; height: 20px; padding: 0 6px; border-radius: 4px;
+  display: grid; place-items: center; font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  color: #14100c; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.char-guild-chip.sm { min-width: 26px; height: 17px; font-size: 10px; }
+.char-guild-txt { display: flex; flex-direction: column; min-width: 0; }
+.char-guild-txt b { color: #ece0c4; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.char-guild-txt span { color: #b9a984; font-size: 11px; }
+.char-guild-none { display: flex; flex-direction: column; gap: 2px; }
+.char-guild-none b { color: #d9caa4; font-size: 13px; }
+.char-guild-none span { color: #9a8b6c; font-size: 11px; font-style: italic; }
+.char-guild-sub {
+  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #8f7c52; margin: 9px 0 4px;
+}
+.char-guild-rank { display: flex; flex-direction: column; gap: 3px; }
+.char-guild-row {
+  display: flex; align-items: center; gap: 7px; font-size: 11px; color: #c3b491;
+}
+.char-guild-row.mine { color: #ece0c4; }
+.char-guild-n { flex: none; width: 14px; text-align: right; color: #8f7c52; font-variant-numeric: tabular-nums; }
+.char-guild-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.char-guild-meta { flex: none; color: #9a8b6c; font-size: 10px; }
 .char-stat {
   display: flex; justify-content: space-between; align-items: baseline;
   border-bottom: 1px solid rgba(120, 104, 80, 0.25); padding-bottom: 3px;
