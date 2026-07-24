@@ -96,6 +96,8 @@ class Net {
         else if (m.t === 'inspect') this._emit(m.t, m)
         // mis propias hazañas (server-owned): al entrar y al ganar un jefe / alcanzar una zona
         else if (m.t === 'feats') this._emit(m.t, m)
+        // invitación de gremio entrante
+        else if (m.t === 'guild_invite') this._emit(m.t, m)
       }
     })
   }
@@ -190,6 +192,9 @@ class Net {
   async guildKick(target) { this._send({ t: 'guild_kick', target }); return this._once('guild') }
   async guildRole(target, role) { this._send({ t: 'guild_role', target, role }); return this._once('guild') }
   async guildTransfer(target) { this._send({ t: 'guild_transfer', target }); return this._once('guild') }
+  async guildInvite(target) { this._send({ t: 'guild_invite', target }); return this._once('guild') }
+  async guildAccept() { this._send({ t: 'guild_accept_invite' }); return this._once('guild') }
+  guildDecline() { this._send({ t: 'guild_decline_invite' }) }
   // Depósito del Gremio (banco compartido). Responden `t:'guild_dep'`.
   async guildDepView() { this._send({ t: 'guild_dep_view' }); return this._once('guild_dep') }
   async guildDepGold(dir, amount) { this._send({ t: 'guild_dep_gold', dir, amount }); return this._once('guild_dep') }

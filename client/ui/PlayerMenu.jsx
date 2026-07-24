@@ -20,6 +20,8 @@ export default function PlayerMenu() {
   const requestTrade = useGameStore((s) => s.requestTrade)
   const requestInspect = useGameStore((s) => s.requestInspect)
   const inspectCard = useGameStore((s) => s.inspectCard)
+  const guildRole = useGameStore((s) => s.guildRole)
+  const inviteToGuild = useGameStore((s) => s.inviteToGuild)
   const [view, setView] = useState('menu')
   useEffect(() => { setView('menu') }, [pm?.id])   // al abrir otro jugador, arranca en el menú
   // Al entrar a la vista de stats, pedí la tarjeta pública al server (una vez por objetivo/apertura).
@@ -28,6 +30,8 @@ export default function PlayerMenu() {
   if (!pm) return null
   const raceOf = (id) => RACES.find((r) => r.id === id)
   const doTrade = () => { requestTrade(pm.id, pm.name); close() }
+  const canInvite = guildRole === 'founder' || guildRole === 'officer'
+  const doInvite = () => { inviteToGuild(pm.id, pm.name); close() }
 
   // La tarjeta ya llegó si inspectCard es de este jugador. `card` puede ser null (objetivo sin stats).
   const info = inspectCard && inspectCard.id === pm.id ? inspectCard : null
@@ -109,6 +113,7 @@ export default function PlayerMenu() {
           <div className="pm-actions col">
             <button className="pm-btn primary" disabled={!pm.near} onClick={doTrade}><Swap /> {t('pm_trade')}</button>
             <button className="pm-btn" onClick={() => setView('stats')}><Stats /> {t('pm_stats')}</button>
+            {canInvite && <button className="pm-btn" onClick={doInvite}>{t('pm_invite_guild')}</button>}
             {!pm.near && <p className="pm-far">{t('trade_too_far')}</p>}
           </div>
         )}

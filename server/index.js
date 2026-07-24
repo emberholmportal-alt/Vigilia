@@ -248,6 +248,22 @@ wss.on('connection', (ws) => {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
           return send({ t: 'guild', ...(await guilds.transfer(conn.accountId, m.target)) })
         }
+        case 'guild_invite': {     // invitar a un jugador visible (m.target = su playerId) al gremio
+          if (!conn.accountId || conn.playerId == null) return send({ t: 'guild', error: 'sin sesión' })
+          const targetAcct = rooms.accountOf(m.target)
+          if (!targetAcct) return send({ t: 'guild', error: 'ese jugador no está' })
+          const r = await guilds.invite(conn.accountId, targetAcct)
+          if (r.ok) rooms.notify(m.target, { t: 'guild_invite', from: rooms.nameOf(conn.playerId), guildName: r.guild.name, tag: r.guild.tag })
+          return send({ t: 'guild', ok: r.ok, error: r.error, invited: r.ok })
+        }
+        case 'guild_accept_invite': {   // aceptar la invitación pendiente
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.acceptInvite(conn.accountId)) })
+        }
+        case 'guild_decline_invite': {  // rechazar (silencioso)
+          if (!conn.accountId) return
+          return void guilds.declineInvite(conn.accountId)
+        }
         // Depósito del Gremio (banco compartido)
         case 'guild_dep_view': {
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })

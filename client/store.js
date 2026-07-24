@@ -1190,6 +1190,22 @@ export const useGameStore = create((set, get) => ({
       get().refreshGuild()
     }
   },
+  // --- Invitaciones al gremio ---
+  guildInvite: null,        // invitación entrante { from, guildName, tag } o null
+  inviteToGuild: async (playerId, name) => {
+    if (!ONLINE || !net.connected) return
+    const r = await net.guildInvite(playerId).catch(() => null)
+    if (r && r.ok) get().showToast(tt('guild_invite_sent', { name: name || '' }))
+    else if (r && r.error) get().showToast(r.error)
+  },
+  onGuildInvite: (m) => { if (!get().guild && m) set({ guildInvite: { from: m.from, guildName: m.guildName, tag: m.tag } }) },  // sólo si no estoy en un gremio
+  acceptGuildInvite: async () => {
+    set({ guildInvite: null })
+    const r = await net.guildAccept().catch(() => null)
+    if (get()._applyGuildResult(r)) { get().showToast(tt('guild_joined', { tag: r.guild.tag })); get().refreshGuild() }
+  },
+  declineGuildInvite: () => { net.guildDecline(); set({ guildInvite: null }) },
+
   // --- Gestión de miembros (roles: founder > officer > member) ---
   kickMember: async (target, name) => {
     if (!ONLINE || !net.connected) return
@@ -1745,6 +1761,7 @@ export const storeApi = {
   getPublicCard: () => useGameStore.getState().getPublicCard(),
   onInspect: (m) => useGameStore.getState().onInspect(m),
   onFeats: (m) => useGameStore.getState().onFeats(m),
+  onGuildInvite: (m) => useGameStore.getState().onGuildInvite(m),
   onTradeReq: (m) => useGameStore.getState().onTradeReq(m),
   onTradeOpen: (m) => useGameStore.getState().onTradeOpen(m),
   onTradeState: (m) => useGameStore.getState().onTradeState(m),

@@ -552,6 +552,8 @@ export function playerIdOfAccount(accountId) {
   return null
 }
 export function nameOf(id) { const p = players.get(id); return p ? p.name : '' }
+export function accountOf(id) { const p = players.get(id); return p ? p.accountId : null }   // playerId -> accountId (para invitar)
+export function notify(id, msg) { const p = players.get(id); if (p) p.send(msg) }             // empujar un mensaje a un jugador visible
 
 // --- Inspeccionar jugador: tarjeta pública (estilo "look") -------------------------------------
 // El cliente del objetivo arma su propia tarjeta (display) y la manda con setCard; acá la guardamos

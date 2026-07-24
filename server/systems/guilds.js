@@ -191,6 +191,35 @@ export async function leave(accountId) {
   return { ok: true, disbanded: left === 0 }
 }
 
+// ---------- Invitaciones (fundador + oficiales invitan; el ingreso por sigla sigue abierto) ----------
+// Invitación pendiente en memoria por cuenta objetivo. Caduca a los 2 minutos. El accept la consume
+// server-side, así nadie se une "aceptando" una invitación que no recibió.
+const invites = new Map()   // targetAccountId -> { guildId, from, at }
+const INVITE_TTL = 120 * 1000
+export async function invite(inviterAccountId, targetAccountId) {
+  const a = await db.getGuildMembership(inviterAccountId)
+  if (!a || (a.role !== 'founder' && a.role !== 'officer')) return { ok: false, error: 'sólo el fundador y los oficiales invitan' }
+  if (inviterAccountId === targetAccountId) return { ok: false, error: 'no podés invitarte' }
+  if (await db.getGuildMembership(targetAccountId)) return { ok: false, error: 'ese jugador ya está en un gremio' }
+  const g = await db.getGuild(a.guild_id)
+  if (!g) return { ok: false, error: 'gremio inexistente' }
+  invites.set(targetAccountId, { guildId: g.id, from: inviterAccountId, at: Date.now() })
+  return { ok: true, guild: { id: g.id, name: g.name, tag: g.tag, color: g.color || '#c9a227' } }
+}
+export async function acceptInvite(accountId) {
+  const inv = invites.get(accountId)
+  if (!inv) return { ok: false, error: 'no tenés invitaciones' }
+  invites.delete(accountId)
+  if (Date.now() - inv.at > INVITE_TTL) return { ok: false, error: 'la invitación caducó' }
+  if (await db.getGuildMembership(accountId)) return { ok: false, error: 'ya estás en un gremio' }
+  const g = await db.getGuild(inv.guildId)
+  if (!g) return { ok: false, error: 'ese gremio ya no existe' }
+  await db.setGuildMembership(accountId, g.id, 'member')
+  invalidateGuildCache(accountId)
+  return { ok: true, guild: pubGuild(g), role: 'member' }
+}
+export function declineInvite(accountId) { invites.delete(accountId); return { ok: true } }
+
 // ---------- Gestión de miembros (roles: founder > officer > member) ----------
 // El fundador asciende/desciende oficiales y transfiere el liderazgo. Fundador y oficiales expulsan;
 // nadie expulsa al fundador; un oficial no expulsa a otro oficial.
