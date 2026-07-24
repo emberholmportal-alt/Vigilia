@@ -146,11 +146,15 @@ export async function info(accountId, guildId) {
 // Poder del gremio: un puntaje que mezcla tamaño, fuerza y riqueza colectiva, con una parte de
 // promedio para que no gane sólo el gremio más numeroso de alts nivel 1. Todo sale de datos
 // server-autoritativos (nivel de miembro derivado del XP, oro del blob del personaje, nivel del
-// gremio del pozo donado), así no se puede inflar desde el cliente.
-//   Poder = Σniveles×10 + promedioNivel×20 + nivelGremio×40 + floor(Σoro/2000)
-export function guildPower({ sumLevels = 0, members = 0, level = 1, sumGold = 0 }) {
+// gremio y oro donado al pozo), así no se puede inflar desde el cliente.
+//   Poder = Σniveles×10 + promedioNivel×20 + nivelGremio×50 + floor(donado/500) + floor(Σoro/3000)
+// El término de oro DONADO no tiene techo (el nivel de gremio sí, tope 5): así donar al pozo
+// siempre sigue subiendo el ranking, incluso pasado el nivel máximo.
+export function guildPower({ sumLevels = 0, members = 0, level = 1, donated = 0, sumGold = 0 }) {
   const avg = members > 0 ? sumLevels / members : 0
-  return Math.round(sumLevels * 10 + avg * 20 + (level || 1) * 40 + Math.floor((sumGold || 0) / 2000))
+  return Math.round(
+    sumLevels * 10 + avg * 20 + (level || 1) * 50 +
+    Math.floor(Math.max(0, donated) / 500) + Math.floor(Math.max(0, sumGold) / 3000))
 }
 
 // Ranking público, ordenado por Poder. El límite lo pide el cliente; lo acotamos server-side
@@ -166,7 +170,7 @@ export async function ranking(limit = 20) {
     return {
       ...pubGuild(g), members, sumLevels, sumGold,
       avgLevel: members > 0 ? Math.round((sumLevels / members) * 10) / 10 : 0,
-      power: guildPower({ sumLevels, members, level: g.level, sumGold }),
+      power: guildPower({ sumLevels, members, level: g.level, donated: Number(g.donated) || 0, sumGold }),
     }
   })
   scored.sort((a, b) => b.power - a.power || b.level - a.level || a.id - b.id)

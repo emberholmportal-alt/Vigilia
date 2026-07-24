@@ -445,7 +445,7 @@ const DICT = {
   guild_members_n: { es: '{n} miembros', en: '{n} members' },
   guild_donated_total: { es: '{n} de oro donado', en: '{n} gold donated' },
   guild_power_n: { es: 'Poder {n}', en: 'Power {n}' },
-  guild_power_hint: { es: 'El Poder mezcla la suma y el promedio de nivel de los miembros, el nivel del gremio y el oro de todos. Todo server-autoritativo.', en: 'Power blends the sum and average of member levels, the guild level, and everyone’s gold. All server-authoritative.' },
+  guild_power_hint: { es: 'El Poder mezcla la suma y el promedio de nivel de los miembros, el nivel del gremio, el oro donado al pozo y el oro de todos. Donar siempre suma, aun pasado el nivel máximo. Todo server-autoritativo.', en: 'Power blends the sum and average of member levels, the guild level, gold donated to the pool, and everyone’s gold. Donating always helps, even past the level cap. All server-authoritative.' },
   guild_pw_levels: { es: 'Σ niveles {n}', en: 'Σ levels {n}' },
   guild_pw_avg: { es: 'prom {n}', en: 'avg {n}' },
   guild_pw_gold: { es: '{n} oro', en: '{n} gold' },

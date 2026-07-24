@@ -117,10 +117,11 @@ No son un chat con nombre. Son una estructura con la que el mundo interactúa:
 - **Contratos de gremio:** misiones semanales que requieren aporte de varios miembros
   ("el gremio debe matar 200 no-muertos"). Progreso compartido y visible.
 - **Ranking** público en la Casa de Gremios y en la hoja de personaje, ordenado por el
-  **Poder del gremio** (no sólo oro donado): `Σniveles×10 + promedioNivel×20 + nivelGremio×40
-  + ⌊Σoro/2000⌋`. Mezcla fuerza (niveles de miembros), calidad (promedio), progreso
-  institucional (nivel del gremio) y riqueza (oro de todos). Todo server-autoritativo. La
-  competencia es contenido gratis.
+  **Poder del gremio** (no sólo oro donado): `Σniveles×10 + promedioNivel×20 + nivelGremio×50
+  + ⌊donado/500⌋ + ⌊Σoro/3000⌋`. Mezcla fuerza (niveles de miembros), calidad (promedio),
+  progreso institucional (nivel del gremio, tope 5), donación al pozo (**sin techo**: donar
+  siempre sube el ranking aun pasado el nivel máximo) y riqueza (oro de todos). Todo
+  server-autoritativo. La competencia es contenido gratis.
 
 ---
 
