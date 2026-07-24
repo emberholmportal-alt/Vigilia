@@ -13,7 +13,7 @@ import { findPath, smoothPath } from './Pathfinding.js'
 import { Paperdoll, screenVecToDir } from './Paperdoll.js'
 
 export const WALK_PX = 170 // px de pantalla por segundo
-export const RUN_PX = 340
+export const RUN_PX = 270  // correr ≈ 1.6× caminar (con la estamina agotándose de verdad)
 const ANIM_REF_PX = 180    // a esta velocidad la anim de correr va a ritmo nativo
 
 export class Player {

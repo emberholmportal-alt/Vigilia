@@ -343,8 +343,9 @@ export class Game {
     }
     this._loading = false
 
-    // Online: conectar (una vez) y anunciar el mapa actual para ver a otros jugadores.
-    if (ONLINE) this._enterOnlineMap(mapName, spawn)
+    // Online: anunciar el mapa y ESPERAR el 'present' (entrar al canal poblado) antes de soltar el
+    // loading. Así cargás directo en el mundo compartido, sin el flash de "mundo solo -> conectado".
+    if (ONLINE) await this._enterOnlineMap(mapName, spawn)
   }
 
   // Conecta al servidor la primera vez y engancha los eventos de presencia; luego, en cada
@@ -423,13 +424,21 @@ export class Game {
   async _enterOnlineMap(mapName, spawn) {
     if (!this._online) return
     this._clearRemotes()
-    net.join({
-      name: this.store.getPlayerName(), race: this.store.getRaceId(), body: this.store.getBody(),
-      map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
-      channel: this._channel,        // intenta conservar tu canal entre mapas
-      spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
-      gfx: this._spectator ? null : equipToGfx(this.store.getEquipment()),   // equipo visible para los demás
-    }).then(() => { if (!this._spectator) this.store.refreshGuild() }).catch(() => {})   // cargar gremio -> aplicar ventajas
+    // Esperamos el 'present' (canal asignado + jugadores presentes) con un tope de seguridad: si el
+    // server tarda, no dejamos el loading colgado para siempre (seguimos igual, el 'present' llega solo).
+    try {
+      await Promise.race([
+        net.join({
+          name: this.store.getPlayerName(), race: this.store.getRaceId(), body: this.store.getBody(),
+          map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
+          channel: this._channel,        // intenta conservar tu canal entre mapas
+          spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
+          gfx: this._spectator ? null : equipToGfx(this.store.getEquipment()),   // equipo visible para los demás
+        }),
+        new Promise((res) => setTimeout(res, 3500)),
+      ])
+    } catch { /* si el join falla, seguimos: el mundo local ya está */ }
+    if (!this._spectator) this.store.refreshGuild()   // cargar gremio -> aplicar ventajas
     this._sendStats()   // stats de combate para que el server tire el daño de nuestros golpes
   }
 
@@ -1748,8 +1757,9 @@ export class Game {
   // junto al spawn para no taparlo ni quedar dentro de una colisión.
   async _spawnStashChest(renderer, grid, spawn, mapName) {
     if (mapName !== TOWN_MAP) return
-    // Candidatos alrededor del spawn (un par de tiles a un costado), el 1º caminable gana.
-    const cand = [[3, 0], [0, 3], [3, 3], [-3, 0], [0, -3], [2, 2], [4, 0]]
+    // Candidatos PEGADOS al spawn (a un paso al costado), el 1º caminable gana. Es tu alijo personal
+    // (client-instanced: sólo vos lo ves), así que va cerca para que llegues apenas entrás al pueblo.
+    const cand = [[2, 0], [0, 2], [-2, 0], [0, -2], [1, 1], [-1, 1], [2, 1], [1, 2], [3, 0], [0, 3]]
     let tx = spawn.x, ty = spawn.y, found = false
     for (const [dx, dy] of cand) {
       const x = spawn.x + dx, y = spawn.y + dy
@@ -2094,12 +2104,16 @@ export class Game {
     // Mientras reconstruye el mundo (cambio de mapa), no toques nada.
     if (this._loading || this._changing || !this.player) return
 
-    // Correr/caminar con stamina.
+    // Correr/caminar con stamina. La estamina es AUTORITATIVA del motor (this._stamina): acumula por
+    // frame y se espeja al HUD a 12Hz. Antes se recalculaba desde el store (que se pushea a 12Hz), y
+    // la acumulación entre push y push se perdía → drenaba ~5× más lento (parecía que "no se gastaba").
     const st = this.store.getRunState()
-    const runningNow = (st.running || this._shiftRun) && st.stamina > 0 && this.player.moving
-    let stamina = st.stamina
-    if (runningNow) stamina = Math.max(0, stamina - STAM_DRAIN * dt)
-    else stamina = Math.min(st.staminaMax, stamina + STAM_REGEN * dt)
+    const staminaMax = st.staminaMax || 100
+    if (this._stamina == null) this._stamina = staminaMax
+    const runningNow = (st.running || this._shiftRun) && this._stamina > 0 && this.player.moving
+    if (runningNow) this._stamina = Math.max(0, this._stamina - STAM_DRAIN * dt)
+    else this._stamina = Math.min(staminaMax, this._stamina + STAM_REGEN * dt)
+    const stamina = this._stamina
     const speedPx = runningNow ? RUN_PX : WALK_PX
 
     this.player.update(dt, speedPx)
