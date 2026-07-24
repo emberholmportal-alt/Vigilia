@@ -49,6 +49,9 @@ const DICT = {
   locked_hint: { es: 'Se desbloquea al subir de nivel', en: 'Unlocks as you level up' },
   // personaje
   char_title: { es: 'Personaje', en: 'Character' },
+  char_no_guild: { es: 'Sin gremio', en: 'No guild' },
+  char_view_guild: { es: 'Ver gremio ›', en: 'View guild ›' },
+  char_join_guild: { es: 'Crear / unirse ›', en: 'Create / join ›' },
   stat_hp: { es: 'Vida', en: 'Health' },
   stat_mp: { es: 'Maná', en: 'Mana' },
   stat_dmg: { es: 'Daño', en: 'Damage' },

@@ -1191,6 +1191,18 @@ html, body, #root {
   text-shadow: 0 1px 2px #000; letter-spacing: 0.04em;
 }
 .char-stats { display: flex; flex-direction: column; gap: 5px; }
+/* Social: botón de acceso al gremio dentro del modal de personaje */
+.char-social-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 12px;
+  background: rgba(120, 104, 80, 0.14); border: 1px solid rgba(156, 122, 46, 0.4);
+  border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #d9caa4;
+  font-family: 'BonaNova', Georgia, serif; font-size: 13px; text-align: left;
+}
+.char-social-btn:hover { background: rgba(156, 122, 46, 0.24); }
+.char-social-icon { flex: none; color: #d9a24a; font-size: 15px; }
+.char-social-txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.char-social-txt b { color: #ece0c4; }
+.char-social-cta { flex: none; color: #d9a24a; font-size: 12px; }
 .char-stat {
   display: flex; justify-content: space-between; align-items: baseline;
   border-bottom: 1px solid rgba(120, 104, 80, 0.25); padding-bottom: 3px;

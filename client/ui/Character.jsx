@@ -27,6 +27,8 @@ export default function Character() {
   const allocAttr = useGameStore((s) => s.allocAttr)
   const setPanel = useGameStore((s) => s.setPanel)
   const myFeats = useGameStore((s) => s.myFeats)
+  const guild = useGameStore((s) => s.guild)
+  const openGuild = useGameStore((s) => s.openGuild)
   const t = useT()
   const s = stats || {}
   const prog = playerProgress(xp || 0)
@@ -93,6 +95,18 @@ export default function Character() {
               <div className="char-stat" key={k}><span>{k}</span><b>{v}</b></div>
             ))}
           </div>
+
+          {/* Social: acceso al gremio (crear/unirse, ver el tuyo, ranking). El panel de gremio hace
+              el resto; acá mostramos el estado y un botón directo (antes sólo se abría por el NPC). */}
+          <button className="char-social-btn" onClick={openGuild}>
+            <span className="char-social-icon">⚔</span>
+            <span className="char-social-txt">
+              {guild
+                ? <><b>[{guild.tag}] {guild.name}</b> · {t('guild_level_n', { n: guild.level })}</>
+                : <b>{t('char_no_guild')}</b>}
+            </span>
+            <span className="char-social-cta">{guild ? t('char_view_guild') : t('char_join_guild')}</span>
+          </button>
         </div>
       </div>
     </div>
