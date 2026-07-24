@@ -2517,6 +2517,7 @@ const HUB_SPAWN = {
   dilapidated_sewers: [64, 8],
   temple_of_mez_1: [35, 46], temple_of_mez_2: [40, 34], temple_of_mez_3: [53, 40],
   abandoned_mines: [40, 53], blackmire_mines: [32, 36], lake_kuuma: [70, 52], fort_amir: [40, 34], grot_lagoon: [45, 49],
+  nazia_highlands: [22, 21], nazia_underground: [42, 21], nazia_mines: [14, 20],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2621,6 +2622,20 @@ const PORTAL_REPLACE = {
   st_maria_1: [{ x: 39, y: 63, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
   perdition_mines: [{ x: 49, y: 18, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
   stormrock_pass: [{ x: 24, y: 84, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  // Región de Nazia (nivel 9-10): descenso desde Black Oak City. Tierras Altas -> Subterráneo ->
+  // Minas (jefe). Mapas sanos reanclados al centro (SPAWN_OVERRIDE). Pads curados; avance lejos de
+  // la llegada, regreso cerca. Cortan los nativos hacia southern_ridge/mog (sin curar). Verificados.
+  nazia_highlands: [
+    { x: 24, y: 21, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 67, y: 74, w: 1, h: 1, to: 'nazia_underground', tx: 42, ty: 21, label: 'Nazia: el Subterráneo' },
+  ],
+  nazia_underground: [
+    { x: 44, y: 21, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 97, y: 35, w: 1, h: 1, to: 'nazia_mines', tx: 14, ty: 20, label: 'Minas de Nazia' },
+  ],
+  nazia_mines: [ // fondo (jefe: el señor de la guerra hobgoblin)
+    { x: 16, y: 20, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
 }
 
 // Portales que AGREGAMOS encima de los nativos del mapa (llegada = spawn walkable del destino).
@@ -2689,6 +2704,9 @@ const PORTAL_EXTRA = {
     // no-muertos con jefe (el Zombi profano). Pad cerca del hub (39,13), reachable+caminable;
     // llegada al spawn nativo de las cloacas (64,8), donde el server densifica el combate.
     { x: 39, y: 13, w: 1, h: 1, to: 'dilapidated_sewers', tx: 64, ty: 8, label: 'Cloacas Ruinosas' },
+    // Al este de la ciudad se alzan las Tierras Altas de Nazia (nivel ~9-10): descenso de 3 zonas
+    // hasta las Minas de Nazia (jefe). Pad reachable; llegada a la sala rica de las Tierras Altas.
+    { x: 19, y: 27, w: 1, h: 1, to: 'nazia_highlands', tx: 22, ty: 21, label: 'Tierras Altas de Nazia' },
   ],
   // Torre del Mago (entrada, nivel ~11): dungeon con jefe (el Nigromante óseo custodia el umbral).
   // Regreso a Triston cerca de la llegada (54,9). El descenso al Inframundo se planta en lo más HONDO
@@ -2743,9 +2761,9 @@ const UNFINISHED = new Set([
   'fern_valley', 'woods', 'river_road', 'end', 'sage_home', 'dungeon10', 'dungeon_way',
   // fragmentados / rotos (contenido inalcanzable desde su spawn)
   'stormrock_ruins', 'torture_chambers', 'the_breach', 'st_maria_2', 'st_maria_3',
-  // sanos pero SIN CURAR todavía (materia prima del próximo cluster de endgame)
+  // sanos pero SIN CURAR todavía (materia prima de futuros clusters)
   'antlion_nest', 'mog_caverns', 'oasis', 'the_pit', 'stonewood', 'southern_ridge',
-  'nazia_highlands', 'nazia_mines', 'nazia_underground',
+  // (la región de Nazia — highlands/underground/mines — ya está curada; ver PORTAL_REPLACE)
 ])
 const portalAllowed = (to) => !!to && !PORTAL_BLOCK.has(to) && !UNFINISHED.has(to) && !/^Act\d|^World/i.test(to)
 

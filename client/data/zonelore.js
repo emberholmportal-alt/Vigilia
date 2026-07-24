@@ -86,6 +86,18 @@ export const ZONE_LORE = {
     es: 'La Laguna Grot es un ojo de agua quieta en la nieve. Lo que la mira demasiado tiempo, se queda.',
     en: 'Grot Lagoon is an eye of still water in the snow. Whatever stares into it too long, stays.',
   },
+  nazia_highlands: {
+    es: 'Las Tierras Altas de Nazia fueron pastura antes de que el reino cayera. Ahora el viento trae olor a duende y a algo que cava debajo.',
+    en: 'The Nazia Highlands were pasture before the kingdom fell. Now the wind carries the smell of goblin and of something digging below.',
+  },
+  nazia_underground: {
+    es: 'Bajo las tierras altas, Nazia se hunde en galerías que nadie terminó. Los que cavaron acá buscaban algo; los que quedaron ya no lo recuerdan.',
+    en: 'Beneath the highlands, Nazia sinks into galleries no one finished. Those who dug here sought something; those who stayed no longer remember what.',
+  },
+  nazia_mines: {
+    es: 'En el fondo de Nazia la veta se secó y los duendes se quedaron igual, apretados alrededor de su señor de la guerra, defendiendo una mina sin oro.',
+    en: 'At the bottom of Nazia the vein ran dry and the goblins stayed anyway, packed around their warlord, defending a mine with no gold left.',
+  },
   lochport: {
     es: 'Lochport fue un puerto próspero antes de que el mar dejara de traer barcos y empezara a traer otra cosa. Los muelles todavía crujen; ya nadie los pisa por gusto.',
     en: 'Lochport was a thriving port before the sea stopped bringing ships and started bringing something else. The docks still creak; no one walks them for pleasure now.',

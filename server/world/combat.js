@@ -59,6 +59,10 @@ const SPAWN_OVERRIDE = {
   lake_kuuma: [70, 52],
   fort_amir: [40, 34],         // dungeon final (jefe)
   grot_lagoon: [45, 49],
+  // Región de Nazia (nivel 9-10): descenso Tierras Altas -> Subterráneo -> Minas (jefe).
+  nazia_highlands: [22, 21],
+  nazia_underground: [42, 21],
+  nazia_mines: [14, 20],       // lo más hondo (jefe)
 }
 function loadMap(name) {
   if (mapCache.has(name)) return mapCache.get(name)
@@ -257,6 +261,9 @@ const MAP_BOSS = {
   // Fuerte Amir (final del cluster de minas): el castellano caído, un Caballero de hueso que todavía
   // monta guardia sobre una guarnición muerta. Golpe en área (smash). Clímax del ramal (nivel ~7).
   fort_amir: { sprite: 'skeleton_knight_boss', level: 7 },
+  // Minas de Nazia (fondo de la región de Nazia): un señor de la guerra hobgoblin que apretó la
+  // veta hasta secarla. Golpe en área (smash). Clímax del ramal (nivel ~11).
+  nazia_mines: { sprite: 'goblin_elite', level: 11 },
 }
 // Esbirro INVOCADO por una habilidad (summon): sprite+nivel fijos en un tile dado. `sp:null` +
 // `_parent` -> no repone al morir (no es un spawner del mapa; ver killEnemy).

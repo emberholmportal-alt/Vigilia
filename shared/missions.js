@@ -30,6 +30,9 @@ export const POOL = [
   { id: 'hunt_sewers', type: 'kill', map: 'dilapidated_sewers', target: 14, xp: 165, gold: 115, seals: 3 },
   { id: 'loot_sewers', type: 'chest', map: 'dilapidated_sewers', target: 3, xp: 145, gold: 100, seals: 3 },
   // El Inframundo (nivel ~13): lo más hondo con misión. Recompensa acorde a la profundidad.
+  // Región de Nazia (nivel ~9-10): descenso al este de Black Oak City.
+  { id: 'hunt_nazia', type: 'kill', map: 'nazia_highlands', target: 12, xp: 150, gold: 105, seals: 3 },
+  { id: 'mine_nazia', type: 'mine', map: 'nazia_mines', target: 8, xp: 160, gold: 112, seals: 3 },
   { id: 'hunt_underworld', type: 'kill', map: 'underworld', target: 16, xp: 190, gold: 135, seals: 4 },
   { id: 'loot_underworld', type: 'chest', map: 'underworld', target: 3, xp: 165, gold: 115, seals: 4 },
   // Cluster profundo (nivel 13→15): Minas y Catacumbas del Inframundo. Lo más duro del mundo.
