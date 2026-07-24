@@ -93,6 +93,14 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
         <img className="start-logo" src={LOGO} alt="Velgrim" />
         <p className="tagline">{t('start_tag')}</p>
 
+        {stats?.vel?.on && (
+          <a className="coin-live" href={stats.vel.buyUrl} target="_blank" rel="noreferrer">
+            <span className="coin-live-dot" />
+            <span className="coin-live-txt">{t('coin_live', { sym: stats.vel.symbol || 'VEL' })}</span>
+            <span className="coin-live-cta">{t('coin_buy_short')}</span>
+          </a>
+        )}
+
         <div className="start-panel">
         {ONLINE && stats && (
           <div className="counters">

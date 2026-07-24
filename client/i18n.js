@@ -542,6 +542,8 @@ const DICT = {
   wallet_disconnect: { es: 'Desconectar', en: 'Disconnect' },
   wallet_none: { es: 'No se detectó billetera. Instalá Phantom (Solana).', en: 'No wallet detected. Install Phantom (Solana).' },
   wallet_fail: { es: 'No se pudo conectar la billetera.', en: "Couldn't connect the wallet." },
+  coin_live: { es: '${sym} ya está en vivo en pump.fun', en: '${sym} is live on pump.fun' },
+  coin_buy_short: { es: 'Comprar ›', en: 'Buy ›' },
   gate_title: { es: 'Necesitás $VEL para jugar', en: 'You need $VEL to play' },
   gate_need: { es: 'Para entrar tenés que holdear al menos', en: 'To enter you must hold at least' },
   gate_buy: { es: 'Comprar {sym} en pump.fun', en: 'Buy {sym} on pump.fun' },

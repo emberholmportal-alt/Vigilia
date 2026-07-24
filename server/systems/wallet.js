@@ -131,6 +131,17 @@ async function meetsTokenGate(pubkey) {
   return total >= fixedMin
 }
 
+// Tarjeta LIVIANA de la coin para el landing (banner "ya está en vivo"), sin tocar la cadena:
+// sólo símbolo + link de compra + mint. Se puede pedir en cada poll de /stats sin costo de RPC.
+// { on:false } hasta que exista VEL_MINT. Independiente del gate: con el mint puesto y el gate
+// apagado, la coin igual se anuncia (para mostrarla en el vivo del lanzamiento).
+export function velCoin() {
+  const mint = process.env.VEL_MINT || ''
+  if (!mint) return { on: false }
+  return { on: true, mint, symbol: process.env.VEL_SYMBOL || 'VEL',
+    buyUrl: process.env.VEL_BUY_URL || ('https://pump.fun/coin/' + mint) }
+}
+
 // Config pública del token para el cliente (pantalla de compra + requisito). El cliente NUNCA
 // necesita claves ni RPC: sólo el símbolo, el link de compra y cuánto exige el gate ahora.
 export async function velConfig() {

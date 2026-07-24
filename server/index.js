@@ -84,7 +84,7 @@ const http_server = http.createServer(async (req, res) => {
     let monthly = 0
     try { monthly = await db.monthlyCount() } catch {}
     res.writeHead(200, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ online: rooms.playerCount(), monthly }))
+    res.end(JSON.stringify({ online: rooms.playerCount(), monthly, vel: wallet.velCoin() }))
     return
   }
   res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' })
