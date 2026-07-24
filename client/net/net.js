@@ -187,6 +187,9 @@ class Net {
   async guildJoin({ id, tag }) { this._send({ t: 'guild_join', id, tag }); return this._once('guild') }
   async guildLeave() { this._send({ t: 'guild_leave' }); return this._once('guild') }
   async guildDonate(amount) { this._send({ t: 'guild_donate', amount }); return this._once('guild') }
+  async guildKick(target) { this._send({ t: 'guild_kick', target }); return this._once('guild') }
+  async guildRole(target, role) { this._send({ t: 'guild_role', target, role }); return this._once('guild') }
+  async guildTransfer(target) { this._send({ t: 'guild_transfer', target }); return this._once('guild') }
   // Depósito del Gremio (banco compartido). Responden `t:'guild_dep'`.
   async guildDepView() { this._send({ t: 'guild_dep_view' }); return this._once('guild_dep') }
   async guildDepGold(dir, amount) { this._send({ t: 'guild_dep_gold', dir, amount }); return this._once('guild_dep') }

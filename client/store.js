@@ -1151,7 +1151,7 @@ export const useGameStore = create((set, get) => ({
       const info = await net.guildInfo()
       const list = await net.guildList(20)
       set({ guild: info.guild || null, guildRole: info.mine || null, guildMembers: info.members || [],
-            guildRanking: list.guilds || [], guildBusy: false })
+            guildYou: info.you ?? null, guildRanking: list.guilds || [], guildBusy: false })
       get().recomputeStats()
     } catch { set({ guildBusy: false }) }
   },
@@ -1189,6 +1189,28 @@ export const useGameStore = create((set, get) => ({
       get().showToast(r.leveledUp ? tt('guild_leveled', { n: r.guild.level }) : tt('guild_donated', { n: amt }))
       get().refreshGuild()
     }
+  },
+  // --- Gestión de miembros (roles: founder > officer > member) ---
+  kickMember: async (target, name) => {
+    if (!ONLINE || !net.connected) return
+    set({ guildBusy: true })
+    const r = await net.guildKick(target).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt('guild_kicked', { name: name || '' })); get().refreshGuild() }
+  },
+  setMemberRole: async (target, role) => {
+    if (!ONLINE || !net.connected) return
+    set({ guildBusy: true })
+    const r = await net.guildRole(target, role).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt(role === 'officer' ? 'guild_promoted' : 'guild_demoted')); get().refreshGuild() }
+  },
+  transferGuild: async (target, name) => {
+    if (!ONLINE || !net.connected) return
+    set({ guildBusy: true })
+    const r = await net.guildTransfer(target).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt('guild_transferred', { name: name || '' })); get().refreshGuild() }
   },
 
   // --- Depósito del Gremio (banco compartido, nivel 4+) ---

@@ -236,6 +236,18 @@ wss.on('connection', (ws) => {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
           return send({ t: 'guild', ...(await guilds.donate(conn.accountId, m.amount)) })
         }
+        case 'guild_kick': {   // expulsar a un miembro (fundador/oficial)
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.kick(conn.accountId, m.target)) })
+        }
+        case 'guild_role': {   // ascender/descender oficial (m.role: 'officer'|'member') — sólo fundador
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.setRole(conn.accountId, m.target, m.role)) })
+        }
+        case 'guild_transfer': {   // transferir el liderazgo — sólo fundador
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.transfer(conn.accountId, m.target)) })
+        }
         // Depósito del Gremio (banco compartido)
         case 'guild_dep_view': {
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })

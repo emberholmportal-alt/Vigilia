@@ -362,7 +362,17 @@ export async function setGuildMembership(accountId, guildId, role = 'member') {
       [accountId, guildId, role])
     return
   }
-  file.guildMembers[accountId] = { guild_id: guildId, role }; flush()
+  file.guildMembers[accountId] = { guild_id: guildId, role, joined_at: Date.now() }; flush()
+}
+// Cambia SÓLO el rol de un miembro (preserva su antigüedad joined_at). Para ascender/descender.
+export async function setMemberRole(accountId, role) {
+  if (pg) { await pg.query('UPDATE guild_members SET role=$2 WHERE account_id=$1', [accountId, role]); return }
+  if (file.guildMembers[accountId]) { file.guildMembers[accountId].role = role; flush() }
+}
+// Reasigna el fundador registrado del gremio (para transferir el liderazgo / auto-ascenso).
+export async function setGuildFounder(guildId, accountId) {
+  if (pg) { await pg.query('UPDATE guilds SET founder=$2 WHERE id=$1', [guildId, accountId]); return }
+  const g = file.guilds.find((x) => x.id === guildId); if (g) { g.founder = accountId; flush() }
 }
 export async function removeGuildMembership(accountId) {
   if (pg) { await pg.query('DELETE FROM guild_members WHERE account_id=$1', [accountId]); return }
@@ -376,14 +386,16 @@ export async function guildMemberCount(guildId) {
 export async function guildMembers(guildId) {
   if (pg) {
     const r = await pg.query(
-      `SELECT a.username, m.role FROM guild_members m JOIN accounts a ON a.id=m.account_id
-       WHERE m.guild_id=$1 ORDER BY (m.role='founder') DESC, m.joined_at ASC`, [guildId])
-    return r.rows
+      `SELECT a.id AS account_id, a.username, m.role, extract(epoch from m.joined_at)*1000 AS joined_at
+       FROM guild_members m JOIN accounts a ON a.id=m.account_id
+       WHERE m.guild_id=$1 ORDER BY (m.role='founder') DESC, (m.role='officer') DESC, m.joined_at ASC`, [guildId])
+    return r.rows.map((x) => ({ account_id: x.account_id, username: x.username, role: x.role, joined_at: Number(x.joined_at) || 0 }))
   }
+  const rank = (role) => role === 'founder' ? 0 : role === 'officer' ? 1 : 2
   return Object.entries(file.guildMembers)
     .filter(([, m]) => m.guild_id === guildId)
-    .map(([aid, m]) => ({ username: (file.accounts.find((a) => a.id === +aid) || {}).username, role: m.role }))
-    .sort((a, b) => (b.role === 'founder') - (a.role === 'founder'))
+    .map(([aid, m]) => ({ account_id: +aid, username: (file.accounts.find((a) => a.id === +aid) || {}).username, role: m.role, joined_at: m.joined_at || 0 }))
+    .sort((a, b) => rank(a.role) - rank(b.role) || a.joined_at - b.joined_at)
 }
 // Ranking público: gremios por nivel y oro donado, con conteo de miembros.
 export async function listGuilds(limit = 20) {

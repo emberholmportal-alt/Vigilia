@@ -1402,9 +1402,17 @@ html, body, #root {
 .guild-perk.on .guild-perk-lv { background: var(--gold); color: #14111a; border-color: var(--gold); }
 .guild-roster { display: flex; flex-direction: column; gap: 4px; }
 .guild-roster-list { display: flex; flex-direction: column; gap: 2px; max-height: 120px; overflow-y: auto; }
-.guild-member { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 4px;
+.guild-member { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 4px;
   border-bottom: 1px solid rgba(120, 104, 80, 0.14); }
-.guild-member em { color: var(--dim); font-style: normal; font-size: 10px; }
+.guild-member > span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.guild-member.me > span:first-child { color: #e8c66a; }
+.guild-member em { color: var(--dim); font-style: normal; font-size: 10px; flex: none; }
+.guild-acts { display: flex; gap: 3px; flex: none; }
+.guild-act { background: rgba(120, 104, 80, 0.16); border: 1px solid rgba(156, 122, 46, 0.3); color: #cdbb92;
+  border-radius: 4px; width: 20px; height: 20px; line-height: 1; font-size: 11px; cursor: pointer; padding: 0; }
+.guild-act:hover { background: rgba(156, 122, 46, 0.3); }
+.guild-act.danger { color: #d98a72; border-color: rgba(160, 70, 55, 0.4); }
+.guild-act:disabled { opacity: 0.4; cursor: default; }
 /* ranking */
 .guild-rank-list { display: flex; flex-direction: column; gap: 5px; }
 .guild-rank-row { display: flex; align-items: center; gap: 9px; padding: 6px 7px; border-radius: 6px;

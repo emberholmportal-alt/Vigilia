@@ -23,6 +23,10 @@ export default function Guild() {
   const joinGuild = useGameStore((s) => s.joinGuild)
   const leaveGuild = useGameStore((s) => s.leaveGuild)
   const donateGuild = useGameStore((s) => s.donateGuild)
+  const guildYou = useGameStore((s) => s.guildYou)
+  const kickMember = useGameStore((s) => s.kickMember)
+  const setMemberRole = useGameStore((s) => s.setMemberRole)
+  const transferGuild = useGameStore((s) => s.transferGuild)
   const setPanel = useGameStore((s) => s.setPanel)
   const t = useT()
 
@@ -48,6 +52,7 @@ export default function Guild() {
           : tab === 'mine'
             ? (guild
                 ? <MyGuild guild={guild} role={role} members={members} gold={gold} busy={busy}
+                           you={guildYou} onKick={kickMember} onRole={setMemberRole} onTransfer={transferGuild}
                            onDonate={donateGuild} onLeave={leaveGuild} error={error} t={t} />
                 : <FoundGuild gold={gold} busy={busy} onCreate={createGuild} error={error} t={t} />)
             : tab === 'deposit'
@@ -100,7 +105,9 @@ function FoundGuild({ gold, busy, onCreate, error, t }) {
 }
 
 // --- Con gremio: nivel, donación, ventajas, miembros ---
-function MyGuild({ guild, role, members, gold, busy, onDonate, onLeave, error, t }) {
+function MyGuild({ guild, role, members, gold, busy, you, onKick, onRole, onTransfer, onDonate, onLeave, error, t }) {
+  const roleLabel = (r) => r === 'founder' ? t('guild_founder') : r === 'officer' ? t('guild_officer') : t('guild_member')
+  const canManage = role === 'founder' || role === 'officer'
   const [amt, setAmt] = useState('')
   const perks = [t('guild_perk1'), t('guild_perk2'), t('guild_perk3'), t('guild_perk4'), t('guild_perk5')]
   // progreso hacia el próximo nivel: donado actual vs umbral siguiente.
@@ -159,12 +166,27 @@ function MyGuild({ guild, role, members, gold, busy, onDonate, onLeave, error, t
       <div className="guild-roster">
         <div className="guild-sub">{t('guild_roster')}</div>
         <div className="guild-roster-list">
-          {members.map((m, i) => (
-            <div key={i} className="guild-member">
-              <span>{m.username}</span>
-              <em>{m.role === 'founder' ? t('guild_founder') : t('guild_member')}</em>
-            </div>
-          ))}
+          {members.map((m, i) => {
+            const isSelf = you != null && m.account_id === you
+            // Acciones sobre este miembro según MI rol. Nadie actúa sobre el fundador ni sobre sí mismo;
+            // un oficial no toca a otro oficial.
+            const showActs = canManage && !isSelf && m.role !== 'founder' && !(role === 'officer' && m.role === 'officer')
+            return (
+              <div key={i} className={'guild-member' + (isSelf ? ' me' : '')}>
+                <span>{m.username}</span>
+                <em>{roleLabel(m.role)}</em>
+                {showActs && (
+                  <span className="guild-acts">
+                    {role === 'founder' && (m.role === 'officer'
+                      ? <button className="guild-act" disabled={busy} onClick={() => onRole(m.account_id, 'member')} title={t('guild_demote')}>▼</button>
+                      : <button className="guild-act" disabled={busy} onClick={() => onRole(m.account_id, 'officer')} title={t('guild_promote')}>▲</button>)}
+                    {role === 'founder' && <button className="guild-act" disabled={busy} onClick={() => { if (confirm(t('guild_transfer_confirm', { name: m.username }))) onTransfer(m.account_id, m.username) }} title={t('guild_transfer')}>♔</button>}
+                    <button className="guild-act danger" disabled={busy} onClick={() => { if (confirm(t('guild_kick_confirm', { name: m.username }))) onKick(m.account_id, m.username) }} title={t('guild_kick')}>✕</button>
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 

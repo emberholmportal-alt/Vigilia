@@ -135,7 +135,7 @@ export async function info(accountId, guildId) {
   const g = await db.getGuild(id)
   if (!g) return { ok: true, guild: null, mine: null, members: [] }
   const members = await db.guildMembers(id)
-  return { ok: true, guild: pubGuild(g), members, mine: mem?.guild_id === id ? (mem.role || 'member') : null }
+  return { ok: true, guild: pubGuild(g), members, mine: mem?.guild_id === id ? (mem.role || 'member') : null, you: accountId }
 }
 
 // Ranking público.
@@ -172,14 +172,61 @@ export async function join(accountId, { guildId, tag }) {
   return { ok: true, guild: pubGuild(g), role: 'member' }
 }
 
-// Salir del gremio. Si era el último miembro, el gremio se disuelve.
+// Salir del gremio. Si era el último miembro, el gremio se disuelve. Si se va el FUNDADOR y quedan
+// miembros, el liderazgo pasa al más antiguo (oficiales primero) para no dejar el gremio huérfano.
 export async function leave(accountId) {
   const mem = await db.getGuildMembership(accountId)
   if (!mem) return { ok: false, error: 'no estás en un gremio' }
+  if (mem.role === 'founder') {
+    const others = (await db.guildMembers(mem.guild_id)).filter((m) => m.account_id !== accountId)
+    if (others.length) {   // guildMembers ya ordena fundador>oficial>miembro, luego por antigüedad
+      const heir = others[0]
+      await db.setMemberRole(heir.account_id, 'founder')
+      await db.setGuildFounder(mem.guild_id, heir.account_id)
+    }
+  }
   await db.removeGuildMembership(accountId)
   invalidateGuildCache(accountId)
   const left = await db.guildMemberCount(mem.guild_id)
   return { ok: true, disbanded: left === 0 }
+}
+
+// ---------- Gestión de miembros (roles: founder > officer > member) ----------
+// El fundador asciende/desciende oficiales y transfiere el liderazgo. Fundador y oficiales expulsan;
+// nadie expulsa al fundador; un oficial no expulsa a otro oficial.
+export async function setRole(actorId, targetId, role) {
+  if (role !== 'officer' && role !== 'member') return { ok: false, error: 'rol inválido' }
+  const a = await db.getGuildMembership(actorId)
+  if (!a || a.role !== 'founder') return { ok: false, error: 'sólo el fundador cambia rangos' }
+  if (actorId === targetId) return { ok: false, error: 'no podés cambiar tu propio rango' }
+  const t = await db.getGuildMembership(targetId)
+  if (!t || t.guild_id !== a.guild_id) return { ok: false, error: 'no está en tu gremio' }
+  if (t.role === 'founder') return { ok: false, error: 'no podés cambiar al fundador' }
+  await db.setMemberRole(targetId, role)
+  return { ok: true, guildId: a.guild_id }
+}
+export async function kick(actorId, targetId) {
+  const a = await db.getGuildMembership(actorId)
+  if (!a || (a.role !== 'founder' && a.role !== 'officer')) return { ok: false, error: 'no tenés permiso' }
+  if (actorId === targetId) return { ok: false, error: 'para irte usá "salir"' }
+  const t = await db.getGuildMembership(targetId)
+  if (!t || t.guild_id !== a.guild_id) return { ok: false, error: 'no está en tu gremio' }
+  if (t.role === 'founder') return { ok: false, error: 'no podés expulsar al fundador' }
+  if (a.role === 'officer' && t.role === 'officer') return { ok: false, error: 'un oficial no expulsa a otro oficial' }
+  await db.removeGuildMembership(targetId)
+  invalidateGuildCache(targetId)
+  return { ok: true, guildId: a.guild_id, kicked: targetId }
+}
+export async function transfer(actorId, targetId) {
+  const a = await db.getGuildMembership(actorId)
+  if (!a || a.role !== 'founder') return { ok: false, error: 'sólo el fundador transfiere el liderazgo' }
+  if (actorId === targetId) return { ok: false, error: 'ya sos el fundador' }
+  const t = await db.getGuildMembership(targetId)
+  if (!t || t.guild_id !== a.guild_id) return { ok: false, error: 'no está en tu gremio' }
+  await db.setMemberRole(targetId, 'founder')
+  await db.setMemberRole(actorId, 'officer')
+  await db.setGuildFounder(a.guild_id, targetId)
+  return { ok: true, guildId: a.guild_id }
 }
 
 // Donar oro al gremio: descuenta del oro persistido y sube el nivel según el total donado.
