@@ -3,9 +3,19 @@
 Cada fase tiene un **criterio de aceptación verificable**. No pases a la siguiente sin
 cumplirlo. No trabajes en dos fases a la vez.
 
+> ## Estado (2026)
+> **Las fases 0–7 están construidas.** El juego es un MMORPG jugable: renderer isométrico + paperdoll
+> de 8 direcciones, hub vivo (Triston), 552 ítems, combate autoritativo con jefes, progresión +
+> razas + gremios + misiones diarias, y multijugador WebSocket. El mundo tiene **40 mapas** curados
+> y sellados (ver `ESCENARIOS.md`).
+>
+> Se construyó además, **encima del plan original**: economía con sellos, marketplace (subastas en
+> oro + oro↔$VEL no-custodial, dormido), trade P2P, selección de servidor, y wallet Sign-In-With-
+> Solana. Lo único pendiente de verdad: **calibrar y encender el gate $VEL** cuando exista el token.
+
 ---
 
-## Fase 0 — Pipeline y andamiaje
+## Fase 0 — Pipeline y andamiaje  ✅
 
 **Objetivo:** que los assets de Flare entren al proyecto y salgan como JSON + PNG.
 
@@ -20,7 +30,7 @@ cumplirlo. No trabajes en dos fases a la vez.
 
 ---
 
-## Fase 1 — Renderer isométrico
+## Fase 1 — Renderer isométrico  ✅
 
 **Objetivo:** Black Oak City dibujada, real, recorrible.
 
@@ -36,7 +46,7 @@ gama media. Los árboles y casas te tapan cuando pasás por detrás.
 
 ---
 
-## Fase 2 — Paperdoll
+## Fase 2 — Paperdoll  ✅
 
 **Objetivo:** el personaje se ve, se mueve y **cambia de aspecto al equiparse**.
 
@@ -53,7 +63,7 @@ direcciones, sin caída de fps.
 
 ---
 
-## Fase 3 — La ciudad viva
+## Fase 3 — La ciudad viva  ✅
 
 **Objetivo:** que Black Oak City no sea un decorado. **Esta fase es la que define el juego.**
 
@@ -71,7 +81,7 @@ Si se aburre, la fase no está terminada.
 
 ---
 
-## Fase 4 — Ítems, inventario y equipo
+## Fase 4 — Ítems, inventario y equipo  ✅
 
 - [ ] Parsear los **552 ítems** de `mods/empyrean_campaign/items/categories/*.txt` a
       `shared/items.json` (id, nombre ES, icono, slot, tier, stats, precio, capa del paperdoll).
@@ -87,7 +97,7 @@ recorrido validado en el servidor.
 
 ---
 
-## Fase 5 — Combate y enemigos
+## Fase 5 — Combate y enemigos  ✅
 
 - [ ] Spawners desde el JSON del mapa (`category`, `level` [min,max], `n` [min,max]).
 - [ ] IA: idle → patrulla → persecución (aggro) → ataque → retorno al spawn.
@@ -100,7 +110,7 @@ recorrido validado en el servidor.
 
 ---
 
-## Fase 6 — Progresión
+## Fase 6 — Progresión  ✅
 
 - [ ] Niveles, curva de XP, puntos de atributo (FUE/DES/INT/VIT).
 - [ ] Razas con sus modificadores (ver WORLD.md).
@@ -113,7 +123,7 @@ tu progreso intacto.
 
 ---
 
-## Fase 7 — Multijugador
+## Fase 7 — Multijugador  ✅
 
 - [ ] Servidor WebSocket autoritativo. Sala por mapa.
 - [ ] Ver a otros jugadores moverse, con su paperdoll real.
@@ -127,7 +137,12 @@ distinguen por la armadura.
 
 ---
 
+## Ya construido encima del plan
+
+Trade P2P entre jugadores · casa de subastas en oro · marketplace oro↔$VEL (no-custodial, dormido) ·
+wallet Sign-In-With-Solana · selección de servidor · economía de sellos + ofrendas.
+
 ## Lo que NO hacemos todavía
 
-PvP · crafteo profundo · montura · trading entre jugadores · casa de subastas · raids.
-Todo eso es después de que la ciudad esté viva y el loop de combate se sienta bien.
+PvP · Arena · crafteo profundo · monturas · raids · pool colaborativo de gremio.
+Y el gate $VEL: **calibrar y encender** cuando exista el token (único pendiente de la hoja de ruta).
