@@ -81,27 +81,55 @@ const http_server = http.createServer(async (req, res) => {
     return
   }
   if (path === '/stats') {
-    let monthly = 0
-    try { monthly = await db.monthlyCount() } catch {}
+    // Cache corto: /stats pega a la DB (monthlyCount) en cada hit y lo consume el landing (otro origen,
+    // sin auth). Cacheamos ~15s así un flood de requests no martilla la DB — los contadores del landing
+    // no necesitan ser al segundo. `online` y la config de $VEL son baratos, se recomputan siempre.
+    const now = Date.now()
+    if (now - _statsCache.at > STATS_TTL_MS) {
+      let monthly = 0
+      try { monthly = await db.monthlyCount() } catch {}
+      _statsCache = { at: now, monthly }
+    }
     res.writeHead(200, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ online: rooms.playerCount(), monthly, vel: wallet.velCoin() }))
+    res.end(JSON.stringify({ online: rooms.playerCount(), monthly: _statsCache.monthly, vel: wallet.velCoin() }))
     return
   }
   res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' })
   res.end('Velgrim server — WebSocket en la misma URL. GET /health o /stats.')
 })
 
-const wss = new WebSocketServer({ server: http_server })
+// Cache de /stats (evita pegarle a la DB en cada request; ver el handler).
+const STATS_TTL_MS = 15 * 1000
+let _statsCache = { at: 0, monthly: 0 }
+
+// Endurecimiento del WS contra floods (cliente tocado / bot), sin castigar el juego legítimo:
+//   - Tope de tamaño por mensaje: un payload gigante no puede quemar CPU/memoria parseando JSON.
+//   - Rate limit por conexión (token bucket): el movimiento va a ~8/s (cada 0.12s) y las acciones son
+//     esporádicas, muy por debajo del refill; el excedente se descarta. Los límites finos de combate
+//     (cadencia de golpe/cast, saldo de oro, cooldowns) siguen viviendo en su capa.
+const MAX_MSG_BYTES = 32 * 1024   // holgado para el blob de save (inv+equipo+skills); corta el abuso MB
+const RL_BURST = 80               // ráfaga permitida (resync al entrar, acciones rápidas)
+const RL_REFILL = 40              // tokens por segundo en régimen (5× el ritmo de movimiento)
+
+const wss = new WebSocketServer({ server: http_server, maxPayload: MAX_MSG_BYTES })
 
 // Una sola sesión de juego por cuenta: si la misma cuenta entra de nuevo, se expulsa a la anterior
 // (evita jugar dos veces con el mismo usuario, y con eso duplicar acciones/loops entre dos ventanas).
 const liveConns = new Map() // accountId -> ws
 
 wss.on('connection', (ws) => {
-  const conn = { accountId: null, username: null, playerId: null }
+  const conn = { accountId: null, username: null, playerId: null, rlTokens: RL_BURST, rlAt: Date.now() }
   const send = (msg) => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)) }
 
   ws.on('message', async (raw) => {
+    // Token bucket por conexión: recarga por tiempo, descarta el excedente. El juego legítimo nunca
+    // llega al tope; un flood de un cliente tocado/bot se corta acá antes de tocar el dispatch.
+    const nowMs = Date.now()
+    conn.rlTokens = Math.min(RL_BURST, conn.rlTokens + ((nowMs - conn.rlAt) / 1000) * RL_REFILL)
+    conn.rlAt = nowMs
+    if (conn.rlTokens < 1) return   // sobre el límite: se descarta el mensaje
+    conn.rlTokens -= 1
+
     let m
     try { m = JSON.parse(raw) } catch { return }
     if (!m || typeof m.t !== 'string') return
