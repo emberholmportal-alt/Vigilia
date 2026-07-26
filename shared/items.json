@@ -95,14 +95,14 @@
       "id": 9,
       "name": "Honda",
       "name_en": "Slingshot",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 1,
       "price": 100,
       "rarity": "comun",
       "gfx": null,
       "stats": {},
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 10,
@@ -375,7 +375,7 @@
       "id": 28,
       "name": "Honda de reconocimiento",
       "name_en": "Recon Slingshot",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 2,
       "price": 200,
@@ -385,7 +385,7 @@
         "dmg_ranged_min": 3,
         "dmg_ranged_max": 3
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 29,
@@ -768,7 +768,7 @@
       "id": 54,
       "name": "Honda de montaraz",
       "name_en": "Ranger Slingshot",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 3,
       "price": 300,
@@ -778,7 +778,7 @@
         "dmg_ranged_min": 6,
         "dmg_ranged_max": 6
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 55,
@@ -1161,7 +1161,7 @@
       "id": 80,
       "name": "Honda del Francotirador",
       "name_en": "Sniper Slingshot",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 4,
       "price": 400,
@@ -1171,7 +1171,7 @@
         "dmg_ranged_min": 9,
         "dmg_ranged_max": 9
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 81,
@@ -1558,14 +1558,14 @@
       "id": 107,
       "name": "Arco corto",
       "name_en": "Shortbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 5,
       "price": 500,
       "rarity": "comun",
       "gfx": null,
       "stats": {},
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 108,
@@ -1883,7 +1883,7 @@
       "id": 129,
       "name": "Arco corto de reconocimiento",
       "name_en": "Recon Shortbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 6,
       "price": 600,
@@ -1893,7 +1893,7 @@
         "dmg_ranged_min": 3,
         "dmg_ranged_max": 3
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 130,
@@ -2321,7 +2321,7 @@
       "id": 158,
       "name": "Arco corto de montaraz",
       "name_en": "Ranger Shortbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 7,
       "price": 700,
@@ -2331,7 +2331,7 @@
         "dmg_ranged_min": 6,
         "dmg_ranged_max": 6
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 159,
@@ -2759,7 +2759,7 @@
       "id": 187,
       "name": "Arco corto del Francotirador",
       "name_en": "Sniper Shortbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 8,
       "price": 800,
@@ -2769,7 +2769,7 @@
         "dmg_ranged_min": 9,
         "dmg_ranged_max": 9
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 188,
@@ -2929,7 +2929,7 @@
       "id": 198,
       "name": "Arco de cazador",
       "name_en": "Huntsman Bow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 8,
       "price": 900,
@@ -2940,7 +2940,7 @@
         "dmg_ranged_max": 12,
         "crit": 5
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 199,
@@ -3169,14 +3169,14 @@
       "id": 215,
       "name": "Arco largo",
       "name_en": "Longbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 9,
       "price": 900,
       "rarity": "comun",
       "gfx": null,
       "stats": {},
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 216,
@@ -3494,7 +3494,7 @@
       "id": 237,
       "name": "Arco largo de reconocimiento",
       "name_en": "Recon Longbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 10,
       "price": 1000,
@@ -3504,7 +3504,7 @@
         "dmg_ranged_min": 3,
         "dmg_ranged_max": 3
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 238,
@@ -3932,7 +3932,7 @@
       "id": 266,
       "name": "Arco largo de montaraz",
       "name_en": "Ranger Longbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 11,
       "price": 1100,
@@ -3942,7 +3942,7 @@
         "dmg_ranged_min": 6,
         "dmg_ranged_max": 6
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 267,
@@ -4370,7 +4370,7 @@
       "id": 295,
       "name": "Arco largo del Francotirador",
       "name_en": "Sniper Longbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 12,
       "price": 1200,
@@ -4380,7 +4380,7 @@
         "dmg_ranged_min": 9,
         "dmg_ranged_max": 9
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 296,
@@ -4767,14 +4767,14 @@
       "id": 322,
       "name": "Arco de guerra",
       "name_en": "Greatbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 13,
       "price": 1300,
       "rarity": "comun",
       "gfx": null,
       "stats": {},
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 323,
@@ -5092,7 +5092,7 @@
       "id": 344,
       "name": "Arco de guerra de reconocimiento",
       "name_en": "Recon Greatbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 14,
       "price": 1400,
@@ -5102,7 +5102,7 @@
         "dmg_ranged_min": 3,
         "dmg_ranged_max": 3
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 345,
@@ -5530,7 +5530,7 @@
       "id": 373,
       "name": "Arco de guerra de montaraz",
       "name_en": "Ranger Greatbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 15,
       "price": 1500,
@@ -5540,7 +5540,7 @@
         "dmg_ranged_min": 6,
         "dmg_ranged_max": 6
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 374,
@@ -5968,7 +5968,7 @@
       "id": 402,
       "name": "Arco de guerra del Francotirador",
       "name_en": "Sniper Greatbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 16,
       "price": 1600,
@@ -5978,7 +5978,7 @@
         "dmg_ranged_min": 9,
         "dmg_ranged_max": 9
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 403,
@@ -6355,7 +6355,7 @@
       "id": 428,
       "name": "Arco Underworld",
       "name_en": "Underworld Bow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 16,
       "price": 3200,
@@ -6365,7 +6365,7 @@
         "dmg_ranged_min": 12,
         "dmg_ranged_max": 12
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 429,
@@ -6481,14 +6481,14 @@
       "id": 437,
       "name": "Honda de mastita",
       "name_en": "Mastite Slingshot",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 1,
       "price": 200,
       "rarity": "comun",
       "gfx": null,
       "stats": {},
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 438,
@@ -6832,14 +6832,14 @@
       "id": 464,
       "name": "Arco corto de mastita",
       "name_en": "Mastite Shortbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 1,
       "price": 200,
       "rarity": "comun",
       "gfx": null,
       "stats": {},
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 465,
@@ -7014,14 +7014,14 @@
       "id": 478,
       "name": "Arco largo de mastita",
       "name_en": "Mastite Longbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 1,
       "price": 200,
       "rarity": "comun",
       "gfx": null,
       "stats": {},
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 479,
@@ -7196,14 +7196,14 @@
       "id": 492,
       "name": "Arco de guerra de mastita",
       "name_en": "Mastite Greatbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 1,
       "price": 200,
       "rarity": "comun",
       "gfx": null,
       "stats": {},
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 493,
@@ -7754,7 +7754,7 @@
       "id": 1026,
       "name": "Arco de Nerin",
       "name_en": "Nerin's Bow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 0,
       "price": 0,
@@ -7763,7 +7763,7 @@
       "stats": {
         "accuracy": 15
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 1027,
