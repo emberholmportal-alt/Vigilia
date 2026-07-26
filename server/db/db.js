@@ -404,6 +404,15 @@ export async function guildMemberCount(guildId) {
   if (pg) return (await pg.query('SELECT count(*)::int AS n FROM guild_members WHERE guild_id=$1', [guildId])).rows[0]?.n || 0
   return Object.values(file.guildMembers).filter((m) => m.guild_id === guildId).length
 }
+// Borra un gremio al quedar en 0 miembros (por CASCADE se van sus miembros y su depósito). Evita
+// gremios zombie que quedaban en el ranking y eran "joineables" como miembro sin fundador.
+export async function deleteGuild(guildId) {
+  if (pg) { await pg.query('DELETE FROM guilds WHERE id=$1', [guildId]); return }
+  file.guilds = (file.guilds || []).filter((g) => g.id !== guildId)
+  for (const aid of Object.keys(file.guildMembers)) if (file.guildMembers[aid]?.guild_id === guildId) delete file.guildMembers[aid]
+  if (file.guildDeposit) delete file.guildDeposit[guildId]
+  flush()
+}
 // Miembros de un gremio con su nombre de cuenta y rol. Ordena fundador primero.
 export async function guildMembers(guildId) {
   if (pg) {

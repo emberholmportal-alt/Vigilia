@@ -102,14 +102,14 @@ export async function onKill(accountId, category) {
   const guildId = await cachedGuildId(accountId)
   if (!guildId) return null
   const wc = weeklyContract()
-  const before = (await db.getGuild(guildId))?.contract_progress || 0
-  const wasWeek = (await db.getGuild(guildId))?.contract_week
-  const progress = await db.bumpContract(guildId, wc.week, 1)
+  const progress = await db.bumpContract(guildId, wc.week, 1)   // atómico (resetea si cambió la semana)
   if (progress == null) return null
   db.bumpMemberContract(accountId, wc.week, 1).catch(() => {})   // aporte individual al contrato (esta semana)
-  // ¿recién se completó? (cruzó el target esta semana) -> recompensa colectiva.
-  const prevInWeek = wasWeek === wc.week ? before : 0
-  if (prevInWeek < wc.target && progress >= wc.target) {
+  // Cruce ATÓMICO: sólo la kill que llevó el progreso de <target a >=target dispara la recompensa.
+  // Antes se leía el progreso ANTES del bump (no atómico) y dos kills concurrentes cerca del target
+  // podían pagar el pozo + los sellos dos veces. Ahora se decide con el valor devuelto por el bump
+  // atómico (inc=1): dos kills concurrentes reciben progress distintos, así una sola cruza.
+  if (progress >= wc.target && (progress - 1) < wc.target) {
     const g = await db.getGuild(guildId)
     const reward = Math.round(CONTRACT_REWARD * guildContractMul(g.level))   // prestigio n7/n10
     const newDonated = (Number(g.donated) || 0) + reward
@@ -261,6 +261,7 @@ export async function leave(accountId) {
   await db.removeGuildMembership(accountId)
   invalidateGuildCache(accountId)
   const left = await db.guildMemberCount(mem.guild_id)
+  if (left === 0) await db.deleteGuild(mem.guild_id)   // sin miembros: se disuelve de verdad (no queda zombie)
   return { ok: true, disbanded: left === 0 }
 }
 
