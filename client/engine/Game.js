@@ -470,6 +470,7 @@ export class Game {
       dmgMin: st.dmgMin || 2, dmgMax: st.dmgMax || 5, dmgMul: st.dmgMul || 1,
       str: st.str || 10, crit: st.crit || 0, weaponKind: st.weaponKind || 'melee',
       defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
+      avoidance: st.avoidance || 0,   // % de esquiva: el server lo tira al recibir daño enemigo (DEX + equipo)
       level: st.level || 1,   // capacidad usable del bag autoritativo (parity con el HUD)
       itemFind: st.itemFind || 0,   // magic-find: el server lo usa al tirar el loot de kills
       goldMul: st.guildGoldMul || 1,   // +oro de botín del gremio (ventaja n1): el server lo aplica al oro de kill
@@ -1634,6 +1635,11 @@ export class Game {
   _onEhit(m) {
     if (this._dead || this._spectator || !this.player) return
     const dmg = m.dmg || 0
+    if (m.dodge) {   // ESQUIVA (DEX + equipo): el server negó el daño; mostramos el aviso
+      const p = this.player
+      this._floatText(p.view.x, p.view.y - 70, tt('dodge'), '#8ad9ff')
+      return
+    }
     if (dmg <= 0) return
     const hp = this.store.takeDamage(dmg)
     const p = this.player

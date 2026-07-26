@@ -451,6 +451,7 @@ export function setStats(pid, s) {
     // crit=100 (crit garantizado ×2) ni dmgMul=8 para one-shotear el mundo compartido.
     dmgMul: clampNum(s.dmgMul, 4) || 1, str: clampNum(s.str, 999),
     crit: clampNum(s.crit, 60), defense: clampNum(s.defense, 3000),
+    avoidance: clampNum(s.avoidance, 90),   // % de esquiva del jugador (DEX + equipo); acotado a 90% (nunca invulnerable)
     reach: clampNum(s.reach, 8) || 1.6,
     itemFind: clampNum(s.itemFind, 300),   // magic-find (acotado): mejora la rareza del loot de kills
     goldMul: Math.max(1, Math.min(1.1, Number(s.goldMul) || 1)),   // +oro de botín del gremio (acotado a +10%)
@@ -676,6 +677,7 @@ function stepEnemy(w, e, players, dt) {
       for (const p of players) {
         if (Math.hypot(p.x - e.x, p.y - e.y) > (ab.radius || 2)) continue
         const ps = pstats.get(p.id) || {}
+        if ((ps.avoidance || 0) > 0 && Math.random() * 100 < ps.avoidance) { ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg: 0, dodge: 1 }); continue }   // ESQUIVA (DEX + equipo): sin daño
         const dmg = Math.max(1, Math.round(e.dmg * (ab.mult || 2)) - (ps.defense || 0))
         ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg, smash: 1 })   // FX + predicción del cliente
         if (ctx.damagePlayer) ctx.damagePlayer(p.id, dmg)        // HP AUTORITATIVA (Fase 3): el server aplica el daño y decide la muerte
@@ -683,9 +685,13 @@ function stepEnemy(w, e, players, dt) {
       ctx.broadcast(w.map, w.ch, { t: 'esmash', i: e.i, x: r2(e.x), y: r2(e.y), r: ab.radius || 2 })  // FX (el cliente puede animarlo)
     } else {
       const st = pstats.get(tgt.id) || {}
-      const dmg = Math.max(1, e.dmg - (st.defense || 0))
-      ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg })   // FX + predicción del cliente
-      if (ctx.damagePlayer) ctx.damagePlayer(tgt.id, dmg)   // HP AUTORITATIVA (Fase 3)
+      if ((st.avoidance || 0) > 0 && Math.random() * 100 < st.avoidance) {   // ESQUIVA (DEX + equipo): sin daño
+        ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg: 0, dodge: 1 })
+      } else {
+        const dmg = Math.max(1, e.dmg - (st.defense || 0))
+        ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg })   // FX + predicción del cliente
+        if (ctx.damagePlayer) ctx.damagePlayer(tgt.id, dmg)   // HP AUTORITATIVA (Fase 3)
+      }
     }
   }
 }

@@ -200,7 +200,11 @@ export function computeStats(raceId, level = 1, equipment = null, attrAlloc = nu
     staminaMax,
     defense: e.absorb + aff.absorb + tb.absorb + gp.defense + sb.defense + (set.defense || 0), // (+ Forja + set)
     hpRegen: e.hpRegen + sb.hpRegen, mpRegen: e.mpRegen + tb.mpRegen + (set.mpRegen || 0),
-    crit: e.crit + tb.crit + (set.crit || 0), accuracy: e.accuracy + tb.accuracy, avoidance: e.avoidance,
+    // DEX vivo: cada punto por encima de la base (10) da +0.2% crítico y +0.5% esquiva (build ágil /
+    // Sniper). Antes DEX no hacía NADA. La esquiva la tira el server al recibir daño enemigo.
+    crit: e.crit + tb.crit + (set.crit || 0) + Math.max(0, dex - 10) * 0.2,
+    accuracy: e.accuracy + tb.accuracy,
+    avoidance: Math.min(75, e.avoidance + Math.max(0, dex - 10) * 0.5),   // tope 75% (el server además clampa)
     itemFind: e.itemFind + tb.itemFind + sb.itemFind + (set.itemFind || 0), // magic find (+ Saqueo + set)
     fireResist: e.fireResist, iceResist: e.iceResist,
     dmgMin: wd.min, dmgMax: wd.max, // daño del arma
