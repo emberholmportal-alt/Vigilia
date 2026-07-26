@@ -519,6 +519,34 @@ export async function setDeposit(guildId, { gold, items }) {
   file.guildDeposit[guildId] = { gold: gold | 0, items: items || [] }
   flush()
 }
+// Banco del gremio, SÓLO el oro de la bóveda (NO toca el oro del personaje — el del jugador lo
+// maneja la sesión viva de rooms). Atómico. Arregla el dual-authority que duplicaba/perdía oro
+// online (el jugador siempre está online al operar el banco).
+export async function addGuildDepositGold(guildId, amt) {
+  amt = Math.floor(amt) || 0
+  if (pg) {
+    const r = await pg.query(
+      `INSERT INTO guild_deposit (guild_id, gold, items) VALUES ($1,$2,'[]')
+       ON CONFLICT (guild_id) DO UPDATE SET gold = guild_deposit.gold + $2 RETURNING gold`, [guildId, amt])
+    return { ok: true, gold: Number(r.rows[0].gold) || 0 }
+  }
+  const d = file.guildDeposit[guildId] || (file.guildDeposit[guildId] = { gold: 0, items: [] })
+  d.gold = (Number(d.gold) || 0) + amt; flush()
+  return { ok: true, gold: d.gold }
+}
+export async function subGuildDepositGold(guildId, amt) {
+  amt = Math.floor(amt) || 0
+  if (pg) {
+    const r = await pg.query(
+      `UPDATE guild_deposit SET gold = gold - $2 WHERE guild_id=$1 AND gold >= $2 RETURNING gold`, [guildId, amt])
+    if (!r.rowCount) return { ok: false, error: 'el banco del gremio no tiene tanto oro' }
+    return { ok: true, gold: Number(r.rows[0].gold) || 0 }
+  }
+  const d = file.guildDeposit[guildId] || { gold: 0, items: [] }
+  if ((Number(d.gold) || 0) < amt) return { ok: false, error: 'el banco del gremio no tiene tanto oro' }
+  d.gold = (Number(d.gold) || 0) - amt; file.guildDeposit[guildId] = d; flush()
+  return { ok: true, gold: d.gold }
+}
 
 // --- Alijo privado por cuenta (personal, sólo el dueño) ---
 export async function getStash(accountId) {

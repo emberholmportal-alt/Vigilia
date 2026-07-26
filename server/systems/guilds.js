@@ -203,21 +203,26 @@ export async function ranking(limit = 20) {
 }
 
 // Fundar un gremio. Cobra FOUND_COST del oro persistido del fundador.
-export async function create(accountId, { name, tag, color }) {
+// Fundar / donar / depositar / retirar NO tocan el oro del personaje acá: el jugador SIEMPRE está
+// online cuando opera el gremio, así que el oro lo debita/acredita la sesión VIVA (rooms), y estas
+// funciones sólo tocan las tablas del gremio (pozo, banco). El caller (index.js) orquesta el oro
+// vivo con rollback, igual que el alijo. Esto cierra el dual-authority que duplicaba/perdía oro.
+//
+// Validación de fundación (sin cobrar). Devuelve { ok, n, t, c } o { ok:false, error }.
+export async function canCreate(accountId, { name, tag, color }) {
   if (await db.getGuildMembership(accountId)) return { ok: false, error: 'ya pertenecés a un gremio' }
   const n = validName(name); if (!n) return { ok: false, error: 'nombre inválido (3 a 24 caracteres)' }
   const t = validTag(tag); if (!t) return { ok: false, error: 'la sigla debe ser 3 letras o números' }
-  const c = validColor(color)
   if (await db.findGuildByName(n)) return { ok: false, error: 'ya existe un gremio con ese nombre' }
   if (await db.findGuildByTag(t)) return { ok: false, error: 'ya existe un gremio con esa sigla' }
-  // Cobra el costo de forma atómica (lee+descuenta bajo el lock de la cuenta): no se puede fundar
-  // dos gremios con el mismo oro por dos pedidos simultáneos.
-  const paid = await db.updateCharacterGold(accountId, (gold) => gold >= FOUND_COST ? gold - FOUND_COST : null)
-  if (!paid.ok) return { ok: false, error: `necesitás ${FOUND_COST} de oro para fundar` }
+  return { ok: true, n, t, c: validColor(color) }
+}
+// Crea el gremio (el oro ya lo cobró el caller sobre el oro vivo). Sólo tablas del gremio.
+export async function commitCreate(accountId, { n, t, c }) {
   const g = await db.createGuild({ name: n, tag: t, color: c, founder: accountId })
   await db.setGuildMembership(accountId, g.id, 'founder')
   invalidateGuildCache(accountId)
-  return { ok: true, guild: pubGuild(g), gold: paid.gold, role: 'founder' }
+  return { ok: true, guild: pubGuild(g), role: 'founder' }
 }
 
 // Unirse a un gremio por id o sigla.
@@ -346,18 +351,17 @@ export async function transfer(actorId, targetId) {
 }
 
 // Donar oro al gremio: descuenta del oro persistido y sube el nivel según el total donado.
-export async function donate(accountId, amount) {
-  const amt = Math.floor(Number(amount) || 0)
-  if (amt <= 0) return { ok: false, error: 'monto inválido' }
+// Acredita una donación al pozo (SÓLO el lado gremio; el oro del jugador lo debitó la sesión viva).
+export async function creditDonation(accountId, amt) {
   const mem = await db.getGuildMembership(accountId)
   if (!mem) return { ok: false, error: 'no estás en un gremio' }
-  // Descuento del personaje + crédito al gremio en UNA transacción (dos filas): un crash en el
-  // medio ya no puede perder ni duplicar el oro. (OJO: no evita que un autosave del cliente con
-  // oro viejo pise el descuento — eso es economía server-autoritativa, pendiente con la $VEL.)
-  const r = await db.txDonate(accountId, mem.guild_id, amt, levelForDonated)
-  if (!r.ok) return r
+  const g = await db.getGuild(mem.guild_id)
+  if (!g) return { ok: false, error: 'gremio inexistente' }
+  const before = g.level
+  const newDonated = (Number(g.donated) || 0) + amt
+  const g2 = await db.addGuildDonation(mem.guild_id, amt, levelForDonated(newDonated))
   db.bumpMemberDonated(accountId, amt).catch(() => {})   // contribución individual (display, fire-and-forget)
-  return { ok: true, guild: pubGuild(r.guild), gold: r.gold, leveledUp: r.leveledUp }
+  return { ok: true, guild: pubGuild(g2), leveledUp: g2.level > before }
 }
 
 // ---------- Depósito del Gremio (banco compartido, desbloquea a nivel 4) ----------
@@ -383,24 +387,24 @@ export async function depositView(accountId) {
 
 // Depositar oro: sale del oro persistido del personaje y entra al pozo del depósito. Bajo el lock
 // del gremio: dos miembros depositando a la vez no se pisan la fila del depósito compartido.
-export async function depositGold(accountId, amount) {
-  const amt = Math.floor(Number(amount) || 0)
-  if (amt <= 0) return { ok: false, error: 'monto inválido' }
+// Acredita oro al banco (SÓLO la bóveda; el oro del jugador lo debitó la sesión viva). Devuelve el
+// depósito actualizado (oro + ítems) para la UI.
+export async function creditDeposit(accountId, amt) {
   const gd = await depositGuard(accountId)
   if (gd.error) return { ok: false, error: gd.error }
-  // Personaje -> banco del gremio en una transacción (sin pérdida por crash entre las dos filas).
-  return db.txDepositGold(accountId, gd.g.id, amt)
+  const r = await db.addGuildDepositGold(gd.g.id, amt)
+  if (!r.ok) return r
+  const dep = await db.getDeposit(gd.g.id)
+  return { ok: true, deposit: { gold: dep.gold, items: dep.items || [] } }
 }
-
-// Retirar oro: sale del depósito y vuelve al oro del personaje. Bajo el lock del gremio para que
-// dos retiros simultáneos no lean el mismo saldo y dupliquen el oro del pozo.
-export async function withdrawGold(accountId, amount) {
-  const amt = Math.floor(Number(amount) || 0)
-  if (amt <= 0) return { ok: false, error: 'monto inválido' }
+// Debita oro del banco (falla si no alcanza). El oro del jugador lo acredita la sesión viva.
+export async function debitDeposit(accountId, amt) {
   const gd = await depositGuard(accountId)
   if (gd.error) return { ok: false, error: gd.error }
-  // Banco del gremio -> personaje en una transacción (sin pérdida por crash entre las dos filas).
-  return db.txWithdrawGold(accountId, gd.g.id, amt)
+  const r = await db.subGuildDepositGold(gd.g.id, amt)
+  if (!r.ok) return r
+  const dep = await db.getDeposit(gd.g.id)
+  return { ok: true, deposit: { gold: dep.gold, items: dep.items || [] } }
 }
 
 // Depositar un ítem: el cliente manda el ítem (dueño de su inventario); el server lo guarda en

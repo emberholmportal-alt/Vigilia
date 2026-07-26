@@ -225,9 +225,15 @@ wss.on('connection', (ws) => {
         }
         case 'guild_create': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
-          const r = await guilds.create(conn.accountId, { name: m.name, tag: m.tag, color: m.color })
-          if (r.ok && conn.playerId != null) rooms.setGuildTag(conn.playerId, r.guild?.tag || null)
-          return send({ t: 'guild', ...r })
+          if (conn.playerId == null) return send({ t: 'guild', error: 'sin sesión' })
+          const v = await guilds.canCreate(conn.accountId, { name: m.name, tag: m.tag, color: m.color })
+          if (!v.ok) return send({ t: 'guild', error: v.error })
+          const spent = rooms.spendGold(conn.playerId, guilds.FOUND_COST, 'guild_found')   // oro VIVO autoritativo
+          if (!spent.ok) return send({ t: 'guild', error: `necesitás ${guilds.FOUND_COST} de oro para fundar` })
+          let r; try { r = await guilds.commitCreate(conn.accountId, v) } catch { r = { ok: false, error: 'error al fundar' } }
+          if (!r.ok) { rooms.awardGold(conn.playerId, guilds.FOUND_COST, 'guild_rollback'); return send({ t: 'guild', ...r }) }
+          rooms.setGuildTag(conn.playerId, r.guild?.tag || null)
+          return send({ t: 'guild', ...r, gold: spent.gold })
         }
         case 'guild_join': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
@@ -243,7 +249,14 @@ wss.on('connection', (ws) => {
         }
         case 'guild_donate': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
-          return send({ t: 'guild', ...(await guilds.donate(conn.accountId, m.amount)) })
+          if (conn.playerId == null) return send({ t: 'guild', error: 'sin sesión' })
+          const amt = Math.floor(Number(m.amount) || 0)
+          if (amt <= 0) return send({ t: 'guild', error: 'monto inválido' })
+          const spent = rooms.spendGold(conn.playerId, amt, 'guild_donate')   // oro VIVO autoritativo
+          if (!spent.ok) return send({ t: 'guild', error: spent.error || 'no tenés tanto oro' })
+          let r; try { r = await guilds.creditDonation(conn.accountId, amt) } catch { r = { ok: false, error: 'error al donar' } }
+          if (!r.ok) { rooms.awardGold(conn.playerId, amt, 'guild_rollback'); return send({ t: 'guild', ...r }) }
+          return send({ t: 'guild', ...r, gold: spent.gold })
         }
         case 'guild_kick': {   // expulsar a un miembro (fundador/oficial)
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
@@ -293,11 +306,23 @@ wss.on('connection', (ws) => {
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
           return send({ t: 'guild_dep', ...(await guilds.depositView(conn.accountId)) })
         }
-        case 'guild_dep_gold': {   // m.dir: 'in' deposita, 'out' retira
+        case 'guild_dep_gold': {   // m.dir: 'in' deposita, 'out' retira. El oro del jugador es el VIVO (rooms).
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
-          const r = m.dir === 'out' ? await guilds.withdrawGold(conn.accountId, m.amount)
-                                    : await guilds.depositGold(conn.accountId, m.amount)
-          return send({ t: 'guild_dep', ...r })
+          if (conn.playerId == null) return send({ t: 'guild_dep', error: 'sin sesión' })
+          const amt = Math.floor(Number(m.amount) || 0)
+          if (amt <= 0) return send({ t: 'guild_dep', error: 'monto inválido' })
+          if (m.dir === 'out') {   // retirar: banco -> oro vivo (debita el banco primero; sólo acredita si salió)
+            const r = await guilds.debitDeposit(conn.accountId, amt)
+            if (!r.ok) return send({ t: 'guild_dep', ...r })
+            const gold = rooms.awardGold(conn.playerId, amt, 'guild_wd')
+            return send({ t: 'guild_dep', ok: true, deposit: r.deposit, gold })
+          }
+          // depositar: debita oro vivo primero; si el banco falla, rollback al oro vivo
+          const spent = rooms.spendGold(conn.playerId, amt, 'guild_dep')
+          if (!spent.ok) return send({ t: 'guild_dep', error: spent.error || 'no tenés tanto oro' })
+          const r = await guilds.creditDeposit(conn.accountId, amt)
+          if (!r.ok) { rooms.awardGold(conn.playerId, amt, 'guild_dep_rollback'); return send({ t: 'guild_dep', ...r }) }
+          return send({ t: 'guild_dep', ok: true, deposit: r.deposit, gold: spent.gold })
         }
         case 'guild_dep_item_in': {   // depositar: el server saca el ítem del bag autoritativo (por índice) y lo guarda
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
