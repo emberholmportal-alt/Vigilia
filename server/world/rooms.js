@@ -105,7 +105,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, xp = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null } = {}) {
+export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, xp = 0, hp = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -149,10 +149,11 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   p._qclaimed = new Set(Array.isArray(qclaimed) ? qclaimed : [])
   p.feats = normalizeFeats(feats)   // hazañas server-owned (jefes derrotados + zona más profunda)
   p.guildTag = guildTag || null     // estandarte sobre la cabeza (sigla del gremio)
-  // HP AUTORITATIVA (Fase 3): la vida viva la dueña el server. Arranca en null y se siembra (llena) en
-  // el 1er setStats, cuando el cliente declara su techo (hpMax depende del equipo). _lastHitAt marca la
-  // ventana "en combate" para la reconciliación de curación reportada por el cliente (ver playerHp).
-  p.hp = null; p.hpMax = 0; p._lastHitAt = 0
+  // HP AUTORITATIVA (Fase 3): la vida viva la dueña el server. Arranca en null y se siembra en el 1er
+  // setStats (cuando el cliente declara su techo hpMax, que depende del equipo): con la vida PERSISTIDA
+  // del personaje si es válida (>0 y <= techo), si no llena. Persistir la vida evita el logout-cura.
+  // _lastHitAt marca la ventana "en combate" para reconciliar la curación reportada (ver playerHp).
+  p.hp = null; p.hpMax = 0; p._lastHitAt = 0; p._seedHp = Math.max(0, Math.floor(Number(hp) || 0))
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
@@ -284,7 +285,7 @@ export function setStats(id, stats) {
     if (stats.hpMax) {
       const hm = Math.max(1, Math.min(9999999, Math.floor(Number(stats.hpMax)) || 1))
       p.hpMax = hm
-      if (p.hp == null) p.hp = hm
+      if (p.hp == null) p.hp = (p._seedHp > 0 && p._seedHp <= hm) ? p._seedHp : hm   // vida persistida si es válida, si no llena (dead/0/inválida -> llena)
       else if (p.hp > hm) p.hp = hm
     }
     if (stats.level) {
@@ -427,7 +428,7 @@ export function useItem(id, index) {
   // Curación AUTORITATIVA de poción de vida (Fase 3): el server sube p.hp, así una poción EN combate
   // cuenta (donde no se aceptan subidas de HP reportadas por el cliente). Espeja potionEffect del cliente.
   const heal = potionHpHeal(it.id)
-  if (heal > 0 && p.hp != null && p.hpMax) p.hp = Math.min(p.hpMax, p.hp + heal)
+  if (heal > 0 && p.hp != null && p.hpMax) { p.hp = Math.min(p.hpMax, p.hp + heal); p._hpDirty = true }
   return { ok: true, id: it.id, inv: p.inv }
 }
 // Curación de vida de una poción (espeja client/data store.potionEffect: vida 25×mult; super=2, ultra=3;
@@ -742,6 +743,7 @@ async function persistGold(p) {
   if (!p || !p.accountId) return
   if (p._goldDirty) { p._goldDirty = false; try { await db.setCharacterGold(p.accountId, p.gold) } catch {} }
   if (p._xpDirty) { p._xpDirty = false; try { await db.setCharacterXp(p.accountId, p.xp) } catch {} }
+  if (p._hpDirty && p.hp != null) { p._hpDirty = false; try { await db.setCharacterHp(p.accountId, p.hp) } catch {} }
   if (p._sealsDirty) { p._sealsDirty = false; try { await db.setCharacterSeals(p.accountId, p.seals) } catch {} }
   if (p._invDirty) { p._invDirty = false; try { await db.setCharacterInventory(p.accountId, p.inv) } catch {} }
   if (p._ledgerDirty) { p._ledgerDirty = false; try { await db.setCharacterLedger(p.accountId, ledgerOf(p.accountId)) } catch {} }
@@ -895,7 +897,9 @@ export function damagePlayer(id, dmg) {
   dmg = Math.max(0, Math.floor(Number(dmg)) || 0); if (!dmg) return
   p._lastHitAt = Date.now()
   p.hp = Math.max(0, p.hp - dmg)
-  broadcastAoI(p.map, p.ch, p.x, p.y, { t: 'php', id, hp: p.hp, hpMax: p.hpMax }, id)
+  p._hpDirty = true
+  broadcastAoI(p.map, p.ch, p.x, p.y, { t: 'php', id, hp: p.hp, hpMax: p.hpMax }, id)   // los demás ven la barra
+  p.send({ t: 'php', id, hp: p.hp, hpMax: p.hpMax })   // al PROPIO cliente: reconcilia su barra al valor autoritativo (Fase 3)
   if (p.hp <= 0) forceDeath(p)
 }
 // Muerte AUTORITATIVA: la decide el server (no el cliente). Congela las acciones vía p.dead y avisa a
@@ -915,10 +919,12 @@ export function playerHp(id, hp, hpMax) {
   const p = players.get(id); if (!p) return
   if (hpMax) p.hpMax = Math.max(1, Math.min(9999999, hpMax | 0))
   const reported = Math.max(0, Math.min(p.hpMax || (hpMax | 0) || 1, hp | 0))
+  const before = p.hp
   if (p.hp == null) p.hp = reported
   else if (reported < p.hp) p.hp = reported                                  // daño honesto: siempre baja
   else if (Date.now() - (p._lastHitAt || 0) > COMBAT_WINDOW_MS) p.hp = reported   // fuera de combate: aceptar la cura reportada
   // en combate + subida: se ignora (el server manda). Si el server ya lo mató, no revive por un reporte.
+  if (p.hp !== before) p._hpDirty = true
   if (p.dead) return
   broadcastAoI(p.map, p.ch, p.x, p.y, { t: 'php', id, hp: p.hp, hpMax: p.hpMax }, id)
 }
@@ -933,7 +939,7 @@ export function playerAlive(id, x, y, dir) {
   const p = players.get(id); if (!p) return
   p.dead = false
   p.hp = p.hpMax || p.hp   // reaparece con vida LLENA (autoritativo)
-  p._lastHitAt = 0
+  p._lastHitAt = 0; p._hpDirty = true
   if (x != null) { p.x = x; p.y = y; if (dir != null) p.dir = dir }
   broadcast(p.map, p.ch, { t: 'palive', id, x: p.x, y: p.y, dir: p.dir }, id)
 }

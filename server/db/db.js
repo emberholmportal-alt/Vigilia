@@ -284,6 +284,18 @@ export async function setCharacterXp(accountId, xp) {
   })
 }
 
+// Escribe la VIDA autoritativa del server al blob (Fase 3). Preserva el resto del blob. Al desconectar
+// persistimos la vida viva así el logout no cura (antes: al entrar arrancabas lleno = curación gratis).
+export async function setCharacterHp(accountId, hp) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), hp: Math.max(0, Math.floor(Number(hp) || 0)) }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
+}
+
 // Escribe los SELLOS autoritativos del server al blob (moneda premium; faucet: misiones/quest,
 // sink: cofre de sellos). Preserva el resto del blob. Bajo el lock de la cuenta.
 export async function setCharacterSeals(accountId, seals) {

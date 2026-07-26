@@ -390,7 +390,10 @@ export class Game {
     net.on('leave', (m) => this._removeRemote(m.id))
     net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
     net.on('gfx', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGfx(m.gfx) })   // gear de otro jugador
-    net.on('php', (m) => { const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax) })   // vida de otro jugador
+    net.on('php', (m) => {
+      if (m.id === this._selfId) { this._reconcileHp(m.hp, m.hpMax); return }   // MI vida: la manda el server (autoritativa)
+      const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax)           // vida de otro jugador
+    })
     net.on('plvl', (m) => { const r = this.remotes?.get(m.id); if (r) r.setLevel(m.level) })          // nivel de otro jugador
     net.on('gtag', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGuildTag(m.tag) })         // estandarte de gremio (n5)
     // Reconexión (clave en móvil): al caerse la red, net reintenta con backoff; al reabrir
@@ -1617,6 +1620,17 @@ export class Game {
   }
 
   // El servidor nos avisa que un enemigo nos pegó (ya restó nuestra defensa).
+  // Reconciliación de MI vida con la autoritativa del server (Fase 3). El cliente predice el daño al
+  // instante (_onEhit) para que la barra responda; acá corregimos si el server vio MÁS daño del que
+  // predijimos (mismatch de defensa, o un cliente que intentó ignorarlo). Sólo baja: nunca infla la
+  // vida (las curas son locales/aceptadas fuera de combate). Si la autoritativa llegó a 0, morimos.
+  _reconcileHp(hp, hpMax) {
+    if (this._dead || this._spectator || !this.player) return
+    const st = this.store.getStats(); if (!st) return
+    if (hp < st.hp) this.store.takeDamage(st.hp - hp)
+    if (hp <= 0) this._playerDeath()
+  }
+
   _onEhit(m) {
     if (this._dead || this._spectator || !this.player) return
     const dmg = m.dmg || 0
