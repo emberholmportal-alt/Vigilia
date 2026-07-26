@@ -18,7 +18,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { pickSprite, enemyStats, isRanged, rangedCousin } from '../../shared/bestiary.js'
+import { pickSprite, enemyStats, isRanged, rangedCousin, enemyAbility } from '../../shared/bestiary.js'
 import { GATHER } from '../../shared/gather.js'
 import { rollLoot, hasLootTable } from '../../shared/loot.js'
 import { rollMonsterDrop } from '../../shared/drops.js'
@@ -34,6 +34,46 @@ export function init(c) { ctx = c }
 
 // --- carga de mapas (spawners + colisión) ---------------------------------------------------
 const mapCache = new Map()   // name -> { w, h, coll, spawners } | null
+// Algunos mapas de Flare quedaron FRAGMENTADOS al convertir: Flare teletransportaba entre salas,
+// y nuestro modelo es caminata pura, así que las salas quedaron como islas de colisión inconexas.
+// Cuando el spawn nativo cae en un bolsón chico (poca acción), lo reanclamos a la isla con MÁS
+// contenido para que la zona rinda como el dungeon que debía ser. El spawn manda para el servidor
+// (jefe + densificado de entrada) y para el cliente (llegada + pads); por eso se corrige acá, en
+// una sola fuente. El cliente usa el mismo tile en HUB_SPAWN/portales.
+const SPAWN_OVERRIDE = {
+  wizards_tower_1: [52, 9], // isla rica (16 spawners) en vez del bolsón de la entrada (2 spawners)
+  // Templo de Mez (3 pisos): cada planta quedó troceada; anclamos a la isla más poblada de cada una.
+  temple_of_mez_1: [35, 46], // isla #0 (1058 tiles, 8 spawners) — el Sótano
+  temple_of_mez_2: [40, 34], // isla #0 (3076 tiles, 19 spawners) — el Gran Salón
+  temple_of_mez_3: [53, 40], // isla #0 (1044 tiles, 4 spawners) — la Entrada (jefe)
+  // Cluster costero de Lochport (nivel 2-3): reanclamos a un tile CENTRAL de la isla rica de cada
+  // mapa, para que la llegada del cliente (HUB_SPAWN, mismo tile) coincida con el densificado del
+  // server (near-spawners/cofres/jefe). En family_crypt además el spawn nativo caía en un bolsón.
+  lochport: [28, 34],          // isla #0 (1444 tiles, 12 spawners)
+  lochport_cemetery: [20, 44], // isla #0 (2059 tiles, 20 spawners)
+  family_crypt: [10, 39],      // isla #0 (388 tiles, 7 spawners) — nativo caía en el bolsón #1
+  merrimead_swamp: [29, 39],   // isla #0 (1622 tiles, 16 spawners)
+  // Cluster de las Minas Abandonadas (nivel 5-6): reanclado central (spawn nativo en esquina).
+  abandoned_mines: [40, 53],   // hub del cluster
+  blackmire_mines: [32, 36],
+  lake_kuuma: [70, 52],
+  fort_amir: [40, 34],         // dungeon final (jefe)
+  grot_lagoon: [45, 49],
+  // Región de Nazia (nivel 9-10): descenso Tierras Altas -> Subterráneo -> Minas (jefe).
+  nazia_highlands: [22, 21],
+  nazia_underground: [42, 21],
+  nazia_mines: [14, 20],       // lo más hondo (jefe)
+  oasis: [6, 8],               // endgame lv14: llegada nativa = spawn = isla rica (no hace falta mover)
+  the_pit: [71, 71],           // endgame: idem
+  // Ensanche (mapas sanos sin usar): antecámara del Templo + bolsón lv9 de Black Oak.
+  antlion_nest: [29, 35],      // lv6, antecámara del Templo de Mez
+  southern_ridge: [35, 36],    // lv9, off Black Oak City
+  mog_caverns: [26, 19],       // lv9-10, dungeon final del bolsón (jefe)
+}
+// Piso de nivel por mapa: algunos mapas de Flare traen los spawners con niveles MEZCLADOS (p.ej.
+// the_pit: 13 en lv1 + 4 en lv15-16). Para el endgame subimos cada spawner a un piso, así la zona
+// se siente pareja y dura. Se aplica en loadMap (afecta spawnEnemy, near-spawners y entryLevel).
+const LEVEL_FLOOR = { the_pit: 15, oasis: 14 }
 function loadMap(name) {
   if (mapCache.has(name)) return mapCache.get(name)
   let data = null
@@ -41,6 +81,11 @@ function loadMap(name) {
     const raw = JSON.parse(fs.readFileSync(path.join(MAPS_DIR, name + '.json'), 'utf8'))
     const coll = raw.layers && raw.layers.collision
     data = { w: raw.w, h: raw.h, coll, spawn: raw.spawn || null, spawners: raw.spawners || [], chests: raw.chests || [] }
+    if (data && SPAWN_OVERRIDE[name]) data.spawn = SPAWN_OVERRIDE[name]
+    const floor = LEVEL_FLOOR[name]
+    if (data && floor) data.spawners = data.spawners.map((s) => ({
+      ...s, level: Array.isArray(s.level) ? s.level.map((l) => Math.max(floor, l)) : Math.max(floor, s.level || 1),
+    }))
   } catch { data = null }
   mapCache.set(name, data)
   return data
@@ -135,6 +180,7 @@ const GATHER_REACH = 2.4 // tiles: alcance para juntar un nodo
 const CHEST_RESPAWN = 90 // segundos base para que un cofre saqueado reaparezca (escala con la gente)
 const MIN_CHEST_RESPAWN = 30 // piso del respawn de cofres con el canal lleno
 const CHEST_REACH = 2.4  // tiles: alcance para abrir un cofre
+const CHEST_XP = 10      // XP de personaje por abrir un cofre (debe coincidir con el addXp(10) del cliente)
 const WORLD_GC_MS = 120000 // ms que un canal puede estar vacío antes de liberar su mundo (memoria)
 
 // Densidad cerca del punto de entrada. Los mapas de Flare son enormes (hasta 100×100) y te dejan
@@ -205,6 +251,71 @@ function spawnElite(md, sprite, contractId) {
   }
 }
 
+// Jefe PERMANENTE de zona (clímax), independiente del contrato diario del día. A diferencia del élite
+// del contrato, se planta cerca de la ENTRADA (reachable, no en una sala aislada) y respawnea siempre
+// como jefe. Estadísticas más duras que el élite. Marcado el:true+boss:true => loot de jefe.
+const MAP_BOSS = {
+  // La Torre del Mago: el Nigromante óseo (invoca esbirros) custodia el umbral. Paga el rumor del
+  // Centinela Aldric ("nadie que entró volvió a contarlo").
+  wizards_tower_1: { sprite: 'skeleton_mage_boss', level: 12 },
+  // El Inframundo: el Minotauro, la bestia que abrió el pozo. Guarda las profundidades.
+  underworld: { sprite: 'minotaur', level: 13 },
+  // Las Cloacas Ruinosas, bajo Black Oak City: el Zombi profano, hinchado de todo lo que la ciudad
+  // deja caer. Golpe pútrido en área (telegrafiado). Clímax de la rama de la ciudad (nivel ~11).
+  dilapidated_sewers: { sprite: 'zombie_dark', level: 11 },
+  // Los Tres Nombres (quest de Udana): cada ruina guarda el guardián elemental que el archimago dejó
+  // atado. Matarlo arranca el nombre sellado (el cliente revela q3_* al caer un jefe en la ruina).
+  st_maria_1: { sprite: 'wyvern_water', level: 9 },     // hielo / Scathelocke
+  perdition_mines: { sprite: 'wyvern_fire', level: 9 }, // fuego / Vesuvvio
+  stormrock_pass: { sprite: 'wyvern_air', level: 9 },   // viento / Grisbon
+  // Capstone del cluster profundo: lo más hondo que se puede llegar (Fortaleza II, nivel 15).
+  underworld_stronghold_2: { sprite: 'skeleton_knight_boss', level: 15 },
+  // Templo de Mez (la Entrada, piso 3): el último wyvern que anida en el portón del templo. Bruto
+  // de cuerpo a cuerpo (no elemental — distinto de los Tres Nombres). Clímax del ramal (nivel ~9).
+  temple_of_mez_3: { sprite: 'wyvern', level: 9 },
+  // Fuerte Amir (final del cluster de minas): el castellano caído, un Caballero de hueso que todavía
+  // monta guardia sobre una guarnición muerta. Golpe en área (smash). Clímax del ramal (nivel ~7).
+  fort_amir: { sprite: 'skeleton_knight_boss', level: 7 },
+  // Minas de Nazia (fondo de la región de Nazia): un señor de la guerra hobgoblin que apretó la
+  // veta hasta secarla. Golpe en área (smash). Clímax del ramal (nivel ~11).
+  nazia_mines: { sprite: 'goblin_elite', level: 11 },
+  // El Oasis (bolsón de endgame colgado del cluster profundo, nivel ~14): un wyvern se adueñó de la
+  // última agua tan hondo. Bruto de cuerpo a cuerpo (nivel ~15).
+  oasis: { sprite: 'wyvern', level: 15 },
+  // El Pozo (lo más hondo del mundo, tras la Fortaleza II): el Minotauro del fondo, más grande y más
+  // viejo que el que abrió el pozo. Golpe en área (smash). El jefe más duro del juego (nivel ~17).
+  the_pit: { sprite: 'minotaur', level: 17 },
+  // Cavernas de Mog (fondo del bolsón de Black Oak): un nigromante que baja a las cuevas a levantar
+  // lo que Nazia dejó. Invoca esbirros. Capstone del bolsón (nivel ~10).
+  mog_caverns: { sprite: 'skeleton_mage_boss', level: 10 },
+}
+// Total de jefes permanentes del mundo (para la hazaña "Jefes N/total"). Lo expone el server.
+export function bossTotal() { return Object.keys(MAP_BOSS).length }
+
+// Esbirro INVOCADO por una habilidad (summon): sprite+nivel fijos en un tile dado. `sp:null` +
+// `_parent` -> no repone al morir (no es un spawner del mapa; ver killEnemy).
+function spawnMinion(md, sprite, level, tile) {
+  const st = enemyStats(sprite, level)
+  return {
+    i: eidSeq++, s: sprite, lv: level, x: tile.x + 0.5, y: tile.y + 0.5, d: 7,
+    hp: st.hpMax, hpm: st.hpMax, dmg: st.damage, xp: st.xp, gold: st.gold,
+    rng: isRanged(sprite), atkCd: 0, home: { x: tile.x, y: tile.y }, sp: null,
+  }
+}
+function spawnBoss(md, cfg) {
+  const [cx, cy] = md.spawn || [Math.floor(md.w / 2), Math.floor(md.h / 2)]
+  const t = nearWalkable(md, cx, cy, 4, 16, new Set()) || randWalkable(md, new Set())
+  if (!t) return null
+  const st = enemyStats(cfg.sprite, cfg.level)
+  const hp = Math.round(st.hpMax * 2.4)
+  return {
+    i: eidSeq++, s: cfg.sprite, lv: cfg.level, x: t.x + 0.5, y: t.y + 0.5, d: 7,
+    hp, hpm: hp, dmg: Math.round(st.damage * 1.5), xp: st.xp + 120, gold: Math.round(st.gold * 4),
+    rng: isRanged(cfg.sprite), atkCd: 0, home: { x: t.x, y: t.y }, sp: null,
+    el: true, boss: true,
+  }
+}
+
 // Crea (una vez) el mundo de enemigos de un canal si el mapa tiene spawners.
 export function ensureWorld(map, ch) {
   const k = key(map, ch)
@@ -248,6 +359,9 @@ export function ensureWorld(map, ch) {
     const el = spawnElite(md, con.elite, con.id)
     if (el) enemies.set(el.i, el)
   }
+  // Jefe permanente de la zona (clímax), si el mapa tiene uno configurado.
+  const bcfg = MAP_BOSS[map]
+  if (bcfg) { const b = spawnBoss(md, bcfg); if (b) enemies.set(b.i, b) }
   worlds.set(k, { map, ch, md, enemies, dead: [], nodes, nodeDead: [], chests, chestDead: [], emptySince: 0 })
 }
 
@@ -271,7 +385,7 @@ const pubNode = (nd) => ({ n: nd.n, x: nd.x, y: nd.y, id: nd.id, name: nd.name, 
 export function playerGather(pid, nid) {
   if (!ctx) return
   const pl = ctx.getPlayer(pid)
-  if (!pl) return
+  if (!pl || pl.dead) return   // muerto (autoritativo): no puede juntar recursos hasta reaparecer
   const w = worlds.get(key(pl.map, pl.ch))
   if (!w || !w.nodes) return
   const nd = w.nodes.get(nid)
@@ -300,7 +414,7 @@ export function chestSnapshot(map, ch) {
 export function playerOpenChest(pid, cid) {
   if (!ctx) return
   const pl = ctx.getPlayer(pid)
-  if (!pl) return
+  if (!pl || pl.dead) return   // muerto (autoritativo): no puede abrir cofres hasta reaparecer
   const w = worlds.get(key(pl.map, pl.ch))
   if (!w || !w.chests) return
   const c = w.chests.get(cid)
@@ -311,11 +425,12 @@ export function playerOpenChest(pid, cid) {
   w.chestDead.push({ x: c.x, y: c.y, loot: c.loot, at: now() + respawnDelay(w, CHEST_RESPAWN, MIN_CHEST_RESPAWN) * 1000 })
   ctx.broadcast(w.map, w.ch, { t: 'copen', c: cid, by: pid })
   const roll = hasLootTable(c.loot) ? rollLoot(c.loot) : { gold: 0, drops: [] }
-  // Oro del cofre AUTORITATIVO del server; los ítems siguen instanciados en el cliente. `cloot` ya
-  // no lleva oro (el cliente lo recibe por el mensaje 'gold').
-  if (roll.gold > 0 && ctx.awardGold) ctx.awardGold(pid, roll.gold, 'chest', c.x, c.y)
+  // Los cofres del SUELO ya NO dan oro: sólo ítems. Eran el faucet fuerte que inflaba la economía
+  // (§ECONOMY_VEL.md). El oro sale de matar enemigos + vender el loot. Los cofres de SELLO (premium,
+  // pagados con fragmentos de sello) sí siguen dando oro — ahí está bien porque pagaste por abrirlos.
   // Los ítems del cofre van al bag AUTORITATIVO del server (empuja 'inv'); `cloot` es sólo para la animación.
   if (roll.drops && roll.drops.length && ctx.grantLoot) ctx.grantLoot(pid, roll.drops)
+  if (ctx.awardXp) ctx.awardXp(pid, CHEST_XP, 'chest')   // XP AUTORITATIVA (mismo monto que el cliente suma cosmético en _onCloot)
   if (ctx.missionTick) ctx.missionTick(pid, 'chest', pl.map, 1)   // avance de misión 'cofre' autoritativo
   ctx.sendTo(pid, { t: 'cloot', c: cid, x: c.x, y: c.y, drops: roll.drops || [] })
 }
@@ -337,6 +452,8 @@ export function setStats(pid, s) {
     dmgMul: clampNum(s.dmgMul, 4) || 1, str: clampNum(s.str, 999),
     crit: clampNum(s.crit, 60), defense: clampNum(s.defense, 3000),
     reach: clampNum(s.reach, 8) || 1.6,
+    itemFind: clampNum(s.itemFind, 300),   // magic-find (acotado): mejora la rareza del loot de kills
+    goldMul: Math.max(1, Math.min(1.1, Number(s.goldMul) || 1)),   // +oro de botín del gremio (acotado a +10%)
     weaponKind: (s.weaponKind === 'ranged' || s.weaponKind === 'mental') ? s.weaponKind : 'melee',
   })
 }
@@ -357,7 +474,7 @@ const PVP_ENABLED = false
 export function playerAttack(pid, eid) {
   if (!ctx) return
   const pl = ctx.getPlayer(pid)
-  if (!pl) return
+  if (!pl || pl.dead) return   // muerto (autoritativo): no pega hasta reaparecer (cierra farmear invencible)
   const w = worlds.get(key(pl.map, pl.ch))
   if (!w) return
   const e = w.enemies.get(eid)   // sólo enemigos: un id de jugador jamás está en este mapa (PvP off)
@@ -385,32 +502,73 @@ function rollPlayerDamage(st) {
   return { dmg: Math.max(1, Math.round(raw * (crit ? 2 : 1))), crit }
 }
 
+// Habilidad especial M2 AUTORITATIVA. El cliente computa qué enemigos alcanzó su habilidad y cuánto
+// daño (las fórmulas —AoE por arma, bola de fuego por intelecto— viven en el cliente); el server
+// VALIDA alcance + cadencia y CLAMPEA el daño (mismo modelo de confianza que el golpe normal: el
+// cliente propone, el server acota), luego lo aplica de verdad: HP, muerte, XP, oro y loot son
+// autoritativos. Cierra el bug online donde la habilidad pegaba local, el enemigo revivía al
+// re-sincronizar y otorgaba XP/loot falso. `hits` = [{ eid, dmg }].
+const pcastAt = new Map()          // playerId -> próximo cast permitido (ms)
+const MIN_CAST_CD = 350            // piso entre casts (anti-spam; el cooldown real por habilidad es client-side)
+const CAST_DMG_MAX = 900           // techo de daño por golpe de habilidad (anti-cheat; > que el melee)
+const CAST_RANGE = 14              // alcance máximo de un golpe de habilidad desde el jugador (tiles)
+export function playerCast(pid, hits) {
+  if (!ctx || !Array.isArray(hits) || !hits.length) return
+  const pl = ctx.getPlayer(pid); if (!pl || pl.dead) return   // muerto (autoritativo): no castea hasta reaparecer
+  const w = worlds.get(key(pl.map, pl.ch)); if (!w) return
+  const tnow = now()
+  if (tnow < (pcastAt.get(pid) || 0)) return   // cadencia: descarta ráfagas de casts
+  pcastAt.set(pid, tnow + MIN_CAST_CD)
+  for (const h of hits.slice(0, 24)) {         // tope de objetivos por cast
+    const e = w.enemies.get((h && h.eid) | 0)
+    if (!e || e.hp <= 0) continue
+    const dx = pl.x - e.x, dy = pl.y - e.y
+    if (dx * dx + dy * dy > CAST_RANGE * CAST_RANGE) continue   // fuera de alcance: se ignora
+    const dmg = Math.max(1, Math.min(CAST_DMG_MAX, Math.round(Number(h.dmg) || 0)))
+    e.hp -= dmg
+    ctx.broadcast(pl.map, pl.ch, { t: 'edmg', i: e.i, hp: Math.max(0, e.hp), dmg, crit: false, by: pid })
+    if (e.hp <= 0) killEnemy(w, e, pid)
+  }
+}
+
 function killEnemy(w, e, killerId) {
   w.enemies.delete(e.i)
-  // La élite reaparece más lento (para que sea un evento); los comunes al ritmo normal.
-  if (e.el) w.dead.push({ el: true, sprite: e.s, contract: e.contract, at: now() + RESPAWN * 3 * 1000 })
-  else w.dead.push({ sp: e.sp, at: now() + respawnDelay(w, RESPAWN, MIN_RESPAWN) * 1000 })
+  // El jefe permanente y la élite reaparecen más lento (para que sean un evento); los comunes al
+  // ritmo normal. El jefe respawnea COMO jefe (no degradado a élite de contrato).
+  if (e.boss) w.dead.push({ boss: true, sprite: e.s, level: e.lv, at: now() + RESPAWN * 4 * 1000 })
+  else if (e.el) w.dead.push({ el: true, sprite: e.s, contract: e.contract, at: now() + RESPAWN * 3 * 1000 })
+  else if (e.sp) w.dead.push({ sp: e.sp, at: now() + respawnDelay(w, RESPAWN, MIN_RESPAWN) * 1000 })   // sólo los de spawner reponen (los invocados, sp:null, no)
   ctx.broadcast(w.map, w.ch, { t: 'edie', i: e.i, by: killerId })
   // Oro AUTORITATIVO del servidor (Fase A): lo acredita el server (con una variación ±30% para que
   // se sienta vivo) y le manda el nuevo total al matador; el cliente sólo muestra la pila cosmética.
-  if (e.gold > 0 && ctx.awardGold) ctx.awardGold(killerId, Math.max(1, Math.round(e.gold * (0.7 + Math.random() * 0.6))), 'kill', e.x, e.y)
+  if (e.gold > 0 && ctx.awardGold) {
+    const gm = (pstats.get(killerId) || {}).goldMul || 1   // +oro de botín del gremio (ventaja n1, autoritativa)
+    ctx.awardGold(killerId, Math.max(1, Math.round(e.gold * (0.7 + Math.random() * 0.6) * gm)), 'kill', e.x, e.y)
+  }
   // Botín de ítems AUTORITATIVO (Fase A.2): el server tira el drop y lo otorga al bag del matador.
-  const boss = /boss|minotaur|elite/.test(e.s)
-  const roll = rollMonsterDrop(e.lv, boss, 0)
+  const boss = !!e.boss || /boss|minotaur|elite/.test(e.s)   // jefe de zona (MAP_BOSS) también da loot de jefe
+  const roll = rollMonsterDrop(e.lv, boss, (pstats.get(killerId) || {}).itemFind || 0)   // magic-find del matador (antes 0 online)
   if (roll.drops.length && ctx.grantLoot) ctx.grantLoot(killerId, roll.drops)
+  // XP AUTORITATIVA del server (mismo monto que el cliente suma cosmético al recibir 'ekill').
+  if (ctx.awardXp) ctx.awardXp(killerId, e.xp, 'kill')
   // Avance de misiones AUTORITATIVO (matar / contrato): el server cuenta el kill en el mapa del mundo.
   if (ctx.missionTick) { ctx.missionTick(killerId, 'kill', w.map, 1); if (e.contract) ctx.missionTick(killerId, 'contract', w.map, 1) }
   // Aviso al matador: XP autoritativa del server + los drops REALES (para la pila cosmética del
   // cliente; el bag ya lo actualizó el push 'inv'). Así el suelo muestra lo que de verdad cayó.
   const ek = { t: 'ekill', i: e.i, xp: e.xp, sprite: e.s, lv: e.lv, drops: roll.drops || [] }
   if (e.contract) ek.contract = e.contract   // acredita la misión Contrato del que lo mata
+  if (e.boss) ek.boss = 1                     // jefe de zona: el cliente puede gatear eventos (quest de las ruinas)
   ctx.sendTo(killerId, ek)
+  // Hazaña AUTORITATIVA: matar al jefe permanente de una zona lo suma a las hazañas del matador.
+  if (e.boss && ctx.recordBoss) ctx.recordBoss(killerId, w.map)
   // Contrato semanal del GREMIO del matador: si la categoría del enemigo matchea, suma al pozo
   // común del gremio. Fire-and-forget (no bloquea el hot-path del combate).
   const killer = ctx.getPlayer && ctx.getPlayer(killerId)
   if (killer && killer.accountId) {
     const cat = (e.sp && e.sp.category) || e.s
-    guilds.onKill(killer.accountId, cat).catch(() => {})
+    guilds.onKill(killer.accountId, cat)
+      .then((r) => { if (r && r.completed && r.rewards && ctx.guildContractDone) ctx.guildContractDone(r) })
+      .catch(() => {})
   }
 }
 
@@ -440,7 +598,8 @@ function step() {
       const still = []
       for (const d of w.dead) {
         if (t >= d.at) {
-          const e = d.el ? spawnElite(w.md, d.sprite, d.contract) : spawnEnemy(w.md, d.sp)
+          const e = d.boss ? spawnBoss(w.md, { sprite: d.sprite, level: d.level })
+            : d.el ? spawnElite(w.md, d.sprite, d.contract) : spawnEnemy(w.md, d.sp)
           if (e) { w.enemies.set(e.i, e); ctx.broadcast(w.map, w.ch, { t: 'espawn', es: [pubEnemy(e)] }) }
         } else still.push(d)
       }
@@ -479,15 +638,27 @@ function step() {
 
 function stepEnemy(w, e, players, dt) {
   if (e.atkCd > 0) e.atkCd -= dt
+  const ab = e._ab !== undefined ? e._ab : (e._ab = enemyAbility(e.s))   // habilidad del bicho (cacheada)
   // objetivo: jugador más cercano dentro del aggro
   let tgt = null, best = AGGRO * AGGRO
   for (const p of players) {
     const dx = p.x - e.x, dy = p.y - e.y, d2 = dx * dx + dy * dy
     if (d2 < best) { best = d2; tgt = p }
   }
+  // SUMMON: el nigromante invoca esbirros cada `cd` mientras haya un jugador en aggro (aunque no
+  // llegue a rango de golpe). Tope por `cap` esbirros vivos suyos (tag _parent).
+  if (ab && ab.type === 'summon') stepSummon(w, e, ab, tgt, dt)
   if (!tgt) return
   const dx = tgt.x - e.x, dy = tgt.y - e.y
-  const dist = Math.hypot(dx, dy)
+  const dist = Math.hypot(dx, dy) || 0.0001
+  // SKITTISH: con poca vida, huye del jugador (después vuelve al subir la vida / cambiar de target).
+  if (ab && ab.type === 'skittish' && e.hp < e.hpm * (ab.threshold || 0.3)) {
+    const nx = e.x - (dx / dist) * SPEED * dt, ny = e.y - (dy / dist) * SPEED * dt
+    if (isWalkable(w.md, nx, e.y)) e.x = nx
+    if (isWalkable(w.md, e.x, ny)) e.y = ny
+    e.d = vecToDir(-dx, -dy)
+    return
+  }
   const reach = e.rng ? RANGED_REACH : MELEE
   if (dist > reach) {
     // paso hacia el objetivo (greedy, respeta colisión por tile)
@@ -499,10 +670,40 @@ function stepEnemy(w, e, players, dt) {
   } else if (e.atkCd <= 0) {
     e.atkCd = ATK_CD
     e.d = vecToDir(dx, dy)
-    const st = pstats.get(tgt.id) || {}
-    const dmg = Math.max(1, e.dmg - (st.defense || 0))
-    ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg })
+    // SMASH: chance de golpe de ÁREA más fuerte (minotauro/caballero/élites) — pega a todos los
+    // jugadores en radio; si no procea, golpe normal al objetivo.
+    if (ab && ab.type === 'smash' && Math.random() < (ab.chance || 0.4)) {
+      for (const p of players) {
+        if (Math.hypot(p.x - e.x, p.y - e.y) > (ab.radius || 2)) continue
+        const ps = pstats.get(p.id) || {}
+        const dmg = Math.max(1, Math.round(e.dmg * (ab.mult || 2)) - (ps.defense || 0))
+        ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg, smash: 1 })   // FX + predicción del cliente
+        if (ctx.damagePlayer) ctx.damagePlayer(p.id, dmg)        // HP AUTORITATIVA (Fase 3): el server aplica el daño y decide la muerte
+      }
+      ctx.broadcast(w.map, w.ch, { t: 'esmash', i: e.i, x: r2(e.x), y: r2(e.y), r: ab.radius || 2 })  // FX (el cliente puede animarlo)
+    } else {
+      const st = pstats.get(tgt.id) || {}
+      const dmg = Math.max(1, e.dmg - (st.defense || 0))
+      ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg })   // FX + predicción del cliente
+      if (ctx.damagePlayer) ctx.damagePlayer(tgt.id, dmg)   // HP AUTORITATIVA (Fase 3)
+    }
   }
+}
+
+// Invocación de esbirros (nigromante). Primer summon tras un `cd`; tope por esbirros vivos propios.
+function stepSummon(w, e, ab, tgt, dt) {
+  if (e._sumAt == null) e._sumAt = ab.cd
+  e._sumAt -= dt
+  if (e._sumAt > 0 || !tgt) return
+  e._sumAt = ab.cd
+  const alive = [...w.enemies.values()].filter((m) => m._parent === e.i).length
+  if (alive >= (ab.cap || 3) || w.enemies.size >= MAX_PER_MAP) return
+  const t = nearWalkable(w.md, Math.round(e.x), Math.round(e.y), 1, 3, new Set())
+  if (!t) return
+  const minion = spawnMinion(w.md, ab.minion, Math.max(1, (e.lv || 1) - 2), t)
+  minion._parent = e.i
+  w.enemies.set(minion.i, minion)
+  ctx.broadcast(w.map, w.ch, { t: 'espawn', es: [pubEnemy(minion)] })
 }
 
 function broadcastState(w, players) {
@@ -521,5 +722,16 @@ function vecToDir(dx, dy) {
 }
 
 let _timer = null
-export function start() { if (!_timer) { _last = now(); _timer = setInterval(step, 100) } }
+// El loop de simulación se blinda: si un tick lanza (enemigo/mapa en mal estado), lo logueamos y
+// seguimos vivos en vez de dejar que una excepción no atrapada baje el server autoritativo (y con
+// él todo el oro/XP vivo sin flushear). `_last` ya se actualizó al tope de step(), así que el dt
+// del próximo tick no se dispara.
+export function start() {
+  if (!_timer) {
+    _last = now()
+    _timer = setInterval(() => {
+      try { step() } catch (e) { console.error('[combat] step() error (el loop sigue):', (e && e.stack) || e) }
+    }, 100)
+  }
+}
 export function stop() { if (_timer) { clearInterval(_timer); _timer = null } }

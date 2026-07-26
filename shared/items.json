@@ -88,21 +88,27 @@
       "price": 100,
       "rarity": "comun",
       "gfx": "dagger",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 3,
+        "dmg_melee_max": 5
+      },
       "equip_flags": "melee"
     },
     {
       "id": 9,
       "name": "Honda",
       "name_en": "Slingshot",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 1,
       "price": 100,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
-      "equip_flags": null
+      "stats": {
+        "dmg_ranged_min": 3,
+        "dmg_ranged_max": 5
+      },
+      "equip_flags": "ranged"
     },
     {
       "id": 10,
@@ -114,7 +120,10 @@
       "price": 100,
       "rarity": "comun",
       "gfx": "wand",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 3,
+        "dmg_ment_max": 5
+      },
       "equip_flags": "mental"
     },
     {
@@ -366,8 +375,8 @@
       "rarity": "fino",
       "gfx": "dagger",
       "stats": {
-        "dmg_melee_min": 3,
-        "dmg_melee_max": 3
+        "dmg_melee_min": 6,
+        "dmg_melee_max": 8
       },
       "equip_flags": "melee"
     },
@@ -375,17 +384,17 @@
       "id": 28,
       "name": "Honda de reconocimiento",
       "name_en": "Recon Slingshot",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 2,
       "price": 200,
       "rarity": "fino",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 3,
-        "dmg_ranged_max": 3
+        "dmg_ranged_min": 6,
+        "dmg_ranged_max": 8
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 29,
@@ -398,8 +407,8 @@
       "rarity": "fino",
       "gfx": "wand",
       "stats": {
-        "dmg_ment_min": 3,
-        "dmg_ment_max": 3
+        "dmg_ment_min": 6,
+        "dmg_ment_max": 8
       },
       "equip_flags": "mental"
     },
@@ -759,8 +768,8 @@
       "rarity": "legendario",
       "gfx": "dagger",
       "stats": {
-        "dmg_melee_min": 6,
-        "dmg_melee_max": 6
+        "dmg_melee_min": 8,
+        "dmg_melee_max": 12
       },
       "equip_flags": "melee"
     },
@@ -768,17 +777,17 @@
       "id": 54,
       "name": "Honda de montaraz",
       "name_en": "Ranger Slingshot",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 3,
       "price": 300,
       "rarity": "legendario",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 6,
-        "dmg_ranged_max": 6
+        "dmg_ranged_min": 8,
+        "dmg_ranged_max": 12
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 55,
@@ -791,8 +800,8 @@
       "rarity": "legendario",
       "gfx": "wand",
       "stats": {
-        "dmg_ment_min": 6,
-        "dmg_ment_max": 6
+        "dmg_ment_min": 8,
+        "dmg_ment_max": 12
       },
       "equip_flags": "mental"
     },
@@ -1152,8 +1161,8 @@
       "rarity": "comun",
       "gfx": "dagger",
       "stats": {
-        "dmg_melee_min": 9,
-        "dmg_melee_max": 9
+        "dmg_melee_min": 10,
+        "dmg_melee_max": 16
       },
       "equip_flags": "melee"
     },
@@ -1161,17 +1170,17 @@
       "id": 80,
       "name": "Honda del Francotirador",
       "name_en": "Sniper Slingshot",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 4,
       "price": 400,
       "rarity": "comun",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 9,
-        "dmg_ranged_max": 9
+        "dmg_ranged_min": 10,
+        "dmg_ranged_max": 16
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 81,
@@ -1184,8 +1193,8 @@
       "rarity": "comun",
       "gfx": "wand",
       "stats": {
-        "dmg_ment_min": 9,
-        "dmg_ment_max": 9
+        "dmg_ment_min": 10,
+        "dmg_ment_max": 16
       },
       "equip_flags": "mental"
     },
@@ -1320,10 +1329,10 @@
       "rarity": "unico",
       "gfx": "smith_hammer",
       "stats": {
-        "dmg_melee_min": 12,
-        "dmg_melee_max": 12,
         "crit": 1,
-        "currency_find": 10
+        "currency_find": 10,
+        "dmg_melee_min": 17,
+        "dmg_melee_max": 25
       },
       "equip_flags": "melee"
     },
@@ -1338,10 +1347,10 @@
       "rarity": "unico",
       "gfx": "club",
       "stats": {
-        "dmg_ment_min": 12,
-        "dmg_ment_max": 12,
         "mp_regen": 10,
-        "lightning_resist": 10
+        "lightning_resist": 10,
+        "dmg_ment_min": 16,
+        "dmg_ment_max": 24
       },
       "equip_flags": "mental"
     },
@@ -1551,21 +1560,27 @@
       "price": 500,
       "rarity": "comun",
       "gfx": "shortsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 14,
+        "dmg_melee_max": 20
+      },
       "equip_flags": "melee"
     },
     {
       "id": 107,
       "name": "Arco corto",
       "name_en": "Shortbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 5,
       "price": 500,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
-      "equip_flags": null
+      "stats": {
+        "dmg_ranged_min": 14,
+        "dmg_ranged_max": 20
+      },
+      "equip_flags": "ranged"
     },
     {
       "id": 108,
@@ -1577,7 +1592,10 @@
       "price": 500,
       "rarity": "comun",
       "gfx": "rod",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 14,
+        "dmg_ment_max": 20
+      },
       "equip_flags": "mental"
     },
     {
@@ -1874,8 +1892,8 @@
       "rarity": "fino",
       "gfx": "shortsword",
       "stats": {
-        "dmg_melee_min": 3,
-        "dmg_melee_max": 3
+        "dmg_melee_min": 16,
+        "dmg_melee_max": 24
       },
       "equip_flags": "melee"
     },
@@ -1883,17 +1901,17 @@
       "id": 129,
       "name": "Arco corto de reconocimiento",
       "name_en": "Recon Shortbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 6,
       "price": 600,
       "rarity": "fino",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 3,
-        "dmg_ranged_max": 3
+        "dmg_ranged_min": 16,
+        "dmg_ranged_max": 24
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 130,
@@ -1906,8 +1924,8 @@
       "rarity": "fino",
       "gfx": "rod",
       "stats": {
-        "dmg_ment_min": 3,
-        "dmg_ment_max": 3
+        "dmg_ment_min": 16,
+        "dmg_ment_max": 24
       },
       "equip_flags": "mental"
     },
@@ -2312,8 +2330,8 @@
       "rarity": "legendario",
       "gfx": "shortsword",
       "stats": {
-        "dmg_melee_min": 6,
-        "dmg_melee_max": 6
+        "dmg_melee_min": 18,
+        "dmg_melee_max": 28
       },
       "equip_flags": "melee"
     },
@@ -2321,17 +2339,17 @@
       "id": 158,
       "name": "Arco corto de montaraz",
       "name_en": "Ranger Shortbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 7,
       "price": 700,
       "rarity": "legendario",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 6,
-        "dmg_ranged_max": 6
+        "dmg_ranged_min": 18,
+        "dmg_ranged_max": 28
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 159,
@@ -2344,8 +2362,8 @@
       "rarity": "legendario",
       "gfx": "rod",
       "stats": {
-        "dmg_ment_min": 6,
-        "dmg_ment_max": 6
+        "dmg_ment_min": 18,
+        "dmg_ment_max": 28
       },
       "equip_flags": "mental"
     },
@@ -2750,8 +2768,8 @@
       "rarity": "comun",
       "gfx": "shortsword",
       "stats": {
-        "dmg_melee_min": 9,
-        "dmg_melee_max": 9
+        "dmg_melee_min": 21,
+        "dmg_melee_max": 31
       },
       "equip_flags": "melee"
     },
@@ -2759,17 +2777,17 @@
       "id": 187,
       "name": "Arco corto del Francotirador",
       "name_en": "Sniper Shortbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 8,
       "price": 800,
       "rarity": "comun",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 9,
-        "dmg_ranged_max": 9
+        "dmg_ranged_min": 21,
+        "dmg_ranged_max": 31
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 188,
@@ -2782,8 +2800,8 @@
       "rarity": "comun",
       "gfx": "rod",
       "stats": {
-        "dmg_ment_min": 9,
-        "dmg_ment_max": 9
+        "dmg_ment_min": 21,
+        "dmg_ment_max": 31
       },
       "equip_flags": "mental"
     },
@@ -2918,10 +2936,10 @@
       "rarity": "unico",
       "gfx": "zweihander",
       "stats": {
-        "dmg_melee_min": 12,
-        "dmg_melee_max": 12,
         "accuracy": 15,
-        "lightning_resist": 20
+        "lightning_resist": 20,
+        "dmg_melee_min": 26,
+        "dmg_melee_max": 38
       },
       "equip_flags": "melee"
     },
@@ -2929,18 +2947,18 @@
       "id": 198,
       "name": "Arco de cazador",
       "name_en": "Huntsman Bow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 8,
       "price": 900,
       "rarity": "unico",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 12,
-        "dmg_ranged_max": 12,
-        "crit": 5
+        "crit": 5,
+        "dmg_ranged_min": 26,
+        "dmg_ranged_max": 38
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 199,
@@ -3162,21 +3180,27 @@
       "price": 900,
       "rarity": "comun",
       "gfx": "longsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 24,
+        "dmg_melee_max": 36
+      },
       "equip_flags": "melee"
     },
     {
       "id": 215,
       "name": "Arco largo",
       "name_en": "Longbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 9,
       "price": 900,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
-      "equip_flags": null
+      "stats": {
+        "dmg_ranged_min": 24,
+        "dmg_ranged_max": 36
+      },
+      "equip_flags": "ranged"
     },
     {
       "id": 216,
@@ -3188,7 +3212,10 @@
       "price": 900,
       "rarity": "comun",
       "gfx": "staff",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 24,
+        "dmg_ment_max": 36
+      },
       "equip_flags": "mental"
     },
     {
@@ -3485,8 +3512,8 @@
       "rarity": "fino",
       "gfx": "longsword",
       "stats": {
-        "dmg_melee_min": 3,
-        "dmg_melee_max": 3
+        "dmg_melee_min": 26,
+        "dmg_melee_max": 40
       },
       "equip_flags": "melee"
     },
@@ -3494,17 +3521,17 @@
       "id": 237,
       "name": "Arco largo de reconocimiento",
       "name_en": "Recon Longbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 10,
       "price": 1000,
       "rarity": "fino",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 3,
-        "dmg_ranged_max": 3
+        "dmg_ranged_min": 26,
+        "dmg_ranged_max": 40
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 238,
@@ -3517,8 +3544,8 @@
       "rarity": "fino",
       "gfx": "staff",
       "stats": {
-        "dmg_ment_min": 3,
-        "dmg_ment_max": 3
+        "dmg_ment_min": 26,
+        "dmg_ment_max": 40
       },
       "equip_flags": "mental"
     },
@@ -3923,8 +3950,8 @@
       "rarity": "legendario",
       "gfx": "longsword",
       "stats": {
-        "dmg_melee_min": 6,
-        "dmg_melee_max": 6
+        "dmg_melee_min": 29,
+        "dmg_melee_max": 43
       },
       "equip_flags": "melee"
     },
@@ -3932,17 +3959,17 @@
       "id": 266,
       "name": "Arco largo de montaraz",
       "name_en": "Ranger Longbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 11,
       "price": 1100,
       "rarity": "legendario",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 6,
-        "dmg_ranged_max": 6
+        "dmg_ranged_min": 29,
+        "dmg_ranged_max": 43
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 267,
@@ -3955,8 +3982,8 @@
       "rarity": "legendario",
       "gfx": "staff",
       "stats": {
-        "dmg_ment_min": 6,
-        "dmg_ment_max": 6
+        "dmg_ment_min": 29,
+        "dmg_ment_max": 43
       },
       "equip_flags": "mental"
     },
@@ -4361,8 +4388,8 @@
       "rarity": "comun",
       "gfx": "longsword",
       "stats": {
-        "dmg_melee_min": 9,
-        "dmg_melee_max": 9
+        "dmg_melee_min": 31,
+        "dmg_melee_max": 47
       },
       "equip_flags": "melee"
     },
@@ -4370,17 +4397,17 @@
       "id": 295,
       "name": "Arco largo del Francotirador",
       "name_en": "Sniper Longbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 12,
       "price": 1200,
       "rarity": "comun",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 9,
-        "dmg_ranged_max": 9
+        "dmg_ranged_min": 31,
+        "dmg_ranged_max": 47
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 296,
@@ -4393,8 +4420,8 @@
       "rarity": "comun",
       "gfx": "staff",
       "stats": {
-        "dmg_ment_min": 9,
-        "dmg_ment_max": 9
+        "dmg_ment_min": 31,
+        "dmg_ment_max": 47
       },
       "equip_flags": "mental"
     },
@@ -4547,9 +4574,9 @@
       "rarity": "unico",
       "gfx": "infantry_axe",
       "stats": {
-        "dmg_ranged_min": 12,
-        "dmg_ranged_max": 12,
-        "crit": 5
+        "crit": 5,
+        "dmg_ranged_min": 35,
+        "dmg_ranged_max": 53
       },
       "equip_flags": "ranged,throw_axe"
     },
@@ -4616,7 +4643,9 @@
       "gfx": "reinforced_club",
       "stats": {
         "accuracy": 30,
-        "dark_resist": 25
+        "dark_resist": 25,
+        "dmg_ment_min": 35,
+        "dmg_ment_max": 53
       },
       "equip_flags": "mental"
     },
@@ -4760,21 +4789,27 @@
       "price": 1300,
       "rarity": "comun",
       "gfx": "greatsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 34,
+        "dmg_melee_max": 52
+      },
       "equip_flags": "melee"
     },
     {
       "id": 322,
       "name": "Arco de guerra",
       "name_en": "Greatbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 13,
       "price": 1300,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
-      "equip_flags": null
+      "stats": {
+        "dmg_ranged_min": 34,
+        "dmg_ranged_max": 52
+      },
+      "equip_flags": "ranged"
     },
     {
       "id": 323,
@@ -4786,7 +4821,10 @@
       "price": 1300,
       "rarity": "comun",
       "gfx": "greatstaff",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 34,
+        "dmg_ment_max": 52
+      },
       "equip_flags": "mental"
     },
     {
@@ -5083,8 +5121,8 @@
       "rarity": "fino",
       "gfx": "greatsword",
       "stats": {
-        "dmg_melee_min": 3,
-        "dmg_melee_max": 3
+        "dmg_melee_min": 37,
+        "dmg_melee_max": 55
       },
       "equip_flags": "melee"
     },
@@ -5092,17 +5130,17 @@
       "id": 344,
       "name": "Arco de guerra de reconocimiento",
       "name_en": "Recon Greatbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 14,
       "price": 1400,
       "rarity": "fino",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 3,
-        "dmg_ranged_max": 3
+        "dmg_ranged_min": 37,
+        "dmg_ranged_max": 55
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 345,
@@ -5115,8 +5153,8 @@
       "rarity": "fino",
       "gfx": "greatstaff",
       "stats": {
-        "dmg_ment_min": 3,
-        "dmg_ment_max": 3
+        "dmg_ment_min": 37,
+        "dmg_ment_max": 55
       },
       "equip_flags": "mental"
     },
@@ -5521,8 +5559,8 @@
       "rarity": "legendario",
       "gfx": "greatsword",
       "stats": {
-        "dmg_melee_min": 6,
-        "dmg_melee_max": 6
+        "dmg_melee_min": 39,
+        "dmg_melee_max": 59
       },
       "equip_flags": "melee"
     },
@@ -5530,17 +5568,17 @@
       "id": 373,
       "name": "Arco de guerra de montaraz",
       "name_en": "Ranger Greatbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 15,
       "price": 1500,
       "rarity": "legendario",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 6,
-        "dmg_ranged_max": 6
+        "dmg_ranged_min": 39,
+        "dmg_ranged_max": 59
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 374,
@@ -5553,8 +5591,8 @@
       "rarity": "legendario",
       "gfx": "greatstaff",
       "stats": {
-        "dmg_ment_min": 6,
-        "dmg_ment_max": 6
+        "dmg_ment_min": 39,
+        "dmg_ment_max": 59
       },
       "equip_flags": "mental"
     },
@@ -5959,8 +5997,8 @@
       "rarity": "comun",
       "gfx": "greatsword",
       "stats": {
-        "dmg_melee_min": 9,
-        "dmg_melee_max": 9
+        "dmg_melee_min": 42,
+        "dmg_melee_max": 62
       },
       "equip_flags": "melee"
     },
@@ -5968,17 +6006,17 @@
       "id": 402,
       "name": "Arco de guerra del Francotirador",
       "name_en": "Sniper Greatbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 16,
       "price": 1600,
       "rarity": "comun",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 9,
-        "dmg_ranged_max": 9
+        "dmg_ranged_min": 42,
+        "dmg_ranged_max": 62
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 403,
@@ -5991,8 +6029,8 @@
       "rarity": "comun",
       "gfx": "greatstaff",
       "stats": {
-        "dmg_ment_min": 9,
-        "dmg_ment_max": 9
+        "dmg_ment_min": 42,
+        "dmg_ment_max": 62
       },
       "equip_flags": "mental"
     },
@@ -6346,8 +6384,8 @@
       "rarity": "unico",
       "gfx": "greatsword",
       "stats": {
-        "dmg_melee_min": 12,
-        "dmg_melee_max": 12
+        "dmg_melee_min": 45,
+        "dmg_melee_max": 67
       },
       "equip_flags": "melee"
     },
@@ -6355,17 +6393,17 @@
       "id": 428,
       "name": "Arco Underworld",
       "name_en": "Underworld Bow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 16,
       "price": 3200,
       "rarity": "unico",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 12,
-        "dmg_ranged_max": 12
+        "dmg_ranged_min": 46,
+        "dmg_ranged_max": 68
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 429,
@@ -6378,8 +6416,8 @@
       "rarity": "unico",
       "gfx": "greatstaff",
       "stats": {
-        "dmg_ment_min": 12,
-        "dmg_ment_max": 12
+        "dmg_ment_min": 45,
+        "dmg_ment_max": 67
       },
       "equip_flags": "mental"
     },
@@ -6474,21 +6512,27 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "dagger",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 3,
+        "dmg_melee_max": 5
+      },
       "equip_flags": "melee"
     },
     {
       "id": 437,
       "name": "Honda de mastita",
       "name_en": "Mastite Slingshot",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 1,
       "price": 200,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
-      "equip_flags": null
+      "stats": {
+        "dmg_ranged_min": 3,
+        "dmg_ranged_max": 5
+      },
+      "equip_flags": "ranged"
     },
     {
       "id": 438,
@@ -6500,7 +6544,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "wand",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 3,
+        "dmg_ment_max": 5
+      },
       "equip_flags": "mental"
     },
     {
@@ -6825,21 +6872,27 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "shortsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 4,
+        "dmg_melee_max": 6
+      },
       "equip_flags": "melee"
     },
     {
       "id": 464,
       "name": "Arco corto de mastita",
       "name_en": "Mastite Shortbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 1,
       "price": 200,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
-      "equip_flags": null
+      "stats": {
+        "dmg_ranged_min": 4,
+        "dmg_ranged_max": 6
+      },
+      "equip_flags": "ranged"
     },
     {
       "id": 465,
@@ -6851,7 +6904,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "rod",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 4,
+        "dmg_ment_max": 6
+      },
       "equip_flags": "mental"
     },
     {
@@ -7007,21 +7063,27 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "longsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 5,
+        "dmg_melee_max": 7
+      },
       "equip_flags": "melee"
     },
     {
       "id": 478,
       "name": "Arco largo de mastita",
       "name_en": "Mastite Longbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 1,
       "price": 200,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
-      "equip_flags": null
+      "stats": {
+        "dmg_ranged_min": 5,
+        "dmg_ranged_max": 7
+      },
+      "equip_flags": "ranged"
     },
     {
       "id": 479,
@@ -7033,7 +7095,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "staff",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 5,
+        "dmg_ment_max": 7
+      },
       "equip_flags": "mental"
     },
     {
@@ -7189,21 +7254,27 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "greatsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 6,
+        "dmg_melee_max": 8
+      },
       "equip_flags": "melee"
     },
     {
       "id": 492,
       "name": "Arco de guerra de mastita",
       "name_en": "Mastite Greatbow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 1,
       "price": 200,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
-      "equip_flags": null
+      "stats": {
+        "dmg_ranged_min": 6,
+        "dmg_ranged_max": 8
+      },
+      "equip_flags": "ranged"
     },
     {
       "id": 493,
@@ -7215,7 +7286,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "greatstaff",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 6,
+        "dmg_ment_max": 8
+      },
       "equip_flags": "mental"
     },
     {
@@ -7746,7 +7820,9 @@
       "rarity": "unico",
       "gfx": "longsword",
       "stats": {
-        "hp": 250
+        "hp": 250,
+        "dmg_melee_min": 10,
+        "dmg_melee_max": 14
       },
       "equip_flags": "melee"
     },
@@ -7754,16 +7830,18 @@
       "id": 1026,
       "name": "Arco de Nerin",
       "name_en": "Nerin's Bow",
-      "slot": null,
+      "slot": "main",
       "icon": null,
       "tier": 0,
       "price": 0,
       "rarity": "unico",
       "gfx": null,
       "stats": {
-        "accuracy": 15
+        "accuracy": 15,
+        "dmg_ranged_min": 10,
+        "dmg_ranged_max": 14
       },
-      "equip_flags": null
+      "equip_flags": "ranged"
     },
     {
       "id": 1027,
@@ -7776,7 +7854,9 @@
       "rarity": "unico",
       "gfx": "staff",
       "stats": {
-        "mp": 30
+        "mp": 30,
+        "dmg_ment_min": 10,
+        "dmg_ment_max": 14
       },
       "equip_flags": "mental"
     },

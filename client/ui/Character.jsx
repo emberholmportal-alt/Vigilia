@@ -1,11 +1,12 @@
 // Hoja de personaje con el panel REAL de Flare (menus/character.png) y las
 // coordenadas de menus/character.txt. Nombre, nivel, los 4 atributos en sus casillas
 // (con los íconos ya dibujados: espada/vara/flechas/escudo) y una lista de derivados.
+import { useEffect } from 'react'
 import { useGameStore } from '../store.js'
 import { playerProgress } from '../data/progression.js'
 import { attrEarned, attrSpent } from '../data/skilltree.js'
 import { useT } from './useT.js'
-import { raceName } from '../i18n.js'
+import { raceName, zoneName } from '../i18n.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
 const PW = 640, PH = 832
@@ -26,11 +27,23 @@ export default function Character() {
   const attrAlloc = useGameStore((s) => s.attrAlloc)
   const allocAttr = useGameStore((s) => s.allocAttr)
   const setPanel = useGameStore((s) => s.setPanel)
+  const myFeats = useGameStore((s) => s.myFeats)
+  const guild = useGameStore((s) => s.guild)
+  const guildRole = useGameStore((s) => s.guildRole)
+  const guildRanking = useGameStore((s) => s.guildRanking)
+  const refreshGuild = useGameStore((s) => s.refreshGuild)
+  const openHall = useGameStore((s) => s.openHall)
   const t = useT()
+  // Refrescá membresía + ranking al abrir la hoja (el server es autoritativo). Los datos ya
+  // vienen cacheados del arranque, así que esto sólo los mantiene frescos, no bloquea la UI.
+  useEffect(() => { refreshGuild() }, [refreshGuild])
   const s = stats || {}
   const prog = playerProgress(xp || 0)
   // Puntos de atributo disponibles (se reparten con el botón "+" de cada atributo).
   const attrPts = attrEarned(s.level || 1) - attrSpent(attrAlloc)
+  // Gremio (solo lectura): ranking público completo y tu posición en él.
+  const ranking = guildRanking || []
+  const myRank = guild ? ranking.findIndex((g) => g.id === guild.id) + 1 : 0
 
   // Derivados que mostramos en la lista (reflejan raza/nivel + equipo).
   const derived = [
@@ -40,8 +53,12 @@ export default function Character() {
     [t('stat_def'), s.defense || 0],
     ...(s.crit ? [[t('stat_crit'), `${s.crit}%`]] : []),
     ...(s.hpRegen ? [[t('stat_hpregen'), `${s.hpRegen}/s`]] : []),
+    ...(s.itemFind ? [[t('stat_magicfind'), `+${s.itemFind}%`]] : []),
     [t('stat_speed'), s.speedMul ? `×${s.speedMul}` : '×1'],
     [t('stat_xpbonus'), s.xpMul ? `×${s.xpMul.toFixed(2)}` : '×1'],
+    ...(s.set ? [[t('stat_set'), `${s.set.label} ${s.set.pieces}/6`]] : []),
+    ...(myFeats ? [[t('feat_bosses'), `${myFeats.bosses}/${myFeats.bossTotal}`]] : []),
+    ...(myFeats && myFeats.deepest?.level > 0 ? [[t('feat_deepest'), `${zoneName(myFeats.deepest.map, t.lang)} · ${t('pm_lvl')} ${myFeats.deepest.level}`]] : []),
   ]
 
   return (
@@ -88,6 +105,49 @@ export default function Character() {
               <div className="char-stat" key={k}><span>{k}</span><b>{v}</b></div>
             ))}
           </div>
+
+          {/* Gremio (solo lectura): a qué gremio pertenecés y el top público. Fundar/unirse/gestionar
+              se hace sólo en la Casa de Gremios (NPC), así que acá no hay acciones. */}
+          <div className="char-guild">
+            <div className="char-guild-head">{t('char_guild')}</div>
+            {guild ? (
+              <div className="char-guild-mine">
+                <span className="char-guild-chip" style={{ background: guild.color }}>{guild.tag}</span>
+                <div className="char-guild-txt">
+                  <b>{guild.name}</b>
+                  <span>{t('guild_level_n', { n: guild.level })} · {t('guild_' + (guildRole || 'member'))}
+                    {myRank > 0 ? ` · ${t('char_guild_rank_you', { n: myRank })}` : ''}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="char-guild-none">
+                <b>{t('char_no_guild')}</b>
+                <span>{t('char_guild_hall')}</span>
+              </div>
+            )}
+
+            {ranking.length > 0 && (
+              <>
+                <div className="char-guild-sub">{t('char_guild_top')}</div>
+                <div className="char-guild-rank">
+                  {ranking.map((g, i) => (
+                    <div key={g.id} className={'char-guild-row' + (guild && g.id === guild.id ? ' mine' : '')}>
+                      <span className="char-guild-n">{i + 1}</span>
+                      <span className="char-guild-chip sm" style={{ background: g.color }}>{g.tag}</span>
+                      <span className="char-guild-name">{g.name}</span>
+                      <span className="char-guild-meta">{t('guild_power_n', { n: g.power ?? 0 })} · {t('guild_members_n', { n: g.members })}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          <button className="char-hall-btn" onClick={openHall}>
+            <span className="char-hall-ic">♛</span>
+            <span>{t('hof_open')}</span>
+            <span className="char-hall-cta">›</span>
+          </button>
         </div>
       </div>
     </div>

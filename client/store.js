@@ -313,14 +313,21 @@ export const useGameStore = create((set, get) => ({
       return { chatLog: log, _chatId: id }
     })
   },
-  // El jugador dice algo: globo sobre la cabeza + línea en el chat.
+  // Canal de chat activo: 'mundo' (mapa) o 'gremio' (miembros del gremio, sin importar mapa).
+  chatChannel: 'mundo',
+  setChatChannel: (c) => set({ chatChannel: c }),
+  // El jugador dice algo. En 'gremio' se difunde a los miembros del gremio (el server reenvía el eco
+  // a todos, incluido yo, así que no lo logueo local). En 'mundo' es chat de mapa + globo local.
   sayChat: (text) => {
     const t = (text || '').toString().trim().slice(0, 120)
     if (!t) return
+    if (get().chatChannel === 'gremio' && get().guild) { net.guildChat(t); return }
     get().say(t)
     get().logMessage({ channel: 'yo', name: get().playerName, text: t })
     net.chat(t)   // si hay conexión, lo oyen los del mismo mapa (si no, no-op)
   },
+  // Chat de gremio entrante (eco del server, incluye mis propios mensajes). Va a un canal aparte.
+  onGuildChat: (m) => { if (m && m.text) get().logMessage({ channel: 'gremio', name: m.from, text: m.text }) },
 
   // Usar un consumible del cinturón (índice). Cura vida/maná; si no hace falta (ya al
   // máximo) avisa con un toast y NO gasta la poción. Al usarla, la descuenta del slot.
@@ -448,17 +455,18 @@ export const useGameStore = create((set, get) => ({
     }
   },
 
-  // Costo de reparar todo el equipo (oro por punto de durabilidad faltante).
+  // Costo de reparar TODO el equipo: tarifa por NIVEL (no por durabilidad faltante). Así el server
+  // la recalcula de SU nivel (no confía en el monto del cliente) sin tener que trackear la durabilidad
+  // pieza por pieza. 0 si no hay nada dañado (no cobra de gusto). Coincide con rooms.repairCostOf.
   repairCost: () => {
     const s = get()
-    let missing = 0
+    let damaged = false
     for (const sl of Object.keys(s.equipment)) {
       const it = s.equipment[sl]
-      if (!isDurable(it)) continue
-      const max = durabilityMax(it)
-      missing += max - (it.dur != null ? it.dur : max)
+      if (isDurable(it) && it.dur != null && it.dur < durabilityMax(it)) { damaged = true; break }
     }
-    return Math.ceil(missing * 1.5)
+    if (!damaged) return 0
+    return 30 + (s.stats?.level || 1) * 20
   },
 
   // Repara todo el equipo (el herrero cobra oro).
@@ -479,9 +487,12 @@ export const useGameStore = create((set, get) => ({
 
   // --- forja: mejorar equipo con Cristal de maná (excavación) + oro (skill forja) ---
   // Costo de mejorar una pieza: cristales + oro, crece con el nivel de forja actual.
+  // Costo de mejorar: cristales (escalan con el upgrade, los verifica el server vía bagConsume) +
+  // ORO por NIVEL (server-recalculable como repair/respec, no confía en el monto del cliente). Antes
+  // el oro dependía del tier/upgrade de la pieza (client-side) → se podía pagar de menos.
   upgradeCost: (it) => {
     const up = upgradeLevel(it)
-    return { crystals: 2 + up, gold: 60 + (it.tier || 1) * 10 + up * 50, max: up >= FORGE_MAX }
+    return { crystals: 2 + up, gold: 60 + (get().stats?.level || 1) * 30, max: up >= FORGE_MAX }
   },
   // Mejora la pieza del slot dado: +1 a su nivel de forja (más defensa/daño). Gasta materiales.
   upgradeGear: async (slot) => {
@@ -580,8 +591,39 @@ export const useGameStore = create((set, get) => ({
 
   // --- menú de jugador (al tocar a otro: comerciar / ver stats) ---
   playerMenu: null,          // { id, name, race, level, hp, hpMax, near } o null
-  openPlayerMenu: (info) => set({ playerMenu: info }),
-  closePlayerMenu: () => set({ playerMenu: null }),
+  openPlayerMenu: (info) => set({ playerMenu: info, inspectCard: null }),
+  closePlayerMenu: () => set({ playerMenu: null, inspectCard: null }),
+
+  // --- inspeccionar jugador: tarjeta pública (estilo "look" de Tibia) ---
+  // La arma el propio cliente del objetivo (getPublicCard) y el server la reenvía. Es de display:
+  // nadie gana ventaja mintiendo sobre sus propios números. Se pide al abrir la vista de stats.
+  inspectCard: null,         // { id, name, level, race, hp, hpMax, card:{...}, feats:{...} } o null (cargando)
+  requestInspect: (id) => { if (isOnline()) { set({ inspectCard: null }); net.inspect(id) } },
+  onInspect: (m) => { const pm = get().playerMenu; if (pm && m && m.id === pm.id) set({ inspectCard: m }) },
+  // Mis hazañas (server-owned): jefes derrotados + zona más profunda. El server me las manda al entrar
+  // y cada vez que gano una. Toast al derrotar un jefe nuevo (feedback del hito).
+  myFeats: null,             // { bosses, bossList, bossTotal, deepest:{level,map} }
+  onFeats: (m) => {
+    const prev = get().myFeats
+    if (prev && m?.feats && m.feats.bosses > prev.bosses) get().showToast(tt('feat_boss_earned', { n: m.feats.bosses, total: m.feats.bossTotal }))
+    set({ myFeats: m?.feats || null })
+  },
+  // Tarjeta pública de MI jugador (lo que ven los demás al inspeccionarme). Sólo display.
+  getPublicCard: () => {
+    const s = get(); const st = s.stats; if (!st) return null
+    const g = s.guild
+    return {
+      level: st.level || 1, race: s.race?.id || null,
+      hp: st.hp | 0, hpMax: st.hpMax | 0, mp: st.mp | 0, mpMax: st.mpMax | 0,
+      dmgMin: st.dmgMin | 0, dmgMax: st.dmgMax | 0, defense: st.defense | 0,
+      crit: st.crit | 0, hpRegen: +(st.hpRegen || 0), itemFind: st.itemFind | 0,
+      fireResist: st.fireResist | 0, iceResist: st.iceResist | 0,
+      speedMul: +(st.speedMul || 1), xpMul: +(st.xpMul || 1),
+      set: st.set ? { label: st.set.label, pieces: st.set.pieces } : null,
+      skills: Object.fromEntries(Object.entries(s.skills || {}).map(([k, v]) => [k, (v && v.level) || 1])),
+      guild: g ? { tag: g.tag, color: g.color } : null,
+    }
+  },
 
   // --- trade P2P (ítems + oro; el server hace el swap atómico) ---
   tradeReq: null,            // { from, name } — pedido entrante (prompt)
@@ -605,7 +647,7 @@ export const useGameStore = create((set, get) => ({
   marketMine: [],            // mis publicaciones
   marketBusy: false,
   marketError: '',
-  openMarket: () => { set({ panel: 'market', marketError: '' }); get().refreshMarket(); get().refreshMyListings() },
+  openMarket: () => { set({ panel: 'market', marketError: '' }); get().refreshMarket(); get().refreshMyListings(); get().loadGoldConfig() },
   refreshMarket: async () => {
     if (!isOnline()) { set({ marketListings: [] }); return }
     set({ marketBusy: true })
@@ -641,6 +683,88 @@ export const useGameStore = create((set, get) => ({
     if (!r || !r.ok) { get().showToast(r?.error || tt('market_fail')); return { ok: false } }
     if (r.inv) get()._mirrorInv(r.inv)
     get().showToast(tt('market_cancelled')); get().refreshMyListings()
+    return { ok: true }
+  },
+
+  // --- marketplace oro↔$VEL (order book P2P, NO-CUSTODIAL, pago on-chain) ---
+  // Vendés ORO (escrowed en el server) pidiendo $VEL; comprás oro pagando $VEL directo on-chain
+  // (95% al vendedor + 5% al tesoro). El server verifica la transacción y libera el oro. Todo esto
+  // está APAGADO hasta que exista el token: goldMktOn refleja la config pública del server.
+  goldMktOn: false,          // ¿el mercado de $VEL está prendido? (config del server)
+  goldCfg: null,             // { mint, symbol, treasury, decimals, commission, rpc, minGold, buyUrl }
+  goldOrders: [],            // órdenes de oro a la venta (browse)
+  goldMine: [],              // mis órdenes de venta
+  goldBusy: false,
+  goldPaying: null,          // { id, step: 'lock'|'sign'|'settle' } durante una compra on-chain
+  loadGoldConfig: async () => {
+    if (!isOnline()) { set({ goldMktOn: false, goldCfg: null }); return }
+    const r = await net.goldConfig().catch(() => null)
+    set({ goldMktOn: !!r?.on, goldCfg: r?.on ? r : null })
+  },
+  openGoldMarket: async () => {
+    await get().loadGoldConfig()
+    if (!get().goldMktOn) { get().showToast(tt('gm_closed')); return }
+    set({ panel: 'goldmarket' })
+    get().refreshGoldOrders(); get().refreshGoldMine()
+  },
+  refreshGoldOrders: async () => {
+    if (!isOnline()) { set({ goldOrders: [] }); return }
+    set({ goldBusy: true })
+    const r = await net.goldBrowse().catch(() => null)
+    set({ goldOrders: r?.ok ? r.orders : [], goldBusy: false })
+  },
+  refreshGoldMine: async () => {
+    if (!isOnline()) { set({ goldMine: [] }); return }
+    const r = await net.goldMine().catch(() => null)
+    set({ goldMine: r?.ok ? r.orders : [] })
+  },
+  // Publicar oro pidiendo $VEL. El server saca el oro del saldo vivo (escrow).
+  goldListOrder: async (goldAmt, price) => {
+    if (!isOnline()) return { ok: false }
+    const r = await net.goldList(goldAmt, price).catch(() => null)
+    if (!r || !r.ok) { get().showToast(r?.error || tt('gm_fail')); return { ok: false } }
+    if (typeof r.gold === 'number') set({ gold: r.gold })
+    get().showToast(tt('gm_listed')); get().refreshGoldMine()
+    return { ok: true }
+  },
+  goldCancelOrder: async (id) => {
+    if (!isOnline()) return { ok: false }
+    const r = await net.goldCancel(id).catch(() => null)
+    if (!r || !r.ok) { get().showToast(r?.error || tt('gm_fail')); return { ok: false } }
+    if (typeof r.gold === 'number') set({ gold: r.gold })
+    get().showToast(tt('gm_cancelled')); get().refreshGoldMine(); get().refreshGoldOrders()
+    return { ok: true }
+  },
+  // Compra on-chain en 3 pasos: lock (reserva + instrucciones) -> firmar+pagar en la wallet ->
+  // settle (el server verifica la tx y entrega el oro). velpay.js se importa dinámico (bundle aparte).
+  goldBuyOrder: async (order) => {
+    if (!isOnline()) return { ok: false }
+    set({ goldPaying: { id: order.id, step: 'lock' } })
+    const lk = await net.goldLock(order.id).catch(() => null)
+    if (!lk || !lk.ok) { set({ goldPaying: null }); get().showToast(lk?.error || tt('gm_taken')); get().refreshGoldOrders(); return { ok: false } }
+    set({ goldPaying: { id: order.id, step: 'sign' } })
+    let sig
+    try {
+      const { payOrder } = await import('./net/velpay.js')
+      sig = await payOrder({ ...lk.pay, rpc: get().goldCfg?.rpc })
+    } catch (e) {
+      await net.goldUnlock(order.id).catch(() => {})
+      set({ goldPaying: null })
+      get().showToast(e?.message === 'no-wallet' ? tt('wallet_none') : tt('gm_pay_cancel'))
+      return { ok: false }
+    }
+    // Avisar al server. Si la tx todavía no finalizó, reintenta con espera (hasta ~30s).
+    set({ goldPaying: { id: order.id, step: 'settle' } })
+    let r = null
+    for (let tries = 0; tries < 6; tries++) {
+      r = await net.goldSettle(order.id, sig).catch(() => null)
+      if (r?.ok || !r?.retry) break
+      await new Promise((res) => setTimeout(res, 4000))
+    }
+    set({ goldPaying: null })
+    if (!r || !r.ok) { get().showToast(r?.error || tt('gm_verify_fail')); get().refreshGoldOrders(); return { ok: false, sig } }
+    if (typeof r.gold === 'number') set({ gold: r.gold })
+    get().showToast(tt('gm_bought')); get().refreshGoldOrders()
     return { ok: true }
   },
 
@@ -781,7 +905,7 @@ export const useGameStore = create((set, get) => ({
     }
     const alloc = { str: 0, dex: 0, int: 0, vit: 0, ...(attrAlloc || {}) }
     const ranks = skillRanks || {}
-    const st = computeStats(race.id, level, equip, alloc, ranks)   // stats incluyen equipo + atributos + árbol
+    const st = computeStats(race.id, level, equip, alloc, ranks, 0, skills)   // stats incluyen equipo + atributos + árbol + oficios
     const b = (belt || []).slice(0, 4)
     while (b.length < 4) b.push(null)
     // Botón derecho: si no viene del save, se liga por defecto a la 1ª habilidad desbloqueada.
@@ -808,7 +932,7 @@ export const useGameStore = create((set, get) => ({
   recomputeStats: () => {
     const s = get()
     if (!s.race || !s.stats) return
-    const fresh = computeStats(s.race.id, s.stats.level, s.equipment, s.attrAlloc, s.skillRanks, s.guild?.level || 0)
+    const fresh = computeStats(s.race.id, s.stats.level, s.equipment, s.attrAlloc, s.skillRanks, s.guild?.level || 0, s.skills)
     const hp = Math.min(s.stats.hp, fresh.hpMax)
     const mp = Math.min(s.stats.mp, fresh.mpMax)
     set({ stats: { ...fresh, hp, mp } })
@@ -820,7 +944,7 @@ export const useGameStore = create((set, get) => ({
     const xp = s.xp + Math.max(0, n | 0)
     const level = playerLevelFromXp(xp)
     if (s.stats && level !== s.stats.level) {
-      const fresh = computeStats(s.race?.id, level, s.equipment, s.attrAlloc, s.skillRanks, s.guild?.level || 0) // subir de nivel cura
+      const fresh = computeStats(s.race?.id, level, s.equipment, s.attrAlloc, s.skillRanks, s.guild?.level || 0, s.skills) // subir de nivel cura
       set({ xp, stats: fresh })
       get().showToast(tt('levelup_toast', { n: level }))
     } else {
@@ -829,14 +953,17 @@ export const useGameStore = create((set, get) => ({
     saveGame(get())
   },
 
-  // Suma XP a una de las 6 acciones (cap nivel 20); recalcula su nivel y persiste.
+  // Suma XP a una de las 6 acciones (cap nivel 20); recalcula su nivel y persiste. Al SUBIR de nivel
+  // recomputa stats (el oficio da un bonus pasivo: daño/defensa/magic-find/regen/maná/vida).
   addSkillXp: (skill, n) => {
     const s = get()
     const cur = s.skills[skill]
     if (!cur || cur.level >= SKILL_CAP) return
     const xp = cur.xp + Math.max(0, n | 0)
-    const skills = { ...s.skills, [skill]: { xp, level: skillLevelFromXp(xp) } }
+    const level = skillLevelFromXp(xp)
+    const skills = { ...s.skills, [skill]: { xp, level } }
     set({ skills })
+    if (level > cur.level) get().recomputeStats()   // el bonus pasivo del oficio ya se siente
     saveGame(get())
   },
 
@@ -931,7 +1058,10 @@ export const useGameStore = create((set, get) => ({
 
   // Fragmentos de sello: moneda premium de las misiones diarias (cofres de sello, ofrendas).
   seals: 0,
-  addSeals: (n) => { set((s) => ({ seals: (s.seals || 0) + (n | 0) })); saveGame(get()) },
+  // Online los sellos son AUTORITATIVOS del server: setSeals espeja el saldo que empuja el server
+  // (push 'seals' / acks). addSeals sólo aplica offline (sin server que valide).
+  setSeals: (n) => { set({ seals: Math.max(0, Math.floor(Number(n) || 0)) }); saveGame(get()) },
+  addSeals: (n) => { if (isOnline()) return; set((s) => ({ seals: (s.seals || 0) + (n | 0) })); saveGame(get()) },
 
   // Mete un ítem al inventario. Los apilables (poción/crafting/scroll) se acumulan en
   // una celda con `count`; el resto va a un hueco libre. Devuelve true si entró.
@@ -1021,14 +1151,24 @@ export const useGameStore = create((set, get) => ({
     try { await net.save(s.playerName, s.race?.id, snapshot(s)) } catch {}
   },
   openGuild: () => { set({ panel: 'guild', guildError: '' }); get().refreshGuild() },
+  // Salón de la Fama: rankings públicos de jugadores (nivel / jefes / zona más profunda).
+  hallData: null,
+  hallBusy: false,
+  openHall: () => { set({ panel: 'hall' }); get().requestHall() },
+  requestHall: async () => {
+    if (!ONLINE || !net.connected) { set({ hallData: null }); return }
+    set({ hallBusy: true })
+    try { const r = await net.hall(25); set({ hallData: r, hallBusy: false }) }
+    catch { set({ hallBusy: false }) }
+  },
   refreshGuild: async () => {
     if (!ONLINE || !net.connected) { set({ guild: null, guildRole: null, guildMembers: [], guildRanking: [] }); return }
     set({ guildBusy: true })
     try {
       const info = await net.guildInfo()
-      const list = await net.guildList(20)
+      const list = await net.guildList(200)   // ranking completo (el server lo acota)
       set({ guild: info.guild || null, guildRole: info.mine || null, guildMembers: info.members || [],
-            guildRanking: list.guilds || [], guildBusy: false })
+            guildYou: info.you ?? null, guildRanking: list.guilds || [], guildBusy: false })
       get().recomputeStats()
     } catch { set({ guildBusy: false }) }
   },
@@ -1066,6 +1206,51 @@ export const useGameStore = create((set, get) => ({
       get().showToast(r.leveledUp ? tt('guild_leveled', { n: r.guild.level }) : tt('guild_donated', { n: amt }))
       get().refreshGuild()
     }
+  },
+  // --- Invitaciones al gremio ---
+  guildInvite: null,        // invitación entrante { from, guildName, tag } o null
+  inviteToGuild: async (playerId, name) => {
+    if (!ONLINE || !net.connected) return
+    const r = await net.guildInvite(playerId).catch(() => null)
+    if (r && r.ok) get().showToast(tt('guild_invite_sent', { name: name || '' }))
+    else if (r && r.error) get().showToast(r.error)
+  },
+  onGuildInvite: (m) => { if (!get().guild && m) set({ guildInvite: { from: m.from, guildName: m.guildName, tag: m.tag } }) },  // sólo si no estoy en un gremio
+  acceptGuildInvite: async () => {
+    set({ guildInvite: null })
+    const r = await net.guildAccept().catch(() => null)
+    if (get()._applyGuildResult(r)) { get().showToast(tt('guild_joined', { tag: r.guild.tag })); get().refreshGuild() }
+  },
+  declineGuildInvite: () => { net.guildDecline(); set({ guildInvite: null }) },
+
+  // --- Gestión de miembros (roles: founder > officer > member) ---
+  kickMember: async (target, name) => {
+    if (!ONLINE || !net.connected) return
+    set({ guildBusy: true })
+    const r = await net.guildKick(target).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt('guild_kicked', { name: name || '' })); get().refreshGuild() }
+  },
+  setMemberRole: async (target, role) => {
+    if (!ONLINE || !net.connected) return
+    set({ guildBusy: true })
+    const r = await net.guildRole(target, role).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt(role === 'officer' ? 'guild_promoted' : 'guild_demoted')); get().refreshGuild() }
+  },
+  transferGuild: async (target, name) => {
+    if (!ONLINE || !net.connected) return
+    set({ guildBusy: true })
+    const r = await net.guildTransfer(target).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt('guild_transferred', { name: name || '' })); get().refreshGuild() }
+  },
+  setGuildPrivacy: async (priv) => {
+    if (!ONLINE || !net.connected) return
+    set({ guildBusy: true })
+    const r = await net.guildPrivacy(priv).catch(() => null)
+    set({ guildBusy: false })
+    if (get()._applyGuildResult(r)) { get().showToast(tt(priv ? 'guild_now_private' : 'guild_now_public')); get().refreshGuild() }
   },
 
   // --- Depósito del Gremio (banco compartido, nivel 4+) ---
@@ -1155,8 +1340,9 @@ export const useGameStore = create((set, get) => ({
       const r = await net.claimMissionReq(m.id).catch(() => null)
       if (!r || !r.ok) { get().showToast(tt('mission_not_ready')); return }
       const missions = get().missions.slice(); missions[i] = { ...m, claimed: true }; set({ missions })
-      get().addXp(m.xp); if (m.seals) get().addSeals(m.seals)
+      get().addXp(m.xp)
       if (typeof r.gold === 'number') set({ gold: r.gold })
+      if (typeof r.seals === 'number') set({ seals: r.seals })   // sellos AUTORITATIVOS del server
       get().showToast(tt('mission_reward', { xp: m.xp, gold: m.gold || 0, seals: m.seals || 0 }))
       saveGame(get())
       return
@@ -1200,13 +1386,17 @@ export const useGameStore = create((set, get) => ({
     const s = get()
     if ((s.seals || 0) < SEAL_CHEST_COST) { get().showToast(tt('seal_need', { n: SEAL_CHEST_COST })); return { ok: false } }
     const lvl = Math.max(4, Math.min(16, (s.stats?.level || 1) + 2))  // loot un pelín por encima del nivel
-    set({ seals: s.seals - SEAL_CHEST_COST })   // los sellos son moneda premium NO-cripto: client-side
-    // Oro + drops: online los computa el server (tabla de loot compartida); offline, roll local.
+    // Oro + sellos + drops: online los computa/DEBITA el server (sellos AUTORITATIVOS: cierra el mint
+    // del cofre). Offline, débito + roll local.
     let gold = 0, drops = []
     if (isOnline()) {
       const r = await net.sealChestReq(lvl).catch(() => null)
-      if (r && r.ok) { if (typeof r.gold === 'number') set({ gold: r.gold }); gold = r.add || 0; drops = r.drops || [] }
+      if (!r || !r.ok) { if (r && typeof r.seals === 'number') set({ seals: r.seals }); get().showToast(r?.error === 'no tenés tantos sellos' ? tt('seal_need', { n: SEAL_CHEST_COST }) : tt('market_fail')); return { ok: false } }
+      if (typeof r.seals === 'number') set({ seals: r.seals })   // saldo autoritativo del server
+      if (typeof r.gold === 'number') set({ gold: r.gold })
+      gold = r.add || 0; drops = r.drops || []
     } else {
+      set({ seals: s.seals - SEAL_CHEST_COST })   // offline: débito local
       const roll = rollLoot('chest_level_' + lvl); gold = roll.gold || 0; drops = roll.drops || []; if (gold) get().addGold(gold)
     }
     const got = []
@@ -1235,10 +1425,11 @@ export const useGameStore = create((set, get) => ({
     if (done) {
       const r = done.reward || {}
       if (r.xp) get().addXp(r.xp)
-      if (r.seals) get().addSeals(r.seals)
-      // Oro: online lo acredita el server (monto fijo por quest); offline, local.
-      if (isOnline()) { const rr = await net.claimQuestReq(done.id).catch(() => null); if (rr && rr.ok && typeof rr.gold === 'number') set({ gold: rr.gold }) }
-      else if (r.gold) get().addGold(r.gold)
+      // Oro + sellos: online los acredita el server (montos fijos por quest, AUTORITATIVOS); offline, local.
+      if (isOnline()) {
+        const rr = await net.claimQuestReq(done.id).catch(() => null)
+        if (rr && rr.ok) { if (typeof rr.gold === 'number') set({ gold: rr.gold }); if (typeof rr.seals === 'number') set({ seals: rr.seals }) }
+      } else { if (r.seals) get().addSeals(r.seals); if (r.gold) get().addGold(r.gold) }
       get().showToast(tt('quest_done', { name: questName(done) }))
       get().logMessage({ channel: 'sistema', text: tt('quest_reward', { xp: r.xp || 0, gold: r.gold || 0, seals: r.seals || 0 }) })
     } else {
@@ -1247,15 +1438,20 @@ export const useGameStore = create((set, get) => ({
     saveGame(get())
     return true
   },
-  // Al entrar a una zona con la quest de los Guardianes activa, revela un nombre olvidado.
-  // Devuelve el nombre revelado (para que el loop lo anuncie) o null.
-  revealForZone: (zone) => {
+  // Al entrar a (o limpiar) una zona con la quest correspondiente activa, revela algo (un nombre
+  // olvidado, un fragmento de diario). `filter.quest` acota a una quest (el loop llama por separado
+  // para cada mecánica). Devuelve el texto revelado (en el idioma actual) para anunciarlo, o null.
+  revealForZone: (zone, filter) => {
     const s = get()
-    if (!s.questFlags.q3_init || s.questFlags.q3_finish) return null
     const r = ZONE_REVEALS[zone]
-    if (!r || s.questFlags[r.flag]) return null
+    if (!r) return null
+    if (filter && filter.quest && r.quest !== filter.quest) return null
+    if (r.gate && !s.questFlags[r.gate]) return null      // la quest tiene que estar activa
+    if (r.done && s.questFlags[r.done]) return null        // ya cerrada
+    if (s.questFlags[r.flag]) return null                  // ya revelado
     get().setQuestFlag(r.flag)
-    return r.name
+    const lang = s.lang === 'es' ? 'es' : 'en'
+    return lang === 'es' ? r.name : (r.name_en || r.name)
   },
   // ¿Se puede despertar a los Guardianes? (los tres nombres, quest sin cerrar)
   canAwakenGuardians: () => {
@@ -1583,6 +1779,7 @@ export const storeApi = {
   openStash: () => useGameStore.getState().openStash(),
   degradeGear: (kind, amount) => useGameStore.getState().degradeGear(kind, amount),
   getStats: () => useGameStore.getState().stats,
+  getGuildTag: () => useGameStore.getState().guild?.tag || null,
   getLootLabels: () => useGameStore.getState().lootLabels,
   isSpectator: () => useGameStore.getState().spectator,
   getSaveBlob: () => { const s = useGameStore.getState(); return { name: s.playerName, race: s.race?.id, char: snapshot(s) } },
@@ -1591,6 +1788,11 @@ export const storeApi = {
   // Trade P2P (Kintara #3): el loop de Pixi enruta los eventos de red y el tap a un jugador.
   requestTrade: (id, name) => useGameStore.getState().requestTrade(id, name),
   openPlayerMenu: (info) => useGameStore.getState().openPlayerMenu(info),
+  getPublicCard: () => useGameStore.getState().getPublicCard(),
+  onInspect: (m) => useGameStore.getState().onInspect(m),
+  onFeats: (m) => useGameStore.getState().onFeats(m),
+  onGuildInvite: (m) => useGameStore.getState().onGuildInvite(m),
+  onGuildChat: (m) => useGameStore.getState().onGuildChat(m),
   onTradeReq: (m) => useGameStore.getState().onTradeReq(m),
   onTradeOpen: (m) => useGameStore.getState().onTradeOpen(m),
   onTradeState: (m) => useGameStore.getState().onTradeState(m),

@@ -8,6 +8,8 @@ import ItemIcon from './ItemIcon.jsx'
 import { useT } from './useT.js'
 
 const UI = (import.meta.env.BASE_URL || '/') + 'assets/ui/'
+// Oro compacto para la lista de miembros (1.2k / 15k).
+const kGold = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : String(n | 0)
 const PW = 640, PH = 832
 const BANNERS = ['#c9a227', '#b060ff', '#4aa3e0', '#e0894a', '#6bd08a', '#d0506a']
 
@@ -23,6 +25,10 @@ export default function Guild() {
   const joinGuild = useGameStore((s) => s.joinGuild)
   const leaveGuild = useGameStore((s) => s.leaveGuild)
   const donateGuild = useGameStore((s) => s.donateGuild)
+  const guildYou = useGameStore((s) => s.guildYou)
+  const kickMember = useGameStore((s) => s.kickMember)
+  const setMemberRole = useGameStore((s) => s.setMemberRole)
+  const transferGuild = useGameStore((s) => s.transferGuild)
   const setPanel = useGameStore((s) => s.setPanel)
   const t = useT()
 
@@ -48,6 +54,7 @@ export default function Guild() {
           : tab === 'mine'
             ? (guild
                 ? <MyGuild guild={guild} role={role} members={members} gold={gold} busy={busy}
+                           you={guildYou} onKick={kickMember} onRole={setMemberRole} onTransfer={transferGuild}
                            onDonate={donateGuild} onLeave={leaveGuild} error={error} t={t} />
                 : <FoundGuild gold={gold} busy={busy} onCreate={createGuild} error={error} t={t} />)
             : tab === 'deposit'
@@ -100,9 +107,13 @@ function FoundGuild({ gold, busy, onCreate, error, t }) {
 }
 
 // --- Con gremio: nivel, donación, ventajas, miembros ---
-function MyGuild({ guild, role, members, gold, busy, onDonate, onLeave, error, t }) {
+function MyGuild({ guild, role, members, gold, busy, you, onKick, onRole, onTransfer, onDonate, onLeave, error, t }) {
+  const roleLabel = (r) => r === 'founder' ? t('guild_founder') : r === 'officer' ? t('guild_officer') : t('guild_member')
+  const canManage = role === 'founder' || role === 'officer'
+  const setGuildPrivacy = useGameStore((s) => s.setGuildPrivacy)
   const [amt, setAmt] = useState('')
-  const perks = [t('guild_perk1'), t('guild_perk2'), t('guild_perk3'), t('guild_perk4'), t('guild_perk5')]
+  const perks = [t('guild_perk1'), t('guild_perk2'), t('guild_perk3'), t('guild_perk4'), t('guild_perk5'),
+                 t('guild_perk6'), t('guild_perk7'), t('guild_perk8'), t('guild_perk9'), t('guild_perk10')]
   // progreso hacia el próximo nivel: donado actual vs umbral siguiente.
   const pct = guild.next ? Math.min(1, guild.donated / guild.next) : 1
 
@@ -114,6 +125,15 @@ function MyGuild({ guild, role, members, gold, busy, onDonate, onLeave, error, t
           <b>{guild.name}</b>
           <span>{t('guild_level_n', { n: guild.level })} · {t('guild_members_n', { n: members.length })}</span>
         </div>
+      </div>
+
+      <div className="guild-privacy">
+        <span className="guild-privacy-state">{guild.private ? `🔒 ${t('guild_private')}` : `🌐 ${t('guild_public')}`}</span>
+        {role === 'founder' && (
+          <button className="guild-privacy-btn" disabled={busy} onClick={() => setGuildPrivacy(!guild.private)}>
+            {guild.private ? t('guild_make_public') : t('guild_make_private')}
+          </button>
+        )}
       </div>
 
       <div className="guild-level-bar">
@@ -159,12 +179,28 @@ function MyGuild({ guild, role, members, gold, busy, onDonate, onLeave, error, t
       <div className="guild-roster">
         <div className="guild-sub">{t('guild_roster')}</div>
         <div className="guild-roster-list">
-          {members.map((m, i) => (
-            <div key={i} className="guild-member">
-              <span>{m.username}</span>
-              <em>{m.role === 'founder' ? t('guild_founder') : t('guild_member')}</em>
-            </div>
-          ))}
+          {members.map((m, i) => {
+            const isSelf = you != null && m.account_id === you
+            // Acciones sobre este miembro según MI rol. Nadie actúa sobre el fundador ni sobre sí mismo;
+            // un oficial no toca a otro oficial.
+            const showActs = canManage && !isSelf && m.role !== 'founder' && !(role === 'officer' && m.role === 'officer')
+            return (
+              <div key={i} className={'guild-member' + (isSelf ? ' me' : '')}>
+                <span>{m.username}</span>
+                <span className="guild-mstat" title={t('guild_contrib')}>{kGold(m.donated || 0)}◈ · {m.kills || 0}⚔</span>
+                <em>{roleLabel(m.role)}</em>
+                {showActs && (
+                  <span className="guild-acts">
+                    {role === 'founder' && (m.role === 'officer'
+                      ? <button className="guild-act" disabled={busy} onClick={() => onRole(m.account_id, 'member')} title={t('guild_demote')}>▼</button>
+                      : <button className="guild-act" disabled={busy} onClick={() => onRole(m.account_id, 'officer')} title={t('guild_promote')}>▲</button>)}
+                    {role === 'founder' && <button className="guild-act" disabled={busy} onClick={() => { if (confirm(t('guild_transfer_confirm', { name: m.username }))) onTransfer(m.account_id, m.username) }} title={t('guild_transfer')}>♔</button>}
+                    <button className="guild-act danger" disabled={busy} onClick={() => { if (confirm(t('guild_kick_confirm', { name: m.username }))) onKick(m.account_id, m.username) }} title={t('guild_kick')}>✕</button>
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -236,11 +272,12 @@ function Deposit({ guild, t }) {
   )
 }
 
-// --- Ranking público ---
+// --- Ranking público (ordenado por Poder del gremio) ---
 function Ranking({ ranking, inGuild, busy, onJoin, myId, t }) {
   if (!ranking || !ranking.length) return <div className="guild-body"><div className="guild-empty">{t('guild_ranking_empty')}</div></div>
   return (
     <div className="guild-body">
+      <div className="guild-rank-hint">{t('guild_power_hint')}</div>
       <div className="guild-rank-list">
         {ranking.map((g, i) => (
           <div key={g.id} className={'guild-rank-row' + (g.id === myId ? ' mine' : '')}>
@@ -248,9 +285,12 @@ function Ranking({ ranking, inGuild, busy, onJoin, myId, t }) {
             <span className="guild-tag-chip" style={{ background: g.color }}>{g.tag}</span>
             <div className="guild-rank-txt">
               <b>{g.name}{g.id === myId ? ` · ${t('guild_you_tag')}` : ''}</b>
-              <span>{t('guild_level_n', { n: g.level })} · {t('guild_members_n', { n: g.members })} · {t('guild_donated_total', { n: g.donated })}</span>
+              <span className="guild-rank-power">{t('guild_power_n', { n: g.power ?? 0 })}</span>
+              <span>{t('guild_level_n', { n: g.level })} · {t('guild_members_n', { n: g.members })} · {t('guild_pw_levels', { n: g.sumLevels ?? 0 })} ({t('guild_pw_avg', { n: g.avgLevel ?? 0 })}) · {t('guild_pw_donated', { n: kGold(g.donated || 0) })}</span>
             </div>
-            {!inGuild && <button className="guild-btn small" disabled={busy} onClick={() => onJoin(g.id)}>{t('guild_join_btn')}</button>}
+            {!inGuild && (g.private
+              ? <span className="guild-rank-lock" title={t('guild_private_hint')}>🔒</span>
+              : <button className="guild-btn small" disabled={busy} onClick={() => onJoin(g.id)}>{t('guild_join_btn')}</button>)}
           </div>
         ))}
       </div>

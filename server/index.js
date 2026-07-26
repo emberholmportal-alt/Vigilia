@@ -11,6 +11,7 @@ import * as wallet from './systems/wallet.js'
 import * as guilds from './systems/guilds.js'
 import * as rooms from './world/rooms.js'
 import * as market from './systems/market.js'
+import * as goldmarket from './systems/goldmarket.js'
 import * as stash from './systems/stash.js'
 import { startingKit, startingLedger } from '../shared/starterkit.js'
 
@@ -80,27 +81,55 @@ const http_server = http.createServer(async (req, res) => {
     return
   }
   if (path === '/stats') {
-    let monthly = 0
-    try { monthly = await db.monthlyCount() } catch {}
+    // Cache corto: /stats pega a la DB (monthlyCount) en cada hit y lo consume el landing (otro origen,
+    // sin auth). Cacheamos ~15s así un flood de requests no martilla la DB — los contadores del landing
+    // no necesitan ser al segundo. `online` y la config de $VEL son baratos, se recomputan siempre.
+    const now = Date.now()
+    if (now - _statsCache.at > STATS_TTL_MS) {
+      let monthly = 0
+      try { monthly = await db.monthlyCount() } catch {}
+      _statsCache = { at: now, monthly }
+    }
     res.writeHead(200, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ online: rooms.playerCount(), monthly }))
+    res.end(JSON.stringify({ online: rooms.playerCount(), monthly: _statsCache.monthly, vel: wallet.velCoin() }))
     return
   }
   res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' })
   res.end('Velgrim server — WebSocket en la misma URL. GET /health o /stats.')
 })
 
-const wss = new WebSocketServer({ server: http_server })
+// Cache de /stats (evita pegarle a la DB en cada request; ver el handler).
+const STATS_TTL_MS = 15 * 1000
+let _statsCache = { at: 0, monthly: 0 }
+
+// Endurecimiento del WS contra floods (cliente tocado / bot), sin castigar el juego legítimo:
+//   - Tope de tamaño por mensaje: un payload gigante no puede quemar CPU/memoria parseando JSON.
+//   - Rate limit por conexión (token bucket): el movimiento va a ~8/s (cada 0.12s) y las acciones son
+//     esporádicas, muy por debajo del refill; el excedente se descarta. Los límites finos de combate
+//     (cadencia de golpe/cast, saldo de oro, cooldowns) siguen viviendo en su capa.
+const MAX_MSG_BYTES = 32 * 1024   // holgado para el blob de save (inv+equipo+skills); corta el abuso MB
+const RL_BURST = 80               // ráfaga permitida (resync al entrar, acciones rápidas)
+const RL_REFILL = 40              // tokens por segundo en régimen (5× el ritmo de movimiento)
+
+const wss = new WebSocketServer({ server: http_server, maxPayload: MAX_MSG_BYTES })
 
 // Una sola sesión de juego por cuenta: si la misma cuenta entra de nuevo, se expulsa a la anterior
 // (evita jugar dos veces con el mismo usuario, y con eso duplicar acciones/loops entre dos ventanas).
 const liveConns = new Map() // accountId -> ws
 
 wss.on('connection', (ws) => {
-  const conn = { accountId: null, username: null, playerId: null }
+  const conn = { accountId: null, username: null, playerId: null, rlTokens: RL_BURST, rlAt: Date.now() }
   const send = (msg) => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)) }
 
   ws.on('message', async (raw) => {
+    // Token bucket por conexión: recarga por tiempo, descarta el excedente. El juego legítimo nunca
+    // llega al tope; un flood de un cliente tocado/bot se corta acá antes de tocar el dispatch.
+    const nowMs = Date.now()
+    conn.rlTokens = Math.min(RL_BURST, conn.rlTokens + ((nowMs - conn.rlAt) / 1000) * RL_REFILL)
+    conn.rlAt = nowMs
+    if (conn.rlTokens < 1) return   // sobre el límite: se descarta el mensaje
+    conn.rlTokens -= 1
+
     let m
     try { m = JSON.parse(raw) } catch { return }
     if (!m || typeof m.t !== 'string') return
@@ -128,6 +157,10 @@ wss.on('connection', (ws) => {
           return send({ t: 'auth', ok: true, token: r.token, username: r.username, char: char ? char.data : null })
         }
 
+        case 'velinfo': {            // config pública del token $VEL (para la pantalla de compra). Sin gate: { gate:false }.
+          return send({ t: 'velinfo', ...(await wallet.velConfig()) })
+        }
+
         case 'wallet_challenge': {   // paso 1 del login por wallet: pedir el texto a firmar
           if (!m.pubkey || typeof m.pubkey !== 'string') return send({ t: 'error', error: 'falta la dirección de la wallet' })
           return send({ t: 'challenge', message: wallet.challenge(m.pubkey) })
@@ -135,7 +168,7 @@ wss.on('connection', (ws) => {
 
         case 'wallet_verify': {      // paso 2: verificar la firma -> sesión (cuenta = la wallet)
           const r = await wallet.walletVerify(m.pubkey, m.signature)
-          if (!r.ok) return send({ t: 'auth', ok: false, error: r.error })
+          if (!r.ok) return send({ t: 'auth', ok: false, error: r.error, vel: r.vel })
           conn.accountId = session(r.token).accountId
           conn.username = r.pubkey
           const char = await db.loadCharacter(conn.accountId)
@@ -161,29 +194,57 @@ wss.on('connection', (ws) => {
           // puede pisarlos. Sólo en la CREACIÓN (personaje inexistente) se aceptan los valores del
           // cliente (kit inicial). Cierra el bypass "guardar sin entrar al mundo".
           const g = rooms.goldOf(conn.accountId)
+          const sv = rooms.sealsOf(conn.accountId)
+          const xpAuth = rooms.xpOf(conn.accountId)
+          const hpAuth = rooms.hpOf(conn.accountId)   // { hp, hpMax, dead } o null (Fase 3)
           const inv = rooms.invOf(conn.accountId)
           const led = rooms.ledgerOf(conn.accountId)
+          const qc = rooms.questClaimsOf(conn.accountId)
+          const ft = rooms.featsOf(conn.accountId)
           const data = { ...(m.char || {}) }
           await db.withAccountLock(conn.accountId, async () => {
             const existing = await db.loadCharacter(conn.accountId)
             const ed = existing?.data || null
             if (g != null) data.gold = g
             else if (ed) data.gold = Math.floor(Number(ed.gold) || 0)
+            // XP AUTORITATIVA (anti-cheat del ranking): la sesión viva pisa el blob; sin sesión se
+            // preserva la del personaje. Un save con xp inflada no puede escalar el Salón de la Fama.
+            if (xpAuth != null) data.xp = xpAuth
+            else if (ed) data.xp = Math.max(0, Math.floor(Number(ed.xp) || 0))
+            // Vida AUTORITATIVA (Fase 3): la sesión viva pisa el blob; sin sesión se preserva la del
+            // personaje. Persistirla evita el logout-cura (entrar ya no rellena la vida gratis).
+            if (hpAuth != null && hpAuth.hp != null) data.hp = Math.max(0, Math.floor(Number(hpAuth.hp) || 0))
+            else if (ed && ed.hp != null) data.hp = Math.max(0, Math.floor(Number(ed.hp) || 0))
+            // Sellos AUTORITATIVOS (moneda premium): igual que el oro, la sesión viva pisa el blob;
+            // sin sesión se preservan del personaje. Cierra "editar el save para tener sellos".
+            if (sv != null) data.seals = sv
+            else if (ed) data.seals = Math.floor(Number(ed.seals) || 0)
             if (inv != null) data.inventory = inv
             else if (ed) data.inventory = ed.inventory || []
             if (led != null) data._outLedger = led
             else if (ed) { if (ed._outLedger && typeof ed._outLedger === 'object') data._outLedger = ed._outLedger; else delete data._outLedger }
+            // Quests reclamadas (server-owned): igual que el ledger, nunca se toman del blob del
+            // cliente — vienen de la sesión viva o se preservan del personaje. Un save no las borra.
+            if (qc != null) data._qclaimed = qc
+            else if (ed) { if (Array.isArray(ed._qclaimed)) data._qclaimed = ed._qclaimed; else delete data._qclaimed }
+            // Hazañas (server-owned): jefes derrotados + zona más profunda. Igual que las quests: de la
+            // sesión viva o preservadas del personaje; un save del cliente no las inventa ni las borra.
+            if (ft != null) data._feats = ft
+            else if (ed) { if (ed._feats && typeof ed._feats === 'object') data._feats = ed._feats; else delete data._feats }
             // CREACIÓN (personaje inexistente): el server ASIGNA el kit inicial canónico (oro/equipo/
             // inventario/cinturón + ledger), ignorando el blob del cliente. Cierra "crearse con oro/
             // equipo falso". El ledger canónico se persiste ya, así el 1er join no grandfatherea.
             if (!ed) {
               const kit = startingKit(m.race)
               data.gold = kit.gold
+              data.xp = 0                    // un personaje nuevo arranca en 0 XP (no acepta xp del blob de creación)
+              data.seals = 0                 // un personaje nuevo arranca sin sellos (moneda premium)
               data.inventory = kit.inventory
               data.equipment = kit.equipment
               data.belt = kit.belt
               data.equippedBelt = null
               data._outLedger = startingLedger(m.race)
+              data._qclaimed = []            // personaje nuevo: ninguna quest reclamada
             }
             await db.saveCharacter(conn.accountId, { name: m.name, race: m.race, data })
           })
@@ -198,32 +259,109 @@ wss.on('connection', (ws) => {
         case 'guild_list': {   // ranking público
           return send({ t: 'guild_list', ...(await guilds.ranking(m.limit)) })
         }
+        case 'hall': {   // Salón de la Fama: rankings públicos de jugadores (nivel/jefes/profundidad)
+          return send({ t: 'hall', ...(await rooms.hallOfFame(m.limit)) })
+        }
         case 'guild_create': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
-          return send({ t: 'guild', ...(await guilds.create(conn.accountId, { name: m.name, tag: m.tag, color: m.color })) })
+          if (conn.playerId == null) return send({ t: 'guild', error: 'sin sesión' })
+          const v = await guilds.canCreate(conn.accountId, { name: m.name, tag: m.tag, color: m.color })
+          if (!v.ok) return send({ t: 'guild', error: v.error })
+          const spent = rooms.spendGold(conn.playerId, guilds.FOUND_COST, 'guild_found')   // oro VIVO autoritativo
+          if (!spent.ok) return send({ t: 'guild', error: `necesitás ${guilds.FOUND_COST} de oro para fundar` })
+          let r; try { r = await guilds.commitCreate(conn.accountId, v) } catch { r = { ok: false, error: 'error al fundar' } }
+          if (!r.ok) { rooms.awardGold(conn.playerId, guilds.FOUND_COST, 'guild_rollback'); return send({ t: 'guild', ...r }) }
+          rooms.setGuildTag(conn.playerId, r.guild?.tag || null)
+          return send({ t: 'guild', ...r, gold: spent.gold })
         }
         case 'guild_join': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
-          return send({ t: 'guild', ...(await guilds.join(conn.accountId, { guildId: m.id, tag: m.tag })) })
+          const r = await guilds.join(conn.accountId, { guildId: m.id, tag: m.tag })
+          if (r.ok && conn.playerId != null) rooms.setGuildTag(conn.playerId, r.guild?.tag || null)
+          return send({ t: 'guild', ...r })
         }
         case 'guild_leave': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
-          return send({ t: 'guild', ...(await guilds.leave(conn.accountId)), left: true })
+          const r = await guilds.leave(conn.accountId)
+          if (r.ok && conn.playerId != null) rooms.setGuildTag(conn.playerId, null)
+          return send({ t: 'guild', ...r, left: true })
         }
         case 'guild_donate': {
           if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
-          return send({ t: 'guild', ...(await guilds.donate(conn.accountId, m.amount)) })
+          if (conn.playerId == null) return send({ t: 'guild', error: 'sin sesión' })
+          const amt = Math.floor(Number(m.amount) || 0)
+          if (amt <= 0) return send({ t: 'guild', error: 'monto inválido' })
+          const spent = rooms.spendGold(conn.playerId, amt, 'guild_donate')   // oro VIVO autoritativo
+          if (!spent.ok) return send({ t: 'guild', error: spent.error || 'no tenés tanto oro' })
+          let r; try { r = await guilds.creditDonation(conn.accountId, amt) } catch { r = { ok: false, error: 'error al donar' } }
+          if (!r.ok) { rooms.awardGold(conn.playerId, amt, 'guild_rollback'); return send({ t: 'guild', ...r }) }
+          return send({ t: 'guild', ...r, gold: spent.gold })
+        }
+        case 'guild_kick': {   // expulsar a un miembro (fundador/oficial)
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.kick(conn.accountId, m.target)) })
+        }
+        case 'guild_role': {   // ascender/descender oficial (m.role: 'officer'|'member') — sólo fundador
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.setRole(conn.accountId, m.target, m.role)) })
+        }
+        case 'guild_transfer': {   // transferir el liderazgo — sólo fundador
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.transfer(conn.accountId, m.target)) })
+        }
+        case 'guild_privacy': {   // privado (sólo invitación) / público (ingreso abierto) — sólo fundador
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          return send({ t: 'guild', ...(await guilds.setPrivacy(conn.accountId, !!m.private)) })
+        }
+        case 'guild_invite': {     // invitar a un jugador visible (m.target = su playerId) al gremio
+          if (!conn.accountId || conn.playerId == null) return send({ t: 'guild', error: 'sin sesión' })
+          const targetAcct = rooms.accountOf(m.target)
+          if (!targetAcct) return send({ t: 'guild', error: 'ese jugador no está' })
+          const r = await guilds.invite(conn.accountId, targetAcct)
+          if (r.ok) rooms.notify(m.target, { t: 'guild_invite', from: rooms.nameOf(conn.playerId), guildName: r.guild.name, tag: r.guild.tag })
+          return send({ t: 'guild', ok: r.ok, error: r.error, invited: r.ok })
+        }
+        case 'guild_accept_invite': {   // aceptar la invitación pendiente
+          if (!conn.accountId) return send({ t: 'guild', error: 'no autenticado' })
+          const r = await guilds.acceptInvite(conn.accountId)
+          if (r.ok && conn.playerId != null) rooms.setGuildTag(conn.playerId, r.guild?.tag || null)
+          return send({ t: 'guild', ...r })
+        }
+        case 'guild_decline_invite': {  // rechazar (silencioso)
+          if (!conn.accountId) return
+          return void guilds.declineInvite(conn.accountId)
+        }
+        case 'guild_chat': {   // chat del gremio: se difunde a todos los miembros ONLINE (sin importar mapa)
+          if (!conn.accountId || conn.playerId == null) return
+          const text = String(m.text || '').replace(/\s+/g, ' ').trim().slice(0, 200)
+          if (!text) return
+          const ci = await guilds.chatInfo(conn.accountId)
+          if (!ci) return
+          rooms.guildBroadcast(ci.ids, { t: 'gchat', from: rooms.nameOf(conn.playerId), tag: ci.tag, text })
+          return
         }
         // Depósito del Gremio (banco compartido)
         case 'guild_dep_view': {
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
           return send({ t: 'guild_dep', ...(await guilds.depositView(conn.accountId)) })
         }
-        case 'guild_dep_gold': {   // m.dir: 'in' deposita, 'out' retira
+        case 'guild_dep_gold': {   // m.dir: 'in' deposita, 'out' retira. El oro del jugador es el VIVO (rooms).
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
-          const r = m.dir === 'out' ? await guilds.withdrawGold(conn.accountId, m.amount)
-                                    : await guilds.depositGold(conn.accountId, m.amount)
-          return send({ t: 'guild_dep', ...r })
+          if (conn.playerId == null) return send({ t: 'guild_dep', error: 'sin sesión' })
+          const amt = Math.floor(Number(m.amount) || 0)
+          if (amt <= 0) return send({ t: 'guild_dep', error: 'monto inválido' })
+          if (m.dir === 'out') {   // retirar: banco -> oro vivo (debita el banco primero; sólo acredita si salió)
+            const r = await guilds.debitDeposit(conn.accountId, amt)
+            if (!r.ok) return send({ t: 'guild_dep', ...r })
+            const gold = rooms.awardGold(conn.playerId, amt, 'guild_wd')
+            return send({ t: 'guild_dep', ok: true, deposit: r.deposit, gold })
+          }
+          // depositar: debita oro vivo primero; si el banco falla, rollback al oro vivo
+          const spent = rooms.spendGold(conn.playerId, amt, 'guild_dep')
+          if (!spent.ok) return send({ t: 'guild_dep', error: spent.error || 'no tenés tanto oro' })
+          const r = await guilds.creditDeposit(conn.accountId, amt)
+          if (!r.ok) { rooms.awardGold(conn.playerId, amt, 'guild_dep_rollback'); return send({ t: 'guild_dep', ...r }) }
+          return send({ t: 'guild_dep', ok: true, deposit: r.deposit, gold: spent.gold })
         }
         case 'guild_dep_item_in': {   // depositar: el server saca el ítem del bag autoritativo (por índice) y lo guarda
           if (!conn.accountId) return send({ t: 'guild_dep', error: 'no autenticado' })
@@ -232,6 +370,7 @@ wss.on('connection', (ws) => {
           if (!taken.ok) return send({ t: 'guild_dep', error: taken.error || 'no tenés ese ítem' })
           const dep = await guilds.depositItem(conn.accountId, taken.item)
           if (!dep.ok) { rooms.giveItem(conn.playerId, taken.item) }   // rollback al bag si el depósito falló
+          else await rooms.flushInv(conn.accountId)   // durabilidad: el descuento del bag tan durable como el depósito (anti-dupe por crash)
           return send({ t: 'guild_dep', ...dep, inv: rooms.invOf(conn.accountId) })
         }
         case 'guild_dep_item_out': {  // retirar: el server saca del stash y lo mete en el bag autoritativo
@@ -254,6 +393,7 @@ wss.on('connection', (ws) => {
           if (!taken.ok) return send({ t: 'stash', error: taken.error || 'no tenés ese ítem' })
           const dep = await stash.depositItem(conn.accountId, taken.item)
           if (!dep.ok) { rooms.giveItem(conn.playerId, taken.item); return send({ t: 'stash', ...dep }) }   // rollback al bag
+          await rooms.flushInv(conn.accountId)   // durabilidad: el descuento del bag tan durable como el alijo (anti-dupe por crash)
           return send({ t: 'stash', ...dep, inv: rooms.invOf(conn.accountId) })
         }
         case 'stash_out': {    // retirar: saca del alijo y lo mete en el bag autoritativo
@@ -295,13 +435,24 @@ wss.on('connection', (ws) => {
             try { prev.close(4001, 'another session') } catch {}
           }
           liveConns.set(conn.accountId, ws)
-          if (conn.playerId != null) rooms.leave(conn.playerId)
+          // Sacar + PERSISTIR (awaited) cualquier sesión previa de esta cuenta ANTES de leer el saldo,
+          // o cargaríamos oro viejo (race con el persist async del socket que cierra). Cubre tanto la
+          // reconexión en esta misma ws como una segunda pestaña.
+          const oldPid = rooms.playerIdOfAccount(conn.accountId)
+          if (oldPid != null) await rooms.leaveFlush(oldPid)
+          conn.playerId = null
           // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
-          let gold = 0, inv = null, outSeed = null, ledger = null
+          let gold = 0, seals = 0, xp = 0, hp = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null
           if (!m.spectator) {
             const ch = await db.loadCharacter(conn.accountId)
             gold = Math.floor(Number(ch?.data?.gold) || 0)
+            seals = Math.floor(Number(ch?.data?.seals) || 0)
+            xp = Math.max(0, Math.floor(Number(ch?.data?.xp) || 0))   // XP autoritativa: semilla de la sesión (el ranking sale de acá)
+            hp = Math.max(0, Math.floor(Number(ch?.data?.hp) || 0))   // vida persistida (Fase 3): semilla; si es 0/inválida, el server arranca lleno
             inv = ch?.data?.inventory || null
+            qclaimed = Array.isArray(ch?.data?._qclaimed) ? ch.data._qclaimed : null
+            feats = (ch?.data?._feats && typeof ch.data._feats === 'object') ? ch.data._feats : null   // hazañas server-owned
+            guildTag = await guilds.tagOf(conn.accountId)   // estandarte sobre la cabeza (sigla del gremio)
             const d = ch?.data || {}
             // Ledger "checkout" AUTORITATIVO (Fase A.3): si el personaje ya tiene ledger guardado, se
             // carga de ahí (server-owned, el cliente no lo puede inflar). Si NO (personaje viejo, 1ª vez),
@@ -312,10 +463,10 @@ wss.on('connection', (ws) => {
             // save manipulado (belt/graves con count enorme) en cuentas sin ledger persistido.
             if (!ledger) outSeed = grandfatherSeed(d)
           }
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, inv, outSeed, ledger })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, xp, hp, inv, outSeed, ledger, qclaimed, feats })
           conn.playerId = id
           send({ t: 'present', you: id, players: present, map: m.map, channel })
-          if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + bag
+          if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'seals', seals }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + sellos + bag
           return
         }
 
@@ -341,6 +492,16 @@ wss.on('connection', (ws) => {
           return rooms.setGfx(conn.playerId, m.gfx)
         }
 
+        case 'setcard': {    // tarjeta pública del jugador (lo que ven al inspeccionarlo)
+          if (conn.playerId == null) return
+          return rooms.setCard(conn.playerId, m.card)
+        }
+
+        case 'inspect': {    // pedir la tarjeta pública de otro jugador (sólo si lo ves)
+          if (conn.playerId == null) return
+          return send({ t: 'inspect', ...rooms.inspectCard(conn.playerId, m.id) })
+        }
+
         case 'php': {        // vida del jugador (para su barra que ven los demás)
           if (conn.playerId == null) return
           return rooms.playerHp(conn.playerId, m.hp, m.hpMax)
@@ -349,6 +510,11 @@ wss.on('connection', (ws) => {
         case 'atk': {        // pedido de ataque a un enemigo (lo valida la simulación)
           if (conn.playerId == null) return
           return rooms.attack(conn.playerId, m.eid)
+        }
+
+        case 'cast': {       // habilidad especial M2: enemigos alcanzados + daño (server valida/clampea/aplica)
+          if (conn.playerId == null) return
+          return rooms.cast(conn.playerId, m.hits)
         }
 
         // ---------- Economía: oro autoritativo del servidor (Fase A) ----------
@@ -409,6 +575,37 @@ wss.on('connection', (ws) => {
           if (conn.playerId == null || !conn.accountId) return
           return send({ t: 'market', op: 'cancel', ...(await market.cancel(conn.playerId, conn.accountId, m.id)) })
         }
+        // ---------- Marketplace oro↔$VEL (order book P2P, pago on-chain, no-custodial) ----------
+        case 'goldmkt_config': {  // config pública del mercado de $VEL (apagado -> { on:false })
+          return send({ t: 'goldmkt', op: 'config', ...(await goldmarket.config()) })
+        }
+        case 'goldmkt_browse': {  // órdenes de oro disponibles para comprar (con $VEL)
+          return send({ t: 'goldmkt', op: 'browse', ...(await goldmarket.browse()) })
+        }
+        case 'goldmkt_mine': {    // mis órdenes de venta de oro
+          if (!conn.accountId) return send({ t: 'goldmkt', op: 'mine', ok: false, error: 'no autenticado' })
+          return send({ t: 'goldmkt', op: 'mine', ...(await goldmarket.mine(conn.accountId)) })
+        }
+        case 'goldmkt_list': {    // publicar oro (escrow) pidiendo $VEL. La wallet de cobro la pone el server.
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'goldmkt', op: 'list', ...(await goldmarket.list(conn.playerId, conn.accountId, rooms.nameOf(conn.playerId), conn.username, m.gold, m.price)) })
+        }
+        case 'goldmkt_cancel': {  // cancelar mi orden y recuperar el oro escrowed
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'goldmkt', op: 'cancel', ...(await goldmarket.cancel(conn.playerId, conn.accountId, m.id)) })
+        }
+        case 'goldmkt_lock': {    // reservar una orden para comprarla -> instrucciones de pago on-chain
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'goldmkt', op: 'lock', id: m.id, ...(await goldmarket.lock(conn.playerId, conn.accountId, conn.username, m.id)) })
+        }
+        case 'goldmkt_unlock': {  // soltar la reserva sin comprar
+          if (!conn.accountId) return
+          return send({ t: 'goldmkt', op: 'unlock', id: m.id, ...(await goldmarket.unlock(conn.accountId, m.id)) })
+        }
+        case 'goldmkt_settle': {  // cerré el pago on-chain (firma) -> verificar y recibir el oro
+          if (conn.playerId == null || !conn.accountId) return
+          return send({ t: 'goldmkt', op: 'settle', id: m.id, ...(await goldmarket.settle(conn.playerId, conn.accountId, m.id, m.sig)) })
+        }
         // ---------- Bag autoritativo: transferencias entre el bag y equipo/cinturón/tumba/forja ----------
         case 'bag_take': {   // sacar un ítem del bag por índice (equipar / mandar al cinturón)
           if (conn.playerId == null) return
@@ -431,11 +628,21 @@ wss.on('connection', (ws) => {
         }
         case 'bag_dump': {   // al morir: vaciar el bag (los ítems van a la tumba client-side)
           if (conn.playerId == null) return
-          return send({ t: 'bagack', op: 'dump', ...rooms.dumpBag(conn.playerId) })
+          const dump = rooms.dumpBag(conn.playerId)
+          await rooms.flushInv(conn.accountId)   // durabilidad: el bag vaciado tan durable como la tumba (anti-dupe por crash)
+          return send({ t: 'bagack', op: 'dump', ...dump })
         }
         case 'spend': {      // sink genérico: reparar / forjar / respec / ofrenda (el efecto local lo aplica el cliente)
           if (conn.playerId == null) return
-          return send({ t: 'spendack', reason: m.reason, ...rooms.spendGold(conn.playerId, m.amount, m.reason) })
+          // Respec / reparar / forjar: el ORO lo RECALCULA el server del nivel real (no confía en el
+          // monto del cliente), cerrando el under-pay. Reparar y forjar pasaron a costo por nivel para
+          // no depender de la durabilidad/upgrade (client-side); los cristales de forja se validan
+          // aparte por bagConsume. Ofrenda es inofensiva (pagar de menos sólo avanza menos la misión).
+          const amount = m.reason === 'respec' ? rooms.respecCostOf(conn.playerId)
+            : m.reason === 'repair' ? rooms.repairCostOf(conn.playerId)
+            : m.reason === 'forge' ? rooms.forgeCostOf(conn.playerId)
+            : m.amount
+          return send({ t: 'spendack', reason: m.reason, amount, ...rooms.spendGold(conn.playerId, amount, m.reason) })
         }
         case 'claimmission': {  // recompensa de misión diaria (oro computado del set del día)
           if (conn.playerId == null) return
@@ -495,4 +702,28 @@ wss.on('connection', (ws) => {
 
 http_server.listen(PORT, () => {
   console.log(`[velgrim] servidor escuchando en :${PORT} (ws + http)`)
+  // Self-check del marketplace $VEL: si está prendido, avisa fuerte si el tesoro no puede cobrar la
+  // comisión (sin token account del mint) — el mercado se mostraría cerrado hasta crearla.
+  goldmarket.selfCheck().catch(() => {})
 })
+
+// Apagado ordenado (deploy de Render = SIGTERM; Ctrl-C = SIGINT). El handler de 'close' del socket
+// NO corre cuando matan el proceso, así que las sesiones en memoria perderían el oro/bag/ledger sin
+// guardar. Persistimos todo lo online antes de salir. Idempotente y con timeout de red.
+let _shuttingDown = false
+async function gracefulShutdown(sig) {
+  if (_shuttingDown) return
+  _shuttingDown = true
+  console.log(`[velgrim] ${sig}: persistiendo jugadores online…`)
+  try { await Promise.race([rooms.flushAll(), new Promise((r) => setTimeout(r, 8000))]) } catch {}
+  try { http_server.close() } catch {}
+  process.exit(0)
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+
+// Red de seguridad: una excepción no atrapada o una promesa rechazada NO deben bajar el server
+// autoritativo (perdería el oro/XP vivo sin flushear de toda la sala). Las logueamos y seguimos;
+// el estado por-jugador es independiente, así que un error en una operación no corrompe al resto.
+process.on('uncaughtException', (e) => { console.error('[velgrim] uncaughtException (server sigue vivo):', (e && e.stack) || e) })
+process.on('unhandledRejection', (e) => { console.error('[velgrim] unhandledRejection (server sigue vivo):', (e && e.stack) || e) })

@@ -78,6 +78,8 @@ class Net {
         else if (m.t === 'cspawn' || m.t === 'copen' || m.t === 'cloot') this._emit(m.t, m)
         // oro AUTORITATIVO del servidor (faucet: kill/cofre/misión) — push con el nuevo saldo
         else if (m.t === 'gold') this._emit('gold', m)
+        // sellos AUTORITATIVOS del servidor (faucet: misiones/quest; sink: cofre de sellos)
+        else if (m.t === 'seals') this._emit('seals', m)
         // inventario AUTORITATIVO del servidor (bag) — push con el bag nuevo (loot/compra/venta/uso)
         else if (m.t === 'inv') this._emit('inv', m)
         // trade P2P: pedido entrante, apertura, estado (ofertas + confirmaciones), cierre, cancelación
@@ -90,6 +92,16 @@ class Net {
         else if (m.t === 'php') this._emit(m.t, m)
         // nivel de otro jugador (cambió al subir) — para el menú de jugador
         else if (m.t === 'plvl') this._emit(m.t, m)
+        // estandarte de gremio de otro jugador (cambió su gremio)
+        else if (m.t === 'gtag') this._emit(m.t, m)
+        // tarjeta pública de otro jugador (respuesta a inspect)
+        else if (m.t === 'inspect') this._emit(m.t, m)
+        // mis propias hazañas (server-owned): al entrar y al ganar un jefe / alcanzar una zona
+        else if (m.t === 'feats') this._emit(m.t, m)
+        // invitación de gremio entrante
+        else if (m.t === 'guild_invite') this._emit(m.t, m)
+        // chat de gremio entrante
+        else if (m.t === 'gchat') this._emit(m.t, m)
       }
     })
   }
@@ -124,7 +136,10 @@ class Net {
   move(map, x, y, dir) { this._send({ t: 'move', map, x, y, dir }) }
   chat(text) { this._send({ t: 'chat', text }) }
   setStats(stats) { this._send({ t: 'setstats', stats }) }   // stats de combate (server tira el daño)
+  setCard(card) { this._send({ t: 'setcard', card }) }       // tarjeta pública (lo que ven al inspeccionarme)
+  inspect(id) { this._send({ t: 'inspect', id }) }           // pedir la tarjeta pública de otro jugador
   attack(eid) { this._send({ t: 'atk', eid }) }              // pedir ataque a un enemigo del server
+  cast(hits) { this._send({ t: 'cast', hits }) }             // habilidad M2: enemigos alcanzados + daño (server valida/aplica)
   gather(nid) { this._send({ t: 'gather', nid }) }           // pedir juntar un nodo de recurso
   openChest(cid) { this._send({ t: 'openchest', cid }) }     // pedir abrir un cofre del server
 
@@ -152,6 +167,15 @@ class Net {
   async marketList(index, price) { this._send({ t: 'market_list', index, price }); return this._once('market', 6000, 'list') }
   async marketBuy(id) { this._send({ t: 'market_buy', id }); return this._once('market', 6000, 'buy') }
   async marketCancel(id) { this._send({ t: 'market_cancel', id }); return this._once('market', 6000, 'cancel') }
+  // Marketplace oro↔$VEL (order book P2P, pago on-chain). Responden t:'goldmkt' con su `op`.
+  async goldConfig() { this._send({ t: 'goldmkt_config' }); return this._once('goldmkt', 6000, 'config') }
+  async goldBrowse() { this._send({ t: 'goldmkt_browse' }); return this._once('goldmkt', 6000, 'browse') }
+  async goldMine() { this._send({ t: 'goldmkt_mine' }); return this._once('goldmkt', 6000, 'mine') }
+  async goldList(gold, price) { this._send({ t: 'goldmkt_list', gold, price }); return this._once('goldmkt', 6000, 'list') }
+  async goldCancel(id) { this._send({ t: 'goldmkt_cancel', id }); return this._once('goldmkt', 6000, 'cancel') }
+  async goldLock(id) { this._send({ t: 'goldmkt_lock', id }); return this._once('goldmkt', 8000, 'lock') }
+  async goldUnlock(id) { this._send({ t: 'goldmkt_unlock', id }); return this._once('goldmkt', 6000, 'unlock') }
+  async goldSettle(id, sig) { this._send({ t: 'goldmkt_settle', id, sig }); return this._once('goldmkt', 20000, 'settle') }
   async spendReq(amount, reason) { this._send({ t: 'spend', amount, reason }); return this._once('spendack') }
   async claimMissionReq(id) { this._send({ t: 'claimmission', id }); return this._once('claimack') }
   async claimQuestReq(id) { this._send({ t: 'claimquest', id }); return this._once('claimack') }
@@ -165,10 +189,19 @@ class Net {
   // el ranking (`t:'guild_list'`). Awaitéalas en orden (comparten el tipo de respuesta).
   async guildInfo(id) { this._send({ t: 'guild_info', id }); return this._once('guild') }
   async guildList(limit = 20) { this._send({ t: 'guild_list', limit }); return this._once('guild_list') }
+  async hall(limit = 20) { this._send({ t: 'hall', limit }); return this._once('hall') }   // Salón de la Fama
   async guildCreate(name, tag, color) { this._send({ t: 'guild_create', name, tag, color }); return this._once('guild') }
   async guildJoin({ id, tag }) { this._send({ t: 'guild_join', id, tag }); return this._once('guild') }
   async guildLeave() { this._send({ t: 'guild_leave' }); return this._once('guild') }
   async guildDonate(amount) { this._send({ t: 'guild_donate', amount }); return this._once('guild') }
+  async guildKick(target) { this._send({ t: 'guild_kick', target }); return this._once('guild') }
+  async guildRole(target, role) { this._send({ t: 'guild_role', target, role }); return this._once('guild') }
+  async guildTransfer(target) { this._send({ t: 'guild_transfer', target }); return this._once('guild') }
+  async guildPrivacy(priv) { this._send({ t: 'guild_privacy', private: !!priv }); return this._once('guild') }
+  async guildInvite(target) { this._send({ t: 'guild_invite', target }); return this._once('guild') }
+  async guildAccept() { this._send({ t: 'guild_accept_invite' }); return this._once('guild') }
+  guildDecline() { this._send({ t: 'guild_decline_invite' }) }
+  guildChat(text) { this._send({ t: 'guild_chat', text }) }   // chat del gremio
   // Depósito del Gremio (banco compartido). Responden `t:'guild_dep'`.
   async guildDepView() { this._send({ t: 'guild_dep_view' }); return this._once('guild_dep') }
   async guildDepGold(dir, amount) { this._send({ t: 'guild_dep_gold', dir, amount }); return this._once('guild_dep') }

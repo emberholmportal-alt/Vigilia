@@ -197,7 +197,7 @@ export class Game {
       player.view.visible = false
       this._panKeys = new Set()   // teclas de pan sostenidas (WASD / flechas)
     } else {
-      player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'))
+      player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'), this.store.getGuildTag())
       this._nameLevel = this.store.getPlayerLevel()
       player.setBody(this.store.getBody())              // cuerpo elegido (male/female/female_dark)
       player.setRace(this.store.getRaceAppearance())    // tinte de piel + cabeza según la raza (antes del equipo)
@@ -332,16 +332,32 @@ export class Game {
       if (lore) this.store.logMessage({ channel: 'mundo', text: lore[getLang()] || lore.en })
     }
     this._refreshWaypoints()
-    // Quest "Los Tres Nombres": ciertas ruinas revelan un nombre olvidado al llegar.
-    const revealed = this.store.revealForZone(mapName)
-    if (revealed) {
-      this.store.showToast(tt('name_found', { name: revealed }))
-      this.store.logMessage({ channel: 'sistema', text: tt('name_found', { name: revealed }) })
+    // Quest "Los Tres Nombres": OFFLINE (sin jefes de server) el nombre se revela al LLEGAR a la ruina.
+    // ONLINE se arranca matando al guardián elemental de la ruina (ver _onEkill) — la ruina tiene jefe.
+    if (!ONLINE) {
+      const revealed = this.store.revealForZone(mapName, { quest: 'guardianes' })
+      if (revealed) {
+        this.store.showToast(tt('name_found', { name: revealed }))
+        this.store.logMessage({ channel: 'sistema', text: tt('name_found', { name: revealed }) })
+      }
+    }
+    // Quest "El Diario del Vigilante": los fragmentos se revelan al LLEGAR a la zona (online y offline).
+    const frag = this.store.revealForZone(mapName, { quest: 'diario' })
+    if (frag) {
+      this.store.showToast(tt('journal_found'))
+      this.store.logMessage({ channel: 'sistema', text: frag })
+    }
+    // Quest "Bajo la Torre": el descenso se revela al LLEGAR a la Torre y al Inframundo.
+    const sign = this.store.revealForZone(mapName, { quest: 'torre' })
+    if (sign) {
+      this.store.showToast(tt('tower_sign'))
+      this.store.logMessage({ channel: 'sistema', text: sign })
     }
     this._loading = false
 
-    // Online: conectar (una vez) y anunciar el mapa actual para ver a otros jugadores.
-    if (ONLINE) this._enterOnlineMap(mapName, spawn)
+    // Online: anunciar el mapa y ESPERAR el 'present' (entrar al canal poblado) antes de soltar el
+    // loading. Así cargás directo en el mundo compartido, sin el flash de "mundo solo -> conectado".
+    if (ONLINE) await this._enterOnlineMap(mapName, spawn)
   }
 
   // Conecta al servidor la primera vez y engancha los eventos de presencia; luego, en cada
@@ -374,8 +390,12 @@ export class Game {
     net.on('leave', (m) => this._removeRemote(m.id))
     net.on('chat', (m) => this.store.logMessage({ channel: 'mundo', name: m.name, text: m.text }))
     net.on('gfx', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGfx(m.gfx) })   // gear de otro jugador
-    net.on('php', (m) => { const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax) })   // vida de otro jugador
-    net.on('plvl', (m) => { const r = this.remotes?.get(m.id); if (r) r.level = m.level })          // nivel de otro jugador
+    net.on('php', (m) => {
+      if (m.id === this._selfId) { this._reconcileHp(m.hp, m.hpMax); return }   // MI vida: la manda el server (autoritativa)
+      const r = this.remotes?.get(m.id); if (r) r.setHp(m.hp, m.hpMax)           // vida de otro jugador
+    })
+    net.on('plvl', (m) => { const r = this.remotes?.get(m.id); if (r) r.setLevel(m.level) })          // nivel de otro jugador
+    net.on('gtag', (m) => { const r = this.remotes?.get(m.id); if (r) r.setGuildTag(m.tag) })         // estandarte de gremio (n5)
     // Reconexión (clave en móvil): al caerse la red, net reintenta con backoff; al reabrir
     // el socket, re-autenticamos (resume) y reconstruimos el mapa actual (snapshots frescos).
     net.on('close', () => this.store.logMessage({ channel: 'sistema', text: tt('online_lost') }))
@@ -396,8 +416,16 @@ export class Game {
     net.on('copen', (m) => this._onCopen(m))
     net.on('cloot', (m) => this._onCloot(m))
     net.on('gold', (m) => this._onGold(m))   // oro autoritativo del server (faucet kill/cofre)
+    net.on('seals', (m) => {   // sellos autoritativos
+      if (typeof m.seals === 'number') this.store.setSeals(m.seals)
+      if (m.reason === 'guild_contract' && m.add > 0) this.store.showToast(tt('guild_contract_seals', { n: m.add }))
+    })
     net.on('inv', (m) => this.store.mirrorInv(m.inv))   // bag autoritativo del server (Fase A.2)
     // Trade P2P (Kintara #3): pedido / apertura / estado / cierre / cancelación -> store.
+    net.on('inspect', (m) => this.store.onInspect(m))   // tarjeta pública de otro jugador (respuesta a inspect)
+    net.on('feats', (m) => this.store.onFeats(m))       // mis propias hazañas (server-owned)
+    net.on('guild_invite', (m) => this.store.onGuildInvite(m))   // invitación de gremio entrante
+    net.on('gchat', (m) => this.store.onGuildChat(m))            // chat de gremio entrante
     net.on('trade_req', (m) => this.store.onTradeReq(m))
     net.on('trade_open', (m) => this.store.onTradeOpen(m))
     net.on('trade_state', (m) => this.store.onTradeState(m))
@@ -414,13 +442,21 @@ export class Game {
   async _enterOnlineMap(mapName, spawn) {
     if (!this._online) return
     this._clearRemotes()
-    net.join({
-      name: this.store.getPlayerName(), race: this.store.getRaceId(), body: this.store.getBody(),
-      map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
-      channel: this._channel,        // intenta conservar tu canal entre mapas
-      spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
-      gfx: this._spectator ? null : equipToGfx(this.store.getEquipment()),   // equipo visible para los demás
-    }).then(() => { if (!this._spectator) this.store.refreshGuild() }).catch(() => {})   // cargar gremio -> aplicar ventajas
+    // Esperamos el 'present' (canal asignado + jugadores presentes) con un tope de seguridad: si el
+    // server tarda, no dejamos el loading colgado para siempre (seguimos igual, el 'present' llega solo).
+    try {
+      await Promise.race([
+        net.join({
+          name: this.store.getPlayerName(), race: this.store.getRaceId(), body: this.store.getBody(),
+          map: mapName, x: Math.round(spawn.x), y: Math.round(spawn.y), dir: 7,
+          channel: this._channel,        // intenta conservar tu canal entre mapas
+          spectator: this._spectator,    // el mirón entra al canal más poblado, invisible a los demás
+          gfx: this._spectator ? null : equipToGfx(this.store.getEquipment()),   // equipo visible para los demás
+        }),
+        new Promise((res) => setTimeout(res, 3500)),
+      ])
+    } catch { /* si el join falla, seguimos: el mundo local ya está */ }
+    if (!this._spectator) this.store.refreshGuild()   // cargar gremio -> aplicar ventajas
     this._sendStats()   // stats de combate para que el server tire el daño de nuestros golpes
   }
 
@@ -435,7 +471,12 @@ export class Game {
       str: st.str || 10, crit: st.crit || 0, weaponKind: st.weaponKind || 'melee',
       defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
       level: st.level || 1,   // capacidad usable del bag autoritativo (parity con el HUD)
+      itemFind: st.itemFind || 0,   // magic-find: el server lo usa al tirar el loot de kills
+      goldMul: st.guildGoldMul || 1,   // +oro de botín del gremio (ventaja n1): el server lo aplica al oro de kill
     })
+    // Tarjeta pública (lo que ven los demás al inspeccionarme). Se reenvía junto con las stats.
+    const card = this.store.getPublicCard()
+    if (card) net.setCard(card)
   }
 
   // Reconexión: re-autentica (resume) y reconstruye el mapa actual para reenganchar el estado
@@ -501,7 +542,7 @@ export class Game {
 
   // Reetiqueta todo lo que dibuja el motor cuando cambia el idioma.
   _onLangChange() {
-    if (this.player && !this._spectator) this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'))
+    if (this.player && !this._spectator) this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'), this.store.getGuildTag())
     this.store.setMapTitle(zoneTitle(this.mapName))
     for (const p of (this.portals || [])) {
       const nl = zoneTitle(p.to, p.label)
@@ -698,20 +739,23 @@ export class Game {
     }
   }
 
-  // Hablar con un Guardián: con los tres nombres, despierta y cierra la quest; si no, recibe
-  // la ofrenda del día (si hay y tenés el oro); si no, un diálogo lo explica.
+  // Hablar con un Guardián de los Tres Nombres. Con los tres nombres, es el ENFRENTAMIENTO FINAL:
+  // se pronuncian, los Guardianes despiertan uno a uno y los sellos ceden (cierra la quest con
+  // recompensa). Sin los tres, el Guardián habla su propio lore; con la quest activa, deja un hint;
+  // ya cerrada, una despedida.
   _makeOffering(npc) {
-    const nm = npc ? npcName(npc.def, getLang()) : tt('offering_sleep_name')
+    const nm = npcName(npc.def, getLang())
     if (this.store.canAwakenGuardians()) {
-      this.store.setQuestFlag('q3_finish')   // recompensa incluida en setQuestFlag
-      this.store.openDialogue({ name: nm, portrait: null, lines: [tt('guardians_wake')] })
+      this.store.setQuestFlag('q3_finish')   // recompensa (XP/oro/sellos) incluida en setQuestFlag
+      this.store.openDialogue({ name: nm, portrait: npc.def.portrait || null, lines: [
+        tt('awaken_1'), tt('awaken_2'), tt('awaken_3'), tt('awaken_4'), tt('awaken_5'),
+      ] })
       return
     }
-    Promise.resolve(this.store.deliverOffering()).then((res) => {
-      if (res && !res.ok && res.reason === 'none') {
-        this.store.openDialogue({ name: tt('offering_sleep_name'), portrait: null, lines: [tt('offering_sleep_l1'), tt('offering_sleep_l2')] })
-      }
-    })
+    const lines = npcLines(npc.def, getLang()).slice()
+    if (this.store.hasQuestFlag('q3_finish')) lines.push(tt('guardian_freed'))
+    else if (this.store.hasQuestFlag('q3_init')) lines.push(tt('guardian_asleep'))
+    this.store.openDialogue({ name: nm, portrait: npc.def.portrait || null, lines })
   }
 
   _inspectCorpse(e) {
@@ -994,7 +1038,8 @@ export class Game {
     this._pendingChest = chest
   }
 
-  // Abre el cofre: tira la tabla real de Flare, suma oro y desparrama los ítems.
+  // Abre el cofre: tira la tabla real de Flare y desparrama los ítems. Los cofres del suelo ya NO
+  // dan oro (solo ítems) — igual que la ruta online; el oro sale de matar + vender el loot.
   _openChest(chest) {
     chest.opened = true
     if (chest.glow) { chest.glow.destroy(); chest.glow = null }
@@ -1009,8 +1054,7 @@ export class Game {
     this.store.missionProgress('chest', 1)
 
     const roll = rollLoot(chest.loot)
-    if (roll.gold > 0) this._dropGold(chest.x, chest.y, roll.gold)
-    this._dropItems(chest.x, chest.y, roll.drops)
+    this._dropItems(chest.x, chest.y, roll.drops)   // solo ítems: los cofres del suelo no dan oro
   }
 
   // Desparrama ítems (como objetos reales) en tiles caminables alrededor de (cx,cy).
@@ -1352,6 +1396,20 @@ export class Game {
 
   // Lanza una habilidad activa (pedida desde la barra). Valida desbloqueo, recarga, objetivo
   // y maná; si pasa, ejecuta su efecto y arranca la recarga.
+  // Aplica el daño de una habilidad. ONLINE lo resuelve el SERVER: mandamos los enemigos alcanzados
+  // + el daño que computó el cliente, y el server valida alcance/cadencia, clampea y aplica →
+  // HP/muerte/XP/oro/loot AUTORITATIVOS (el enemigo muere de verdad, no revive ni da loot falso).
+  // OFFLINE se aplica local. `hits` = [{ e, dmg }].
+  _applyAbilityHits(hits) {
+    if (!hits || !hits.length) return
+    if (this._online) {
+      const netHits = hits.filter((h) => h.e && h.e.eid != null).map((h) => ({ eid: h.e.eid, dmg: h.dmg }))
+      if (netHits.length) net.cast(netHits)
+    } else {
+      for (const h of hits) if (h.e.takeDamage(h.dmg)) this._enemyKilled(h.e)
+    }
+  }
+
   _castAbility(id) {
     if (this._dead || !this.player || this.store.isSpectator()) return
     if (this._safeZone) { this.store.showToast(tt('no_combat_town')); return }
@@ -1372,14 +1430,16 @@ export class Game {
       p.attack('swing'); playSfx('swing.ogg')
       this._castRing(p.view.x, p.view.y - 20, ab.lifesteal ? 0xd05a5a : 0xffcf6a)
       let dealt = 0
+      const hits = []
       for (const e of this.enemies) {
         if (e.dead) continue
         if (Math.abs(e.tx - p.tx) + Math.abs(e.ty - p.ty) > ab.radius) continue
         const dmg = Math.max(1, Math.round(this._abilityRoll() * ab.dmgMul))
         dealt += dmg
         this._floatText(e.view.x, e.view.y + e._hpY, `¡${dmg}!`, '#ff9a3a')
-        if (e.takeDamage(dmg)) this._enemyKilled(e)
+        hits.push({ e, dmg })
       }
+      this._applyAbilityHits(hits)
       // Robo de vida (ultimate del guerrero): te curás una fracción del daño total infligido.
       if (ab.lifesteal && dealt > 0) {
         const heal = Math.max(1, Math.round(dealt * ab.lifesteal))
@@ -1394,7 +1454,7 @@ export class Game {
       this._spawnProjectile(p.view.x, p.view.y - 40, target.view.x, target.view.y + (target._hpY || -40) * 0.5, 'arrow', () => {
         if (!target || target.dead) return
         this._floatText(target.view.x, target.view.y + target._hpY, `¡${dmg}!`, '#ff9a3a')
-        if (target.takeDamage(dmg)) this._enemyKilled(target)
+        this._applyAbilityHits([{ e: target, dmg }])
       })
       playSfx('swing.ogg', 0.5)
     } else if (ab.kind === 'fireball') {
@@ -1403,13 +1463,15 @@ export class Game {
       const dmg = Math.round((ab.base + (st.int || 10) * ab.intMul) * (st.dmgMul || 1))
       this._spawnProjectile(p.view.x, p.view.y - 40, target.view.x, target.view.y + (target._hpY || -40) * 0.5, 'magic', () => {
         this._castRing(target.view.x, target.view.y + (target._hpY || -40) * 0.5, 0xff7a3a)
+        const hits = []
         for (const e of this.enemies) {
           if (e.dead) continue
           if (Math.abs(e.tx - target.tx) + Math.abs(e.ty - target.ty) > ab.radius) continue
           const dd = Math.max(1, Math.round(dmg * (0.85 + Math.random() * 0.3)))
           this._floatText(e.view.x, e.view.y + e._hpY, `${dd}`, '#ff9a3a')
-          if (e.takeDamage(dd)) this._enemyKilled(e)
+          hits.push({ e, dmg: dd })
         }
+        this._applyAbilityHits(hits)
       })
       playSfx('swing.ogg', 0.5)
     } else if (ab.kind === 'area_phys') {
@@ -1417,13 +1479,15 @@ export class Game {
       p.faceTile(target.tx, target.ty); p.attack('shoot')
       this._spawnProjectile(p.view.x, p.view.y - 40, target.view.x, target.view.y + (target._hpY || -40) * 0.5, 'arrow', () => {
         this._castRing(target.view.x, target.view.y + (target._hpY || -40) * 0.5, 0xffcf6a)
+        const hits = []
         for (const e of this.enemies) {
           if (e.dead) continue
           if (Math.abs(e.tx - target.tx) + Math.abs(e.ty - target.ty) > ab.radius) continue
           const dmg = Math.max(1, Math.round(this._abilityRoll() * ab.dmgMul))
           this._floatText(e.view.x, e.view.y + e._hpY, `${dmg}`, '#ffd08a')
-          if (e.takeDamage(dmg)) this._enemyKilled(e)
+          hits.push({ e, dmg })
         }
+        this._applyAbilityHits(hits)
       })
       playSfx('swing.ogg', 0.5)
     } else if (ab.kind === 'buff') {
@@ -1527,6 +1591,15 @@ export class Game {
     this.store.addXp(xp)
     this.store.missionProgress('kill', 1)
     if (m.contract) this.store.missionProgress('contract', 1)   // élite del contrato del día
+    // Quest "Los Tres Nombres": matar al guardián elemental de la ruina (jefe de zona) arranca el
+    // nombre sellado. revealForZone es no-op si el mapa no es ruina / ya se reveló / quest inactiva.
+    if (m.boss) {
+      const revealed = this.store.revealForZone(this.mapName, { quest: 'guardianes' })
+      if (revealed) {
+        this.store.showToast(tt('name_found', { name: revealed }))
+        this.store.logMessage({ channel: 'sistema', text: tt('name_found', { name: revealed }) })
+      }
+    }
     const e = (this.enemies || []).find((x) => x.eid === m.i)   // sigue en la lista (muriendo)
     const fx = e ? e.view.x : this.player.view.x, fy = e ? e.view.y + (e._hpY || -40) : this.player.view.y - 80
     this._floatText(fx, fy, `+${xp} XP`, '#9fe0ff')
@@ -1547,6 +1620,17 @@ export class Game {
   }
 
   // El servidor nos avisa que un enemigo nos pegó (ya restó nuestra defensa).
+  // Reconciliación de MI vida con la autoritativa del server (Fase 3). El cliente predice el daño al
+  // instante (_onEhit) para que la barra responda; acá corregimos si el server vio MÁS daño del que
+  // predijimos (mismatch de defensa, o un cliente que intentó ignorarlo). Sólo baja: nunca infla la
+  // vida (las curas son locales/aceptadas fuera de combate). Si la autoritativa llegó a 0, morimos.
+  _reconcileHp(hp, hpMax) {
+    if (this._dead || this._spectator || !this.player) return
+    const st = this.store.getStats(); if (!st) return
+    if (hp < st.hp) this.store.takeDamage(st.hp - hp)
+    if (hp <= 0) this._playerDeath()
+  }
+
   _onEhit(m) {
     if (this._dead || this._spectator || !this.player) return
     const dmg = m.dmg || 0
@@ -1702,8 +1786,9 @@ export class Game {
   // junto al spawn para no taparlo ni quedar dentro de una colisión.
   async _spawnStashChest(renderer, grid, spawn, mapName) {
     if (mapName !== TOWN_MAP) return
-    // Candidatos alrededor del spawn (un par de tiles a un costado), el 1º caminable gana.
-    const cand = [[3, 0], [0, 3], [3, 3], [-3, 0], [0, -3], [2, 2], [4, 0]]
+    // Candidatos PEGADOS al spawn (a un paso al costado), el 1º caminable gana. Es tu alijo personal
+    // (client-instanced: sólo vos lo ves), así que va cerca para que llegues apenas entrás al pueblo.
+    const cand = [[2, 0], [0, 2], [-2, 0], [0, -2], [1, 1], [-1, 1], [2, 1], [1, 2], [3, 0], [0, 3]]
     let tx = spawn.x, ty = spawn.y, found = false
     for (const [dx, dy] of cand) {
       const x = spawn.x + dx, y = spawn.y + dy
@@ -2048,12 +2133,16 @@ export class Game {
     // Mientras reconstruye el mundo (cambio de mapa), no toques nada.
     if (this._loading || this._changing || !this.player) return
 
-    // Correr/caminar con stamina.
+    // Correr/caminar con stamina. La estamina es AUTORITATIVA del motor (this._stamina): acumula por
+    // frame y se espeja al HUD a 12Hz. Antes se recalculaba desde el store (que se pushea a 12Hz), y
+    // la acumulación entre push y push se perdía → drenaba ~5× más lento (parecía que "no se gastaba").
     const st = this.store.getRunState()
-    const runningNow = (st.running || this._shiftRun) && st.stamina > 0 && this.player.moving
-    let stamina = st.stamina
-    if (runningNow) stamina = Math.max(0, stamina - STAM_DRAIN * dt)
-    else stamina = Math.min(st.staminaMax, stamina + STAM_REGEN * dt)
+    const staminaMax = st.staminaMax || 100
+    if (this._stamina == null) this._stamina = staminaMax
+    const runningNow = (st.running || this._shiftRun) && this._stamina > 0 && this.player.moving
+    if (runningNow) this._stamina = Math.max(0, this._stamina - STAM_DRAIN * dt)
+    else this._stamina = Math.min(staminaMax, this._stamina + STAM_REGEN * dt)
+    const stamina = this._stamina
     const speedPx = runningNow ? RUN_PX : WALK_PX
 
     this.player.update(dt, speedPx)
@@ -2391,7 +2480,9 @@ export class Game {
       const fps = Math.round((this._fpsFrames * 1000) / this._fpsAccum)
       this.store.setFps(fps)
       const lvl = this.store.getPlayerLevel()
-      if (lvl !== this._nameLevel) { this._nameLevel = lvl; this.player.setName(this.store.getPlayerName(), lvl, this.store.getRaceName(), tt('lv')) }
+      if (lvl !== this._nameLevel) { this._nameLevel = lvl; this.player.setName(this.store.getPlayerName(), lvl, this.store.getRaceName(), tt('lv'), this.store.getGuildTag()) }
+      const gt = this.store.getGuildTag()
+      if (gt !== this._guildTag) { this._guildTag = gt; this.player.setName(this.store.getPlayerName(), this._nameLevel, this.store.getRaceName(), tt('lv'), gt) }
       this.store.setDebug({
         tile: `${Math.round(this.player.tx)},${Math.round(this.player.ty)}`,
         visibleTiles: this.renderer.visibleTiles,
@@ -2472,8 +2563,17 @@ function equipToGfx(equip) {
 
 // Spawn de hub elegido a mano (plaza/centro) por mapa; si no, centroide abierto.
 const HUB_SPAWN = {
-  black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [37, 27],
-  greenwood_point: [51, 51], triston: [59, 58],
+  black_oak_city: [41, 13], black_oak_farm: [58, 54], lochport: [28, 34],
+  lochport_cemetery: [20, 44], family_crypt: [10, 39], merrimead_swamp: [29, 39],
+  greenwood_point: [51, 51], triston: [59, 58], wizards_tower_1: [52, 9], underworld: [67, 47],
+  st_maria_1: [39, 66], perdition_mines: [52, 18], stormrock_pass: [24, 81],
+  underworld_catacombs: [70, 99], underworld_mines: [31, 63], underworld_stronghold_1: [5, 32], underworld_stronghold_2: [36, 8],
+  dilapidated_sewers: [64, 8],
+  temple_of_mez_1: [35, 46], temple_of_mez_2: [40, 34], temple_of_mez_3: [53, 40],
+  abandoned_mines: [40, 53], blackmire_mines: [32, 36], lake_kuuma: [70, 52], fort_amir: [40, 34], grot_lagoon: [45, 49],
+  nazia_highlands: [22, 21], nazia_underground: [42, 21], nazia_mines: [14, 20],
+  oasis: [6, 8], the_pit: [71, 71],
+  antlion_nest: [29, 35], southern_ridge: [35, 36], mog_caverns: [26, 19],
 }
 
 // Escala de nuestras entidades (personaje + NPCs) por mapa. El arte de HERESY (Triston)
@@ -2507,6 +2607,114 @@ const PORTAL_REPLACE = {
     { x: 45, y: 58, w: 1, h: 1, to: 'black_oak_farm', tx: 58, ty: 54, label: 'Granja de Black Oak' },
     { x: 72, y: 58, w: 1, h: 1, to: 'goblin_cave', tx: 25, ty: 24, label: 'Cueva de Duendes' },
   ],
+  // La Granja: primer realm de la rama oeste. REPLACE porque sus portales nativos filtraban a mapas
+  // de nivel muy superior (Cloacas lv11) sin curar la transición. Sus 3 salidas reales: volver al
+  // pueblo, seguir al Sendero del Río (oeste), o cruzar a Black Oak City (salto deliberado a lv10).
+  black_oak_farm: [
+    { x: 61, y: 54, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 36, y: 26, w: 1, h: 1, to: 'river_trail', tx: 42, ty: 20, label: 'Sendero del Río' },
+    { x: 43, y: 17, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' },
+  ],
+  // Las Cloacas Ruinosas (nivel ~11): dungeon contenido bajo la ciudad. REEMPLAZAMOS sus portales
+  // nativos (van a la granja y a Fuerte Nasu, sin poblar) por dos salidas curadas: Triston y de
+  // vuelta a Black Oak City. Ambos tiles verificados caminables+reachable desde el spawn (64,8).
+  dilapidated_sewers: [
+    { x: 64, y: 10, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 66, y: 8, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' },
+  ],
+  // Templo de Mez (3 pisos, nivel ~7-9): mapas de Flare fragmentados en islas. Cosemos los pisos
+  // con pads curados cuyo destino elegimos para aterrizar siempre en la isla RICA de cada planta
+  // (ver SPAWN_OVERRIDE en combat.js, que ancla ahí también el jefe y el densificado del server).
+  // El pad de avance se planta lejos de la llegada para cruzar la planta; el de regreso, cerca.
+  // Todos los tiles verificados caminables+reachable desde la llegada de su piso.
+  temple_of_mez_1: [ // Sótano -> Gran Salón (+ antecámara: los túneles de hormigas león)
+    { x: 37, y: 46, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 75, y: 75, w: 1, h: 1, to: 'temple_of_mez_2', tx: 40, ty: 34, label: 'Templo de Mez: Gran Salón' },
+    { x: 16, y: 52, w: 1, h: 1, to: 'antlion_nest', tx: 29, ty: 35, label: 'Nido de Hormigas León' },
+  ],
+  temple_of_mez_2: [ // Gran Salón -> Entrada
+    { x: 42, y: 34, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 76, y: 12, w: 1, h: 1, to: 'temple_of_mez_3', tx: 53, ty: 40, label: 'Templo de Mez: Entrada' },
+  ],
+  temple_of_mez_3: [ // Entrada (jefe: el wyvern del portón)
+    { x: 55, y: 40, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // Cluster costero de Lochport (nivel 2-3): puerto arruinado -> su cementerio -> (cripta + ciénaga).
+  // Mapas sanos salvo la cripta (spawn nativo en bolsón, ver SPAWN_OVERRIDE). Portales curados que
+  // aterrizan en el tile central de cada destino. Corta los nativos hacia Sta. María (nivel 9, no
+  // corresponde a este nivel) y demás mapas sin poblar. Tiles verificados caminables+reachable.
+  lochport: [
+    { x: 30, y: 34, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 2, y: 4, w: 1, h: 1, to: 'lochport_cemetery', tx: 20, ty: 44, label: 'Cementerio de Lochport' },
+  ],
+  lochport_cemetery: [
+    { x: 22, y: 44, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 48, y: 78, w: 1, h: 1, to: 'family_crypt', tx: 10, ty: 39, label: 'Cripta Familiar' },
+    { x: 3, y: 5, w: 1, h: 1, to: 'merrimead_swamp', tx: 29, ty: 39, label: 'Ciénaga de Merrimead' },
+  ],
+  family_crypt: [
+    { x: 12, y: 39, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  merrimead_swamp: [
+    { x: 27, y: 39, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // Cluster de las Minas Abandonadas (nivel 5-6): Minas (hub) -> Ciénaga Negra -> Lago Kuuma ->
+  // Fuerte Amir (dungeon con jefe). La Laguna Grot cuelga del hub como hoja. Mapas sanos, reanclados
+  // al centro (ver SPAWN_OVERRIDE). Pads curados; cortan los nativos hacia mapas sin poblar (La
+  // Brecha, hyperspace). Avance lejos de la llegada, regreso cerca. Tiles verificados reachable.
+  abandoned_mines: [
+    { x: 38, y: 53, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 60, y: 33, w: 1, h: 1, to: 'blackmire_mines', tx: 32, ty: 36, label: 'Minas de Ciénaga Negra' },
+    { x: 49, y: 0, w: 1, h: 1, to: 'grot_lagoon', tx: 45, ty: 49, label: 'Laguna Grot' },
+  ],
+  blackmire_mines: [
+    { x: 34, y: 36, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 60, y: 40, w: 1, h: 1, to: 'lake_kuuma', tx: 70, ty: 52, label: 'Lago Kuuma' },
+  ],
+  lake_kuuma: [
+    { x: 72, y: 52, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 97, y: 49, w: 1, h: 1, to: 'fort_amir', tx: 40, ty: 34, label: 'Fuerte Amir' },
+  ],
+  fort_amir: [ // dungeon final (jefe: el Caballero de hueso, castellano del fuerte)
+    { x: 42, y: 34, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  grot_lagoon: [
+    { x: 47, y: 49, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // Ruinas de los Tres Nombres (quest de Udana): de un solo propósito — entrás, matás al guardián
+  // elemental (revela el nombre sellado), volvés a Triston. REPLACE corta sus portales nativos, que
+  // iban a mapas sin poblar o a zonas de otro nivel (Sta. María->Lochport, Perdición->Campo Salado).
+  st_maria_1: [{ x: 39, y: 63, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  perdition_mines: [{ x: 49, y: 18, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  stormrock_pass: [{ x: 24, y: 84, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  // Región de Nazia (nivel 9-10): descenso desde Black Oak City. Tierras Altas -> Subterráneo ->
+  // Minas (jefe). Mapas sanos reanclados al centro (SPAWN_OVERRIDE). Pads curados; avance lejos de
+  // la llegada, regreso cerca. Cortan los nativos hacia southern_ridge/mog (sin curar). Verificados.
+  nazia_highlands: [
+    { x: 24, y: 21, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 67, y: 74, w: 1, h: 1, to: 'nazia_underground', tx: 42, ty: 21, label: 'Nazia: el Subterráneo' },
+  ],
+  nazia_underground: [
+    { x: 44, y: 21, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 97, y: 35, w: 1, h: 1, to: 'nazia_mines', tx: 14, ty: 20, label: 'Minas de Nazia' },
+  ],
+  nazia_mines: [ // fondo (jefe: el señor de la guerra hobgoblin)
+    { x: 16, y: 20, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // Ensanche de mapas sanos sueltos:
+  // Nido de Hormigas León (lv6): antecámara del Templo de Mez (los túneles bajo el Sótano). Hoja:
+  // se entra desde el Sótano, se vuelve a Triston (o por la Piedra de Retorno).
+  antlion_nest: [
+    { x: 31, y: 35, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // Bolsón lv9 de Black Oak: la Cornisa del Sur -> las Cavernas de Mog (dungeon con jefe).
+  southern_ridge: [
+    { x: 37, y: 36, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 72, y: 68, w: 1, h: 1, to: 'mog_caverns', tx: 26, ty: 19, label: 'Cavernas de Mog' },
+  ],
+  mog_caverns: [ // fondo del bolsón (jefe: el nigromante de las cuevas)
+    { x: 24, y: 19, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
 }
 
 // Portales que AGREGAMOS encima de los nativos del mapa (llegada = spawn walkable del destino).
@@ -2518,27 +2726,103 @@ const PORTAL_REPLACE = {
 //   Triston ──Este───▶ Cueva de Duendes(5-8)
 // Cada realm tiene su pad de "Volver a Triston". Coordenadas calculadas desde collision.
 const PORTAL_EXTRA = {
-  // (El hub Triston usa PORTAL_REPLACE — ver abajo — porque reemplaza sus portales nativos.)
+  // (El hub Triston y la Granja usan PORTAL_REPLACE — ver abajo.)
   // --- Rama Oeste (gathering / progresión temprana) ---
-  black_oak_farm: [
-    { x: 61, y: 54, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
-    { x: 36, y: 26, w: 1, h: 1, to: 'river_trail', tx: 42, ty: 20, label: 'Sendero del Río' },
-  ],
   river_trail: [
     { x: 45, y: 20, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
     { x: 6, y: 4, w: 1, h: 1, to: 'salted_field', tx: 30, ty: 30, label: 'Campo Salado' },
+    // El sendero trepa hasta el Paso Roca-Tormenta (ruina del viento — quest de los Tres Nombres).
+    { x: 22, y: 18, w: 1, h: 1, to: 'stormrock_pass', tx: 24, ty: 81, label: 'Paso Roca-Tormenta' },
+    // Río abajo, donde el agua llega al mar: Lochport, el puerto arruinado (nivel ~2, ramal costero).
+    { x: 77, y: 27, w: 1, h: 1, to: 'lochport', tx: 28, ty: 34, label: 'Lochport' },
   ],
   salted_field: [
     { x: 33, y: 30, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    // Tierra consagrada junto a las tumbas saladas: las ruinas de Sta. María (nombre en hielo).
+    { x: 31, y: 44, w: 1, h: 1, to: 'st_maria_1', tx: 39, ty: 66, label: 'Ruinas de Sta. María' },
+    // Pasado el campo, un segundo pueblo que aguantó: Greenwood Point (mercader, gremio, guardias).
+    { x: 30, y: 33, w: 1, h: 1, to: 'greenwood_point', tx: 51, ty: 51, label: 'Greenwood Point' },
+  ],
+  // Greenwood Point: segundo pueblo (mod noname). Pacífico (sin enemigos), con sus propios NPCs de
+  // servicio. Regreso a Triston. Estaba armado pero inalcanzable — ahora es el final vivo de la rama oeste.
+  greenwood_point: [
+    { x: 54, y: 51, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
   ],
   // --- Rama Este (combate) ---
   goblin_cave: [
     { x: 28, y: 24, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    // Más hondo que la cueva se abren las Minas de Perdición (nombre en fuego).
+    { x: 30, y: 30, w: 1, h: 1, to: 'perdition_mines', tx: 52, ty: 18, label: 'Minas de Perdición' },
+    // En el fondo de la cueva, tras la guarida de duendes, una boca sellada más vieja: el Templo de
+    // Mez (nivel ~7-8, 3 pisos). Pad reachable; llegada a la sala rica del Sótano (35,46).
+    { x: 4, y: 3, w: 1, h: 1, to: 'temple_of_mez_1', tx: 35, ty: 46, label: 'Templo de Mez' },
+    // Otra veta de la cueva baja a las Minas Abandonadas (nivel ~5-6): el hub de un cluster minero.
+    { x: 7, y: 40, w: 1, h: 1, to: 'abandoned_mines', tx: 40, ty: 53, label: 'Minas Abandonadas' },
   ],
+  // (Las Ruinas de los Tres Nombres — st_maria_1, perdition_mines, stormrock_pass — usan
+  // PORTAL_REPLACE: son de un solo propósito, entrás/matás al guardián/volvés. Ver abajo.)
+  // Black Oak City (100×100, nivel ~10): la zona insignia. Llegás al hub jugable (41,13) — la región
+  // caminable grande, con enemigos grassland y cofres densificados en la entrada. Pad de regreso a
+  // Triston unos tiles al lado (no en la baldosa de llegada, para no rebotar). La Piedra de Retorno
+  // también sirve desde acá. Ambos tiles verificados caminables+reachable.
+  black_oak_city: [
+    { x: 44, y: 13, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    // Cruzando las avenidas de la ciudad se llega a la Torre del Mago (nivel ~11). Pad en un tile
+    // reachable hacia el interior peligroso; llegada a la sala rica de la torre (52,9), donde el
+    // server densifica el combate (16 spawners + jefe). El mapa de Flare quedó fragmentado en islas
+    // al convertir; aterrizamos en la más poblada (ver SPAWN_OVERRIDE en combat.js).
+    { x: 60, y: 50, w: 1, h: 1, to: 'wizards_tower_1', tx: 52, ty: 9, label: 'Torre del Mago' },
+    // Bajo las avenidas de la ciudad se abren las Cloacas Ruinosas (nivel ~11): un dungeon de
+    // no-muertos con jefe (el Zombi profano). Pad cerca del hub (39,13), reachable+caminable;
+    // llegada al spawn nativo de las cloacas (64,8), donde el server densifica el combate.
+    { x: 39, y: 13, w: 1, h: 1, to: 'dilapidated_sewers', tx: 64, ty: 8, label: 'Cloacas Ruinosas' },
+    // Al este de la ciudad se alzan las Tierras Altas de Nazia (nivel ~9-10): descenso de 3 zonas
+    // hasta las Minas de Nazia (jefe). Pad reachable; llegada a la sala rica de las Tierras Altas.
+    { x: 19, y: 27, w: 1, h: 1, to: 'nazia_highlands', tx: 22, ty: 21, label: 'Tierras Altas de Nazia' },
+    // Al sur, la Cornisa (nivel ~9): un bolsón de pastura arruinada que baja a las Cavernas de Mog.
+    { x: 73, y: 20, w: 1, h: 1, to: 'southern_ridge', tx: 35, ty: 36, label: 'la Cornisa del Sur' },
+  ],
+  // Torre del Mago (entrada, nivel ~11): dungeon con jefe (el Nigromante óseo custodia el umbral).
+  // Regreso a Triston cerca de la llegada (54,9). El descenso al Inframundo se planta en lo más HONDO
+  // de la sala (89,53, a 85 tiles) para obligar a cruzar el dungeon entero antes de bajar (nivel ~13).
+  // Todos los tiles verificados caminables+reachable desde la llegada (52,9).
+  wizards_tower_1: [
+    { x: 54, y: 9, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 89, y: 53, w: 1, h: 1, to: 'underworld', tx: 67, ty: 47, label: 'El Inframundo' },
+  ],
+  // El Inframundo (nivel ~13): la caverna profunda. Encadena su propio cluster (Catacumbas, Minas)
+  // por portales nativos. Regreso a Triston + la Piedra de Retorno. Pad al lado del spawn (67,47).
+  underworld: [
+    { x: 64, y: 47, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 86, y: 36, w: 1, h: 1, to: 'underworld_catacombs', tx: 70, ty: 99, label: 'Catacumbas' },
+  ],
+  // --- Cluster profundo del Inframundo (nivel 13→15): Catacumbas → Minas → Fortaleza I → II.
+  // Cada zona: avance a la siguiente (tile lejano, se viaja hasta él) + regreso a Triston (tile
+  // cercano al spawn, sin rebote). La Fortaleza II tiene el jefe capstone. Tiles verificados reachable.
+  underworld_catacombs: [
+    { x: 73, y: 99, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 59, y: 80, w: 1, h: 1, to: 'underworld_mines', tx: 31, ty: 63, label: 'Minas del Inframundo' },
+  ],
+  underworld_mines: [
+    { x: 34, y: 63, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 53, y: 63, w: 1, h: 1, to: 'underworld_stronghold_1', tx: 5, ty: 32, label: 'Fortaleza del Inframundo' },
+  ],
+  underworld_stronghold_1: [
+    { x: 8, y: 32, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+    { x: 24, y: 43, w: 1, h: 1, to: 'underworld_stronghold_2', tx: 36, ty: 8, label: 'Fortaleza: lo más hondo' },
+  ],
+  underworld_stronghold_2: [
+    { x: 39, y: 8, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' },
+  ],
+  // --- Endgame (bolsones colgados del cluster profundo por portales nativos, nivel 14-17) ---
+  // El Oasis (lv14) baja de las Minas del Inframundo; el Pozo (lv15-16, jefe más duro del juego)
+  // baja de la Fortaleza II. Sólo agregamos el pad de regreso a Triston; el nativo de vuelta al
+  // cluster queda. Piso de nivel de the_pit en combat.js (LEVEL_FLOOR).
+  oasis: [{ x: 9, y: 8, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
+  the_pit: [{ x: 74, y: 71, w: 1, h: 1, to: 'triston', tx: 59, ty: 58, label: 'Volver a Triston' }],
   // --- clusters futuros (ya cableados, fuera del arranque) ---
   goblin_camp: [{ x: 29, y: 31, w: 1, h: 1, to: 'triston', tx: 57, ty: 41, label: 'Volver a Triston' }],
-  lochport: [{ x: 43, y: 1, w: 1, h: 1, to: 'abandoned_mines', tx: 76, ty: 71, label: 'Minas Abandonadas' }],
-  the_breach: [{ x: 46, y: 98, w: 1, h: 1, to: 'black_oak_city', tx: 98, ty: 50, label: 'Black Oak City' }],
+  the_breach: [{ x: 46, y: 98, w: 1, h: 1, to: 'black_oak_city', tx: 41, ty: 13, label: 'Black Oak City' }],
 }
 
 // Tile de llegada al recall a Triston: al lado del Obelisco de Retorno (55,45) de la plaza.
@@ -2546,7 +2830,22 @@ const OBELISK_RETURN = [55, 46]
 
 // Destinos que NO conectamos (nexos de fast-travel / mapas de sistema de Flare).
 const PORTAL_BLOCK = new Set(['hyperspace', 'World_map', 'spawn', 'arrival'])
-const portalAllowed = (to) => !!to && !PORTAL_BLOCK.has(to) && !/^Act\d|^World/i.test(to)
+// Sellado de bordes: mapas convertidos pero SIN TERMINAR (vacíos, fragmentados o sin curar). Los
+// portales nativos de Flare a veces apuntan a ellos; los filtramos acá para que el jugador NUNCA
+// caiga en una sala muerta. Cuando se pueble uno (p.ej. el próximo cluster de endgame), se saca de
+// esta lista y se cablea con su SPAWN_OVERRIDE + PORTAL_REPLACE. Ver docs de auditoría de progresión.
+const UNFINISHED = new Set([
+  // vacíos (sin spawners): entrar = sala muerta
+  'book_of_the_dead', 'perdition_harbor', 'perdition_harbor_cave', 'halls_of_infinity', 'fort_nasu',
+  'iron_labyrinth_f1', 'iron_labyrinth_f2', 'iron_labyrinth_f3', 'iron_labyrinth_chasm',
+  'fern_valley', 'woods', 'river_road', 'end', 'sage_home', 'dungeon10', 'dungeon_way',
+  // fragmentados / rotos (contenido inalcanzable desde su spawn)
+  'stormrock_ruins', 'torture_chambers', 'the_breach', 'st_maria_2', 'st_maria_3',
+  // sanos pero SIN CURAR todavía (materia prima de futuros clusters)
+  'stonewood',
+  // (Ya curados: Nazia, endgame oasis/the_pit, antlion_nest, southern_ridge, mog_caverns)
+])
+const portalAllowed = (to) => !!to && !PORTAL_BLOCK.has(to) && !UNFINISHED.has(to) && !/^Act\d|^World/i.test(to)
 
 // Nombre de zona según el idioma actual (definiciones ES/EN en i18n.js).
 const zoneTitle = (mapName, fallback) => zoneName(mapName, getLang(), fallback)

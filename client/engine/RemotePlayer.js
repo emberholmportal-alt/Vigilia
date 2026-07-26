@@ -14,6 +14,7 @@ export class RemotePlayer {
     this.race = p.race || null
     this.body = p.body || 'male'
     this.level = p.level || 1
+    this.guildTag = p.guildTag || null
     this.gfx = p.gfx || null
     this.tx = p.x; this.ty = p.y
     this.dir = p.dir ?? 7
@@ -23,11 +24,9 @@ export class RemotePlayer {
     this.paperdoll = new Paperdoll(manifest)
     this.view.addChild(this.paperdoll.view)
 
-    // Etiqueta flotante: nombre · raza (localizada desde el id) · Nv nivel — igual que el héroe.
-    const rn = raceName(raceById(this.race))
-    const label = [p.name || 'Viajero', rn, tt('lv') + ' ' + (this.level || 1)].filter(Boolean).join(' · ')
+    // Etiqueta flotante: [SIGLA] nombre · raza (localizada desde el id) · Nv nivel — igual que el héroe.
     this.nameText = new Text({
-      text: label, style: {
+      text: this._label(), style: {
         fontFamily: 'Georgia, serif', fontSize: 12, fill: '#bfe0ff',
         stroke: { color: '#0a090c', width: 3 }, align: 'center',
       },
@@ -61,6 +60,16 @@ export class RemotePlayer {
 
   // El Game engancha acá para iniciar un intercambio al tocar a este jugador.
   onTap(cb) { this.view.on('pointertap', (e) => { e.stopPropagation(); cb(this) }) }
+
+  // Etiqueta flotante: [SIGLA] nombre · raza · Nv nivel. La sigla (estandarte) va adelante.
+  _label() {
+    const rn = raceName(raceById(this.race))
+    const nm = (this.guildTag ? `[${this.guildTag}] ` : '') + (this.name || 'Viajero')
+    return [nm, rn, tt('lv') + ' ' + (this.level || 1)].filter(Boolean).join(' · ')
+  }
+  relabel() { if (this.nameText) this.nameText.text = this._label() }
+  setGuildTag(tag) { this.guildTag = tag || null; this.relabel() }   // estandarte del gremio (n5)
+  setLevel(lv) { this.level = lv | 0 || 1; this.relabel() }
 
   // Cambió el equipo del jugador remoto: reaplica sus capas de paperdoll.
   setGfx(gfx) { this.paperdoll.setEquipment(gfx || {}) }

@@ -113,20 +113,64 @@ export function weaponDamage(equipment) {
   return { min: base.min + up, max: base.max + up }
 }
 
-// Ventajas de gremio por nivel (WORLD.md): n1 +oro de botín · n2 +defensa a todos ·
-// n3 +XP compartida · n4 Depósito · n5 estandarte. Devuelve los modificadores derivados.
-export function guildPerks(guildLevel = 0) {
-  const L = guildLevel | 0
+// Ventajas de gremio por nivel: la curva vive en shared/ (la usa también el server para la
+// recompensa de contrato). Incluye el prestigio n6..n10. Ver shared/guildperks.js.
+export { guildPerks } from '../../shared/guildperks.js'
+import { guildPerks } from '../../shared/guildperks.js'
+
+// Bonus PASIVO por nivel de las 6 habilidades de oficio (arrancan en 1, cap 20). Cada oficio empuja
+// un stat de combate/supervivencia, así TODAS rinden y —al salir por computeStats— viajan por
+// setStats al server (que las clampea y las usa: daño, magic-find, defensa). Nivel 1 = sin bonus.
+//   Combate → +daño · Forja → +defensa · Saqueo → +magic-find ·
+//   Herboristería → +regen de vida · Alquimia → +maná máx · Excavación → +vida máx.
+function skillBonus(skills) {
+  const lv = (k) => Math.max(0, (((skills && skills[k] && skills[k].level) || 1) - 1))
   return {
-    goldMul: L >= 1 ? 1.05 : 1,       // +5% oro de botín
-    defense: L >= 2 ? 4 : 0,          // +4 defensa a todos
-    xpMul: L >= 3 ? 1.05 : 1,         // +5% XP
-    deposit: L >= 4,                  // acceso al Depósito del Gremio
-    banner: L >= 5,                   // estandarte visible en ciudad
+    dmgMul: lv('combate') * 0.01,       // +1% daño por nivel (hasta +19% a 20)
+    defense: lv('forja') * 1,           // +1 defensa por nivel
+    itemFind: lv('saqueo') * 2,         // +2% magic-find por nivel
+    hpRegen: lv('herboristeria') * 0.2, // +0.2 regen de vida por nivel
+    mp: lv('alquimia') * 2,             // +2 maná máx por nivel
+    hp: lv('excavacion') * 3,           // +3 vida máx por nivel
   }
 }
 
-export function computeStats(raceId, level = 1, equipment = null, attrAlloc = null, skillRanks = null, guildLevel = 0) {
+// --- Sets (Warlord / Sniper / Archwizard) ------------------------------------------------------
+// Los 552 ítems traen el set en el NOMBRE (ej. "Warlord Cloth Shirt") pero sin campo `set` ni lógica
+// de bonus. Acá lo derivamos del nombre y damos un bonus por CANTIDAD de piezas del mismo set
+// equipadas (temático, por umbrales 3/5/7). Los stats de combate (daño/crit/magic-find/defensa)
+// salen por computeStats -> setStats -> server (autoritativo). Versión lean: un set dominante a la vez.
+function setOf(item) {
+  const n = (item && (item.name_en || item.name)) || ''
+  if (n.includes('Warlord')) return 'warlord'
+  if (n.includes('Sniper')) return 'sniper'
+  if (n.includes('Archwizard')) return 'archwizard'
+  return null
+}
+// Bonus TOTAL por umbral (no acumulativo: se toma el mayor umbral alcanzado). Temático por set.
+// Umbrales 2/4/6: el "set completo" (6) es alcanzable por los tres (el Sniper no tiene arma propia
+// del set, así que topa en 6 piezas de armadura+artefacto — igual llega al bonus máximo).
+const SET_BONUS = {
+  warlord:    [{ n: 2, dmgMul: 0.04, hp: 30 }, { n: 4, dmgMul: 0.08, hp: 70, defense: 15 }, { n: 6, dmgMul: 0.15, hp: 150, defense: 40 }],
+  sniper:     [{ n: 2, crit: 5, itemFind: 10 }, { n: 4, crit: 10, itemFind: 25, dmgMul: 0.06 }, { n: 6, crit: 20, itemFind: 50, dmgMul: 0.12 }],
+  archwizard: [{ n: 2, mp: 40, dmgMul: 0.04 }, { n: 4, mp: 90, dmgMul: 0.08, mpRegen: 2 }, { n: 6, mp: 180, dmgMul: 0.16, mpRegen: 5 }],
+}
+const SET_LABEL = { warlord: 'Caudillo', sniper: 'Francotirador', archwizard: 'Archimago' }
+function setBonus(equipment) {
+  if (!equipment) return {}
+  const count = {}
+  for (const slot of ['head', 'chest', 'legs', 'hands', 'feet', 'main', 'artifact']) {
+    const s = setOf(equipment[slot]); if (s) count[s] = (count[s] || 0) + 1
+  }
+  let best = null, bn = 0
+  for (const s in count) if (count[s] > bn) { bn = count[s]; best = s }
+  if (!best) return {}
+  let bonus = null
+  for (const t of (SET_BONUS[best] || [])) if (bn >= t.n) bonus = t
+  return bonus ? { ...bonus, _set: best, _setLabel: SET_LABEL[best], _pieces: bn } : { _set: best, _setLabel: SET_LABEL[best], _pieces: bn }
+}
+
+export function computeStats(raceId, level = 1, equipment = null, attrAlloc = null, skillRanks = null, guildLevel = 0, skills = null) {
   const r = RACE_RULES[raceId] || {}
   const a = attrAlloc || {}
   // Atributos: base + raza + puntos repartidos al subir de nivel.
@@ -138,11 +182,13 @@ export function computeStats(raceId, level = 1, equipment = null, attrAlloc = nu
   const aff = affinityBonus(raceId, equipment)   // bonus si la raza porta equipo afín
   const tb = treeBonus(skillRanks)               // bonus pasivo de los nodos del árbol
   const gp = guildPerks(guildLevel)              // ventajas del gremio (por nivel)
+  const sb = skillBonus(skills)                  // bonus pasivo de las 6 habilidades de oficio
+  const set = setBonus(equipment)                // bonus por piezas de set equipadas (Warlord/Sniper/Archwizard)
   const lv = Math.max(1, level | 0)
 
-  // Vida/maná: base por atributo + crecimiento por nivel + bonus plano del equipo + afinidad + árbol.
-  const hpMax = Math.round(40 + vit * 4 + (r.hpFlat || 0) + (lv - 1) * 8 + e.hp + aff.hp + tb.hp)
-  const mpMax = Math.round((15 + int * 3 + (r.mpFlat || 0)) * (r.mpMul || 1) + (lv - 1) * 3 + e.mp + aff.mp + tb.mp)
+  // Vida/maná: base por atributo + crecimiento por nivel + equipo + afinidad + árbol + oficios + set.
+  const hpMax = Math.round(40 + vit * 4 + (r.hpFlat || 0) + (lv - 1) * 8 + e.hp + aff.hp + tb.hp + sb.hp + (set.hp || 0))
+  const mpMax = Math.round((15 + int * 3 + (r.mpFlat || 0)) * (r.mpMul || 1) + (lv - 1) * 3 + e.mp + aff.mp + tb.mp + sb.mp + (set.mp || 0))
   const staminaMax = Math.round(90 + vit * 6)
   const wd = weaponDamage(equipment)
 
@@ -152,14 +198,15 @@ export function computeStats(raceId, level = 1, equipment = null, attrAlloc = nu
     hp: hpMax, hpMax,
     mp: mpMax, mpMax,
     staminaMax,
-    defense: e.absorb + aff.absorb + tb.absorb + gp.defense, // reduce el daño recibido (+ afinidad + árbol + gremio)
-    hpRegen: e.hpRegen, mpRegen: e.mpRegen + tb.mpRegen,
-    crit: e.crit + tb.crit, accuracy: e.accuracy + tb.accuracy, avoidance: e.avoidance,
-    itemFind: e.itemFind + tb.itemFind, // +% de hallazgo (magic find) para el loot
+    defense: e.absorb + aff.absorb + tb.absorb + gp.defense + sb.defense + (set.defense || 0), // (+ Forja + set)
+    hpRegen: e.hpRegen + sb.hpRegen, mpRegen: e.mpRegen + tb.mpRegen + (set.mpRegen || 0),
+    crit: e.crit + tb.crit + (set.crit || 0), accuracy: e.accuracy + tb.accuracy, avoidance: e.avoidance,
+    itemFind: e.itemFind + tb.itemFind + sb.itemFind + (set.itemFind || 0), // magic find (+ Saqueo + set)
     fireResist: e.fireResist, iceResist: e.iceResist,
     dmgMin: wd.min, dmgMax: wd.max, // daño del arma
     weaponKind: weaponKind(equipment), // melee / ranged / mental (define ataque a distancia)
-    dmgMul: (r.dmgMul || 1) * aff.dmgMul * (1 + tb.dmgMul),
+    dmgMul: (r.dmgMul || 1) * aff.dmgMul * (1 + tb.dmgMul + sb.dmgMul + (set.dmgMul || 0)),
+    set: set._set ? { id: set._set, label: set._setLabel, pieces: set._pieces } : null, // set activo (para la UI)
     speedMul: (r.speedMul || 1) * (1 + tb.speedMul),
     xpMul: (r.xpMul || 1) * (1 + e.xpGain / 100) * (1 + tb.xpMul) * gp.xpMul,
     guildGoldMul: gp.goldMul, // +oro de botín del gremio (se aplica en addGold)

@@ -6,6 +6,58 @@ export const ZONE_LORE = {
     es: 'La granja aguantó la Caída mejor que el reino. Acá, todavía, el peligro tiene cara de duende.',
     en: 'The farm weathered the Fall better than the kingdom. Here, still, danger wears a goblin\'s face.',
   },
+  black_oak_city: {
+    es: 'Black Oak City fue la joya del reino antes de la Caída. Hoy sus avenidas son de otros, y no perdonan al que llega sin filo.',
+    en: 'Black Oak City was the jewel of the kingdom before the Fall. Now its avenues belong to others, and they do not forgive those who arrive without a blade.',
+  },
+  wizards_tower_1: {
+    es: 'La Torre del Mago se cierra sobre vos como una garganta de piedra. Los Tres estudiaron acá antes de sellarse. Algo siguió estudiando después.',
+    en: 'The Wizard\'s Tower closes over you like a throat of stone. The Three studied here before they sealed themselves. Something kept studying after.',
+  },
+  dilapidated_sewers: {
+    es: 'Bajo Black Oak City, las cloacas se tragaron lo que la ciudad no quiso enterrar. Ahora eso camina, y todavía tiene hambre.',
+    en: 'Beneath Black Oak City, the sewers swallowed what the city would not bury. Now it walks, and it is hungry still.',
+  },
+  temple_of_mez_1: {
+    es: 'El Sótano del Templo de Mez huele a incienso viejo y a algo que se pudrió rezando. Los duendes cavaron hasta acá y no se atrevieron a seguir.',
+    en: 'The Basement of the Temple of Mez smells of old incense and of something that rotted while praying. The goblins dug this far and dared go no further.',
+  },
+  temple_of_mez_2: {
+    es: 'El Gran Salón guarda a los que velaban a Mez. Siguen velando. Ninguno te va a mirar a los ojos hasta que sea tarde.',
+    en: 'The Main Hall keeps those who kept vigil for Mez. They keep it still. None will meet your eyes until it is too late.',
+  },
+  temple_of_mez_3: {
+    es: 'La Entrada quedó por dentro, no por fuera: acá el templo se abría al cielo. Ahora un wyvern anida en el portón, y el cielo hace mucho que no baja.',
+    en: 'The Entrance was left within, not without: here the temple once opened to the sky. Now a wyvern nests in its gate, and the sky has long since stopped coming down.',
+  },
+  underworld: {
+    es: 'Bajo la torre no hay fondo, sólo más abajo. El Inframundo no fue cavado por manos: se abrió solo, y sigue abriéndose.',
+    en: 'Beneath the tower there is no bottom, only further down. The Underworld was not dug by hands: it opened on its own, and it is opening still.',
+  },
+  underworld_catacombs: {
+    es: 'Las Catacumbas guardan a los que el reino quiso olvidar. La memoria, acá abajo, tiene dientes.',
+    en: 'The Catacombs keep those the kingdom wished to forget. Down here, memory has teeth.',
+  },
+  underworld_mines: {
+    es: 'En las Minas del Inframundo se cavó demasiado hondo, y algo cavó de vuelta.',
+    en: 'In the Underworld Mines they dug too deep, and something dug back.',
+  },
+  underworld_stronghold_1: {
+    es: 'Una fortaleza al final del mundo, levantada por los que bajaron a pelear lo que subía. Perdieron.',
+    en: 'A stronghold at the end of the world, raised by those who went down to fight what was rising. They lost.',
+  },
+  underworld_stronghold_2: {
+    es: 'Lo más hondo que se puede llegar y volver. Detrás de esta puerta, el Caballero de hueso vela lo que queda del reino de abajo.',
+    en: 'The deepest you can go and still return. Behind this door, the Bone Knight guards what remains of the kingdom below.',
+  },
+  oasis: {
+    es: 'Un oasis, tan hondo que ya no debería haber cielo. El agua sigue verde y algo grande bebe de ella. No fuiste el primero en encontrarla; sí podés ser el último.',
+    en: 'An oasis, so deep there should be no sky left. The water is still green and something large drinks from it. You are not the first to find it; you may be the last.',
+  },
+  the_pit: {
+    es: 'El Pozo no tiene fondo, tiene dueño. Más viejo que el minotauro que abrió el mundo, espera abajo desde antes de que hubiera un abajo. Llegaste al final de todo.',
+    en: 'The Pit has no bottom; it has an owner. Older than the minotaur that broke the world, it has waited below since before there was a below. You have reached the end of everything.',
+  },
   river_trail: {
     es: 'El agua se lleva los pasos que das. Dicen que, más abajo, a veces los devuelve.',
     en: 'The water carries away the steps you take. They say that, further down, it sometimes gives them back.',
@@ -26,9 +78,57 @@ export const ZONE_LORE = {
     es: 'Las minas cantan cuando el aire baja. Los que picaron mastite acá juran que no es el viento.',
     en: 'The mines sing when the air drops. Those who mined mastite here swear it is not the wind.',
   },
+  blackmire_mines: {
+    es: 'Más abajo que las minas, la roca supura. En la Ciénaga Negra el agua es espesa y recuerda cada nombre que se ahogó en ella.',
+    en: 'Deeper than the mines, the rock weeps. In the Blackmire the water runs thick and remembers every name that drowned in it.',
+  },
+  lake_kuuma: {
+    es: 'El Lago Kuuma se congeló en una sola noche, con todo lo que nadaba en él adentro. Todavía se mueve bajo el hielo.',
+    en: 'Lake Kuuma froze in a single night, with everything that swam in it still inside. It moves under the ice yet.',
+  },
+  fort_amir: {
+    es: 'El Fuerte Amir cayó sin que nadie lo asediara. La guarnición sigue en sus puestos, y el castellano todavía no aceptó que perdió.',
+    en: 'Fort Amir fell with no one besieging it. The garrison still holds its posts, and the castellan has yet to accept that he lost.',
+  },
+  grot_lagoon: {
+    es: 'La Laguna Grot es un ojo de agua quieta en la nieve. Lo que la mira demasiado tiempo, se queda.',
+    en: 'Grot Lagoon is an eye of still water in the snow. Whatever stares into it too long, stays.',
+  },
+  nazia_highlands: {
+    es: 'Las Tierras Altas de Nazia fueron pastura antes de que el reino cayera. Ahora el viento trae olor a duende y a algo que cava debajo.',
+    en: 'The Nazia Highlands were pasture before the kingdom fell. Now the wind carries the smell of goblin and of something digging below.',
+  },
+  nazia_underground: {
+    es: 'Bajo las tierras altas, Nazia se hunde en galerías que nadie terminó. Los que cavaron acá buscaban algo; los que quedaron ya no lo recuerdan.',
+    en: 'Beneath the highlands, Nazia sinks into galleries no one finished. Those who dug here sought something; those who stayed no longer remember what.',
+  },
+  nazia_mines: {
+    es: 'En el fondo de Nazia la veta se secó y los duendes se quedaron igual, apretados alrededor de su señor de la guerra, defendiendo una mina sin oro.',
+    en: 'At the bottom of Nazia the vein ran dry and the goblins stayed anyway, packed around their warlord, defending a mine with no gold left.',
+  },
+  antlion_nest: {
+    es: 'Bajo el Sótano del Templo, la piedra cede a la arena y la arena a los embudos. Las hormigas león no adoran a Mez; simplemente esperan que algo caiga.',
+    en: 'Beneath the Temple Basement, stone gives way to sand and sand to funnels. The antlions do not worship Mez; they simply wait for something to fall.',
+  },
+  southern_ridge: {
+    es: 'La Cornisa del Sur fue pastura de la ciudad. Ahora la maleza esconde lo que bajó de las cavernas a comer, y todavía sube cuando tiene hambre.',
+    en: 'The Southern Ridge was the city\'s pasture. Now the scrub hides what came up from the caverns to feed, and it still climbs when it is hungry.',
+  },
+  mog_caverns: {
+    es: 'Las Cavernas de Mog huelen a hueso mojado. Un nigromante baja acá a levantar lo que Nazia dejó tirado; nunca le faltan manos.',
+    en: 'The Mog Caverns smell of wet bone. A necromancer comes down here to raise what Nazia left lying; he never runs short of hands.',
+  },
+  lochport: {
+    es: 'Lochport fue un puerto próspero antes de que el mar dejara de traer barcos y empezara a traer otra cosa. Los muelles todavía crujen; ya nadie los pisa por gusto.',
+    en: 'Lochport was a thriving port before the sea stopped bringing ships and started bringing something else. The docks still creak; no one walks them for pleasure now.',
+  },
   lochport_cemetery: {
     es: 'Más muertos que lápidas. Y las lápidas cambian de lugar cuando no mirás.',
     en: 'More dead than headstones. And the headstones move when you are not looking.',
+  },
+  merrimead_swamp: {
+    es: 'La Ciénaga de Merrimead se tragó el camino viejo y a los que lo caminaban. El barro acá guarda todo, y de vez en cuando lo devuelve con hambre.',
+    en: 'Merrimead Swamp swallowed the old road and those who walked it. The mud here keeps everything, and now and then it gives it back hungry.',
   },
   goblin_camp: {
     es: 'Un campamento de duendes en la superficie. Ni ellos quieren estar bajo tierra ya.',

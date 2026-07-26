@@ -8,11 +8,32 @@
 // Guardianes que ya están plantados en el pueblo. Los nombres se descubren al llegar a
 // ciertas ruinas; con los tres, el Guardián de Fuego despierta y cierra la quest.
 
-// Al descubrir/entrar a estas zonas (con la quest activa) se revela un nombre olvidado.
+// Al entrar a estas zonas (con la quest correspondiente activa) se revela algo: un nombre olvidado
+// o un fragmento de diario. Cada entrada declara su `quest`, la bandera que la habilita (`gate`),
+// la que la cierra (`done`) y la que setea al revelar (`flag`). `name`/`name_en` es lo que se anuncia.
 export const ZONE_REVEALS = {
-  st_maria_1: { flag: 'q3_ice', name: 'Scathelocke' },
-  perdition_mines: { flag: 'q3_fire', name: 'Vesuvvio' },
-  stormrock_pass: { flag: 'q3_wind', name: 'Grisbon' },
+  // "Los Tres Nombres": online se revela al matar al guardián elemental de la ruina; offline, al llegar.
+  st_maria_1: { quest: 'guardianes', gate: 'q3_init', done: 'q3_finish', flag: 'q3_ice', name: 'Scathelocke' },
+  perdition_mines: { quest: 'guardianes', gate: 'q3_init', done: 'q3_finish', flag: 'q3_fire', name: 'Vesuvvio' },
+  stormrock_pass: { quest: 'guardianes', gate: 'q3_init', done: 'q3_finish', flag: 'q3_wind', name: 'Grisbon' },
+  // "El Diario del Vigilante": los fragmentos se revelan al LLEGAR a la zona (online y offline).
+  dilapidated_sewers: { quest: 'diario', gate: 'd_init', done: 'd_finish', flag: 'd_p1',
+    name: 'Fragmento del diario de Aldwin: «Bajé por las cloacas. El agua sabe a hierro viejo. Algo me sigue, pero no tiene pasos.»',
+    name_en: "A page of Aldwin's journal: “I went down through the sewers. The water tastes of old iron. Something follows me, but it has no footsteps.”" },
+  family_crypt: { quest: 'diario', gate: 'd_init', done: 'd_finish', flag: 'd_p2',
+    name: 'Fragmento del diario de Aldwin: «En la cripta enterramos lo que no debía despertar. Recé para que la piedra aguantara. No aguantó.»',
+    name_en: "A page of Aldwin's journal: “In the crypt we buried what should never wake. I prayed the stone would hold. It did not.”" },
+  fort_amir: { quest: 'diario', gate: 'd_init', done: 'd_finish', flag: 'd_p3',
+    name: 'Fragmento del diario de Aldwin: «El Fuerte cayó al alba. Soy el último. Si alguien lee esto: los Tres no se sellaron. Se escondieron.»',
+    name_en: "A page of Aldwin's journal: “The Fort fell at dawn. I am the last. If anyone reads this: the Three did not seal themselves. They hid.”" },
+  // "Bajo la Torre": el descenso real bajo Black Oak City — la Torre del Mago y el Inframundo que
+  // se abrió debajo. Se revela al LLEGAR a cada zona (online y offline).
+  wizards_tower_1: { quest: 'torre', gate: 't_init', done: 't_finish', flag: 't_p1',
+    name: 'Bajo la Torre del Mago, la escalera sigue más allá de donde la piedra debería terminar. Los Tres cavaron hacia abajo antes de "sellarse".',
+    name_en: 'Beneath the Wizard\'s Tower, the stair goes on past where the stone should end. The Three dug downward before they "sealed" themselves.' },
+  underworld: { quest: 'torre', gate: 't_init', done: 't_finish', flag: 't_p2',
+    name: 'El Inframundo no fue cavado por manos: se abrió. En las paredes hay marcas de estudio recientes. Algo, acá abajo, sigue trabajando.',
+    name_en: 'The Underworld was not dug by hands: it opened. On the walls, marks of recent study. Something, down here, is still working.' },
 }
 
 export const QUESTS = [
@@ -33,8 +54,45 @@ export const QUESTS = [
         text: 'Encontrá el nombre sellado en viento, en el Paso Roca-Tormenta.',
         text_en: 'Find the name sealed in wind, at Stormrock Pass.' },
       { req: ['q3_init', 'q3_ice', 'q3_fire', 'q3_wind'], not: ['q3_finish'],
-        text: 'Volvé al pueblo y llevale los tres nombres a Udana la Vidente.',
-        text_en: 'Return to town and bring the three names to Udana the Seer.' },
+        text: 'Llevá los tres nombres a los Tres Guardianes, en la orilla del río de Triston.',
+        text_en: 'Bring the three names to the Three Guardians, on the riverbank of Triston.' },
+    ],
+  },
+  {
+    id: 'diario',
+    name: 'El Diario del Vigilante', name_en: "The Watcher's Journal",
+    complete: 'd_finish',
+    reward: { xp: 260, gold: 180, seals: 10 },
+    stages: [
+      { req: ['d_init'], not: ['d_p1'],
+        text: 'Buscá el primer fragmento del diario, en las Cloacas en Ruinas.',
+        text_en: 'Find the first journal fragment, in the Dilapidated Sewers.' },
+      { req: ['d_init', 'd_p1'], not: ['d_p2'],
+        text: 'Buscá el segundo fragmento, en la Cripta Familiar.',
+        text_en: 'Find the second fragment, in the Family Crypt.' },
+      { req: ['d_init', 'd_p1', 'd_p2'], not: ['d_p3'],
+        text: 'Buscá el tercer fragmento, en el Fuerte Amir.',
+        text_en: 'Find the third fragment, in Fort Amir.' },
+      { req: ['d_init', 'd_p1', 'd_p2', 'd_p3'], not: ['d_finish'],
+        text: 'Llevá los tres fragmentos al viejo Garrick, en Triston.',
+        text_en: 'Bring the three fragments to Old Garrick, in Triston.' },
+    ],
+  },
+  {
+    id: 'torre',
+    name: 'Bajo la Torre', name_en: 'Beneath the Tower',
+    complete: 't_finish',
+    reward: { xp: 380, gold: 280, seals: 15 },
+    stages: [
+      { req: ['t_init'], not: ['t_p1'],
+        text: 'Bajá a la Torre del Mago, al fondo de las avenidas de Black Oak City.',
+        text_en: 'Descend into the Wizard\'s Tower, at the end of the Black Oak City avenues.' },
+      { req: ['t_init', 't_p1'], not: ['t_p2'],
+        text: 'Seguí bajando: cruzá al Inframundo que se abrió bajo la Torre.',
+        text_en: 'Keep going down: cross into the Underworld that opened beneath the Tower.' },
+      { req: ['t_init', 't_p1', 't_p2'], not: ['t_finish'],
+        text: 'Volvé con el Centinela Aldric, en Black Oak City, con lo que viste.',
+        text_en: 'Return to Sentinel Aldric, in Black Oak City, with what you saw.' },
     ],
   },
 ]

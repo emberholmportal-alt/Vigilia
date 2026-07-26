@@ -16,9 +16,11 @@
 import * as combat from './combat.js'
 import * as db from '../db/db.js'
 import { priceOf, sellValueOf, itemById } from '../../shared/items.js'
+import { isVendorItem } from '../../shared/shop.js'
 import { dailyMissions, todayStr } from '../../shared/missions.js'
 import { rollLoot } from '../../shared/loot.js'
 import { recipeByOut } from '../../shared/alchemy.js'
+import { playerLevelFromXp } from '../../shared/progression.js'
 
 const GRAVE_FRACTION = 0.25   // fracción del oro que soltás al morir (coincide con GRAVE_GOLD_FRACTION del cliente)
 
@@ -42,7 +44,7 @@ export function playerCount() { return players.size }
 
 // Vista pública de un jugador (lo que ven los demás). Incluye `gfx` = capas del paperdoll
 // (equipo visible) y `dead` para que un recién llegado vea el estado correcto.
-function pub(p) { return { id: p.id, name: p.name, race: p.race, body: p.body || 'male', x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax, level: p.level || 1 } }
+function pub(p) { return { id: p.id, name: p.name, race: p.race, body: p.body || 'male', x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax, level: p.level || 1, guildTag: p.guildTag || null } }
 
 function inChannel(map, ch) {
   const out = []
@@ -103,7 +105,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, inv = null, outSeed = null, ledger = null } = {}) {
+export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, xp = 0, hp = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -120,7 +122,10 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   const ch = pickChannel(map, channel)
   // `gold` es AUTORITATIVO del servidor a partir de acá (Fase A de la economía): se carga del
   // personaje al entrar y sólo lo mutan las funciones de abajo (faucets del mundo + sinks validados).
-  const p = { id, name: name || 'Vigilante', race: race || null, body: (body === 'female' || body === 'female_dark') ? body : 'male', map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, gold: Math.floor(Number(gold) || 0), send }
+  // `xp` es AUTORITATIVO del servidor: se carga del personaje al entrar y sólo la suman los faucets
+  // server-otorgados (kill/cofre/misión/quest). El nivel del Salón de la Fama sale de esta XP, así que
+  // un save con xp inflada del cliente no puede escalar el ranking (el handler `save` la pisa con ésta).
+  const p = { id, name: name || 'Vigilante', race: race || null, body: (body === 'female' || body === 'female_dark') ? body : 'male', map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, gold: Math.floor(Number(gold) || 0), seals: Math.floor(Number(seals) || 0), xp: Math.max(0, Math.floor(Number(xp) || 0)), send }
   // `inv` es AUTORITATIVO del servidor (Fase A.2): el bag se carga del personaje al entrar y sólo
   // lo mutan las funciones de abajo (loot otorgado por el server + ops validadas). Se guarda como
   // registros mínimos {id, count?, dur?, upgrade?} (el cliente reconstruye el ítem completo por id).
@@ -139,6 +144,16 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
     for (const oid of outSeed) { if (itemById(oid)) p._out.set(oid, (p._out.get(oid) || 0) + 1) }
     p._ledgerDirty = true   // persistir el ledger inicial para que la próxima sesión ya sea server-owned
   }
+  // Quests narrativas YA reclamadas (server-owned, persistido): así la recompensa no se re-cobra tras
+  // reiniciar/reloguear (antes vivía sólo en memoria -> mint por relogin con cliente tocado).
+  p._qclaimed = new Set(Array.isArray(qclaimed) ? qclaimed : [])
+  p.feats = normalizeFeats(feats)   // hazañas server-owned (jefes derrotados + zona más profunda)
+  p.guildTag = guildTag || null     // estandarte sobre la cabeza (sigla del gremio)
+  // HP AUTORITATIVA (Fase 3): la vida viva la dueña el server. Arranca en null y se siembra en el 1er
+  // setStats (cuando el cliente declara su techo hpMax, que depende del equipo): con la vida PERSISTIDA
+  // del personaje si es válida (>0 y <= techo), si no llena. Persistir la vida evita el logout-cura.
+  // _lastHitAt marca la ventana "en combate" para reconciliar la curación reportada (ver playerHp).
+  p.hp = null; p.hpMax = 0; p._lastHitAt = 0; p._seedHp = Math.max(0, Math.floor(Number(hp) || 0))
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
@@ -146,6 +161,8 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   const es = combat.snapshot(map, ch); if (es && es.length) send({ t: 'espawn', es })
   const ns = combat.nodeSnapshot(map, ch); if (ns && ns.length) send({ t: 'nspawn', ns })
   const cs = combat.chestSnapshot(map, ch); if (cs && cs.length) send({ t: 'cspawn', cs })
+  sendFeats(p)                   // el jugador ve sus propias hazañas
+  enterZone(id, map)             // registra la zona de entrada (por si es la más profunda)
   return { id, channel: ch, present }
 }
 
@@ -168,6 +185,7 @@ export function move(id, map, x, y, dir) {
     const es = combat.snapshot(map, p.ch); if (es && es.length) p.send({ t: 'espawn', es })
     const ns = combat.nodeSnapshot(map, p.ch); if (ns && ns.length) p.send({ t: 'nspawn', ns })
     const cs = combat.chestSnapshot(map, p.ch); if (cs && cs.length) p.send({ t: 'cspawn', cs })
+    enterZone(id, map)              // hazaña: registra si esta zona es la más profunda alcanzada
     return { channel: p.ch, present }
   }
   // Anti-teleport: clampeá el salto al máximo plausible según el tiempo transcurrido. Legítimo =
@@ -200,7 +218,27 @@ export function leave(id) {
   const p = players.get(id)
   if (!p) return
   tradeCancel(id)                // si estaba en un intercambio, se cancela (nadie se queda colgado)
+  // No perder el oro de la tumba al desconectar: p._grave vive SOLO en memoria y se iría al soltar la
+  // sesión (el jugador quedaría con el oro descontado y nada para recuperar). Se lo devolvemos al
+  // saldo (que sí se persiste). Los ítems de la tumba siguen en el save del cliente y se recuperan
+  // aparte (bagGive validado). Sin dupe: al reconectar p._grave arranca en 0, así el recover no
+  // acredita de nuevo (el server es la fuente de verdad del oro).
+  if (p._grave > 0) { p.gold += p._grave; p._grave = 0; p._goldDirty = true }
   persistGold(p)                 // guarda el oro autoritativo antes de soltar la sesión
+  players.delete(id)
+  combat.dropPlayer(id)
+  broadcast(p.map, p.ch, { t: 'leave', id }, id)
+}
+// Igual que leave() pero AWAITEA la persistencia. Lo usa el login: al echar la sesión vieja de una
+// cuenta (otra pestaña/reconexión), hay que persistir su oro ANTES de que el nuevo login lea el
+// saldo, o cargaría oro viejo (race con el persist async del socket que cierra).
+export async function leaveFlush(id) {
+  if (observers.delete(id)) return
+  const p = players.get(id)
+  if (!p) return
+  tradeCancel(id)
+  if (p._grave > 0) { p.gold += p._grave; p._grave = 0; p._goldDirty = true }
+  await persistGold(p)
   players.delete(id)
   combat.dropPlayer(id)
   broadcast(p.map, p.ch, { t: 'leave', id }, id)
@@ -208,17 +246,53 @@ export function leave(id) {
 
 // Pedido de ataque a un enemigo (del cliente). Lo resuelve la simulación autoritativa.
 export function attack(id, eid) { combat.playerAttack(id, eid) }
+// Habilidad especial M2: el cliente manda los enemigos alcanzados + daño; el server valida y aplica.
+export function cast(id, hits) { combat.playerCast(id, hits) }
 // Pedido de juntar un nodo de recurso (del cliente).
 export function gather(id, nid) { combat.playerGather(id, nid) }
 // Pedido de abrir un cofre (del cliente).
 export function openChest(id, cid) { combat.playerOpenChest(id, cid) }
 // El cliente envía sus stats de combate (dependen del equipo) para que el server tire el daño.
+// Costo de respec AUTORITATIVO del server: se computa del nivel real del jugador (que el server
+// conoce vía setStats), no del monto que manda el cliente. Cierra el under-pay del respec.
+// Coincide con la fórmula del cliente (store.respecCost): 50 + 25×nivel.
+export function respecCostOf(id) {
+  const p = players.get(id)
+  return p ? 50 + 25 * (p.level || 1) : 0
+}
+
+// Costo de reparar TODO el equipo, AUTORITATIVO del server: tarifa por nivel (no por durabilidad,
+// que es client-side). Coincide con store.repairCost. Cierra el under-pay de la reparación sin
+// tener que trackear la durabilidad pieza por pieza en el server.
+export function repairCostOf(id) {
+  const p = players.get(id)
+  return p ? 30 + 20 * (p.level || 1) : 0
+}
+
+// Costo en ORO de forjar (mejorar una pieza), AUTORITATIVO del server: por nivel. Coincide con
+// store.upgradeCost. Los cristales (que escalan con el upgrade) se validan aparte por bagConsume.
+export function forgeCostOf(id) {
+  const p = players.get(id)
+  return p ? 60 + 30 * (p.level || 1) : 0
+}
+
 export function setStats(id, stats) {
   const p = players.get(id)
-  if (p && stats && stats.level) {
-    p.invCap = invCapForLevel(stats.level)
-    const lv = stats.level | 0
-    if (p.level !== lv) { p.level = lv; broadcast(p.map, p.ch, { t: 'plvl', id, level: lv }, id) }   // nivel visible para los demás
+  if (p && stats) {
+    // HP AUTORITATIVA (Fase 3): el TECHO de vida lo declara el cliente (depende del equipo, igual que
+    // el daño de arma) y el server lo ACOTA. La vida VIVA (p.hp) la dueña el server; al conocer el
+    // techo por primera vez, arranca llena. Un cambio de equipo que baja el techo clampa la vida.
+    if (stats.hpMax) {
+      const hm = Math.max(1, Math.min(9999999, Math.floor(Number(stats.hpMax)) || 1))
+      p.hpMax = hm
+      if (p.hp == null) p.hp = (p._seedHp > 0 && p._seedHp <= hm) ? p._seedHp : hm   // vida persistida si es válida, si no llena (dead/0/inválida -> llena)
+      else if (p.hp > hm) p.hp = hm
+    }
+    if (stats.level) {
+      p.invCap = invCapForLevel(stats.level)
+      const lv = stats.level | 0
+      if (p.level !== lv) { p.level = lv; broadcast(p.map, p.ch, { t: 'plvl', id, level: lv }, id) }   // nivel visible para los demás
+    }
   }
   combat.setStats(id, stats)
 }
@@ -239,6 +313,16 @@ export function awardGold(id, amt, reason, x, y) {
   p.gold += Math.floor(amt)
   sendGold(p, Math.floor(amt), reason || 'earn', x, y)
   return p.gold
+}
+// XP AUTORITATIVA del server (faucet: kill/cofre/misión/quest). Suma a la XP viva de la sesión y la
+// marca sucia para persistir. NO empuja nada al cliente: éste mantiene su contador cosmético sumando
+// los MISMOS montos (kill=e.xp, cofre=CHEST_XP, misión=m.xp, quest=r.xp), así ambos quedan sincronizados
+// y el save escribe esta XP (server-owned). No toca p.level (eso lo sigue derivando el cliente vía
+// setStats; el nivel del ranking se recomputa de la XP persistida con playerLevelFromXp).
+export function awardXp(id, amt, reason) {
+  const p = players.get(id); if (!p || !(amt > 0)) return
+  p.xp = (p.xp || 0) + Math.floor(amt)
+  p._xpDirty = true
 }
 // Gasta oro (sink genérico: reparar / ofrenda). Falla si no alcanza. El saldo nunca queda negativo.
 export function spendGold(id, amt, reason) {
@@ -336,11 +420,28 @@ export function sellItem(id, index) {
 // (la vida sigue client-side por ahora). Devuelve el id usado para que el cliente aplique el efecto.
 export function useItem(id, index) {
   const p = players.get(id); if (!p) return { ok: false }
+  if (p.dead) return { ok: false, error: 'estás muerto' }   // muerto (autoritativo): no consume ítems hasta reaparecer
   const it = p.inv[index | 0]
   if (!it) return { ok: false, error: 'no tenés ese ítem' }
   invRemoveAt(p, index | 0, 1)
   p._invDirty = true
+  // Curación AUTORITATIVA de poción de vida (Fase 3): el server sube p.hp, así una poción EN combate
+  // cuenta (donde no se aceptan subidas de HP reportadas por el cliente). Espeja potionEffect del cliente.
+  const heal = potionHpHeal(it.id)
+  if (heal > 0 && p.hp != null && p.hpMax) { p.hp = Math.min(p.hpMax, p.hp + heal); p._hpDirty = true }
   return { ok: true, id: it.id, inv: p.inv }
+}
+// Curación de vida de una poción (espeja client/data store.potionEffect: vida 25×mult; super=2, ultra=3;
+// o hp_regen). 0 si no cura vida. Si cambia la fórmula del cliente, tocar los dos.
+function potionHpHeal(itemId) {
+  const it = itemById(itemId); if (!it || it.slot !== 'potion') return 0
+  const name = ((it.name || '') + ' ' + (it.name_en || '')).toLowerCase()
+  let mult = 1
+  if (/super/.test(name)) mult = 2
+  if (/ultra/.test(name)) mult = 3
+  if (/vida|health/.test(name)) return 25 * mult
+  if (it.stats && it.stats.hp_regen) return it.stats.hp_regen | 0
+  return 0
 }
 // --- Ledger "checkout" del bag (anti-mint de bag_give) -------------------------------------------
 function outInc(p, itemId, n = 1) { if (!p._out) p._out = new Map(); p._out.set(itemId, (p._out.get(itemId) || 0) + Math.max(1, n | 0)); p._ledgerDirty = true }
@@ -430,6 +531,7 @@ export function craftRecipe(id, outId) {
 // Comprar un ítem al mercader: el COSTO lo computa el server desde el precio real.
 export function buyItem(id, itemId) {
   const p = players.get(id); if (!p) return { ok: false }
+  if (!isVendorItem(itemId)) return { ok: false, error: 'ese ítem no está a la venta' }   // sólo lo que un vendedor ofrece (no legendarios al precio base)
   const cost = priceOf(itemId)
   if (cost <= 0) return { ok: false, error: 'ítem inválido' }
   if (p.gold < cost) return { ok: false, error: 'no tenés tanto oro', gold: p.gold }
@@ -443,6 +545,24 @@ export function buyItem(id, itemId) {
 // no dejar que el blob del cliente pise el oro del server.
 export function goldOf(accountId) {
   for (const p of players.values()) if (p.accountId === accountId) return p.gold
+  return null
+}
+// Sellos autoritativos actuales de una cuenta con sesión activa (o null). Lo usa el handler `save`
+// para no dejar que el blob del cliente pise los sellos del server (moneda premium).
+export function sealsOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return p.seals
+  return null
+}
+// XP autoritativa actual de una cuenta con sesión activa (o null). La usa el handler `save` para no
+// dejar que el blob del cliente pise la XP del server (anti-cheat del ranking del Salón de la Fama).
+export function xpOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return p.xp || 0
+  return null
+}
+// Vida viva autoritativa de una cuenta con sesión (o null). { hp, hpMax, dead }. La HP no se persiste
+// (al entrar se reaparece con vida llena), así que esto es sólo del estado en memoria.
+export function hpOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return { hp: p.hp, hpMax: p.hpMax, dead: !!p.dead }
   return null
 }
 
@@ -492,12 +612,171 @@ export function playerIdOfAccount(accountId) {
   return null
 }
 export function nameOf(id) { const p = players.get(id); return p ? p.name : '' }
+export function accountOf(id) { const p = players.get(id); return p ? p.accountId : null }   // playerId -> accountId (para invitar)
+// Actualiza el estandarte (sigla) del jugador y avisa a su canal para que los demás re-etiqueten.
+export function setGuildTag(id, tag) {
+  const p = players.get(id); if (!p) return
+  p.guildTag = tag || null
+  broadcast(p.map, p.ch, { t: 'gtag', id, tag: p.guildTag }, null)
+}
+export function notify(id, msg) { const p = players.get(id); if (p) p.send(msg) }             // empujar un mensaje a un jugador visible
+function onlineByAccount(accountId) { for (const p of players.values()) if (p.accountId === accountId) return p; return null }
+// Otorga la recompensa individual de un contrato de gremio completado (sellos a cada contribuyente).
+// Los ONLINE se actualizan por su estado vivo (p.seals + flush diferido) y reciben aviso; los OFFLINE
+// se persisten leyendo su saldo actual. Así no se pisa el saldo vivo de nadie.
+async function grantContractRewards(r) {
+  if (!r || !Array.isArray(r.rewards)) return
+  for (const rw of r.rewards) {
+    if (!rw || !rw.accountId || !(rw.seals > 0)) continue
+    const on = onlineByAccount(rw.accountId)
+    if (on) {
+      on.seals = (on.seals || 0) + rw.seals; on._sealsDirty = true
+      on.send({ t: 'seals', seals: on.seals, add: rw.seals, reason: 'guild_contract' })
+    } else {
+      try { const ch = await db.loadCharacter(rw.accountId); const cur = Math.floor(Number(ch?.data?.seals) || 0); await db.setCharacterSeals(rw.accountId, cur + rw.seals) } catch {}
+    }
+  }
+}
+// Difunde a los jugadores ONLINE cuya cuenta está en `accountIds` (chat de gremio, sin importar mapa).
+export function guildBroadcast(accountIds, msg) {
+  const set = accountIds instanceof Set ? accountIds : new Set(accountIds)
+  for (const p of players.values()) if (p.accountId != null && set.has(p.accountId)) p.send(msg)
+}
+
+// --- Inspeccionar jugador: tarjeta pública (estilo "look") -------------------------------------
+// El cliente del objetivo arma su propia tarjeta (display) y la manda con setCard; acá la guardamos
+// saneada (clamps, para que nadie rompa la UI de otro con números basura). inspectCard la devuelve
+// SÓLO si el que pide y el objetivo están en el mismo canal (se ven). Es de display, no autoritativa.
+const RACES_OK = new Set(['humano', 'elfo', 'enano', 'orco'])
+const SKILL_KEYS = ['combate', 'excavacion', 'herboristeria', 'alquimia', 'forja', 'saqueo']
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)))
+const clampF = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || lo))
+function sanitizeCard(c) {
+  if (!c || typeof c !== 'object') return null
+  const skills = {}
+  for (const k of SKILL_KEYS) skills[k] = clampN(c.skills && c.skills[k], 1, 20)
+  let guild = null
+  if (c.guild && typeof c.guild === 'object' && c.guild.tag) {
+    guild = { tag: String(c.guild.tag).slice(0, 3), color: /^#[0-9a-fA-F]{6}$/.test(c.guild.color || '') ? c.guild.color : '#c9a227' }
+  }
+  let set = null
+  if (c.set && c.set.label) set = { label: String(c.set.label).slice(0, 24), pieces: clampN(c.set.pieces, 0, 6) }
+  return {
+    level: clampN(c.level, 1, 999), race: RACES_OK.has(c.race) ? c.race : null,
+    hp: clampN(c.hp, 0, 9999999), hpMax: clampN(c.hpMax, 1, 9999999),
+    mp: clampN(c.mp, 0, 9999999), mpMax: clampN(c.mpMax, 0, 9999999),
+    dmgMin: clampN(c.dmgMin, 0, 99999), dmgMax: clampN(c.dmgMax, 0, 99999), defense: clampN(c.defense, 0, 99999),
+    crit: clampN(c.crit, 0, 100), hpRegen: clampF(c.hpRegen, 0, 999), itemFind: clampN(c.itemFind, 0, 9999),
+    fireResist: clampN(c.fireResist, 0, 100), iceResist: clampN(c.iceResist, 0, 100),
+    speedMul: clampF(c.speedMul, 0.1, 9), xpMul: clampF(c.xpMul, 1, 9),
+    set, skills, guild,
+  }
+}
+export function setCard(id, card) { const p = players.get(id); if (p) p.card = sanitizeCard(card) }
+export function inspectCard(viewerId, targetId) {
+  const v = players.get(viewerId), t = players.get(targetId)
+  if (!v || !t) return { error: 'no está' }
+  if (v.map !== t.map || v.ch !== t.ch) return { error: 'fuera de vista' }   // sólo se inspecciona a quien ves
+  return { id: t.id, name: t.name, level: t.level || 1, race: t.race || null, hp: t.hp, hpMax: t.hpMax, card: t.card || null, feats: publicFeats(t) }
+}
+
+// --- Hazañas: jefes derrotados + zona más profunda alcanzada (server-authoritative, persistidas) ---
+// Nivel de referencia por zona curada (tope del rango de ESCENARIOS.md). Sólo para "zona más profunda
+// alcanzada"; los mapas fuera de la tabla no cuentan (nivel 0). Se actualiza al ENTRAR (no al matar).
+const MAP_LEVEL = {
+  black_oak_farm: 3, river_trail: 5, salted_field: 6, greenwood_point: 1,
+  lochport: 2, lochport_cemetery: 3, family_crypt: 2, merrimead_swamp: 2,
+  goblin_cave: 8, goblin_camp: 2,
+  abandoned_mines: 5, blackmire_mines: 5, lake_kuuma: 5, fort_amir: 7, grot_lagoon: 6,
+  temple_of_mez_1: 8, temple_of_mez_2: 8, temple_of_mez_3: 9, antlion_nest: 6,
+  st_maria_1: 9, perdition_mines: 9, stormrock_pass: 9,
+  black_oak_city: 10, dilapidated_sewers: 11, wizards_tower_1: 12, wizards_tower_2: 12, wizards_tower_3: 12,
+  southern_ridge: 9, mog_caverns: 10, nazia_highlands: 9, nazia_underground: 9, nazia_mines: 11,
+  underworld: 13, underworld_catacombs: 13, underworld_mines: 14, underworld_stronghold_1: 14, underworld_stronghold_2: 15,
+  oasis: 15, the_pit: 17,
+}
+function normalizeFeats(f) {
+  const bosses = f && Array.isArray(f.bosses) ? [...new Set(f.bosses.filter((x) => typeof x === 'string'))] : []
+  const dl = f && f.deepest && typeof f.deepest === 'object' ? f.deepest : null
+  const deepest = dl ? { level: Math.max(0, dl.level | 0), map: typeof dl.map === 'string' ? dl.map : '' } : { level: 0, map: '' }
+  return { bosses, deepest }
+}
+export function featsOf(accountId) { for (const p of players.values()) if (p.accountId === accountId) return p.feats || null; return null }
+function publicFeats(p) {
+  const f = (p && p.feats) || { bosses: [], deepest: { level: 0, map: '' } }
+  return { bosses: f.bosses.length, bossList: f.bosses.slice(0, 16), bossTotal: combat.bossTotal(), deepest: f.deepest }
+}
+function persistFeats(p) { if (p.accountId) db.setCharacterFeats(p.accountId, p.feats).catch(() => {}) }
+function sendFeats(p) { p.send({ t: 'feats', feats: publicFeats(p) }) }
+// Suma un jefe permanente a las hazañas del jugador (dedupe por mapa). Lo llama combat al matarlo.
+export function recordBoss(id, map) {
+  const p = players.get(id); if (!p || !p.feats || p.feats.bosses.includes(map)) return
+  p.feats.bosses.push(map); persistFeats(p); sendFeats(p)
+}
+// Marca la zona más profunda alcanzada (monótona). Se llama al entrar a un mapa.
+export function enterZone(id, map) {
+  const p = players.get(id); if (!p || !p.feats) return
+  const lv = MAP_LEVEL[map] || 0
+  if (lv > (p.feats.deepest.level || 0)) { p.feats.deepest = { level: lv, map }; persistFeats(p); sendFeats(p) }
+}
+
+// Salón de la Fama: rankings públicos de TODOS los personajes (online y offline), sobre datos
+// server-autoritativos (nivel derivado del XP, hazañas persistidas). Tres tablas: por nivel, por
+// jefes derrotados y por zona más profunda alcanzada. El límite lo acotamos server-side.
+export async function hallOfFame(limit = 20) {
+  const lim = Math.max(1, Math.min(50, (limit | 0) || 20))
+  const rows = await db.allCharacterVitals()
+  const list = rows.filter((r) => r.name).map((r) => {
+    const f = normalizeFeats(r.feats)
+    return { name: r.name, race: r.race || null, level: playerLevelFromXp(r.xp), bosses: f.bosses.length, deepest: f.deepest }
+  })
+  const top = (arr, cmp) => [...arr].sort(cmp).slice(0, lim)
+  return {
+    ok: true, bossTotal: combat.bossTotal(),
+    byLevel: top(list, (a, b) => b.level - a.level || b.bosses - a.bosses),
+    byBosses: top(list.filter((x) => x.bosses > 0), (a, b) => b.bosses - a.bosses || b.level - a.level),
+    byDeepest: top(list.filter((x) => x.deepest.level > 0), (a, b) => b.deepest.level - a.deepest.level || b.level - a.level),
+  }
+}
 // Persiste el oro autoritativo al personaje (al salir). setCharacterGold preserva el resto del blob.
 async function persistGold(p) {
   if (!p || !p.accountId) return
   if (p._goldDirty) { p._goldDirty = false; try { await db.setCharacterGold(p.accountId, p.gold) } catch {} }
+  if (p._xpDirty) { p._xpDirty = false; try { await db.setCharacterXp(p.accountId, p.xp) } catch {} }
+  if (p._hpDirty && p.hp != null) { p._hpDirty = false; try { await db.setCharacterHp(p.accountId, p.hp) } catch {} }
+  if (p._sealsDirty) { p._sealsDirty = false; try { await db.setCharacterSeals(p.accountId, p.seals) } catch {} }
   if (p._invDirty) { p._invDirty = false; try { await db.setCharacterInventory(p.accountId, p.inv) } catch {} }
   if (p._ledgerDirty) { p._ledgerDirty = false; try { await db.setCharacterLedger(p.accountId, ledgerOf(p.accountId)) } catch {} }
+}
+
+// Persiste YA el oro vivo de una cuenta online (durabilidad inmediata). Lo usa el marketplace: la
+// FILA de la orden es durable al instante, así que el descuento/crédito del oro tiene que serlo
+// también, o un reinicio del server entre el cambio en memoria y el autosave del cliente duplicaría
+// (cancelar tras reiniciar reacreditaría un oro que ya se había descontado) o perdería oro. Devuelve
+// true si la cuenta estaba online y se persistió. setCharacterGold preserva el resto del blob.
+export async function flushGold(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) { p._goldDirty = false; try { await db.setCharacterGold(p.accountId, p.gold) } catch {} return true }
+  return false
+}
+// Persiste YA el bag vivo de una cuenta online. Lo usan los ESCROWS de ítems (subasta/alijo/gremio/
+// tumba): el ítem sale del bag en memoria y el destino se escribe a DB al instante; si el proceso
+// muere sin gracia en esa ventana, al reiniciar el bag persistido todavía tendría el ítem -> dupe.
+// Flusheando el bag tras el escrow, el descuento es tan durable como el destino.
+export async function flushInv(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) { p._invDirty = false; try { await db.setCharacterInventory(p.accountId, p.inv) } catch {} return true }
+  return false
+}
+// Ids de quests narrativas ya reclamadas por una cuenta online (para que el save no las borre del
+// blob: son server-owned, como el ledger). null si la cuenta no está online.
+export function questClaimsOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return [...(p._qclaimed || [])]
+  return null
+}
+// Flush de emergencia ante apagado (SIGTERM de un deploy / SIGINT): persiste oro+bag+ledger de TODOS
+// los jugadores online antes de que el proceso muera, porque el handler de 'close' del socket no
+// corre cuando matan el proceso. index.js lo llama en el shutdown.
+export async function flushAll() {
+  await Promise.all([...players.values()].map((p) => persistGold(p)))
 }
 
 // --- Faucets secundarios (computados por el server desde datos COMPARTIDOS) ------------------
@@ -535,21 +814,27 @@ export function claimMission(id, missionId) {
   p._claimed.set.add(missionId)
   const gold = m.gold || 0
   if (gold > 0) { p.gold += gold; p._goldDirty = true }
-  return { ok: true, gold: p.gold, add: gold }
+  const seals = m.seals || 0
+  if (seals > 0) { p.seals = (p.seals || 0) + seals; p._sealsDirty = true }   // sellos AUTORITATIVOS
+  const mxp = m.xp || 0
+  if (mxp > 0) { p.xp = (p.xp || 0) + mxp; p._xpDirty = true }   // XP AUTORITATIVA (el cliente suma el mismo m.xp de su lista)
+  return { ok: true, gold: p.gold, add: gold, seals: p.seals, sealsAdd: seals }
 }
-// Cofre de sellos: el server tira el loot de la tabla COMPARTIDA (shared/loot) y acredita el ORO.
-// Los ítems van en la respuesta (el cliente los mete al inventario). El costo en SELLOS lo maneja
-// el cliente (los sellos son moneda premium NO-cripto, todavía client-side).
+// Cofre de sellos (loot box premium): AUTORITATIVO. El server DEBITA los sellos (rechaza si no
+// alcanzan — cierra el mint del cliente tocado), tira el loot de la tabla COMPARTIDA y acredita oro.
+// Los ítems van al bag autoritativo (empuja 'inv'); `drops` es sólo para la animación del cliente.
+export const SEAL_CHEST_COST = 6   // sellos por cofre (debe coincidir con el cliente)
 export function sealChest(id, level) {
   const p = players.get(id); if (!p) return { ok: false }
+  if ((p.seals || 0) < SEAL_CHEST_COST) return { ok: false, error: 'no tenés tantos sellos', seals: p.seals || 0 }
+  p.seals -= SEAL_CHEST_COST; p._sealsDirty = true
   const lvl = Math.max(4, Math.min(16, Math.floor(Number(level) || 4)))
   const roll = rollLoot('chest_level_' + lvl) || { gold: 0, drops: [] }
   const gold = roll.gold || 0
   if (gold > 0) { p.gold += gold; p._goldDirty = true }
-  // Los ítems van al bag AUTORITATIVO del server (empuja 'inv'); `drops` es sólo para la animación del cliente.
   const drops = roll.drops || []
   if (drops.length) { for (const d of drops) invGrant(p, d.id, d.qty || 1); p._invDirty = true; p.send({ t: 'inv', inv: p.inv }) }
-  return { ok: true, gold: p.gold, add: gold, drops }
+  return { ok: true, gold: p.gold, add: gold, seals: p.seals, drops }
 }
 // Al MORIR soltás una fracción de tu oro en una tumba (server-authoritative): el server descuenta y
 // lo guarda como "oro de tumba" pendiente; al recuperar la tumba, te lo devuelve. La granularidad
@@ -569,15 +854,24 @@ export function recoverGrave(id) {
 // Recompensa de quest narrativa (montos fijos; el cliente trackea la bandera de completado). Hay
 // pocas y son de una sola vez, así que el oro se acota a estos valores fijos, una vez cada uno.
 // (Duplica el reward de client/data/quests.js — es 1 entrada; si cambia, tocar los dos.)
-const QUEST_GOLD = { guardianes: 150 }
+const QUEST_GOLD = { guardianes: 150, diario: 180, torre: 280 }
+const QUEST_SEALS = { guardianes: 8, diario: 10, torre: 15 }
+const QUEST_XP = { guardianes: 220, diario: 260, torre: 380 }   // espeja el reward.xp de client/data/quests.js
 export function claimQuest(id, questId) {
   const p = players.get(id); if (!p) return { ok: false }
   if (!p._qclaimed) p._qclaimed = new Set()
   if (p._qclaimed.has(questId)) return { ok: false, error: 'ya reclamada', gold: p.gold }
   p._qclaimed.add(questId)
+  db.setCharacterQuestClaims(p.accountId, [...p._qclaimed]).catch(() => {})   // persistir YA (anti re-claim por relogin)
   const gold = QUEST_GOLD[questId] || 0
   if (gold > 0) { p.gold += gold; p._goldDirty = true }
-  return { ok: true, gold: p.gold, add: gold }
+  const seals = QUEST_SEALS[questId] || 0
+  if (seals > 0) { p.seals = (p.seals || 0) + seals; p._sealsDirty = true }   // sellos AUTORITATIVOS
+  // XP AUTORITATIVA de la quest. El cliente ya la suma cosmético desde reward.xp de su quest def; el
+  // server la refleja acá para que la XP server-owned incluya la quest y el save no la haga retroceder.
+  const xp = QUEST_XP[questId] || 0
+  if (xp > 0) { p.xp = (p.xp || 0) + xp; p._xpDirty = true }
+  return { ok: true, gold: p.gold, add: gold, seals: p.seals, sealsAdd: seals, xp }
 }
 
 // Equipo visible: el cliente manda sus capas de paperdoll; se guardan y se difunden al canal
@@ -588,10 +882,50 @@ export function setGfx(id, gfx) {
   broadcast(p.map, p.ch, { t: 'gfx', id, gfx: p.gfx }, id)
 }
 
-// Vida del jugador: se difunde por AoI (cambia seguido) para que los demás vean su barra.
+// --- HP / muerte AUTORITATIVOS del servidor (Fase 3) ------------------------------------------
+// El server dueña la vida viva del jugador: aplica el daño enemigo (combat.stepEnemy -> damagePlayer),
+// decide la muerte y, con `dead`, congela las acciones del jugador (combat rechaza atacar/juntar/abrir
+// estando muerto). Así un cliente hackeado no puede farmear invencible: aunque ignore su muerte, el
+// server lo dejó sin poder actuar hasta reaparecer. Las curas fuera de combate se aceptan del reporte
+// del cliente (regen del pueblo/poción); en combate NO (anti-invencibilidad) — las modela el server.
+const COMBAT_WINDOW_MS = 3000   // tras recibir daño: dentro de esta ventana no se aceptan subidas de HP reportadas
+
+// Daño enemigo AUTORITATIVO: baja p.hp y, si llega a 0, fuerza la muerte.
+export function damagePlayer(id, dmg) {
+  const p = players.get(id); if (!p || p.dead) return
+  if (p.hp == null) { if (!p.hpMax) return; p.hp = p.hpMax }   // aún sin techo declarado: no podemos trackear
+  dmg = Math.max(0, Math.floor(Number(dmg)) || 0); if (!dmg) return
+  p._lastHitAt = Date.now()
+  p.hp = Math.max(0, p.hp - dmg)
+  p._hpDirty = true
+  broadcastAoI(p.map, p.ch, p.x, p.y, { t: 'php', id, hp: p.hp, hpMax: p.hpMax }, id)   // los demás ven la barra
+  p.send({ t: 'php', id, hp: p.hp, hpMax: p.hpMax })   // al PROPIO cliente: reconcilia su barra al valor autoritativo (Fase 3)
+  if (p.hp <= 0) forceDeath(p)
+}
+// Muerte AUTORITATIVA: la decide el server (no el cliente). Congela las acciones vía p.dead y avisa a
+// TODOS —incluido el propio cliente— así también un cliente honesto ve la caída en co-op. La penalidad
+// de oro (tumba) la sigue disparando el flujo del cliente (dropGrave), idempotente por muerte.
+function forceDeath(p) {
+  if (p.dead) return
+  p.dead = true
+  broadcast(p.map, p.ch, { t: 'pdied', id: p.id })
+}
+
+// Vida del jugador reportada por el CLIENTE: se usa para la barra que ven los demás y para reconciliar
+// la curación. Reglas (anti-invencibilidad): bajar siempre se acepta (daño honesto que el server no
+// vio); SUBIR sólo fuera de combate (regen del pueblo/poción tranquila) — en combate se ignora la
+// subida (las curas en combate las modela el server: ver useItem). Nunca por encima del techo.
 export function playerHp(id, hp, hpMax) {
   const p = players.get(id); if (!p) return
-  p.hp = hp | 0; p.hpMax = hpMax | 0
+  if (hpMax) p.hpMax = Math.max(1, Math.min(9999999, hpMax | 0))
+  const reported = Math.max(0, Math.min(p.hpMax || (hpMax | 0) || 1, hp | 0))
+  const before = p.hp
+  if (p.hp == null) p.hp = reported
+  else if (reported < p.hp) p.hp = reported                                  // daño honesto: siempre baja
+  else if (Date.now() - (p._lastHitAt || 0) > COMBAT_WINDOW_MS) p.hp = reported   // fuera de combate: aceptar la cura reportada
+  // en combate + subida: se ignora (el server manda). Si el server ya lo mató, no revive por un reporte.
+  if (p.hp !== before) p._hpDirty = true
+  if (p.dead) return
   broadcastAoI(p.map, p.ch, p.x, p.y, { t: 'php', id, hp: p.hp, hpMax: p.hpMax }, id)
 }
 
@@ -604,6 +938,8 @@ export function playerDead(id) {
 export function playerAlive(id, x, y, dir) {
   const p = players.get(id); if (!p) return
   p.dead = false
+  p.hp = p.hpMax || p.hp   // reaparece con vida LLENA (autoritativo)
+  p._lastHitAt = 0; p._hpDirty = true
   if (x != null) { p.x = x; p.y = y; if (dir != null) p.dir = dir }
   broadcast(p.map, p.ch, { t: 'palive', id, x: p.x, y: p.y, dir: p.dir }, id)
 }
@@ -716,8 +1052,12 @@ combat.init({
   sendTo: (id, msg) => { const p = players.get(id); if (p) p.send(msg) },
   broadcast: (map, ch, msg) => broadcast(map, ch, msg, null),
   awardGold: (id, amt, reason, x, y) => awardGold(id, amt, reason, x, y),   // faucets del mundo (kill/cofre)
+  awardXp: (id, amt, reason) => awardXp(id, amt, reason),                    // XP autoritativa (kill/cofre)
+  damagePlayer: (id, dmg) => damagePlayer(id, dmg),                          // HP autoritativa (Fase 3): daño enemigo -> muerte
   grantLoot: (id, drops) => grantLoot(id, drops),                           // ítems de loot (kill), autoritativos
   missionTick: (id, type, map, n) => missionTick(id, type, map, n),         // avance de misiones autoritativo
+  recordBoss: (id, map) => recordBoss(id, map),                             // hazaña: jefe permanente derrotado
+  guildContractDone: (r) => grantContractRewards(r),                        // recompensa a los que aportaron al contrato
 })
 combat.start()
 

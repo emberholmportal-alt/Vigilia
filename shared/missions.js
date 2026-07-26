@@ -19,8 +19,40 @@ function hashStr(s) {
 export const POOL = [
   { id: 'hunt_cave', type: 'kill', map: 'goblin_cave', target: 12, xp: 90, gold: 60, seals: 2 },
   { id: 'hunt_camp', type: 'kill', map: 'goblin_camp', target: 10, xp: 70, gold: 45, seals: 2 },
+  // Templo de Mez (nivel ~7-9): ramal profundo tras la Cueva de Duendes. Caza en el Gran Salón
+  // (19 spawners) y saqueo en el Sótano (6 cofres).
+  { id: 'hunt_temple', type: 'kill', map: 'temple_of_mez_2', target: 13, xp: 115, gold: 78, seals: 3 },
+  { id: 'loot_temple', type: 'chest', map: 'temple_of_mez_1', target: 3, xp: 105, gold: 70, seals: 3 },
+  // Black Oak City (nivel ~10): la joya caída. Caza y saqueo de mayor riesgo -> mayor recompensa.
+  { id: 'hunt_city', type: 'kill', map: 'black_oak_city', target: 14, xp: 150, gold: 105, seals: 3 },
+  { id: 'loot_city', type: 'chest', map: 'black_oak_city', target: 3, xp: 130, gold: 90, seals: 3 },
+  // Las Cloacas Ruinosas (nivel ~11): el clímax de la rama de la ciudad, bajo sus avenidas.
+  { id: 'hunt_sewers', type: 'kill', map: 'dilapidated_sewers', target: 14, xp: 165, gold: 115, seals: 3 },
+  { id: 'loot_sewers', type: 'chest', map: 'dilapidated_sewers', target: 3, xp: 145, gold: 100, seals: 3 },
+  // El Inframundo (nivel ~13): lo más hondo con misión. Recompensa acorde a la profundidad.
+  // Región de Nazia (nivel ~9-10): descenso al este de Black Oak City.
+  { id: 'hunt_nazia', type: 'kill', map: 'nazia_highlands', target: 12, xp: 150, gold: 105, seals: 3 },
+  { id: 'mine_nazia', type: 'mine', map: 'nazia_mines', target: 8, xp: 160, gold: 112, seals: 3 },
+  { id: 'hunt_underworld', type: 'kill', map: 'underworld', target: 16, xp: 190, gold: 135, seals: 4 },
+  { id: 'loot_underworld', type: 'chest', map: 'underworld', target: 3, xp: 165, gold: 115, seals: 4 },
+  // Cluster profundo (nivel 13→15): Minas y Catacumbas del Inframundo. Lo más duro del mundo.
+  { id: 'hunt_deep', type: 'kill', map: 'underworld_mines', target: 18, xp: 230, gold: 165, seals: 5 },
+  // Endgame (nivel 14-16): el Oasis y el Pozo, lo más hondo del mundo.
+  { id: 'hunt_oasis', type: 'kill', map: 'oasis', target: 16, xp: 250, gold: 180, seals: 5 },
+  { id: 'hunt_pit', type: 'kill', map: 'the_pit', target: 14, xp: 300, gold: 220, seals: 6 },
+  { id: 'loot_catacombs', type: 'chest', map: 'underworld_catacombs', target: 3, xp: 200, gold: 140, seals: 5 },
   { id: 'hunt_crypt', type: 'kill', map: 'family_crypt', target: 10, xp: 95, gold: 65, seals: 2 },
+  { id: 'hunt_antlion', type: 'kill', map: 'antlion_nest', target: 12, xp: 100, gold: 68, seals: 2 },
+  { id: 'hunt_ridge', type: 'kill', map: 'southern_ridge', target: 12, xp: 145, gold: 100, seals: 3 },
+  // Ciénaga de Merrimead (nivel ~2): ramal costero de Lochport, tras el cementerio.
+  { id: 'hunt_marsh', type: 'kill', map: 'merrimead_swamp', target: 12, xp: 60, gold: 42, seals: 2 },
+  { id: 'loot_marsh', type: 'chest', map: 'merrimead_swamp', target: 3, xp: 65, gold: 45, seals: 2 },
   { id: 'mine_crystals', type: 'mine', map: 'abandoned_mines', target: 8, xp: 85, gold: 55, seals: 2 },
+  // Cluster de las Minas Abandonadas (nivel 5-6): Ciénaga Negra, Lago Kuuma, Laguna Grot, Fuerte Amir.
+  { id: 'mine_blackmire', type: 'mine', map: 'blackmire_mines', target: 8, xp: 90, gold: 58, seals: 2 },
+  { id: 'hunt_lake', type: 'kill', map: 'lake_kuuma', target: 12, xp: 95, gold: 65, seals: 3 },
+  { id: 'hunt_grot', type: 'kill', map: 'grot_lagoon', target: 12, xp: 95, gold: 65, seals: 3 },
+  { id: 'loot_fort', type: 'chest', map: 'fort_amir', target: 3, xp: 105, gold: 72, seals: 3 },
   { id: 'mine_cave', type: 'mine', map: 'goblin_cave', target: 6, xp: 65, gold: 40, seals: 2 },
   // Herboristería: las junta la bruja alquimista. La nombramos en el objetivo (giver).
   { id: 'herb_trail', type: 'herb', map: 'river_trail', target: 10, xp: 70, gold: 45, seals: 2, giver: 'Yara la Bruja', giver_en: 'Yara the Witch' },

@@ -7,6 +7,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { playerLevelFromXp } from '../../shared/progression.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.join(__dirname, '..', '.data')
@@ -50,12 +51,16 @@ export async function init() {
       );
       ALTER TABLE guilds ADD COLUMN IF NOT EXISTS contract_week TEXT;
       ALTER TABLE guilds ADD COLUMN IF NOT EXISTS contract_progress INTEGER DEFAULT 0;
+      ALTER TABLE guilds ADD COLUMN IF NOT EXISTS private BOOLEAN DEFAULT false;
       CREATE TABLE IF NOT EXISTS guild_members (
         account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
         guild_id INTEGER REFERENCES guilds(id) ON DELETE CASCADE,
         role TEXT DEFAULT 'member',
         joined_at TIMESTAMPTZ DEFAULT now()
       );
+      ALTER TABLE guild_members ADD COLUMN IF NOT EXISTS donated BIGINT DEFAULT 0;
+      ALTER TABLE guild_members ADD COLUMN IF NOT EXISTS contract_kills INTEGER DEFAULT 0;
+      ALTER TABLE guild_members ADD COLUMN IF NOT EXISTS contract_week TEXT;
       CREATE TABLE IF NOT EXISTS guild_deposit (
         guild_id INTEGER PRIMARY KEY REFERENCES guilds(id) ON DELETE CASCADE,
         gold BIGINT DEFAULT 0,
@@ -74,6 +79,24 @@ export async function init() {
         account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
         items JSONB DEFAULT '[]'::jsonb,
         gold BIGINT DEFAULT 0
+      );
+      CREATE TABLE IF NOT EXISTS gold_orders (
+        id SERIAL PRIMARY KEY,
+        seller INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+        seller_name TEXT,
+        seller_wallet TEXT NOT NULL,
+        gold BIGINT NOT NULL,
+        price BIGINT NOT NULL,
+        status TEXT DEFAULT 'open',
+        locked_by INTEGER,
+        locked_wallet TEXT,
+        lock_expires BIGINT DEFAULT 0,
+        created_at BIGINT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS gold_order_sigs (
+        sig TEXT PRIMARY KEY,
+        order_id INTEGER,
+        used_at BIGINT NOT NULL
       );`)
     // Migración: sumar la columna de oro del alijo a tablas ya creadas sin ella.
     await pg.query(`ALTER TABLE player_stash ADD COLUMN IF NOT EXISTS gold BIGINT DEFAULT 0;`)
@@ -92,6 +115,9 @@ export async function init() {
   if (!file.market) file.market = []                 // [{id, seller, seller_name, item, price, created_at, expires_at}]
   if (!file.stash) file.stash = {}                   // account_id -> items[] (alijo privado)
   if (!file.stashGold) file.stashGold = {}           // account_id -> gold (bóveda del alijo)
+  if (!file.goldOrders) file.goldOrders = []         // [{id, seller, seller_name, seller_wallet, gold, price, status, locked_by, locked_wallet, lock_expires, created_at}]
+  if (!file.goldOrderSigs) file.goldOrderSigs = {}   // sig -> { order_id, used_at } (anti-replay global)
+  if (file.goldOrderSeq == null) file.goldOrderSeq = file.goldOrders.reduce((m, o) => Math.max(m, o.id), 0) + 1
   if (file.marketSeq == null) file.marketSeq = file.market.reduce((m, l) => Math.max(m, l.id), 0) + 1
   if (file.guildSeq == null) file.guildSeq = file.guilds.reduce((m, g) => Math.max(m, g.id), 0) + 1
   seq = file.accounts.reduce((m, a) => Math.max(m, a.id), 0) + 1
@@ -207,6 +233,18 @@ export async function allCharacters() {
   return Object.entries(file.chars || {}).map(([aid, ch]) => ({ accountId: Number(aid), data: (ch && ch.data) || {} }))
 }
 
+// Datos mínimos de TODOS los personajes para el Salón de la Fama: nombre, raza, XP (para el nivel)
+// y hazañas persistidas. No trae el blob entero para no arrastrar inventarios enteros.
+export async function allCharacterVitals() {
+  if (pg) {
+    const r = await pg.query(`SELECT name, race, (data->>'xp') AS xp, data->'_feats' AS feats FROM characters`)
+    return r.rows.map((x) => ({ name: x.name, race: x.race, xp: Number(x.xp) || 0, feats: x.feats || null }))
+  }
+  return Object.values(file.chars || {}).map((ch) => ({
+    name: ch.name, race: ch.race, xp: Number(ch.data?.xp) || 0, feats: (ch.data && ch.data._feats) || null,
+  }))
+}
+
 // ---------- Gremios ----------
 // El oro de fundación/donación lo descuenta el server del blob persistido del personaje
 // (la única fuente de verdad del oro), no del cliente. Ver server/systems/guilds.js.
@@ -227,6 +265,69 @@ export async function setCharacterGold(accountId, gold) {
     const ch = await loadCharacter(accountId)
     if (!ch) return false
     const data = { ...(ch.data || {}), gold: Math.floor(Number(gold) || 0) }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
+}
+
+// Escribe la XP autoritativa del server al blob (faucet: kills/cofres/misiones/quests, todos
+// server-otorgados). Preserva el resto del blob. Bajo el lock de la cuenta. La usa la persistencia
+// al desconectar (leaveFlush) para que un level-up sin save del cliente igual quede guardado, y es la
+// base del anti-cheat: el nivel del Salón de la Fama sale de esta XP, no del blob que manda el cliente.
+export async function setCharacterXp(accountId, xp) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), xp: Math.max(0, Math.floor(Number(xp) || 0)) }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
+}
+
+// Escribe la VIDA autoritativa del server al blob (Fase 3). Preserva el resto del blob. Al desconectar
+// persistimos la vida viva así el logout no cura (antes: al entrar arrancabas lleno = curación gratis).
+export async function setCharacterHp(accountId, hp) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), hp: Math.max(0, Math.floor(Number(hp) || 0)) }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
+}
+
+// Escribe los SELLOS autoritativos del server al blob (moneda premium; faucet: misiones/quest,
+// sink: cofre de sellos). Preserva el resto del blob. Bajo el lock de la cuenta.
+export async function setCharacterSeals(accountId, seals) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), seals: Math.floor(Number(seals) || 0) }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
+}
+
+// Persiste las quests narrativas YA RECLAMADAS (array de ids) al blob, para que la recompensa no se
+// pueda re-cobrar tras un reinicio/relogin (antes el dedup vivía sólo en memoria). Preserva el resto.
+export async function setCharacterQuestClaims(accountId, ids) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), _qclaimed: Array.isArray(ids) ? ids : [] }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
+}
+
+// Persiste las HAZAÑAS del personaje (jefes derrotados + zona más profunda), server-authoritative.
+// Eventos raros (matar un jefe / entrar a una zona nueva más honda), así que persistir al instante no
+// hace churn. Preserva el resto del blob.
+export async function setCharacterFeats(accountId, feats) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), _feats: feats && typeof feats === 'object' ? feats : null }
     await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
     return true
   })
@@ -277,9 +378,14 @@ export async function createGuild({ name, tag, color, founder }) {
       [name, String(tag).toUpperCase(), color || null, founder])
     return r.rows[0]
   }
-  const g = { id: file.guildSeq++, name, tag: String(tag).toUpperCase(), color: color || null, level: 1, donated: 0, founder }
+  const g = { id: file.guildSeq++, name, tag: String(tag).toUpperCase(), color: color || null, level: 1, donated: 0, founder, private: false }
   file.guilds.push(g); flush()
   return g
+}
+// Marca un gremio como privado (sólo ingreso por invitación) o público (ingreso abierto).
+export async function setGuildPrivate(guildId, priv) {
+  if (pg) { await pg.query('UPDATE guilds SET private=$2 WHERE id=$1', [guildId, !!priv]); return }
+  const g = file.guilds.find((x) => x.id === guildId); if (g) { g.private = !!priv; flush() }
 }
 export async function addGuildDonation(guildId, amount, newLevel) {
   if (pg) {
@@ -304,7 +410,17 @@ export async function setGuildMembership(accountId, guildId, role = 'member') {
       [accountId, guildId, role])
     return
   }
-  file.guildMembers[accountId] = { guild_id: guildId, role }; flush()
+  file.guildMembers[accountId] = { guild_id: guildId, role, joined_at: Date.now() }; flush()
+}
+// Cambia SÓLO el rol de un miembro (preserva su antigüedad joined_at). Para ascender/descender.
+export async function setMemberRole(accountId, role) {
+  if (pg) { await pg.query('UPDATE guild_members SET role=$2 WHERE account_id=$1', [accountId, role]); return }
+  if (file.guildMembers[accountId]) { file.guildMembers[accountId].role = role; flush() }
+}
+// Reasigna el fundador registrado del gremio (para transferir el liderazgo / auto-ascenso).
+export async function setGuildFounder(guildId, accountId) {
+  if (pg) { await pg.query('UPDATE guilds SET founder=$2 WHERE id=$1', [guildId, accountId]); return }
+  const g = file.guilds.find((x) => x.id === guildId); if (g) { g.founder = accountId; flush() }
 }
 export async function removeGuildMembership(accountId) {
   if (pg) { await pg.query('DELETE FROM guild_members WHERE account_id=$1', [accountId]); return }
@@ -314,18 +430,47 @@ export async function guildMemberCount(guildId) {
   if (pg) return (await pg.query('SELECT count(*)::int AS n FROM guild_members WHERE guild_id=$1', [guildId])).rows[0]?.n || 0
   return Object.values(file.guildMembers).filter((m) => m.guild_id === guildId).length
 }
+// Borra un gremio al quedar en 0 miembros (por CASCADE se van sus miembros y su depósito). Evita
+// gremios zombie que quedaban en el ranking y eran "joineables" como miembro sin fundador.
+export async function deleteGuild(guildId) {
+  if (pg) { await pg.query('DELETE FROM guilds WHERE id=$1', [guildId]); return }
+  file.guilds = (file.guilds || []).filter((g) => g.id !== guildId)
+  for (const aid of Object.keys(file.guildMembers)) if (file.guildMembers[aid]?.guild_id === guildId) delete file.guildMembers[aid]
+  if (file.guildDeposit) delete file.guildDeposit[guildId]
+  flush()
+}
 // Miembros de un gremio con su nombre de cuenta y rol. Ordena fundador primero.
 export async function guildMembers(guildId) {
   if (pg) {
     const r = await pg.query(
-      `SELECT a.username, m.role FROM guild_members m JOIN accounts a ON a.id=m.account_id
-       WHERE m.guild_id=$1 ORDER BY (m.role='founder') DESC, m.joined_at ASC`, [guildId])
-    return r.rows
+      `SELECT a.id AS account_id, a.username, m.role, extract(epoch from m.joined_at)*1000 AS joined_at,
+              m.donated, m.contract_kills, m.contract_week
+       FROM guild_members m JOIN accounts a ON a.id=m.account_id
+       WHERE m.guild_id=$1 ORDER BY (m.role='founder') DESC, (m.role='officer') DESC, m.joined_at ASC`, [guildId])
+    return r.rows.map((x) => ({ account_id: x.account_id, username: x.username, role: x.role, joined_at: Number(x.joined_at) || 0,
+      donated: Number(x.donated) || 0, contract_kills: x.contract_kills | 0, contract_week: x.contract_week || null }))
   }
+  const rank = (role) => role === 'founder' ? 0 : role === 'officer' ? 1 : 2
   return Object.entries(file.guildMembers)
     .filter(([, m]) => m.guild_id === guildId)
-    .map(([aid, m]) => ({ username: (file.accounts.find((a) => a.id === +aid) || {}).username, role: m.role }))
-    .sort((a, b) => (b.role === 'founder') - (a.role === 'founder'))
+    .map(([aid, m]) => ({ account_id: +aid, username: (file.accounts.find((a) => a.id === +aid) || {}).username, role: m.role, joined_at: m.joined_at || 0,
+      donated: Number(m.donated) || 0, contract_kills: m.contract_kills | 0, contract_week: m.contract_week || null }))
+    .sort((a, b) => rank(a.role) - rank(b.role) || a.joined_at - b.joined_at)
+}
+// Suma al oro donado ACUMULADO del miembro (stat de contribución individual, display).
+export async function bumpMemberDonated(accountId, amt) {
+  if (pg) { await pg.query('UPDATE guild_members SET donated=donated+$2 WHERE account_id=$1', [accountId, Math.floor(amt) || 0]); return }
+  const m = file.guildMembers[accountId]; if (m) { m.donated = (Number(m.donated) || 0) + (Math.floor(amt) || 0); flush() }
+}
+// Suma kills del miembro al contrato de la semana `week` (reinicia si cambió la semana).
+export async function bumpMemberContract(accountId, week, inc) {
+  if (pg) {
+    await pg.query(
+      `UPDATE guild_members SET contract_kills = CASE WHEN contract_week=$2 THEN contract_kills ELSE 0 END + $3,
+       contract_week=$2 WHERE account_id=$1`, [accountId, week, inc | 0])
+    return
+  }
+  const m = file.guildMembers[accountId]; if (m) { m.contract_kills = (m.contract_week === week ? (m.contract_kills | 0) : 0) + (inc | 0); m.contract_week = week; flush() }
 }
 // Ranking público: gremios por nivel y oro donado, con conteo de miembros.
 export async function listGuilds(limit = 20) {
@@ -339,6 +484,35 @@ export async function listGuilds(limit = 20) {
     .map((g) => ({ ...g, members: Object.values(file.guildMembers).filter((m) => m.guild_id === g.id).length }))
     .sort((a, b) => b.level - a.level || b.donated - a.donated || a.id - b.id)
     .slice(0, limit)
+}
+
+// Todos los gremios con agregados por miembro para el Poder del gremio: cantidad de miembros y
+// suma de niveles de personaje (nivel derivado del XP autoritativo). El orden y el cálculo del
+// Poder los hace guilds.ranking; acá sólo agregamos.
+export async function listGuildsWithStats() {
+  if (pg) {
+    const guilds = (await pg.query(
+      `SELECT g.*, (SELECT count(*)::int FROM guild_members m WHERE m.guild_id=g.id) AS members FROM guilds g`)).rows
+    // XP de cada miembro (una fila por miembro). El nivel se deriva en JS con la curva compartida.
+    const mem = (await pg.query(
+      `SELECT m.guild_id, (c.data->>'xp') AS xp
+       FROM guild_members m JOIN characters c ON c.account_id = m.account_id`)).rows
+    const agg = new Map()
+    for (const row of mem) {
+      agg.set(row.guild_id, (agg.get(row.guild_id) || 0) + playerLevelFromXp(Number(row.xp) || 0))
+    }
+    return guilds.map((g) => ({ ...g, sumLevels: agg.get(g.id) || 0 }))
+  }
+  return file.guilds.map((g) => {
+    let sumLevels = 0, members = 0
+    for (const [aid, m] of Object.entries(file.guildMembers)) {
+      if (m.guild_id !== g.id) continue
+      members++
+      const ch = file.chars[+aid]
+      if (ch && ch.data) sumLevels += playerLevelFromXp(Number(ch.data.xp) || 0)
+    }
+    return { ...g, members, sumLevels }
+  })
 }
 
 // --- Contrato semanal del gremio ---
@@ -379,6 +553,34 @@ export async function setDeposit(guildId, { gold, items }) {
   }
   file.guildDeposit[guildId] = { gold: gold | 0, items: items || [] }
   flush()
+}
+// Banco del gremio, SÓLO el oro de la bóveda (NO toca el oro del personaje — el del jugador lo
+// maneja la sesión viva de rooms). Atómico. Arregla el dual-authority que duplicaba/perdía oro
+// online (el jugador siempre está online al operar el banco).
+export async function addGuildDepositGold(guildId, amt) {
+  amt = Math.floor(amt) || 0
+  if (pg) {
+    const r = await pg.query(
+      `INSERT INTO guild_deposit (guild_id, gold, items) VALUES ($1,$2,'[]')
+       ON CONFLICT (guild_id) DO UPDATE SET gold = guild_deposit.gold + $2 RETURNING gold`, [guildId, amt])
+    return { ok: true, gold: Number(r.rows[0].gold) || 0 }
+  }
+  const d = file.guildDeposit[guildId] || (file.guildDeposit[guildId] = { gold: 0, items: [] })
+  d.gold = (Number(d.gold) || 0) + amt; flush()
+  return { ok: true, gold: d.gold }
+}
+export async function subGuildDepositGold(guildId, amt) {
+  amt = Math.floor(amt) || 0
+  if (pg) {
+    const r = await pg.query(
+      `UPDATE guild_deposit SET gold = gold - $2 WHERE guild_id=$1 AND gold >= $2 RETURNING gold`, [guildId, amt])
+    if (!r.rowCount) return { ok: false, error: 'el banco del gremio no tiene tanto oro' }
+    return { ok: true, gold: Number(r.rows[0].gold) || 0 }
+  }
+  const d = file.guildDeposit[guildId] || { gold: 0, items: [] }
+  if ((Number(d.gold) || 0) < amt) return { ok: false, error: 'el banco del gremio no tiene tanto oro' }
+  d.gold = (Number(d.gold) || 0) - amt; file.guildDeposit[guildId] = d; flush()
+  return { ok: true, gold: d.gold }
 }
 
 // --- Alijo privado por cuenta (personal, sólo el dueño) ---
@@ -442,6 +644,60 @@ export async function marketClaim(id) {
   if (pg) { const r = await pg.query('DELETE FROM market_listings WHERE id=$1 RETURNING id, seller, seller_name, item, price, created_at, expires_at', [id | 0]); const l = r.rows[0]; return l ? { ...l, price: Number(l.price), created_at: Number(l.created_at), expires_at: Number(l.expires_at) } : null }
   const i = file.market.findIndex((l) => l.id === (id | 0)); if (i < 0) return null; const [l] = file.market.splice(i, 1); flush(); return l
 }
+// --- Marketplace oro↔$VEL (order book P2P, oro escrowed en el server, pago on-chain) ---
+// El oro del vendedor vive escrowed en la fila de la orden (no en su bag). El $VEL nunca lo toca el
+// server: fluye on-chain del comprador al vendedor+tesoro; acá sólo verificamos la firma.
+const goView = (o) => ({ ...o, gold: Number(o.gold), price: Number(o.price), lock_expires: Number(o.lock_expires || 0) })
+export async function goldOrderAll() {
+  if (pg) { const r = await pg.query('SELECT id, seller, seller_name, seller_wallet, gold, price, status, locked_by, locked_wallet, lock_expires, created_at FROM gold_orders ORDER BY id DESC'); return r.rows.map(goView) }
+  return file.goldOrders.slice().reverse().map(goView)
+}
+export async function goldOrderBySeller(accountId) {
+  if (pg) { const r = await pg.query('SELECT id, seller, seller_name, seller_wallet, gold, price, status, locked_by, locked_wallet, lock_expires, created_at FROM gold_orders WHERE seller=$1 ORDER BY id DESC', [accountId]); return r.rows.map(goView) }
+  return file.goldOrders.filter((o) => o.seller === accountId).map(goView)
+}
+export async function goldOrderGet(id) {
+  if (pg) { const r = await pg.query('SELECT id, seller, seller_name, seller_wallet, gold, price, status, locked_by, locked_wallet, lock_expires, created_at FROM gold_orders WHERE id=$1', [id | 0]); return r.rows[0] ? goView(r.rows[0]) : null }
+  const o = file.goldOrders.find((x) => x.id === (id | 0)); return o ? goView(o) : null
+}
+export async function goldOrderAdd({ seller, sellerName, sellerWallet, gold, price, createdAt }) {
+  if (pg) { const r = await pg.query("INSERT INTO gold_orders (seller, seller_name, seller_wallet, gold, price, status, lock_expires, created_at) VALUES ($1,$2,$3,$4,$5,'open',0,$6) RETURNING id", [seller, sellerName || '', sellerWallet, gold, price, createdAt]); return r.rows[0].id }
+  const id = file.goldOrderSeq++; file.goldOrders.push({ id, seller, seller_name: sellerName || '', seller_wallet: sellerWallet, gold, price, status: 'open', locked_by: null, locked_wallet: null, lock_expires: 0, created_at: createdAt }); flush(); return id
+}
+// Toma la orden para el comprador (open -> locked) de forma ATÓMICA: sólo un comprador la bloquea.
+// Gracia tras vencer un lock antes de que la orden vuelva a ser reservable por OTRO comprador. Le da
+// aire al comprador original a cerrar (settle) si pagó on-chain justo al filo de la ventana: su pago
+// es irreversible, así que no queremos que otro le robe la reserva ni bien vence. goldmarket usa el
+// mismo valor en buyable() para no mostrar/vender la orden hasta pasada la gracia. Ver settle().
+export const GOLD_RELOCK_GRACE_MS = 3 * 60 * 1000
+export async function goldOrderLock(id, { lockedBy, lockedWallet, lockExpires }) {
+  const reLockAfter = Date.now() - GOLD_RELOCK_GRACE_MS
+  if (pg) { const r = await pg.query("UPDATE gold_orders SET status='locked', locked_by=$2, locked_wallet=$3, lock_expires=$4 WHERE id=$1 AND (status='open' OR (status='locked' AND lock_expires < $5)) RETURNING id", [id | 0, lockedBy, lockedWallet, lockExpires, reLockAfter]); return r.rowCount > 0 }
+  const o = file.goldOrders.find((x) => x.id === (id | 0)); if (!o) return false
+  if (o.status !== 'open' && !(o.status === 'locked' && o.lock_expires < reLockAfter)) return false
+  o.status = 'locked'; o.locked_by = lockedBy; o.locked_wallet = lockedWallet; o.lock_expires = lockExpires; flush(); return true
+}
+// Libera el lock (locked -> open) si sigue bloqueada por ese comprador (cancelar compra / vencer).
+export async function goldOrderUnlock(id, lockedBy) {
+  if (pg) { await pg.query("UPDATE gold_orders SET status='open', locked_by=NULL, locked_wallet=NULL, lock_expires=0 WHERE id=$1 AND status='locked' AND locked_by=$2", [id | 0, lockedBy]); return }
+  const o = file.goldOrders.find((x) => x.id === (id | 0)); if (o && o.status === 'locked' && o.locked_by === lockedBy) { o.status = 'open'; o.locked_by = null; o.locked_wallet = null; o.lock_expires = 0; flush() }
+}
+// Saca la orden (settle/cancel). Devuelve la orden removida o null (si ya no está). ATÓMICO.
+export async function goldOrderRemove(id) {
+  if (pg) { const r = await pg.query('DELETE FROM gold_orders WHERE id=$1 RETURNING id, seller, seller_name, seller_wallet, gold, price, status, locked_by, locked_wallet, lock_expires, created_at', [id | 0]); return r.rows[0] ? goView(r.rows[0]) : null }
+  const i = file.goldOrders.findIndex((x) => x.id === (id | 0)); if (i < 0) return null; const [o] = file.goldOrders.splice(i, 1); flush(); return goView(o)
+}
+// Anti-replay: registra una firma como usada (única global). Devuelve true si la reservó, false si ya estaba.
+export async function goldSigClaim(sig, orderId) {
+  if (pg) { try { await pg.query('INSERT INTO gold_order_sigs (sig, order_id, used_at) VALUES ($1,$2,$3)', [sig, orderId | 0, Date.now()]); return true } catch { return false } }
+  if (file.goldOrderSigs[sig]) return false
+  file.goldOrderSigs[sig] = { order_id: orderId | 0, used_at: Date.now() }; flush(); return true
+}
+export async function goldSigRelease(sig) {
+  if (pg) { await pg.query('DELETE FROM gold_order_sigs WHERE sig=$1', [sig]); return }
+  if (file.goldOrderSigs[sig]) { delete file.goldOrderSigs[sig]; flush() }
+}
+
 // Agrega un ítem al inventario (bag) persistido de un personaje OFFLINE (devolución de vencidos).
 // Al primer hueco libre dentro de las 55 celdas; si no entra, se pierde (raro: bag lleno + offline).
 export async function addToCharacterInventory(accountId, rec) {

@@ -15,6 +15,7 @@ export const HOW_TO_PLAY = {
       icon: 'Sword', title: 'Moverte y pelear',
       body: [
         'Tocá el suelo para caminar; tocá un enemigo para atacarlo.',
+        'Tocá el botón de correr (o mantené Shift en la compu) para ir más rápido: gastás estamina y se recarga sola cuando aflojás.',
         'M1 es tu golpe normal (usa tu arma); M2 es tu habilidad especial, y elegís cuál va ahí. El servidor decide el daño: nadie hace trampa.',
       ],
       tip: 'Sin arma peleás a puños y hacés poco daño: equipate algo antes de salir.',
@@ -33,6 +34,14 @@ export const HOW_TO_PLAY = {
         'Salís de la ciudad, matás, juntás recursos y saqueás cofres.',
         'Volvés, forjás tu equipo en la Fragua y preparás pociones en la Mesa de Alquimia. Con mejor equipo, más hondo llegás.',
       ],
+    },
+    {
+      icon: 'Scroll', title: 'Aventuras',
+      body: [
+        'Algunos aldeanos no te dan un dato: te dan una historia. Hablales y te abren una aventura — una línea narrativa que cruza varias zonas del mundo.',
+        'Las aventuras se anotan solas en tu registro (el ícono del pergamino). Vas cumpliendo etapas —llegar a una ruina, encontrar algo, volver con quien te la dio— y al cerrarla ganás XP, oro y sellos.',
+      ],
+      tip: 'Prestá atención a los NPCs con nombre: casi siempre apuntan a algo real que podés ir a buscar.',
     },
     {
       icon: 'Boots', title: 'Viajar',
@@ -55,8 +64,9 @@ export const HOW_TO_PLAY = {
       body: [
         'En Triston tenés un cofre personal: tu alijo. Solamente vos lo ves y lo abrís, para dejar guardado lo que no querés cargar.',
         'Lo encontrás cerca de la plaza. Le caminás encima y se abre: tocás un ítem de tu bolsa para guardarlo, o uno del alijo para retirarlo. Lo guardado está a salvo aunque mueras.',
+        'También tenés una bóveda de oro: depositás y retirás cuando quieras. Y guardás cualquier poción —vida, maná y las demás— para no cargarlas encima.',
       ],
-      tip: 'Antes de salir a pelear, dejá en el alijo el botín valioso que no vas a usar: si caés, no lo perdés.',
+      tip: 'Antes de salir a pelear, dejá en el alijo el botín valioso y el oro que no vas a usar: si caés, no lo perdés.',
     },
     {
       icon: 'Swap', title: 'Comerciar y el mercado',
@@ -68,15 +78,19 @@ export const HOW_TO_PLAY = {
     {
       icon: 'Shield', title: 'Gremios',
       body: [
-        'Hablá con Halvard para fundar un gremio (500 de oro, una sigla de tres letras) o unirte a uno del ranking.',
-        'Donás oro para subir su nivel y darle ventajas a todos los miembros. Cada semana hay un contrato compartido, y a nivel 4 se abre el Depósito común.',
+        'Hablá con Halvard, el Maestro de Gremios, para fundar uno (500 de oro, una sigla de tres letras) o unirte a otro. Fundar y gestionar se hace sólo con él.',
+        'Hay tres rangos: fundador, oficial y miembro. El fundador y los oficiales invitan (tocá a un jugador cercano y elegí "Invitar al gremio"), expulsan, y el fundador asciende oficiales o transfiere el liderazgo. El gremio tiene su propio canal de chat.',
+        'Donás oro al pozo para subir el nivel del gremio y darle ventajas a todos: más oro de botín, defensa, XP compartida, el Depósito común a nivel 4 y el estandarte a nivel 5. Del 6 al 10 hay ventajas de prestigio (más oro y XP, contrato reforzado); pasado el 10 el nivel sigue subiendo (pesa en el ranking). Cada semana hay un contrato compartido.',
+        'El ranking ordena por el Poder del gremio, que suma cinco cosas sin tope: los niveles de todos los miembros, su promedio de nivel, la cantidad de miembros, el nivel del gremio y el oro donado al pozo. El promedio premia la calidad del roster, así que no gana sólo el más numeroso.',
       ],
+      tip: 'En la hoja de personaje ves a qué gremio pertenecés y el ranking completo, sin salir del pueblo.',
     },
     {
       icon: 'Coin', title: 'La economía',
       body: [
         'Ganás oro peleando, juntando y con las misiones diarias, que además dan sellos. Todo el oro, el loot y las ventas los valida el servidor: nadie fabrica oro de la nada.',
-        'Entre jugadores el oro circula por el comercio y el mercado. Con el tiempo se cambiará por $VEL, el token del juego. Por ahora el token no existe: primero, que el mundo esté vivo.',
+        'Entre jugadores el oro circula por el comercio y el mercado.',
+        'Cuando exista $VEL, el token del juego, vas a poder cambiar oro por $VEL con otros jugadores: publicás oro pidiendo $VEL y quien compra te lo paga directo a tu billetera (el juego nunca toca tu token; el pago se firma en tu wallet). Por ahora el token no existe: primero, que el mundo esté vivo.',
       ],
     },
   ],
@@ -92,6 +106,7 @@ export const HOW_TO_PLAY = {
       icon: 'Sword', title: 'Move and fight',
       body: [
         'Tap the ground to walk; tap an enemy to attack it.',
+        'Tap the run button (or hold Shift on desktop) to move faster: it drains stamina, which refills on its own when you ease off.',
         'M1 is your normal strike (uses your weapon); M2 is your special ability, and you choose which one goes there. The server decides the damage: no one cheats.',
       ],
       tip: 'Without a weapon you fight with fists and do little damage: equip something before heading out.',
@@ -110,6 +125,14 @@ export const HOW_TO_PLAY = {
         'Leave town, kill, gather resources and loot chests.',
         'Come back, forge your gear at the Forge and brew potions at the Alchemy Table. Better gear takes you deeper.',
       ],
+    },
+    {
+      icon: 'Scroll', title: 'Adventures',
+      body: [
+        "Some villagers don't give you a tip: they give you a story. Talk to them and they open an adventure — a storyline that crosses several zones of the world.",
+        'Adventures track themselves in your journal (the scroll icon). You clear stages — reach a ruin, find something, return to whoever gave it — and on completion you earn XP, gold and seals.',
+      ],
+      tip: 'Pay attention to named NPCs: they almost always point to something real you can go and find.',
     },
     {
       icon: 'Boots', title: 'Travel',
@@ -132,8 +155,9 @@ export const HOW_TO_PLAY = {
       body: [
         'In Triston you have a personal chest: your stash. Only you can see and open it, to store what you do not want to carry.',
         'You find it near the square. Walk onto it and it opens: tap a bag item to store it, or a stash item to take it back. What is stored is safe even if you die.',
+        'It also holds a gold vault: deposit and withdraw whenever you like. And you can stash any potion —health, mana and the rest— so you do not have to carry them.',
       ],
-      tip: 'Before heading out to fight, leave your valuable loot in the stash: if you fall, you keep it.',
+      tip: 'Before heading out to fight, leave your valuable loot and spare gold in the stash: if you fall, you keep it.',
     },
     {
       icon: 'Swap', title: 'Trading and the market',
@@ -145,15 +169,19 @@ export const HOW_TO_PLAY = {
     {
       icon: 'Shield', title: 'Guilds',
       body: [
-        'Talk to Halvard to found a guild (500 gold, a three-letter tag) or join one from the ranking.',
-        'Donate gold to raise its level and grant perks to every member. Each week there is a shared contract, and at level 4 the shared Deposit opens.',
+        'Talk to Halvard, the Guildmaster, to found one (500 gold, a three-letter tag) or join another. Founding and managing happen only with him.',
+        'There are three ranks: founder, officer and member. Founders and officers invite (tap a nearby player and pick "Invite to guild"), kick, and the founder promotes officers or transfers leadership. The guild has its own chat channel.',
+        'Donate gold to the pool to raise the guild level and grant perks to everyone: more loot gold, defense, shared XP, the shared Deposit at level 4 and the banner at level 5. Levels 6 to 10 give prestige perks (more gold and XP, a reinforced contract); past 10 the level keeps climbing (it weighs on the ranking). Each week there is a shared contract.',
+        'The ranking is ordered by the guild Power, which adds five uncapped things: the levels of all members, their average level, the member count, the guild level, and the gold donated to the pool. The average rewards roster quality, so the biggest guild does not simply win.',
       ],
+      tip: 'Your character sheet shows which guild you belong to and the full ranking, without leaving town.',
     },
     {
       icon: 'Coin', title: 'The economy',
       body: [
         'You earn gold by fighting, gathering and from daily quests, which also grant seals. All gold, loot and sales are validated by the server: no one mints gold from nothing.',
-        'Between players, gold flows through trading and the market. In time it will trade for $VEL, the game token. For now the token does not exist: first, the world must be alive.',
+        'Between players, gold flows through trading and the market.',
+        'Once $VEL, the game token, exists you will be able to trade gold for $VEL with other players: list gold asking for $VEL, and whoever buys pays you straight to your wallet (the game never touches your token; the payment is signed in your wallet). For now the token does not exist: first, the world must be alive.',
       ],
     },
   ],

@@ -19,6 +19,9 @@ export default function Trade() {
   const gold = useGameStore((s) => s.gold)
   const accept = useGameStore((s) => s.acceptTradeReq)
   const decline = useGameStore((s) => s.declineTradeReq)
+  const guildInvite = useGameStore((s) => s.guildInvite)
+  const acceptInvite = useGameStore((s) => s.acceptGuildInvite)
+  const declineInvite = useGameStore((s) => s.declineGuildInvite)
   const toggle = useGameStore((s) => s.toggleTradeItem)
   const setGold = useGameStore((s) => s.setTradeGold)
   const confirm = useGameStore((s) => s.confirmTrade)
@@ -33,6 +36,21 @@ export default function Trade() {
           <div className="trade-actions">
             <button className="welcome-guide" onClick={decline}>{t('trade_decline')}</button>
             <button className="gframe-close" onClick={accept}>{t('trade_accept')}</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Invitación de gremio entrante: unirse / rechazar.
+  if (guildInvite && !trade) {
+    return (
+      <div className="gframe-backdrop">
+        <div className="gframe trade-req" onClick={(e) => e.stopPropagation()}>
+          <p className="trade-req-msg">{t('guild_invite_msg', { name: guildInvite.from, guild: `${guildInvite.guildName} [${guildInvite.tag}]` })}</p>
+          <div className="trade-actions">
+            <button className="welcome-guide" onClick={declineInvite}>{t('trade_decline')}</button>
+            <button className="gframe-close" onClick={acceptInvite}>{t('guild_invite_accept')}</button>
           </div>
         </div>
       </div>
