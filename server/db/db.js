@@ -639,10 +639,16 @@ export async function goldOrderAdd({ seller, sellerName, sellerWallet, gold, pri
   const id = file.goldOrderSeq++; file.goldOrders.push({ id, seller, seller_name: sellerName || '', seller_wallet: sellerWallet, gold, price, status: 'open', locked_by: null, locked_wallet: null, lock_expires: 0, created_at: createdAt }); flush(); return id
 }
 // Toma la orden para el comprador (open -> locked) de forma ATÓMICA: sólo un comprador la bloquea.
+// Gracia tras vencer un lock antes de que la orden vuelva a ser reservable por OTRO comprador. Le da
+// aire al comprador original a cerrar (settle) si pagó on-chain justo al filo de la ventana: su pago
+// es irreversible, así que no queremos que otro le robe la reserva ni bien vence. goldmarket usa el
+// mismo valor en buyable() para no mostrar/vender la orden hasta pasada la gracia. Ver settle().
+export const GOLD_RELOCK_GRACE_MS = 3 * 60 * 1000
 export async function goldOrderLock(id, { lockedBy, lockedWallet, lockExpires }) {
-  if (pg) { const r = await pg.query("UPDATE gold_orders SET status='locked', locked_by=$2, locked_wallet=$3, lock_expires=$4 WHERE id=$1 AND (status='open' OR (status='locked' AND lock_expires < $5)) RETURNING id", [id | 0, lockedBy, lockedWallet, lockExpires, Date.now()]); return r.rowCount > 0 }
+  const reLockAfter = Date.now() - GOLD_RELOCK_GRACE_MS
+  if (pg) { const r = await pg.query("UPDATE gold_orders SET status='locked', locked_by=$2, locked_wallet=$3, lock_expires=$4 WHERE id=$1 AND (status='open' OR (status='locked' AND lock_expires < $5)) RETURNING id", [id | 0, lockedBy, lockedWallet, lockExpires, reLockAfter]); return r.rowCount > 0 }
   const o = file.goldOrders.find((x) => x.id === (id | 0)); if (!o) return false
-  if (o.status !== 'open' && !(o.status === 'locked' && o.lock_expires < Date.now())) return false
+  if (o.status !== 'open' && !(o.status === 'locked' && o.lock_expires < reLockAfter)) return false
   o.status = 'locked'; o.locked_by = lockedBy; o.locked_wallet = lockedWallet; o.lock_expires = lockExpires; flush(); return true
 }
 // Libera el lock (locked -> open) si sigue bloqueada por ese comprador (cancelar compra / vencer).

@@ -59,8 +59,11 @@ export async function config() {
   }
 }
 
-// Órdenes visibles para comprar: abiertas, o con el lock ya vencido (vuelven a estar disponibles).
-const buyable = (o) => o.status === 'open' || (o.status === 'locked' && (o.lock_expires || 0) < Date.now())
+// Órdenes visibles para comprar: abiertas, o con el lock vencido HACE MÁS DE la gracia (recién ahí
+// vuelven a estar disponibles para otro). La gracia protege al comprador original que pagó al filo:
+// mientras corre, la orden no se muestra libre ni se puede re-reservar (mismo valor que usa el gate
+// atómico en db.goldOrderLock). Ver settle().
+const buyable = (o) => o.status === 'open' || (o.status === 'locked' && (o.lock_expires || 0) + db.GOLD_RELOCK_GRACE_MS < Date.now())
 const view = (o) => ({ id: o.id, seller: o.seller_name || '', gold: o.gold, price: o.price, locked: !buyable(o), createdAt: o.created_at })
 
 export async function browse() {
@@ -160,7 +163,13 @@ export async function settle(buyerId, buyerAccountId, orderId, sig) {
 
     const o = await db.goldOrderGet(orderId)
     if (!o) return release({ ok: false, error: 'esa orden ya no está' })
-    if (o.status !== 'locked' || o.locked_by !== buyerAccountId) return release({ ok: false, error: 'perdiste la reserva de esa orden' })
+    // NO exigimos ser el dueño del lock: el pago on-chain es la AUTORIDAD. Si el lock del comprador
+    // venció y otro reservó la orden mientras su transferencia estaba en vuelo, su pago —verificado
+    // abajo contra ESTA orden (memo velmkt:id + montos exactos a vendedor+tesoro)— igual vale y le
+    // entregamos el oro escrowed. El $VEL ya se movió on-chain y es irreversible; el lock es sólo una
+    // reserva blanda anti-carrera. Esto cierra el fund-loss documentado en LOCK_MS (comprador pagaba y
+    // no recibía nada). La gracia de re-lock (GOLD_RELOCK_GRACE_MS) minimiza el doble-pago; el resto lo
+    // serializan withLock('gold:id') + el remove atómico + el anti-replay de la firma.
 
     const decimals = await chain.mintDecimals(process.env.VEL_MINT)
     if (decimals < 0) return release({ ok: false, error: 'no se pudo leer el token, reintentá', retry: true })
