@@ -385,7 +385,7 @@ const pubNode = (nd) => ({ n: nd.n, x: nd.x, y: nd.y, id: nd.id, name: nd.name, 
 export function playerGather(pid, nid) {
   if (!ctx) return
   const pl = ctx.getPlayer(pid)
-  if (!pl) return
+  if (!pl || pl.dead) return   // muerto (autoritativo): no puede juntar recursos hasta reaparecer
   const w = worlds.get(key(pl.map, pl.ch))
   if (!w || !w.nodes) return
   const nd = w.nodes.get(nid)
@@ -414,7 +414,7 @@ export function chestSnapshot(map, ch) {
 export function playerOpenChest(pid, cid) {
   if (!ctx) return
   const pl = ctx.getPlayer(pid)
-  if (!pl) return
+  if (!pl || pl.dead) return   // muerto (autoritativo): no puede abrir cofres hasta reaparecer
   const w = worlds.get(key(pl.map, pl.ch))
   if (!w || !w.chests) return
   const c = w.chests.get(cid)
@@ -474,7 +474,7 @@ const PVP_ENABLED = false
 export function playerAttack(pid, eid) {
   if (!ctx) return
   const pl = ctx.getPlayer(pid)
-  if (!pl) return
+  if (!pl || pl.dead) return   // muerto (autoritativo): no pega hasta reaparecer (cierra farmear invencible)
   const w = worlds.get(key(pl.map, pl.ch))
   if (!w) return
   const e = w.enemies.get(eid)   // sólo enemigos: un id de jugador jamás está en este mapa (PvP off)
@@ -514,7 +514,7 @@ const CAST_DMG_MAX = 900           // techo de daño por golpe de habilidad (ant
 const CAST_RANGE = 14              // alcance máximo de un golpe de habilidad desde el jugador (tiles)
 export function playerCast(pid, hits) {
   if (!ctx || !Array.isArray(hits) || !hits.length) return
-  const pl = ctx.getPlayer(pid); if (!pl) return
+  const pl = ctx.getPlayer(pid); if (!pl || pl.dead) return   // muerto (autoritativo): no castea hasta reaparecer
   const w = worlds.get(key(pl.map, pl.ch)); if (!w) return
   const tnow = now()
   if (tnow < (pcastAt.get(pid) || 0)) return   // cadencia: descarta ráfagas de casts
@@ -677,13 +677,15 @@ function stepEnemy(w, e, players, dt) {
         if (Math.hypot(p.x - e.x, p.y - e.y) > (ab.radius || 2)) continue
         const ps = pstats.get(p.id) || {}
         const dmg = Math.max(1, Math.round(e.dmg * (ab.mult || 2)) - (ps.defense || 0))
-        ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg, smash: 1 })
+        ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg, smash: 1 })   // FX + predicción del cliente
+        if (ctx.damagePlayer) ctx.damagePlayer(p.id, dmg)        // HP AUTORITATIVA (Fase 3): el server aplica el daño y decide la muerte
       }
       ctx.broadcast(w.map, w.ch, { t: 'esmash', i: e.i, x: r2(e.x), y: r2(e.y), r: ab.radius || 2 })  // FX (el cliente puede animarlo)
     } else {
       const st = pstats.get(tgt.id) || {}
       const dmg = Math.max(1, e.dmg - (st.defense || 0))
-      ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg })
+      ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg })   // FX + predicción del cliente
+      if (ctx.damagePlayer) ctx.damagePlayer(tgt.id, dmg)   // HP AUTORITATIVA (Fase 3)
     }
   }
 }

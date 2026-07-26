@@ -149,6 +149,10 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   p._qclaimed = new Set(Array.isArray(qclaimed) ? qclaimed : [])
   p.feats = normalizeFeats(feats)   // hazañas server-owned (jefes derrotados + zona más profunda)
   p.guildTag = guildTag || null     // estandarte sobre la cabeza (sigla del gremio)
+  // HP AUTORITATIVA (Fase 3): la vida viva la dueña el server. Arranca en null y se siembra (llena) en
+  // el 1er setStats, cuando el cliente declara su techo (hpMax depende del equipo). _lastHitAt marca la
+  // ventana "en combate" para la reconciliación de curación reportada por el cliente (ver playerHp).
+  p.hp = null; p.hpMax = 0; p._lastHitAt = 0
   players.set(id, p)
   const present = inChannel(map, ch).filter((o) => o.id !== id).map(pub)
   broadcast(map, ch, { t: 'join', player: pub(p) }, id)
@@ -273,10 +277,21 @@ export function forgeCostOf(id) {
 
 export function setStats(id, stats) {
   const p = players.get(id)
-  if (p && stats && stats.level) {
-    p.invCap = invCapForLevel(stats.level)
-    const lv = stats.level | 0
-    if (p.level !== lv) { p.level = lv; broadcast(p.map, p.ch, { t: 'plvl', id, level: lv }, id) }   // nivel visible para los demás
+  if (p && stats) {
+    // HP AUTORITATIVA (Fase 3): el TECHO de vida lo declara el cliente (depende del equipo, igual que
+    // el daño de arma) y el server lo ACOTA. La vida VIVA (p.hp) la dueña el server; al conocer el
+    // techo por primera vez, arranca llena. Un cambio de equipo que baja el techo clampa la vida.
+    if (stats.hpMax) {
+      const hm = Math.max(1, Math.min(9999999, Math.floor(Number(stats.hpMax)) || 1))
+      p.hpMax = hm
+      if (p.hp == null) p.hp = hm
+      else if (p.hp > hm) p.hp = hm
+    }
+    if (stats.level) {
+      p.invCap = invCapForLevel(stats.level)
+      const lv = stats.level | 0
+      if (p.level !== lv) { p.level = lv; broadcast(p.map, p.ch, { t: 'plvl', id, level: lv }, id) }   // nivel visible para los demás
+    }
   }
   combat.setStats(id, stats)
 }
@@ -404,11 +419,28 @@ export function sellItem(id, index) {
 // (la vida sigue client-side por ahora). Devuelve el id usado para que el cliente aplique el efecto.
 export function useItem(id, index) {
   const p = players.get(id); if (!p) return { ok: false }
+  if (p.dead) return { ok: false, error: 'estás muerto' }   // muerto (autoritativo): no consume ítems hasta reaparecer
   const it = p.inv[index | 0]
   if (!it) return { ok: false, error: 'no tenés ese ítem' }
   invRemoveAt(p, index | 0, 1)
   p._invDirty = true
+  // Curación AUTORITATIVA de poción de vida (Fase 3): el server sube p.hp, así una poción EN combate
+  // cuenta (donde no se aceptan subidas de HP reportadas por el cliente). Espeja potionEffect del cliente.
+  const heal = potionHpHeal(it.id)
+  if (heal > 0 && p.hp != null && p.hpMax) p.hp = Math.min(p.hpMax, p.hp + heal)
   return { ok: true, id: it.id, inv: p.inv }
+}
+// Curación de vida de una poción (espeja client/data store.potionEffect: vida 25×mult; super=2, ultra=3;
+// o hp_regen). 0 si no cura vida. Si cambia la fórmula del cliente, tocar los dos.
+function potionHpHeal(itemId) {
+  const it = itemById(itemId); if (!it || it.slot !== 'potion') return 0
+  const name = ((it.name || '') + ' ' + (it.name_en || '')).toLowerCase()
+  let mult = 1
+  if (/super/.test(name)) mult = 2
+  if (/ultra/.test(name)) mult = 3
+  if (/vida|health/.test(name)) return 25 * mult
+  if (it.stats && it.stats.hp_regen) return it.stats.hp_regen | 0
+  return 0
 }
 // --- Ledger "checkout" del bag (anti-mint de bag_give) -------------------------------------------
 function outInc(p, itemId, n = 1) { if (!p._out) p._out = new Map(); p._out.set(itemId, (p._out.get(itemId) || 0) + Math.max(1, n | 0)); p._ledgerDirty = true }
@@ -524,6 +556,12 @@ export function sealsOf(accountId) {
 // dejar que el blob del cliente pise la XP del server (anti-cheat del ranking del Salón de la Fama).
 export function xpOf(accountId) {
   for (const p of players.values()) if (p.accountId === accountId) return p.xp || 0
+  return null
+}
+// Vida viva autoritativa de una cuenta con sesión (o null). { hp, hpMax, dead }. La HP no se persiste
+// (al entrar se reaparece con vida llena), así que esto es sólo del estado en memoria.
+export function hpOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return { hp: p.hp, hpMax: p.hpMax, dead: !!p.dead }
   return null
 }
 
@@ -842,10 +880,46 @@ export function setGfx(id, gfx) {
   broadcast(p.map, p.ch, { t: 'gfx', id, gfx: p.gfx }, id)
 }
 
-// Vida del jugador: se difunde por AoI (cambia seguido) para que los demás vean su barra.
+// --- HP / muerte AUTORITATIVOS del servidor (Fase 3) ------------------------------------------
+// El server dueña la vida viva del jugador: aplica el daño enemigo (combat.stepEnemy -> damagePlayer),
+// decide la muerte y, con `dead`, congela las acciones del jugador (combat rechaza atacar/juntar/abrir
+// estando muerto). Así un cliente hackeado no puede farmear invencible: aunque ignore su muerte, el
+// server lo dejó sin poder actuar hasta reaparecer. Las curas fuera de combate se aceptan del reporte
+// del cliente (regen del pueblo/poción); en combate NO (anti-invencibilidad) — las modela el server.
+const COMBAT_WINDOW_MS = 3000   // tras recibir daño: dentro de esta ventana no se aceptan subidas de HP reportadas
+
+// Daño enemigo AUTORITATIVO: baja p.hp y, si llega a 0, fuerza la muerte.
+export function damagePlayer(id, dmg) {
+  const p = players.get(id); if (!p || p.dead) return
+  if (p.hp == null) { if (!p.hpMax) return; p.hp = p.hpMax }   // aún sin techo declarado: no podemos trackear
+  dmg = Math.max(0, Math.floor(Number(dmg)) || 0); if (!dmg) return
+  p._lastHitAt = Date.now()
+  p.hp = Math.max(0, p.hp - dmg)
+  broadcastAoI(p.map, p.ch, p.x, p.y, { t: 'php', id, hp: p.hp, hpMax: p.hpMax }, id)
+  if (p.hp <= 0) forceDeath(p)
+}
+// Muerte AUTORITATIVA: la decide el server (no el cliente). Congela las acciones vía p.dead y avisa a
+// TODOS —incluido el propio cliente— así también un cliente honesto ve la caída en co-op. La penalidad
+// de oro (tumba) la sigue disparando el flujo del cliente (dropGrave), idempotente por muerte.
+function forceDeath(p) {
+  if (p.dead) return
+  p.dead = true
+  broadcast(p.map, p.ch, { t: 'pdied', id: p.id })
+}
+
+// Vida del jugador reportada por el CLIENTE: se usa para la barra que ven los demás y para reconciliar
+// la curación. Reglas (anti-invencibilidad): bajar siempre se acepta (daño honesto que el server no
+// vio); SUBIR sólo fuera de combate (regen del pueblo/poción tranquila) — en combate se ignora la
+// subida (las curas en combate las modela el server: ver useItem). Nunca por encima del techo.
 export function playerHp(id, hp, hpMax) {
   const p = players.get(id); if (!p) return
-  p.hp = hp | 0; p.hpMax = hpMax | 0
+  if (hpMax) p.hpMax = Math.max(1, Math.min(9999999, hpMax | 0))
+  const reported = Math.max(0, Math.min(p.hpMax || (hpMax | 0) || 1, hp | 0))
+  if (p.hp == null) p.hp = reported
+  else if (reported < p.hp) p.hp = reported                                  // daño honesto: siempre baja
+  else if (Date.now() - (p._lastHitAt || 0) > COMBAT_WINDOW_MS) p.hp = reported   // fuera de combate: aceptar la cura reportada
+  // en combate + subida: se ignora (el server manda). Si el server ya lo mató, no revive por un reporte.
+  if (p.dead) return
   broadcastAoI(p.map, p.ch, p.x, p.y, { t: 'php', id, hp: p.hp, hpMax: p.hpMax }, id)
 }
 
@@ -858,6 +932,8 @@ export function playerDead(id) {
 export function playerAlive(id, x, y, dir) {
   const p = players.get(id); if (!p) return
   p.dead = false
+  p.hp = p.hpMax || p.hp   // reaparece con vida LLENA (autoritativo)
+  p._lastHitAt = 0
   if (x != null) { p.x = x; p.y = y; if (dir != null) p.dir = dir }
   broadcast(p.map, p.ch, { t: 'palive', id, x: p.x, y: p.y, dir: p.dir }, id)
 }
@@ -971,6 +1047,7 @@ combat.init({
   broadcast: (map, ch, msg) => broadcast(map, ch, msg, null),
   awardGold: (id, amt, reason, x, y) => awardGold(id, amt, reason, x, y),   // faucets del mundo (kill/cofre)
   awardXp: (id, amt, reason) => awardXp(id, amt, reason),                    // XP autoritativa (kill/cofre)
+  damagePlayer: (id, dmg) => damagePlayer(id, dmg),                          // HP autoritativa (Fase 3): daño enemigo -> muerte
   grantLoot: (id, drops) => grantLoot(id, drops),                           // ítems de loot (kill), autoritativos
   missionTick: (id, type, map, n) => missionTick(id, type, map, n),         // avance de misiones autoritativo
   recordBoss: (id, map) => recordBoss(id, map),                             // hazaña: jefe permanente derrotado
