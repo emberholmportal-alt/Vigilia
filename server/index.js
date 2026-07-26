@@ -661,6 +661,9 @@ wss.on('connection', (ws) => {
 
 http_server.listen(PORT, () => {
   console.log(`[velgrim] servidor escuchando en :${PORT} (ws + http)`)
+  // Self-check del marketplace $VEL: si está prendido, avisa fuerte si el tesoro no puede cobrar la
+  // comisión (sin token account del mint) — el mercado se mostraría cerrado hasta crearla.
+  goldmarket.selfCheck().catch(() => {})
 })
 
 // Apagado ordenado (deploy de Render = SIGTERM; Ctrl-C = SIGINT). El handler de 'close' del socket

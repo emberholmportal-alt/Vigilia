@@ -41,6 +41,24 @@ export function toBaseUnits(uiTokens, decimals) {
   return BigInt(Math.floor(Number(uiTokens) || 0)) * (10n ** BigInt(decimals))
 }
 
+// ¿`owner` tiene una token account del `mint`? La necesita para RECIBIR el token (ej: el tesoro para
+// cobrar la comisión). Sin ella, cualquier transferencia SPL a `owner` falla y —al ser atómica— voltea
+// la transacción entera. Devuelve true/false, o null ante error de RPC (el caller falla cerrado).
+// Cachea sólo el positivo: una ATA no desaparece; el negativo NO se cachea (así se prende sola en
+// cuanto se cree, sin reiniciar el server).
+const _ataCache = new Set()
+export async function hasTokenAccount(owner, mint) {
+  if (!owner || !mint) return false
+  const key = owner + ':' + mint
+  if (_ataCache.has(key)) return true
+  try {
+    const r = await rpc('getTokenAccountsByOwner', [owner, { mint }, { encoding: 'jsonParsed' }])
+    const exists = (r?.value?.length || 0) > 0
+    if (exists) _ataCache.add(key)
+    return exists
+  } catch { return null }
+}
+
 // Suma (BigInt) del balance de `mint` que controla `owner` en una lista pre/post de getTransaction.
 function ownerBalance(list, owner, mint) {
   let total = 0n

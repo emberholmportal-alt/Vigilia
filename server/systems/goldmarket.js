@@ -31,6 +31,24 @@ export function enabled() {
 }
 const off = () => ({ ok: false, off: true, error: 'el mercado de $VEL está cerrado' })
 
+// El tesoro tiene que poder RECIBIR la comisión (5%): necesita una token account del mint. Si no
+// existe, el pago al tesoro falla y —al ser atómico— voltea TODA la transacción del comprador: nadie
+// pierde plata (no se mueve nada) pero el mercado queda roto. Chequeo cacheado y FAIL-CLOSED: ante mint
+// sin ATA o error de RPC, tratamos el mercado como no-listo (no publicar/reservar). settle NO se gatea:
+// si hay un pago on-chain confirmado, la ATA existía sí o sí al momento de pagar.
+async function treasuryReady() {
+  return (await chain.hasTokenAccount(process.env.VEL_TREASURY, process.env.VEL_MINT)) === true
+}
+const notReady = () => ({ ok: false, off: true, error: 'el mercado de $VEL todavía no está listo (tesoro)' })
+
+// Self-check de arranque: avisa fuerte si el mercado está prendido pero el tesoro no puede cobrar.
+export async function selfCheck() {
+  if (!enabled()) return
+  const sym = process.env.VEL_SYMBOL || 'VEL'
+  if (await treasuryReady()) console.log('[goldmkt] marketplace $VEL listo (tesoro con token account del mint).')
+  else console.warn('[goldmkt] VEL_MARKET=on pero el tesoro (' + String(process.env.VEL_TREASURY).slice(0, 6) + '…) NO tiene token account del mint: el mercado se mostrará CERRADO hasta crearla (mandale 1 ' + sym + ' al tesoro y listo).')
+}
+
 // Corte del pago (unidades base, BigInt) para un precio entero de tokens. treasuryBase = 5% (hacia
 // abajo), sellerBase = el resto. Devuelve strings para mandar al cliente sin perder precisión.
 function split(price, decimals) {
@@ -44,6 +62,7 @@ function split(price, decimals) {
 // decimales del mint (para armar la transferencia), y los límites. { on:false } si está apagado.
 export async function config() {
   if (!enabled()) return { on: false }
+  if (!(await treasuryReady())) return { on: false }   // fail-closed: sin ATA del tesoro el mercado no puede operar
   const mint = process.env.VEL_MINT
   const decimals = await chain.mintDecimals(mint)
   return {
@@ -80,6 +99,7 @@ export async function mine(accountId) {
 // dirección SIWS de la cuenta), NUNCA el cliente — es la wallet que va a cobrar el $VEL.
 export async function list(playerId, accountId, sellerName, sellerWallet, gold, price) {
   if (!enabled()) return off()
+  if (!(await treasuryReady())) return notReady()   // no escrowear oro en un mercado que no puede cobrar
   if (!accountId || !sellerWallet) return { ok: false, error: 'no autenticado' }
   // La wallet de cobro DEBE ser una dirección Solana válida (base58). Con la wallet obligatoria en
   // prod siempre lo es (es la pubkey SIWS), pero validamos igual: una cuenta sin wallet no puede
@@ -122,6 +142,7 @@ export async function cancel(playerId, accountId, orderId) {
 // Reservar una orden para comprarla: la bloquea ~3 min y devuelve las instrucciones de pago exactas.
 export async function lock(buyerId, buyerAccountId, buyerWallet, orderId) {
   if (!enabled()) return off()
+  if (!(await treasuryReady())) return notReady()   // no dar instrucciones de pago si el tesoro no puede cobrar (la tx fallaría entera)
   if (!buyerAccountId) return { ok: false, error: 'no autenticado' }
   const o = await db.goldOrderGet(orderId)
   if (!o) return { ok: false, error: 'esa orden ya no está' }
