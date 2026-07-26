@@ -716,5 +716,16 @@ function vecToDir(dx, dy) {
 }
 
 let _timer = null
-export function start() { if (!_timer) { _last = now(); _timer = setInterval(step, 100) } }
+// El loop de simulación se blinda: si un tick lanza (enemigo/mapa en mal estado), lo logueamos y
+// seguimos vivos en vez de dejar que una excepción no atrapada baje el server autoritativo (y con
+// él todo el oro/XP vivo sin flushear). `_last` ya se actualizó al tope de step(), así que el dt
+// del próximo tick no se dispara.
+export function start() {
+  if (!_timer) {
+    _last = now()
+    _timer = setInterval(() => {
+      try { step() } catch (e) { console.error('[combat] step() error (el loop sigue):', (e && e.stack) || e) }
+    }, 100)
+  }
+}
 export function stop() { if (_timer) { clearInterval(_timer); _timer = null } }

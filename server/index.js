@@ -652,3 +652,9 @@ async function gracefulShutdown(sig) {
 }
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
 process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+
+// Red de seguridad: una excepción no atrapada o una promesa rechazada NO deben bajar el server
+// autoritativo (perdería el oro/XP vivo sin flushear de toda la sala). Las logueamos y seguimos;
+// el estado por-jugador es independiente, así que un error en una operación no corrompe al resto.
+process.on('uncaughtException', (e) => { console.error('[velgrim] uncaughtException (server sigue vivo):', (e && e.stack) || e) })
+process.on('unhandledRejection', (e) => { console.error('[velgrim] unhandledRejection (server sigue vivo):', (e && e.stack) || e) })
