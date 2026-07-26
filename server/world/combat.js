@@ -180,6 +180,7 @@ const GATHER_REACH = 2.4 // tiles: alcance para juntar un nodo
 const CHEST_RESPAWN = 90 // segundos base para que un cofre saqueado reaparezca (escala con la gente)
 const MIN_CHEST_RESPAWN = 30 // piso del respawn de cofres con el canal lleno
 const CHEST_REACH = 2.4  // tiles: alcance para abrir un cofre
+const CHEST_XP = 10      // XP de personaje por abrir un cofre (debe coincidir con el addXp(10) del cliente)
 const WORLD_GC_MS = 120000 // ms que un canal puede estar vacío antes de liberar su mundo (memoria)
 
 // Densidad cerca del punto de entrada. Los mapas de Flare son enormes (hasta 100×100) y te dejan
@@ -429,6 +430,7 @@ export function playerOpenChest(pid, cid) {
   // pagados con fragmentos de sello) sí siguen dando oro — ahí está bien porque pagaste por abrirlos.
   // Los ítems del cofre van al bag AUTORITATIVO del server (empuja 'inv'); `cloot` es sólo para la animación.
   if (roll.drops && roll.drops.length && ctx.grantLoot) ctx.grantLoot(pid, roll.drops)
+  if (ctx.awardXp) ctx.awardXp(pid, CHEST_XP, 'chest')   // XP AUTORITATIVA (mismo monto que el cliente suma cosmético en _onCloot)
   if (ctx.missionTick) ctx.missionTick(pid, 'chest', pl.map, 1)   // avance de misión 'cofre' autoritativo
   ctx.sendTo(pid, { t: 'cloot', c: cid, x: c.x, y: c.y, drops: roll.drops || [] })
 }
@@ -547,6 +549,8 @@ function killEnemy(w, e, killerId) {
   const boss = !!e.boss || /boss|minotaur|elite/.test(e.s)   // jefe de zona (MAP_BOSS) también da loot de jefe
   const roll = rollMonsterDrop(e.lv, boss, (pstats.get(killerId) || {}).itemFind || 0)   // magic-find del matador (antes 0 online)
   if (roll.drops.length && ctx.grantLoot) ctx.grantLoot(killerId, roll.drops)
+  // XP AUTORITATIVA del server (mismo monto que el cliente suma cosmético al recibir 'ekill').
+  if (ctx.awardXp) ctx.awardXp(killerId, e.xp, 'kill')
   // Avance de misiones AUTORITATIVO (matar / contrato): el server cuenta el kill en el mapa del mundo.
   if (ctx.missionTick) { ctx.missionTick(killerId, 'kill', w.map, 1); if (e.contract) ctx.missionTick(killerId, 'contract', w.map, 1) }
   // Aviso al matador: XP autoritativa del server + los drops REALES (para la pila cosmética del

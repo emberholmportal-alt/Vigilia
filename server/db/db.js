@@ -270,6 +270,20 @@ export async function setCharacterGold(accountId, gold) {
   })
 }
 
+// Escribe la XP autoritativa del server al blob (faucet: kills/cofres/misiones/quests, todos
+// server-otorgados). Preserva el resto del blob. Bajo el lock de la cuenta. La usa la persistencia
+// al desconectar (leaveFlush) para que un level-up sin save del cliente igual quede guardado, y es la
+// base del anti-cheat: el nivel del Salón de la Fama sale de esta XP, no del blob que manda el cliente.
+export async function setCharacterXp(accountId, xp) {
+  return withAccountLock(accountId, async () => {
+    const ch = await loadCharacter(accountId)
+    if (!ch) return false
+    const data = { ...(ch.data || {}), xp: Math.max(0, Math.floor(Number(xp) || 0)) }
+    await saveCharacter(accountId, { name: ch.name, race: ch.race, data })
+    return true
+  })
+}
+
 // Escribe los SELLOS autoritativos del server al blob (moneda premium; faucet: misiones/quest,
 // sink: cofre de sellos). Preserva el resto del blob. Bajo el lock de la cuenta.
 export async function setCharacterSeals(accountId, seals) {

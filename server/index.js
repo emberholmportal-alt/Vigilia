@@ -167,6 +167,7 @@ wss.on('connection', (ws) => {
           // cliente (kit inicial). Cierra el bypass "guardar sin entrar al mundo".
           const g = rooms.goldOf(conn.accountId)
           const sv = rooms.sealsOf(conn.accountId)
+          const xpAuth = rooms.xpOf(conn.accountId)
           const inv = rooms.invOf(conn.accountId)
           const led = rooms.ledgerOf(conn.accountId)
           const qc = rooms.questClaimsOf(conn.accountId)
@@ -177,6 +178,10 @@ wss.on('connection', (ws) => {
             const ed = existing?.data || null
             if (g != null) data.gold = g
             else if (ed) data.gold = Math.floor(Number(ed.gold) || 0)
+            // XP AUTORITATIVA (anti-cheat del ranking): la sesión viva pisa el blob; sin sesión se
+            // preserva la del personaje. Un save con xp inflada no puede escalar el Salón de la Fama.
+            if (xpAuth != null) data.xp = xpAuth
+            else if (ed) data.xp = Math.max(0, Math.floor(Number(ed.xp) || 0))
             // Sellos AUTORITATIVOS (moneda premium): igual que el oro, la sesión viva pisa el blob;
             // sin sesión se preservan del personaje. Cierra "editar el save para tener sellos".
             if (sv != null) data.seals = sv
@@ -199,6 +204,7 @@ wss.on('connection', (ws) => {
             if (!ed) {
               const kit = startingKit(m.race)
               data.gold = kit.gold
+              data.xp = 0                    // un personaje nuevo arranca en 0 XP (no acepta xp del blob de creación)
               data.seals = 0                 // un personaje nuevo arranca sin sellos (moneda premium)
               data.inventory = kit.inventory
               data.equipment = kit.equipment
@@ -403,11 +409,12 @@ wss.on('connection', (ws) => {
           if (oldPid != null) await rooms.leaveFlush(oldPid)
           conn.playerId = null
           // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
-          let gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null
+          let gold = 0, seals = 0, xp = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null
           if (!m.spectator) {
             const ch = await db.loadCharacter(conn.accountId)
             gold = Math.floor(Number(ch?.data?.gold) || 0)
             seals = Math.floor(Number(ch?.data?.seals) || 0)
+            xp = Math.max(0, Math.floor(Number(ch?.data?.xp) || 0))   // XP autoritativa: semilla de la sesión (el ranking sale de acá)
             inv = ch?.data?.inventory || null
             qclaimed = Array.isArray(ch?.data?._qclaimed) ? ch.data._qclaimed : null
             feats = (ch?.data?._feats && typeof ch.data._feats === 'object') ? ch.data._feats : null   // hazañas server-owned
@@ -422,7 +429,7 @@ wss.on('connection', (ws) => {
             // save manipulado (belt/graves con count enorme) en cuentas sin ledger persistido.
             if (!ledger) outSeed = grandfatherSeed(d)
           }
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, inv, outSeed, ledger, qclaimed, feats })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, xp, inv, outSeed, ledger, qclaimed, feats })
           conn.playerId = id
           send({ t: 'present', you: id, players: present, map: m.map, channel })
           if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'seals', seals }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + sellos + bag

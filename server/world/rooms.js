@@ -105,7 +105,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null } = {}) {
+export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, xp = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -122,7 +122,10 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   const ch = pickChannel(map, channel)
   // `gold` es AUTORITATIVO del servidor a partir de acá (Fase A de la economía): se carga del
   // personaje al entrar y sólo lo mutan las funciones de abajo (faucets del mundo + sinks validados).
-  const p = { id, name: name || 'Vigilante', race: race || null, body: (body === 'female' || body === 'female_dark') ? body : 'male', map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, gold: Math.floor(Number(gold) || 0), seals: Math.floor(Number(seals) || 0), send }
+  // `xp` es AUTORITATIVO del servidor: se carga del personaje al entrar y sólo la suman los faucets
+  // server-otorgados (kill/cofre/misión/quest). El nivel del Salón de la Fama sale de esta XP, así que
+  // un save con xp inflada del cliente no puede escalar el ranking (el handler `save` la pisa con ésta).
+  const p = { id, name: name || 'Vigilante', race: race || null, body: (body === 'female' || body === 'female_dark') ? body : 'male', map, ch, x, y, dir, gfx: gfx || null, accountId: accountId || null, gold: Math.floor(Number(gold) || 0), seals: Math.floor(Number(seals) || 0), xp: Math.max(0, Math.floor(Number(xp) || 0)), send }
   // `inv` es AUTORITATIVO del servidor (Fase A.2): el bag se carga del personaje al entrar y sólo
   // lo mutan las funciones de abajo (loot otorgado por el server + ops validadas). Se guarda como
   // registros mínimos {id, count?, dur?, upgrade?} (el cliente reconstruye el ítem completo por id).
@@ -294,6 +297,16 @@ export function awardGold(id, amt, reason, x, y) {
   p.gold += Math.floor(amt)
   sendGold(p, Math.floor(amt), reason || 'earn', x, y)
   return p.gold
+}
+// XP AUTORITATIVA del server (faucet: kill/cofre/misión/quest). Suma a la XP viva de la sesión y la
+// marca sucia para persistir. NO empuja nada al cliente: éste mantiene su contador cosmético sumando
+// los MISMOS montos (kill=e.xp, cofre=CHEST_XP, misión=m.xp, quest=r.xp), así ambos quedan sincronizados
+// y el save escribe esta XP (server-owned). No toca p.level (eso lo sigue derivando el cliente vía
+// setStats; el nivel del ranking se recomputa de la XP persistida con playerLevelFromXp).
+export function awardXp(id, amt, reason) {
+  const p = players.get(id); if (!p || !(amt > 0)) return
+  p.xp = (p.xp || 0) + Math.floor(amt)
+  p._xpDirty = true
 }
 // Gasta oro (sink genérico: reparar / ofrenda). Falla si no alcanza. El saldo nunca queda negativo.
 export function spendGold(id, amt, reason) {
@@ -507,6 +520,12 @@ export function sealsOf(accountId) {
   for (const p of players.values()) if (p.accountId === accountId) return p.seals
   return null
 }
+// XP autoritativa actual de una cuenta con sesión activa (o null). La usa el handler `save` para no
+// dejar que el blob del cliente pise la XP del server (anti-cheat del ranking del Salón de la Fama).
+export function xpOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) return p.xp || 0
+  return null
+}
 
 // --- Mercado: el ítem sale del bag al escrow del listado (server) y vuelve por grant server-side.
 // Ni el ledger _out ni el cliente deciden nada: es todo autoritativo (como loot/compra/venta).
@@ -684,6 +703,7 @@ export async function hallOfFame(limit = 20) {
 async function persistGold(p) {
   if (!p || !p.accountId) return
   if (p._goldDirty) { p._goldDirty = false; try { await db.setCharacterGold(p.accountId, p.gold) } catch {} }
+  if (p._xpDirty) { p._xpDirty = false; try { await db.setCharacterXp(p.accountId, p.xp) } catch {} }
   if (p._sealsDirty) { p._sealsDirty = false; try { await db.setCharacterSeals(p.accountId, p.seals) } catch {} }
   if (p._invDirty) { p._invDirty = false; try { await db.setCharacterInventory(p.accountId, p.inv) } catch {} }
   if (p._ledgerDirty) { p._ledgerDirty = false; try { await db.setCharacterLedger(p.accountId, ledgerOf(p.accountId)) } catch {} }
@@ -756,6 +776,8 @@ export function claimMission(id, missionId) {
   if (gold > 0) { p.gold += gold; p._goldDirty = true }
   const seals = m.seals || 0
   if (seals > 0) { p.seals = (p.seals || 0) + seals; p._sealsDirty = true }   // sellos AUTORITATIVOS
+  const mxp = m.xp || 0
+  if (mxp > 0) { p.xp = (p.xp || 0) + mxp; p._xpDirty = true }   // XP AUTORITATIVA (el cliente suma el mismo m.xp de su lista)
   return { ok: true, gold: p.gold, add: gold, seals: p.seals, sealsAdd: seals }
 }
 // Cofre de sellos (loot box premium): AUTORITATIVO. El server DEBITA los sellos (rechaza si no
@@ -794,6 +816,7 @@ export function recoverGrave(id) {
 // (Duplica el reward de client/data/quests.js — es 1 entrada; si cambia, tocar los dos.)
 const QUEST_GOLD = { guardianes: 150, diario: 180, torre: 280 }
 const QUEST_SEALS = { guardianes: 8, diario: 10, torre: 15 }
+const QUEST_XP = { guardianes: 220, diario: 260, torre: 380 }   // espeja el reward.xp de client/data/quests.js
 export function claimQuest(id, questId) {
   const p = players.get(id); if (!p) return { ok: false }
   if (!p._qclaimed) p._qclaimed = new Set()
@@ -804,7 +827,11 @@ export function claimQuest(id, questId) {
   if (gold > 0) { p.gold += gold; p._goldDirty = true }
   const seals = QUEST_SEALS[questId] || 0
   if (seals > 0) { p.seals = (p.seals || 0) + seals; p._sealsDirty = true }   // sellos AUTORITATIVOS
-  return { ok: true, gold: p.gold, add: gold, seals: p.seals, sealsAdd: seals }
+  // XP AUTORITATIVA de la quest. El cliente ya la suma cosmético desde reward.xp de su quest def; el
+  // server la refleja acá para que la XP server-owned incluya la quest y el save no la haga retroceder.
+  const xp = QUEST_XP[questId] || 0
+  if (xp > 0) { p.xp = (p.xp || 0) + xp; p._xpDirty = true }
+  return { ok: true, gold: p.gold, add: gold, seals: p.seals, sealsAdd: seals, xp }
 }
 
 // Equipo visible: el cliente manda sus capas de paperdoll; se guardan y se difunden al canal
@@ -943,6 +970,7 @@ combat.init({
   sendTo: (id, msg) => { const p = players.get(id); if (p) p.send(msg) },
   broadcast: (map, ch, msg) => broadcast(map, ch, msg, null),
   awardGold: (id, amt, reason, x, y) => awardGold(id, amt, reason, x, y),   // faucets del mundo (kill/cofre)
+  awardXp: (id, amt, reason) => awardXp(id, amt, reason),                    // XP autoritativa (kill/cofre)
   grantLoot: (id, drops) => grantLoot(id, drops),                           // ítems de loot (kill), autoritativos
   missionTick: (id, type, map, n) => missionTick(id, type, map, n),         // avance de misiones autoritativo
   recordBoss: (id, map) => recordBoss(id, map),                             // hazaña: jefe permanente derrotado
