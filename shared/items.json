@@ -88,7 +88,10 @@
       "price": 100,
       "rarity": "comun",
       "gfx": "dagger",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 4,
+        "dmg_melee_max": 6
+      },
       "equip_flags": "melee"
     },
     {
@@ -101,7 +104,10 @@
       "price": 100,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
+      "stats": {
+        "dmg_ranged_min": 4,
+        "dmg_ranged_max": 6
+      },
       "equip_flags": "ranged"
     },
     {
@@ -114,7 +120,10 @@
       "price": 100,
       "rarity": "comun",
       "gfx": "wand",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 4,
+        "dmg_ment_max": 6
+      },
       "equip_flags": "mental"
     },
     {
@@ -366,8 +375,8 @@
       "rarity": "fino",
       "gfx": "dagger",
       "stats": {
-        "dmg_melee_min": 3,
-        "dmg_melee_max": 3
+        "dmg_melee_min": 7,
+        "dmg_melee_max": 9
       },
       "equip_flags": "melee"
     },
@@ -382,8 +391,8 @@
       "rarity": "fino",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 3,
-        "dmg_ranged_max": 3
+        "dmg_ranged_min": 7,
+        "dmg_ranged_max": 9
       },
       "equip_flags": "ranged"
     },
@@ -398,8 +407,8 @@
       "rarity": "fino",
       "gfx": "wand",
       "stats": {
-        "dmg_ment_min": 3,
-        "dmg_ment_max": 3
+        "dmg_ment_min": 7,
+        "dmg_ment_max": 9
       },
       "equip_flags": "mental"
     },
@@ -759,8 +768,8 @@
       "rarity": "legendario",
       "gfx": "dagger",
       "stats": {
-        "dmg_melee_min": 6,
-        "dmg_melee_max": 6
+        "dmg_melee_min": 10,
+        "dmg_melee_max": 12
       },
       "equip_flags": "melee"
     },
@@ -775,8 +784,8 @@
       "rarity": "legendario",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 6,
-        "dmg_ranged_max": 6
+        "dmg_ranged_min": 10,
+        "dmg_ranged_max": 12
       },
       "equip_flags": "ranged"
     },
@@ -791,8 +800,8 @@
       "rarity": "legendario",
       "gfx": "wand",
       "stats": {
-        "dmg_ment_min": 6,
-        "dmg_ment_max": 6
+        "dmg_ment_min": 10,
+        "dmg_ment_max": 12
       },
       "equip_flags": "mental"
     },
@@ -1152,8 +1161,8 @@
       "rarity": "comun",
       "gfx": "dagger",
       "stats": {
-        "dmg_melee_min": 9,
-        "dmg_melee_max": 9
+        "dmg_melee_min": 13,
+        "dmg_melee_max": 15
       },
       "equip_flags": "melee"
     },
@@ -1168,8 +1177,8 @@
       "rarity": "comun",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 9,
-        "dmg_ranged_max": 9
+        "dmg_ranged_min": 13,
+        "dmg_ranged_max": 15
       },
       "equip_flags": "ranged"
     },
@@ -1184,8 +1193,8 @@
       "rarity": "comun",
       "gfx": "wand",
       "stats": {
-        "dmg_ment_min": 9,
-        "dmg_ment_max": 9
+        "dmg_ment_min": 13,
+        "dmg_ment_max": 15
       },
       "equip_flags": "mental"
     },
@@ -1320,10 +1329,10 @@
       "rarity": "unico",
       "gfx": "smith_hammer",
       "stats": {
-        "dmg_melee_min": 12,
-        "dmg_melee_max": 12,
         "crit": 1,
-        "currency_find": 10
+        "currency_find": 10,
+        "dmg_melee_min": 20,
+        "dmg_melee_max": 25
       },
       "equip_flags": "melee"
     },
@@ -1338,10 +1347,10 @@
       "rarity": "unico",
       "gfx": "club",
       "stats": {
-        "dmg_ment_min": 12,
-        "dmg_ment_max": 12,
         "mp_regen": 10,
-        "lightning_resist": 10
+        "lightning_resist": 10,
+        "dmg_ment_min": 18,
+        "dmg_ment_max": 22
       },
       "equip_flags": "mental"
     },
@@ -1551,7 +1560,10 @@
       "price": 500,
       "rarity": "comun",
       "gfx": "shortsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 5,
+        "dmg_melee_max": 8
+      },
       "equip_flags": "melee"
     },
     {
@@ -1564,7 +1576,10 @@
       "price": 500,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
+      "stats": {
+        "dmg_ranged_min": 5,
+        "dmg_ranged_max": 8
+      },
       "equip_flags": "ranged"
     },
     {
@@ -1577,7 +1592,10 @@
       "price": 500,
       "rarity": "comun",
       "gfx": "rod",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 5,
+        "dmg_ment_max": 8
+      },
       "equip_flags": "mental"
     },
     {
@@ -1874,8 +1892,8 @@
       "rarity": "fino",
       "gfx": "shortsword",
       "stats": {
-        "dmg_melee_min": 3,
-        "dmg_melee_max": 3
+        "dmg_melee_min": 8,
+        "dmg_melee_max": 11
       },
       "equip_flags": "melee"
     },
@@ -1890,8 +1908,8 @@
       "rarity": "fino",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 3,
-        "dmg_ranged_max": 3
+        "dmg_ranged_min": 8,
+        "dmg_ranged_max": 11
       },
       "equip_flags": "ranged"
     },
@@ -1906,8 +1924,8 @@
       "rarity": "fino",
       "gfx": "rod",
       "stats": {
-        "dmg_ment_min": 3,
-        "dmg_ment_max": 3
+        "dmg_ment_min": 8,
+        "dmg_ment_max": 11
       },
       "equip_flags": "mental"
     },
@@ -2312,8 +2330,8 @@
       "rarity": "legendario",
       "gfx": "shortsword",
       "stats": {
-        "dmg_melee_min": 6,
-        "dmg_melee_max": 6
+        "dmg_melee_min": 11,
+        "dmg_melee_max": 14
       },
       "equip_flags": "melee"
     },
@@ -2328,8 +2346,8 @@
       "rarity": "legendario",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 6,
-        "dmg_ranged_max": 6
+        "dmg_ranged_min": 11,
+        "dmg_ranged_max": 14
       },
       "equip_flags": "ranged"
     },
@@ -2344,8 +2362,8 @@
       "rarity": "legendario",
       "gfx": "rod",
       "stats": {
-        "dmg_ment_min": 6,
-        "dmg_ment_max": 6
+        "dmg_ment_min": 11,
+        "dmg_ment_max": 14
       },
       "equip_flags": "mental"
     },
@@ -2750,8 +2768,8 @@
       "rarity": "comun",
       "gfx": "shortsword",
       "stats": {
-        "dmg_melee_min": 9,
-        "dmg_melee_max": 9
+        "dmg_melee_min": 14,
+        "dmg_melee_max": 17
       },
       "equip_flags": "melee"
     },
@@ -2766,8 +2784,8 @@
       "rarity": "comun",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 9,
-        "dmg_ranged_max": 9
+        "dmg_ranged_min": 14,
+        "dmg_ranged_max": 17
       },
       "equip_flags": "ranged"
     },
@@ -2782,8 +2800,8 @@
       "rarity": "comun",
       "gfx": "rod",
       "stats": {
-        "dmg_ment_min": 9,
-        "dmg_ment_max": 9
+        "dmg_ment_min": 14,
+        "dmg_ment_max": 17
       },
       "equip_flags": "mental"
     },
@@ -2918,10 +2936,10 @@
       "rarity": "unico",
       "gfx": "zweihander",
       "stats": {
-        "dmg_melee_min": 12,
-        "dmg_melee_max": 12,
         "accuracy": 15,
-        "lightning_resist": 20
+        "lightning_resist": 20,
+        "dmg_melee_min": 18,
+        "dmg_melee_max": 22
       },
       "equip_flags": "melee"
     },
@@ -2936,9 +2954,9 @@
       "rarity": "unico",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 12,
-        "dmg_ranged_max": 12,
-        "crit": 5
+        "crit": 5,
+        "dmg_ranged_min": 18,
+        "dmg_ranged_max": 22
       },
       "equip_flags": "ranged"
     },
@@ -3162,7 +3180,10 @@
       "price": 900,
       "rarity": "comun",
       "gfx": "longsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 6,
+        "dmg_melee_max": 10
+      },
       "equip_flags": "melee"
     },
     {
@@ -3175,7 +3196,10 @@
       "price": 900,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
+      "stats": {
+        "dmg_ranged_min": 6,
+        "dmg_ranged_max": 10
+      },
       "equip_flags": "ranged"
     },
     {
@@ -3188,7 +3212,10 @@
       "price": 900,
       "rarity": "comun",
       "gfx": "staff",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 6,
+        "dmg_ment_max": 10
+      },
       "equip_flags": "mental"
     },
     {
@@ -3485,8 +3512,8 @@
       "rarity": "fino",
       "gfx": "longsword",
       "stats": {
-        "dmg_melee_min": 3,
-        "dmg_melee_max": 3
+        "dmg_melee_min": 9,
+        "dmg_melee_max": 13
       },
       "equip_flags": "melee"
     },
@@ -3501,8 +3528,8 @@
       "rarity": "fino",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 3,
-        "dmg_ranged_max": 3
+        "dmg_ranged_min": 9,
+        "dmg_ranged_max": 13
       },
       "equip_flags": "ranged"
     },
@@ -3517,8 +3544,8 @@
       "rarity": "fino",
       "gfx": "staff",
       "stats": {
-        "dmg_ment_min": 3,
-        "dmg_ment_max": 3
+        "dmg_ment_min": 9,
+        "dmg_ment_max": 13
       },
       "equip_flags": "mental"
     },
@@ -3923,8 +3950,8 @@
       "rarity": "legendario",
       "gfx": "longsword",
       "stats": {
-        "dmg_melee_min": 6,
-        "dmg_melee_max": 6
+        "dmg_melee_min": 12,
+        "dmg_melee_max": 16
       },
       "equip_flags": "melee"
     },
@@ -3939,8 +3966,8 @@
       "rarity": "legendario",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 6,
-        "dmg_ranged_max": 6
+        "dmg_ranged_min": 12,
+        "dmg_ranged_max": 16
       },
       "equip_flags": "ranged"
     },
@@ -3955,8 +3982,8 @@
       "rarity": "legendario",
       "gfx": "staff",
       "stats": {
-        "dmg_ment_min": 6,
-        "dmg_ment_max": 6
+        "dmg_ment_min": 12,
+        "dmg_ment_max": 16
       },
       "equip_flags": "mental"
     },
@@ -4361,8 +4388,8 @@
       "rarity": "comun",
       "gfx": "longsword",
       "stats": {
-        "dmg_melee_min": 9,
-        "dmg_melee_max": 9
+        "dmg_melee_min": 15,
+        "dmg_melee_max": 19
       },
       "equip_flags": "melee"
     },
@@ -4377,8 +4404,8 @@
       "rarity": "comun",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 9,
-        "dmg_ranged_max": 9
+        "dmg_ranged_min": 15,
+        "dmg_ranged_max": 19
       },
       "equip_flags": "ranged"
     },
@@ -4393,8 +4420,8 @@
       "rarity": "comun",
       "gfx": "staff",
       "stats": {
-        "dmg_ment_min": 9,
-        "dmg_ment_max": 9
+        "dmg_ment_min": 15,
+        "dmg_ment_max": 19
       },
       "equip_flags": "mental"
     },
@@ -4547,9 +4574,9 @@
       "rarity": "unico",
       "gfx": "infantry_axe",
       "stats": {
-        "dmg_ranged_min": 12,
-        "dmg_ranged_max": 12,
-        "crit": 5
+        "crit": 5,
+        "dmg_ranged_min": 18,
+        "dmg_ranged_max": 22
       },
       "equip_flags": "ranged,throw_axe"
     },
@@ -4616,7 +4643,9 @@
       "gfx": "reinforced_club",
       "stats": {
         "accuracy": 30,
-        "dark_resist": 25
+        "dark_resist": 25,
+        "dmg_ment_min": 18,
+        "dmg_ment_max": 22
       },
       "equip_flags": "mental"
     },
@@ -4760,7 +4789,10 @@
       "price": 1300,
       "rarity": "comun",
       "gfx": "greatsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 8,
+        "dmg_melee_max": 13
+      },
       "equip_flags": "melee"
     },
     {
@@ -4773,7 +4805,10 @@
       "price": 1300,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
+      "stats": {
+        "dmg_ranged_min": 7,
+        "dmg_ranged_max": 11
+      },
       "equip_flags": "ranged"
     },
     {
@@ -4786,7 +4821,10 @@
       "price": 1300,
       "rarity": "comun",
       "gfx": "greatstaff",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 8,
+        "dmg_ment_max": 13
+      },
       "equip_flags": "mental"
     },
     {
@@ -5083,8 +5121,8 @@
       "rarity": "fino",
       "gfx": "greatsword",
       "stats": {
-        "dmg_melee_min": 3,
-        "dmg_melee_max": 3
+        "dmg_melee_min": 11,
+        "dmg_melee_max": 16
       },
       "equip_flags": "melee"
     },
@@ -5099,8 +5137,8 @@
       "rarity": "fino",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 3,
-        "dmg_ranged_max": 3
+        "dmg_ranged_min": 10,
+        "dmg_ranged_max": 14
       },
       "equip_flags": "ranged"
     },
@@ -5115,8 +5153,8 @@
       "rarity": "fino",
       "gfx": "greatstaff",
       "stats": {
-        "dmg_ment_min": 3,
-        "dmg_ment_max": 3
+        "dmg_ment_min": 11,
+        "dmg_ment_max": 16
       },
       "equip_flags": "mental"
     },
@@ -5521,8 +5559,8 @@
       "rarity": "legendario",
       "gfx": "greatsword",
       "stats": {
-        "dmg_melee_min": 6,
-        "dmg_melee_max": 6
+        "dmg_melee_min": 14,
+        "dmg_melee_max": 19
       },
       "equip_flags": "melee"
     },
@@ -5537,8 +5575,8 @@
       "rarity": "legendario",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 6,
-        "dmg_ranged_max": 6
+        "dmg_ranged_min": 13,
+        "dmg_ranged_max": 17
       },
       "equip_flags": "ranged"
     },
@@ -5553,8 +5591,8 @@
       "rarity": "legendario",
       "gfx": "greatstaff",
       "stats": {
-        "dmg_ment_min": 6,
-        "dmg_ment_max": 6
+        "dmg_ment_min": 14,
+        "dmg_ment_max": 19
       },
       "equip_flags": "mental"
     },
@@ -5959,8 +5997,8 @@
       "rarity": "comun",
       "gfx": "greatsword",
       "stats": {
-        "dmg_melee_min": 9,
-        "dmg_melee_max": 9
+        "dmg_melee_min": 17,
+        "dmg_melee_max": 22
       },
       "equip_flags": "melee"
     },
@@ -5975,8 +6013,8 @@
       "rarity": "comun",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 9,
-        "dmg_ranged_max": 9
+        "dmg_ranged_min": 16,
+        "dmg_ranged_max": 20
       },
       "equip_flags": "ranged"
     },
@@ -5991,8 +6029,8 @@
       "rarity": "comun",
       "gfx": "greatstaff",
       "stats": {
-        "dmg_ment_min": 9,
-        "dmg_ment_max": 9
+        "dmg_ment_min": 17,
+        "dmg_ment_max": 22
       },
       "equip_flags": "mental"
     },
@@ -6346,8 +6384,8 @@
       "rarity": "unico",
       "gfx": "greatsword",
       "stats": {
-        "dmg_melee_min": 12,
-        "dmg_melee_max": 12
+        "dmg_melee_min": 18,
+        "dmg_melee_max": 22
       },
       "equip_flags": "melee"
     },
@@ -6362,8 +6400,8 @@
       "rarity": "unico",
       "gfx": null,
       "stats": {
-        "dmg_ranged_min": 12,
-        "dmg_ranged_max": 12
+        "dmg_ranged_min": 19,
+        "dmg_ranged_max": 23
       },
       "equip_flags": "ranged"
     },
@@ -6378,8 +6416,8 @@
       "rarity": "unico",
       "gfx": "greatstaff",
       "stats": {
-        "dmg_ment_min": 12,
-        "dmg_ment_max": 12
+        "dmg_ment_min": 18,
+        "dmg_ment_max": 22
       },
       "equip_flags": "mental"
     },
@@ -6474,7 +6512,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "dagger",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 4,
+        "dmg_melee_max": 6
+      },
       "equip_flags": "melee"
     },
     {
@@ -6487,7 +6528,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
+      "stats": {
+        "dmg_ranged_min": 4,
+        "dmg_ranged_max": 6
+      },
       "equip_flags": "ranged"
     },
     {
@@ -6500,7 +6544,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "wand",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 4,
+        "dmg_ment_max": 6
+      },
       "equip_flags": "mental"
     },
     {
@@ -6825,7 +6872,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "shortsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 5,
+        "dmg_melee_max": 8
+      },
       "equip_flags": "melee"
     },
     {
@@ -6838,7 +6888,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
+      "stats": {
+        "dmg_ranged_min": 5,
+        "dmg_ranged_max": 8
+      },
       "equip_flags": "ranged"
     },
     {
@@ -6851,7 +6904,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "rod",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 5,
+        "dmg_ment_max": 8
+      },
       "equip_flags": "mental"
     },
     {
@@ -7007,7 +7063,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "longsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 6,
+        "dmg_melee_max": 10
+      },
       "equip_flags": "melee"
     },
     {
@@ -7020,7 +7079,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
+      "stats": {
+        "dmg_ranged_min": 6,
+        "dmg_ranged_max": 10
+      },
       "equip_flags": "ranged"
     },
     {
@@ -7033,7 +7095,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "staff",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 6,
+        "dmg_ment_max": 10
+      },
       "equip_flags": "mental"
     },
     {
@@ -7189,7 +7254,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "greatsword",
-      "stats": {},
+      "stats": {
+        "dmg_melee_min": 8,
+        "dmg_melee_max": 13
+      },
       "equip_flags": "melee"
     },
     {
@@ -7202,7 +7270,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": null,
-      "stats": {},
+      "stats": {
+        "dmg_ranged_min": 7,
+        "dmg_ranged_max": 11
+      },
       "equip_flags": "ranged"
     },
     {
@@ -7215,7 +7286,10 @@
       "price": 200,
       "rarity": "comun",
       "gfx": "greatstaff",
-      "stats": {},
+      "stats": {
+        "dmg_ment_min": 8,
+        "dmg_ment_max": 13
+      },
       "equip_flags": "mental"
     },
     {
@@ -7746,7 +7820,9 @@
       "rarity": "unico",
       "gfx": "longsword",
       "stats": {
-        "hp": 250
+        "hp": 250,
+        "dmg_melee_min": 6,
+        "dmg_melee_max": 10
       },
       "equip_flags": "melee"
     },
@@ -7761,7 +7837,9 @@
       "rarity": "unico",
       "gfx": null,
       "stats": {
-        "accuracy": 15
+        "accuracy": 15,
+        "dmg_ranged_min": 6,
+        "dmg_ranged_max": 10
       },
       "equip_flags": "ranged"
     },
@@ -7776,7 +7854,9 @@
       "rarity": "unico",
       "gfx": "staff",
       "stats": {
-        "mp": 30
+        "mp": 30,
+        "dmg_ment_min": 6,
+        "dmg_ment_max": 10
       },
       "equip_flags": "mental"
     },
