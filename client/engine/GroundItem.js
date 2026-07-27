@@ -98,6 +98,11 @@ export class GroundItem {
     this.label.visible = false
     this.labelBg.visible = false
 
+    // Hit-area EXPLÍCITA y generosa: cubre el ícono + toda la pastilla del nombre, así se recoge
+    // tocando en cualquier parte (antes sólo pegaba el iconito de ~26px y el nombre oculto no era
+    // clickeable). El ancho se ajusta al del nombre; el alto abarca desde la pastilla hasta el piso.
+    const hw = Math.max(20, lw / 2 + 4)
+    this.view.hitArea = new Rectangle(-hw, -42, hw * 2, 50)
     this.view.eventMode = 'static'
     this.view.cursor = "url('/assets/ui/cursors/cursor_interact.png') 4 4, pointer"
   }

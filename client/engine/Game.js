@@ -92,18 +92,20 @@ export class Game {
     this.dayNight.rect.zIndex = 4.9e6
     app.stage.addChild(this.dayNight.rect)
 
-    // Luz cálida que acompaña al personaje de noche (antorcha/linterna): un halo radial en espacio
-    // de pantalla, POR ENCIMA de la cortina, con mezcla aditiva para "abrir" la oscuridad alrededor
-    // del jugador mientras camina. De día queda apagado. (Estilo Diablo/roguelike.)
-    this.playerLight = new Sprite(makeLightTexture())
-    this.playerLight.anchor.set(0.5)
-    this.playerLight.blendMode = 'add'
-    this.playerLight.eventMode = 'none'
-    this.playerLight.visible = false
-    this.playerLight.zIndex = 4.95e6
-    this.playerLight.scale.set(1.35)
+    // "Hueco en la oscuridad": de noche, en vez de SUMAR un halo amarillo (se veía artificial), le
+    // recortamos un hueco SUAVE a la cortina de noche alrededor del personaje con una máscara INVERSA.
+    // Así se revelan los colores reales del mapa cerca del héroe —como si tus ojos/una linterna
+    // abrieran la penumbra—, mucho más natural. La máscara se actualiza en espacio de pantalla.
+    this.darkHole = new Sprite(makeHoleTexture())
+    this.darkHole.anchor.set(0.5)
+    this.darkHole.eventMode = 'none'
+    this.darkHole.visible = false
+    this.darkHole.scale.set(1.7)
     this._lightPt = new Point()
-    app.stage.addChild(this.playerLight)
+    app.stage.addChild(this.darkHole)
+    // Máscara inversa permanente sobre la cortina: donde el hueco es opaco, la cortina NO se dibuja.
+    // Con el hueco oculto (de día / bajo techo) la cortina se ve completa. Ver el update del hueco.
+    this.dayNight.rect.setMask({ mask: this.darkHole, inverse: true })
 
     // Fauna: bandadas de día, murciélagos de noche. Sobre el clima, debajo del fundido.
     this.fauna = new Fauna(app.renderer)
@@ -198,6 +200,7 @@ export class Game {
       this._panKeys = new Set()   // teclas de pan sostenidas (WASD / flechas)
     } else {
       player.setName(this.store.getPlayerName(), this.store.getPlayerLevel(), this.store.getRaceName(), tt('lv'), this.store.getGuildTag())
+      player.setAdmin(!!this._selfAdmin)   // badge ADM propio (llega en 'present'; se re-aplica si ya lo sabíamos)
       this._nameLevel = this.store.getPlayerLevel()
       player.setBody(this.store.getBody())              // cuerpo elegido (male/female/female_dark)
       player.setRace(this.store.getRaceAppearance())    // tinte de piel + cabeza según la raza (antes del equipo)
@@ -500,6 +503,8 @@ export class Game {
 
   _onPresent(m) {
     this._selfId = m.you
+    this._selfAdmin = !!m.admin                                   // rol admin propio (badge ADM)
+    if (this.player && !this._spectator) this.player.setAdmin(this._selfAdmin)
     this._clearRemotes()
     for (const p of m.players || []) this._addRemote(p)
     // El server te asigna un canal (shard) del mapa; avisá en qué canal quedaste.
@@ -2357,16 +2362,18 @@ export class Game {
     this.particles.update(dt, this._pt)
     if (this.weather) this.weather.update(dt)
     if (this.dayNight && this._outdoor) this.dayNight.update(dt)
-    // Halo de luz del personaje: intensidad según lo oscuro que esté (noche). De día, apagado.
-    if (this.playerLight) {
+    // Hueco de visibilidad del personaje: de noche recorta la cortina alrededor del héroe (máscara
+    // inversa). Cuanto más oscuro, más marcado el hueco (alfa). De día / bajo techo se oculta -> la
+    // cortina se ve completa. Sigue al jugador en espacio de pantalla.
+    if (this.darkHole) {
       const dark = this.dayNight ? (1 - this.dayNight.light) : 0
       if (dark > 0.04 && this.player && !this._spectator && this._outdoor) {
         this.player.view.getGlobalPosition(this._lightPt)
-        this.playerLight.position.set(this._lightPt.x, this._lightPt.y - 24)
-        this.playerLight.alpha = Math.min(0.72, dark * 0.85)
-        this.playerLight.visible = true
+        this.darkHole.position.set(this._lightPt.x, this._lightPt.y - 24)
+        this.darkHole.alpha = Math.min(1, 0.5 + dark * 0.5)   // hueco más nítido cuanto más cerrada la noche
+        this.darkHole.visible = true
       } else {
-        this.playerLight.visible = false
+        this.darkHole.visible = false
       }
     }
     if (this.fauna && this._outdoor) this.fauna.update(dt, this.dayNight?.isNight)
@@ -2547,15 +2554,19 @@ function randInt(range) {
 
 // Textura de halo cálido (gradiente radial) para la luz que acompaña al personaje de noche.
 let _lightTex = null
-function makeLightTexture(size = 512) {
+// Textura del "hueco" (máscara del recorte en la cortina de noche). Blanco con ALFA radial: opaco en
+// el centro (la cortina se quita del todo -> se ve el mapa) y desvaneciéndose SUAVE hacia el borde
+// (transición gradual a la penumbra). El centro no llega a alfa 1 para que el hueco conserve un toque
+// de ambiente nocturno en vez de parecer pleno día. Sólo importa el canal ALFA (es una máscara).
+function makeHoleTexture(size = 512) {
   if (_lightTex) return _lightTex
   const cnv = document.createElement('canvas'); cnv.width = cnv.height = size
   const ctx = cnv.getContext('2d')
-  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.04, size / 2, size / 2, size / 2)
-  g.addColorStop(0, 'rgba(255,238,200,0.78)')
-  g.addColorStop(0.35, 'rgba(255,220,165,0.42)')
-  g.addColorStop(0.70, 'rgba(240,190,130,0.14)')
-  g.addColorStop(1, 'rgba(240,190,130,0)')
+  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.05, size / 2, size / 2, size / 2)
+  g.addColorStop(0, 'rgba(255,255,255,0.9)')
+  g.addColorStop(0.45, 'rgba(255,255,255,0.62)')
+  g.addColorStop(0.78, 'rgba(255,255,255,0.18)')
+  g.addColorStop(1, 'rgba(255,255,255,0)')
   ctx.fillStyle = g; ctx.fillRect(0, 0, size, size)
   _lightTex = Texture.from(cnv)
   return _lightTex
