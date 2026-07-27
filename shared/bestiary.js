@@ -94,6 +94,17 @@ const ABILITIES = {
 }
 export const enemyAbility = (sprite) => ABILITIES[sprite] || null
 
+// Tipo de daño del enemigo, para las resistencias del jugador (fire_resist / ice_resist del equipo).
+// La mayoría pega FÍSICO (lo mitiga defense); los temáticos de fuego/hielo pegan elemental (lo mitiga
+// el resist correspondiente). Clasificación por nombre de sprite: fire_ant/wyvern_fire -> fuego;
+// ice_ant/wyvern_water -> hielo; el resto físico.
+export function enemyDmgType(sprite) {
+  const s = String(sprite || '')
+  if (/fire|flame/.test(s)) return 'fire'
+  if (/ice|frost|water/.test(s)) return 'ice'
+  return 'physical'
+}
+
 // "elite" en cualquier parte del nombre (no sólo al final): el élite de contrato diario
 // `goblin_elite_runner` terminaba en "runner" y se colaba como mob común (sin bonus de jefe).
 const BOSS = /boss|minotaur|elite/

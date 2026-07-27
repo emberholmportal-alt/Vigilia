@@ -472,6 +472,7 @@ export class Game {
       defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
       avoidance: st.avoidance || 0,   // % de esquiva: el server lo tira al recibir daño enemigo (DEX + equipo)
       hpRegen: st.hpRegen || 0,       // regen pasivo de vida (HP/seg): el server lo tickea (parity con la barra)
+      fireResist: st.fireResist || 0, iceResist: st.iceResist || 0,   // % resistencia elemental: el server la aplica al daño enemigo de fuego/hielo
       level: st.level || 1,   // capacidad usable del bag autoritativo (parity con el HUD)
       itemFind: st.itemFind || 0,   // magic-find: el server lo usa al tirar el loot de kills
       goldMul: st.guildGoldMul || 1,   // +oro de botín del gremio (ventaja n1): el server lo aplica al oro de kill
@@ -1644,7 +1645,8 @@ export class Game {
     if (dmg <= 0) return
     const hp = this.store.takeDamage(dmg)
     const p = this.player
-    this._floatText(p.view.x, p.view.y - 70, `-${dmg}`, '#ff6a5a')
+    const dcolor = m.el === 'fire' ? '#ff8a3a' : m.el === 'ice' ? '#7fd4ff' : '#ff6a5a'   // color por elemento (fuego/hielo/físico)
+    this._floatText(p.view.x, p.view.y - 70, `-${dmg}`, dcolor)
     this.store.degradeGear('armor', 1)
     if (this._hurtCd <= 0) { p.hurt(); playSfx('player_hit.ogg'); this._hurtCd = 0.5 }
     if (hp <= 0) this._playerDeath()

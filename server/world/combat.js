@@ -18,7 +18,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { pickSprite, enemyStats, isRanged, rangedCousin, enemyAbility } from '../../shared/bestiary.js'
+import { pickSprite, enemyStats, isRanged, rangedCousin, enemyAbility, enemyDmgType } from '../../shared/bestiary.js'
 import { GATHER } from '../../shared/gather.js'
 import { rollLoot, hasLootTable } from '../../shared/loot.js'
 import { rollMonsterDrop } from '../../shared/drops.js'
@@ -454,6 +454,7 @@ export function setStats(pid, s) {
     crit: clampNum(s.crit, 60), defense: clampNum(s.defense, 3000),
     avoidance: clampNum(s.avoidance, 90),   // % de esquiva del jugador (DEX + equipo); acotado a 90% (nunca invulnerable)
     hpRegen: clampNum(s.hpRegen, 999),      // regen pasivo de vida (HP/seg): equipo + herboristería. El server lo tickea (ver step)
+    fireResist: clampNum(s.fireResist, 75), iceResist: clampNum(s.iceResist, 75),   // % de resistencia elemental (equipo); tope 75% (nunca inmune)
     reach: clampNum(s.reach, 8) || 1.6,
     itemFind: clampNum(s.itemFind, 300),   // magic-find (acotado): mejora la rareza del loot de kills
     goldMul: Math.max(1, Math.min(1.1, Number(s.goldMul) || 1)),   // +oro de botín del gremio (acotado a +10%)
@@ -649,6 +650,15 @@ function step() {
   }
 }
 
+// Aplica la resistencia elemental del jugador al daño del enemigo según su tipo. El daño físico no se
+// toca (ya lo mitiga defense); fuego/hielo lo mitiga el resist correspondiente (tope 75% en setStats).
+// Nunca baja de 1.
+function resistDmg(dmg, ps, type) {
+  if (type === 'fire') return Math.max(1, Math.round(dmg * (1 - (ps.fireResist || 0) / 100)))
+  if (type === 'ice') return Math.max(1, Math.round(dmg * (1 - (ps.iceResist || 0) / 100)))
+  return dmg
+}
+
 function stepEnemy(w, e, players, dt) {
   if (e.atkCd > 0) e.atkCd -= dt
   const ab = e._ab !== undefined ? e._ab : (e._ab = enemyAbility(e.s))   // habilidad del bicho (cacheada)
@@ -683,6 +693,7 @@ function stepEnemy(w, e, players, dt) {
   } else if (e.atkCd <= 0) {
     e.atkCd = ATK_CD
     e.d = vecToDir(dx, dy)
+    const etype = e._dt !== undefined ? e._dt : (e._dt = enemyDmgType(e.s))   // tipo de daño (físico/fuego/hielo), cacheado
     // SMASH: chance de golpe de ÁREA más fuerte (minotauro/caballero/élites) — pega a todos los
     // jugadores en radio; si no procea, golpe normal al objetivo.
     if (ab && ab.type === 'smash' && Math.random() < (ab.chance || 0.4)) {
@@ -690,8 +701,9 @@ function stepEnemy(w, e, players, dt) {
         if (Math.hypot(p.x - e.x, p.y - e.y) > (ab.radius || 2)) continue
         const ps = pstats.get(p.id) || {}
         if ((ps.avoidance || 0) > 0 && Math.random() * 100 < ps.avoidance) { ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg: 0, dodge: 1 }); continue }   // ESQUIVA (DEX + equipo): sin daño
-        const dmg = Math.max(1, Math.round(e.dmg * (ab.mult || 2)) - (ps.defense || 0))
-        ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg, smash: 1 })   // FX + predicción del cliente
+        const dmg = resistDmg(Math.max(1, Math.round(e.dmg * (ab.mult || 2)) - (ps.defense || 0)), ps, etype)
+        const hit = { t: 'ehit', i: e.i, dmg, smash: 1 }; if (etype !== 'physical') hit.el = etype   // el = fuego/hielo (el cliente colorea)
+        ctx.sendTo(p.id, hit)   // FX + predicción del cliente
         if (ctx.damagePlayer) ctx.damagePlayer(p.id, dmg)        // HP AUTORITATIVA (Fase 3): el server aplica el daño y decide la muerte
       }
       ctx.broadcast(w.map, w.ch, { t: 'esmash', i: e.i, x: r2(e.x), y: r2(e.y), r: ab.radius || 2 })  // FX (el cliente puede animarlo)
@@ -700,8 +712,9 @@ function stepEnemy(w, e, players, dt) {
       if ((st.avoidance || 0) > 0 && Math.random() * 100 < st.avoidance) {   // ESQUIVA (DEX + equipo): sin daño
         ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg: 0, dodge: 1 })
       } else {
-        const dmg = Math.max(1, e.dmg - (st.defense || 0))
-        ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg })   // FX + predicción del cliente
+        const dmg = resistDmg(Math.max(1, e.dmg - (st.defense || 0)), st, etype)
+        const hit = { t: 'ehit', i: e.i, dmg }; if (etype !== 'physical') hit.el = etype
+        ctx.sendTo(tgt.id, hit)   // FX + predicción del cliente
         if (ctx.damagePlayer) ctx.damagePlayer(tgt.id, dmg)   // HP AUTORITATIVA (Fase 3)
       }
     }
