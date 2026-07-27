@@ -92,20 +92,20 @@ export class Game {
     this.dayNight.rect.zIndex = 4.9e6
     app.stage.addChild(this.dayNight.rect)
 
-    // "Hueco en la oscuridad": de noche, en vez de SUMAR un halo amarillo (se veía artificial), le
-    // recortamos un hueco SUAVE a la cortina de noche alrededor del personaje con una máscara INVERSA.
-    // Así se revelan los colores reales del mapa cerca del héroe —como si tus ojos/una linterna
-    // abrieran la penumbra—, mucho más natural. La máscara se actualiza en espacio de pantalla.
-    this.darkHole = new Sprite(makeHoleTexture())
-    this.darkHole.anchor.set(0.5)
-    this.darkHole.eventMode = 'none'
-    this.darkHole.visible = false
-    this.darkHole.scale.set(1.7)
+    // Luz cálida y SUAVE que acompaña al personaje de noche: un ÚNICO sprite radial en espacio de
+    // pantalla, aditivo y con alfa bajo -> "abre" la penumbra alrededor del héroe sin parecer un
+    // spotlight amarillo duro. Barato (un solo sprite, SIN máscaras ni render-targets) -> mantiene los
+    // 60fps en móvil. De día / bajo techo queda apagado. (Antes probé una máscara sobre la cortina de
+    // 8000px: correcta pero carísima por-frame -> laguéo. Un sprite aditivo es el camino performante.)
+    this.playerLight = new Sprite(makeLightTexture())
+    this.playerLight.anchor.set(0.5)
+    this.playerLight.blendMode = 'add'
+    this.playerLight.eventMode = 'none'
+    this.playerLight.visible = false
+    this.playerLight.zIndex = 4.95e6
+    this.playerLight.scale.set(1.5)
     this._lightPt = new Point()
-    app.stage.addChild(this.darkHole)
-    // Máscara inversa permanente sobre la cortina: donde el hueco es opaco, la cortina NO se dibuja.
-    // Con el hueco oculto (de día / bajo techo) la cortina se ve completa. Ver el update del hueco.
-    this.dayNight.rect.setMask({ mask: this.darkHole, inverse: true })
+    app.stage.addChild(this.playerLight)
 
     // Fauna: bandadas de día, murciélagos de noche. Sobre el clima, debajo del fundido.
     this.fauna = new Fauna(app.renderer)
@@ -2362,18 +2362,18 @@ export class Game {
     this.particles.update(dt, this._pt)
     if (this.weather) this.weather.update(dt)
     if (this.dayNight && this._outdoor) this.dayNight.update(dt)
-    // Hueco de visibilidad del personaje: de noche recorta la cortina alrededor del héroe (máscara
-    // inversa). Cuanto más oscuro, más marcado el hueco (alfa). De día / bajo techo se oculta -> la
-    // cortina se ve completa. Sigue al jugador en espacio de pantalla.
-    if (this.darkHole) {
+    // Luz nocturna del personaje: un halo cálido y suave (un solo sprite aditivo, barato). Más fuerte
+    // cuanto más cerrada la noche, pero con tope bajo para que no parezca un spotlight. De día / bajo
+    // techo, apagado. Sigue al jugador en espacio de pantalla.
+    if (this.playerLight) {
       const dark = this.dayNight ? (1 - this.dayNight.light) : 0
       if (dark > 0.04 && this.player && !this._spectator && this._outdoor) {
         this.player.view.getGlobalPosition(this._lightPt)
-        this.darkHole.position.set(this._lightPt.x, this._lightPt.y - 24)
-        this.darkHole.alpha = Math.min(1, 0.5 + dark * 0.5)   // hueco más nítido cuanto más cerrada la noche
-        this.darkHole.visible = true
+        this.playerLight.position.set(this._lightPt.x, this._lightPt.y - 24)
+        this.playerLight.alpha = Math.min(0.5, dark * 0.6)
+        this.playerLight.visible = true
       } else {
-        this.darkHole.visible = false
+        this.playerLight.visible = false
       }
     }
     if (this.fauna && this._outdoor) this.fauna.update(dt, this.dayNight?.isNight)
@@ -2554,19 +2554,18 @@ function randInt(range) {
 
 // Textura de halo cálido (gradiente radial) para la luz que acompaña al personaje de noche.
 let _lightTex = null
-// Textura del "hueco" (máscara del recorte en la cortina de noche). Blanco con ALFA radial: opaco en
-// el centro (la cortina se quita del todo -> se ve el mapa) y desvaneciéndose SUAVE hacia el borde
-// (transición gradual a la penumbra). El centro no llega a alfa 1 para que el hueco conserve un toque
-// de ambiente nocturno en vez de parecer pleno día. Sólo importa el canal ALFA (es una máscara).
-function makeHoleTexture(size = 512) {
+// Textura de la luz nocturna: halo radial cálido y SUAVE (crema/ámbar), con alfa bajo y un degradé
+// largo hacia el borde -> se lee como una calidez que abre la penumbra, no como un disco amarillo.
+// Se combina en modo aditivo con alfa acotado en runtime.
+function makeLightTexture(size = 512) {
   if (_lightTex) return _lightTex
   const cnv = document.createElement('canvas'); cnv.width = cnv.height = size
   const ctx = cnv.getContext('2d')
-  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.05, size / 2, size / 2, size / 2)
-  g.addColorStop(0, 'rgba(255,255,255,0.9)')
-  g.addColorStop(0.45, 'rgba(255,255,255,0.62)')
-  g.addColorStop(0.78, 'rgba(255,255,255,0.18)')
-  g.addColorStop(1, 'rgba(255,255,255,0)')
+  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.06, size / 2, size / 2, size / 2)
+  g.addColorStop(0, 'rgba(255,236,206,0.5)')
+  g.addColorStop(0.4, 'rgba(255,222,180,0.26)')
+  g.addColorStop(0.75, 'rgba(240,200,150,0.08)')
+  g.addColorStop(1, 'rgba(240,200,150,0)')
   ctx.fillStyle = g; ctx.fillRect(0, 0, size, size)
   _lightTex = Texture.from(cnv)
   return _lightTex
