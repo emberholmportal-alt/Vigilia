@@ -18,6 +18,7 @@ import { tt, zoneName, getLang, itemName, npcName, npcLines } from '../i18n.js'
 import { screenVecToDir } from './Paperdoll.js'
 import { NPCS_BY_MAP } from '../data/npcs.js'
 import { ZONE_LORE } from '../data/zonelore.js'
+import { zoneReq } from '../data/zones.js'
 import { pickSprite, enemyStats, enemyName, isRanged, projectileKind, rangedCousin, enemyAbility } from '../data/bestiary.js'
 import { stampStructures } from '../data/structures.js'
 import { ParticleField } from './Particles.js'
@@ -544,9 +545,11 @@ export class Game {
   // Se rearma al construir el mundo, al descubrir algo y al cambiar idioma.
   _refreshWaypoints() {
     const discovered = this.store.getDiscovered() || {}
-    const list = Object.entries(discovered).map(([zone, d]) => ({
-      zone, label: zoneTitle(zone), tx: d.tx, ty: d.ty, current: zone === this.mapName,
-    }))
+    const lvl = this.store.getPlayerLevel?.() || 1
+    const list = Object.entries(discovered).map(([zone, d]) => {
+      const req = zoneReq(zone)
+      return { zone, label: zoneTitle(zone), tx: d.tx, ty: d.ty, current: zone === this.mapName, req, locked: req > lvl }
+    })
     this.store.setWaypointList(list)
   }
 
@@ -706,6 +709,11 @@ export class Game {
   // en este mapa) llega al tile del portal; si no, al tile guardado cuando la descubriste.
   _travelToWaypoint(zone) {
     if (!zone || zone === this.mapName || this._changing || this._loading) return
+    // Gate de nivel: algunas zonas (p.ej. Black Oak City, lv10) piden nivel mínimo para el "salto".
+    const req = zoneReq(zone)
+    if (req && (this.store.getPlayerLevel?.() || 1) < req) {
+      this.store.showToast(tt('zone_locked', { zone: zoneTitle(zone), n: req })); return
+    }
     const adj = (this.portals || []).find((p) => p.to === zone)
     const disc = (this.store.getDiscovered() || {})[zone]
     const tx = adj ? adj.tx : disc ? disc.tx : undefined

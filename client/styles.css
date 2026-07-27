@@ -1747,6 +1747,9 @@ html, body, #root {
 .wp-row:hover:not(:disabled) { border-color: #7a52c0; box-shadow: inset 0 0 0 1px rgba(154,107,255,0.2); }
 .wp-row:active:not(:disabled) { filter: brightness(1.15); }
 .wp-row.current { opacity: 0.6; cursor: default; border-color: var(--gold); }
+.wp-row.locked { opacity: 0.5; cursor: not-allowed; border-color: #6b2a2a; }
+.wp-row.locked .wp-rune { color: #8a5a5a; filter: grayscale(0.6); }
+.wp-row.locked .wp-tag { color: #c76b6b; }
 .wp-rune { display: inline-flex; width: 18px; height: 18px; flex: 0 0 auto; color: #b58bff; }
 .wp-rune svg { width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.6; fill: none;
   filter: drop-shadow(0 0 3px rgba(154, 107, 255, 0.5)); }

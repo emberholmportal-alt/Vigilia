@@ -110,6 +110,8 @@ const DICT = {
   wp_here: { es: 'Estás acá', en: 'You are here' },
   wp_adjacent: { es: 'Adyacente', en: 'Adjacent' },
   wp_none: { es: 'Todavía no descubriste otros destinos. Caminá sobre los portales para activarlos.', en: 'You have not discovered other destinations yet. Walk over portals to activate them.' },
+  wp_req: { es: 'Nivel {n}', en: 'Level {n}' },
+  zone_locked: { es: 'Necesitás nivel {n} para entrar a {zone}.', en: 'You need level {n} to enter {zone}.' },
   // misiones diarias
   missions_menu: { es: 'Misiones', en: 'Missions' },
   missions_title: { es: 'Misiones diarias', en: 'Daily missions' },

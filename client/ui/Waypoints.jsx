@@ -9,11 +9,15 @@ const PW = 640, PH = 832
 
 export default function Waypoints() {
   const list = useGameStore((s) => s.waypointList)
+  const level = useGameStore((s) => s.stats?.level || 1)
   const requestWaypoint = useGameStore((s) => s.requestWaypoint)
   const close = useGameStore((s) => s.closeWaypoints)
   const t = useT()
 
-  const rows = [...(list || [])].sort((a, b) => (b.current - a.current) || a.label.localeCompare(b.label))
+  // El bloqueo se calcula en vivo contra el nivel actual (la lista puede traer un snapshot viejo).
+  const rows = [...(list || [])]
+    .map((r) => ({ ...r, locked: (r.req || 0) > level }))
+    .sort((a, b) => (b.current - a.current) || a.label.localeCompare(b.label))
   const others = rows.filter((r) => !r.current)
 
   return (
@@ -30,8 +34,8 @@ export default function Waypoints() {
           {others.length === 0 && <div className="wp-empty">{t('wp_none')}</div>}
           <div className="wp-list">
             {rows.map((r) => (
-              <button key={r.zone} className={'wp-row' + (r.current ? ' current' : '')}
-                      disabled={r.current} onClick={() => requestWaypoint(r.zone)}>
+              <button key={r.zone} className={'wp-row' + (r.current ? ' current' : '') + (r.locked ? ' locked' : '')}
+                      disabled={r.current || r.locked} onClick={() => requestWaypoint(r.zone)}>
                 <span className="wp-rune">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="12" cy="12" r="8.5" />
@@ -40,7 +44,7 @@ export default function Waypoints() {
                   </svg>
                 </span>
                 <span className="wp-name">{t.zone(r.zone) || r.label}</span>
-                <span className="wp-tag">{r.current ? t('wp_here') : ''}</span>
+                <span className="wp-tag">{r.current ? t('wp_here') : r.locked ? t('wp_req', { n: r.req }) : ''}</span>
               </button>
             ))}
           </div>

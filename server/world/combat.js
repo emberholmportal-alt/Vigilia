@@ -81,6 +81,12 @@ const LEVEL_CAP = { black_oak_farm: 3 }
 // Categorías de spawner a SACAR por mapa: en la zona inicial no queremos el mini-jefe necromante
 // (invoca esbirros) — sólo "primeros duendes", fiel al diseño.
 const SPAWN_STRIP = { black_oak_farm: /necromancer|minotaur/ }
+// Spawners a AGREGAR por mapa. El mini-jefe necromante venía (por error de la data de Flare) en la
+// Granja inicial; lo sacamos de ahí (SPAWN_STRIP) y lo reubicamos en Black Oak City, la zona insignia
+// de lv10 (diseño: "salto deliberado a lv10"). Queda al sur, custodiado por los packs de la ciudad.
+const SPAWN_ADD = {
+  black_oak_city: [{ x: 55, y: 81, w: 8, h: 13, category: 'minotaur_necromancer', level: [10, 10], n: [1, 1] }],
+}
 function loadMap(name) {
   if (mapCache.has(name)) return mapCache.get(name)
   let data = null
@@ -99,6 +105,8 @@ function loadMap(name) {
     }))
     const strip = SPAWN_STRIP[name]
     if (data && strip) data.spawners = data.spawners.filter((s) => !strip.test(String(s.category || '')))
+    const add = SPAWN_ADD[name]
+    if (data && add) data.spawners = data.spawners.concat(add)
   } catch { data = null }
   mapCache.set(name, data)
   return data
