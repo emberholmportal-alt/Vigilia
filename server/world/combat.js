@@ -74,6 +74,13 @@ const SPAWN_OVERRIDE = {
 // the_pit: 13 en lv1 + 4 en lv15-16). Para el endgame subimos cada spawner a un piso, así la zona
 // se siente pareja y dura. Se aplica en loadMap (afecta spawnEnemy, near-spawners y entryLevel).
 const LEVEL_FLOOR = { the_pit: 15, oasis: 14 }
+// Techo de nivel por mapa (inverso del piso). La Granja de Black Oak es la zona INICIAL (arco Oeste de
+// Triston, a donde el tutorial manda al jugador nuevo), pero su data de Flare viene en lv10 -> masacra
+// a un nivel 1. La bajamos a 1-3 (Math.min), como dice el diseño ("inicio tranquilo, nivel 1-3").
+const LEVEL_CAP = { black_oak_farm: 3 }
+// Categorías de spawner a SACAR por mapa: en la zona inicial no queremos el mini-jefe necromante
+// (invoca esbirros) — sólo "primeros duendes", fiel al diseño.
+const SPAWN_STRIP = { black_oak_farm: /necromancer|minotaur/ }
 function loadMap(name) {
   if (mapCache.has(name)) return mapCache.get(name)
   let data = null
@@ -86,6 +93,12 @@ function loadMap(name) {
     if (data && floor) data.spawners = data.spawners.map((s) => ({
       ...s, level: Array.isArray(s.level) ? s.level.map((l) => Math.max(floor, l)) : Math.max(floor, s.level || 1),
     }))
+    const cap = LEVEL_CAP[name]
+    if (data && cap) data.spawners = data.spawners.map((s) => ({
+      ...s, level: Array.isArray(s.level) ? s.level.map((l) => Math.min(cap, l)) : Math.min(cap, s.level || 1),
+    }))
+    const strip = SPAWN_STRIP[name]
+    if (data && strip) data.spawners = data.spawners.filter((s) => !strip.test(String(s.category || '')))
   } catch { data = null }
   mapCache.set(name, data)
   return data
