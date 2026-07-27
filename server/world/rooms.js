@@ -44,7 +44,7 @@ export function playerCount() { return players.size }
 
 // Vista pública de un jugador (lo que ven los demás). Incluye `gfx` = capas del paperdoll
 // (equipo visible) y `dead` para que un recién llegado vea el estado correcto.
-function pub(p) { return { id: p.id, name: p.name, race: p.race, body: p.body || 'male', x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax, level: p.level || 1, guildTag: p.guildTag || null } }
+function pub(p) { return { id: p.id, name: p.name, race: p.race, body: p.body || 'male', x: p.x, y: p.y, dir: p.dir, gfx: p.gfx || null, dead: !!p.dead, hp: p.hp, hpMax: p.hpMax, level: p.level || 1, guildTag: p.guildTag || null, admin: !!p.admin } }
 
 function inChannel(map, ch) {
   const out = []
@@ -105,7 +105,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, xp = 0, hp = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null } = {}) {
+export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, xp = 0, hp = 0, admin = false, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -149,6 +149,7 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   p._qclaimed = new Set(Array.isArray(qclaimed) ? qclaimed : [])
   p.feats = normalizeFeats(feats)   // hazañas server-owned (jefes derrotados + zona más profunda)
   p.guildTag = guildTag || null     // estandarte sobre la cabeza (sigla del gremio)
+  p.admin = !!admin                 // rol admin (badge "ADM" sobre la cabeza; allowlist por wallet)
   // HP AUTORITATIVA (Fase 3): la vida viva la dueña el server. Arranca en null y se siembra en el 1er
   // setStats (cuando el cliente declara su techo hpMax, que depende del equipo): con la vida PERSISTIDA
   // del personaje si es válida (>0 y <= techo), si no llena. Persistir la vida evita el logout-cura.

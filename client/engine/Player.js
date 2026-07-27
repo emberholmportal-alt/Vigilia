@@ -44,6 +44,19 @@ export class Player {
     this.nameText.y = headY
     this.view.addChild(this.nameText)
 
+    // Badge "ADM" (admin) en una línea aparte, ARRIBA del nombre/clase/nivel. Oculto salvo admins.
+    this.admText = new Text({
+      text: 'ADM',
+      style: {
+        fontFamily: 'Georgia, serif', fontSize: 11, fontStyle: 'italic', fill: '#ffd24a',
+        stroke: { color: '#0a090c', width: 3 }, align: 'center', letterSpacing: 1,
+      },
+    })
+    this.admText.anchor.set(0.5, 1)
+    this.admText.y = headY - 15
+    this.admText.visible = false
+    this.view.addChild(this.admText)
+
     // Globo de diálogo (encima del nombre), oculto por defecto.
     this.bubble = new Container()
     this.bubbleBg = new Graphics()
@@ -68,6 +81,9 @@ export class Player {
     if (level) parts.push(lvLabel + ' ' + level)
     this.nameText.text = parts.join(' · ')
   }
+
+  // Muestra/oculta el badge "ADM" sobre la cabeza (rol admin por wallet).
+  setAdmin(v) { if (this.admText) this.admText.visible = !!v }
 
   showBubble(text) {
     if (text === this._bubbleText && this.bubble.visible) return
