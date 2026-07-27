@@ -471,6 +471,7 @@ export class Game {
       str: st.str || 10, crit: st.crit || 0, weaponKind: st.weaponKind || 'melee',
       defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
       avoidance: st.avoidance || 0,   // % de esquiva: el server lo tira al recibir daño enemigo (DEX + equipo)
+      hpRegen: st.hpRegen || 0,       // regen pasivo de vida (HP/seg): el server lo tickea (parity con la barra)
       level: st.level || 1,   // capacidad usable del bag autoritativo (parity con el HUD)
       itemFind: st.itemFind || 0,   // magic-find: el server lo usa al tirar el loot de kills
       goldMul: st.guildGoldMul || 1,   // +oro de botín del gremio (ventaja n1): el server lo aplica al oro de kill
@@ -2409,6 +2410,17 @@ export class Game {
       if (this._healAccum >= 0.5 && hpMax) {   // ~vida completa en ~10s
         this.store.heal(Math.max(1, Math.round(hpMax * 0.05)))
         this._healAccum = 0
+      }
+    }
+
+    // Regen pasivo de vida por hpRegen (equipo + herboristería): en TODOS lados, no sólo el pueblo.
+    // El server tickea el MISMO hpRegen (autoritativo), acumulando fracciones igual que acá, así la
+    // barra y la vida del server quedan sincronizadas también en combate. Antes hpRegen no hacía nada.
+    if (!this._dead) {
+      const rg = this.store.getStats()?.hpRegen || 0
+      if (rg > 0) {
+        this._hpRegenAccum = (this._hpRegenAccum || 0) + rg * dt
+        if (this._hpRegenAccum >= 1) { const h = Math.floor(this._hpRegenAccum); this._hpRegenAccum -= h; this.store.heal(h) }
       }
     }
 

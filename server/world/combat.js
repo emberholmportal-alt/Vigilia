@@ -436,7 +436,8 @@ export function playerOpenChest(pid, cid) {
 }
 
 // --- stats de combate del jugador (las envía el cliente) ------------------------------------
-const pstats = new Map()   // playerId -> { dmgMin, dmgMax, dmgMul, str, crit, weaponKind, reach, defense }
+const pstats = new Map()   // playerId -> { dmgMin, dmgMax, dmgMul, str, crit, weaponKind, reach, defense, avoidance, hpRegen }
+const pregen = new Map()   // playerId -> fracción de HP de regen acumulada (p.hp es entero; ver step)
 // Backstop anti-cheat: el cliente calcula sus stats de combate (dependen del equipo), pero el
 // server las ACOTA a máximos sanos muy por encima de cualquier build legítima. Así un cliente
 // hackeado no puede mandar dmg=9999 y romper el mundo compartido de los demás. (La autoridad
@@ -452,13 +453,14 @@ export function setStats(pid, s) {
     dmgMul: clampNum(s.dmgMul, 4) || 1, str: clampNum(s.str, 999),
     crit: clampNum(s.crit, 60), defense: clampNum(s.defense, 3000),
     avoidance: clampNum(s.avoidance, 90),   // % de esquiva del jugador (DEX + equipo); acotado a 90% (nunca invulnerable)
+    hpRegen: clampNum(s.hpRegen, 999),      // regen pasivo de vida (HP/seg): equipo + herboristería. El server lo tickea (ver step)
     reach: clampNum(s.reach, 8) || 1.6,
     itemFind: clampNum(s.itemFind, 300),   // magic-find (acotado): mejora la rareza del loot de kills
     goldMul: Math.max(1, Math.min(1.1, Number(s.goldMul) || 1)),   // +oro de botín del gremio (acotado a +10%)
     weaponKind: (s.weaponKind === 'ranged' || s.weaponKind === 'mental') ? s.weaponKind : 'melee',
   })
 }
-export function dropPlayer(pid) { pstats.delete(pid); patkAt.delete(pid) }
+export function dropPlayer(pid) { pstats.delete(pid); patkAt.delete(pid); pregen.delete(pid) }
 
 // Cadencia de ataque autoritativa: el cooldown vivía sólo en el cliente (cosmético), así que un
 // cliente scripteado podía mandar 'atk' en loop y borrar los enemigos del canal. El swing legítimo
@@ -607,6 +609,16 @@ function step() {
       w.dead = still
     }
     for (const e of w.enemies.values()) stepEnemy(w, e, players, dt)
+    // Regen pasivo de vida AUTORITATIVO (hpRegen: equipo + herboristería). Sube p.hp en el server igual
+    // que el cliente lo sube local, así el sustain cuenta también EN combate (donde el server no acepta
+    // subidas de vida reportadas) y no se mata de más a un build de regen. Acumula fracciones (p.hp entero).
+    if (ctx.healPlayer) for (const p of players) {
+      const rg = (pstats.get(p.id) || {}).hpRegen || 0
+      if (rg <= 0) continue
+      const acc = (pregen.get(p.id) || 0) + rg * dt
+      if (acc >= 1) { const h = Math.floor(acc); pregen.set(p.id, acc - h); ctx.healPlayer(p.id, h) }
+      else pregen.set(p.id, acc)
+    }
     // reponer nodos de recursos agotados (vuelven a crecer en su lugar, con material fresco)
     if (w.nodeDead && w.nodeDead.length) {
       const still = []
