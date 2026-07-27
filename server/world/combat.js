@@ -455,6 +455,7 @@ export function setStats(pid, s) {
     avoidance: clampNum(s.avoidance, 90),   // % de esquiva del jugador (DEX + equipo); acotado a 90% (nunca invulnerable)
     hpRegen: clampNum(s.hpRegen, 999),      // regen pasivo de vida (HP/seg): equipo + herboristería. El server lo tickea (ver step)
     fireResist: clampNum(s.fireResist, 75), iceResist: clampNum(s.iceResist, 75),   // % de resistencia elemental (equipo); tope 75% (nunca inmune)
+    darkResist: clampNum(s.darkResist, 75), lightningResist: clampNum(s.lightningResist, 75),
     reach: clampNum(s.reach, 8) || 1.6,
     itemFind: clampNum(s.itemFind, 300),   // magic-find (acotado): mejora la rareza del loot de kills
     goldMul: Math.max(1, Math.min(1.1, Number(s.goldMul) || 1)),   // +oro de botín del gremio (acotado a +10%)
@@ -656,6 +657,8 @@ function step() {
 function resistDmg(dmg, ps, type) {
   if (type === 'fire') return Math.max(1, Math.round(dmg * (1 - (ps.fireResist || 0) / 100)))
   if (type === 'ice') return Math.max(1, Math.round(dmg * (1 - (ps.iceResist || 0) / 100)))
+  if (type === 'dark') return Math.max(1, Math.round(dmg * (1 - (ps.darkResist || 0) / 100)))
+  if (type === 'lightning') return Math.max(1, Math.round(dmg * (1 - (ps.lightningResist || 0) / 100)))
   return dmg
 }
 
