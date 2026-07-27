@@ -102,6 +102,8 @@ export function enemyDmgType(sprite) {
   const s = String(sprite || '')
   if (/fire|flame/.test(s)) return 'fire'
   if (/ice|frost|water/.test(s)) return 'ice'
+  if (/zombie|dark|necro|mage_boss/.test(s)) return 'dark'      // no-muertos podridos + nigromante -> tinieblas
+  if (/mage|air|storm|thunder|lightning/.test(s)) return 'lightning'   // magos arcanos + wyvern del viento -> rayo
   return 'physical'
 }
 

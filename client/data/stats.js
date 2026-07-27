@@ -60,7 +60,7 @@ function affinityBonus(raceId, equipment) {
 
 // Suma los bonus de todos los ítems equipados.
 export function equipBonus(equipment) {
-  const b = { hp: 0, mp: 0, absorb: 0, hpRegen: 0, mpRegen: 0, crit: 0, accuracy: 0, avoidance: 0, xpGain: 0, itemFind: 0, fireResist: 0, iceResist: 0 }
+  const b = { hp: 0, mp: 0, absorb: 0, hpRegen: 0, mpRegen: 0, crit: 0, accuracy: 0, avoidance: 0, xpGain: 0, itemFind: 0, fireResist: 0, iceResist: 0, darkResist: 0, lightningResist: 0 }
   if (!equipment) return b
   for (const slot of Object.keys(equipment)) {
     const it = equipment[slot]
@@ -82,6 +82,8 @@ export function equipBonus(equipment) {
     b.itemFind += s.item_find || 0
     b.fireResist += s.fire_resist || 0
     b.iceResist += s.ice_resist || 0
+    b.darkResist += s.dark_resist || 0
+    b.lightningResist += s.lightning_resist || 0
   }
   b.absorb = Math.round(b.absorb)
   return b
@@ -206,7 +208,7 @@ export function computeStats(raceId, level = 1, equipment = null, attrAlloc = nu
     accuracy: e.accuracy + tb.accuracy,
     avoidance: Math.min(75, e.avoidance + Math.max(0, dex - 10) * 0.5),   // tope 75% (el server además clampa)
     itemFind: e.itemFind + tb.itemFind + sb.itemFind + (set.itemFind || 0), // magic find (+ Saqueo + set)
-    fireResist: e.fireResist, iceResist: e.iceResist,
+    fireResist: e.fireResist, iceResist: e.iceResist, darkResist: e.darkResist, lightningResist: e.lightningResist,
     dmgMin: wd.min, dmgMax: wd.max, // daño del arma
     weaponKind: weaponKind(equipment), // melee / ranged / mental (define ataque a distancia)
     dmgMul: (r.dmgMul || 1) * aff.dmgMul * (1 + tb.dmgMul + sb.dmgMul + (set.dmgMul || 0)),
