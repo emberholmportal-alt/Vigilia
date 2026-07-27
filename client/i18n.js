@@ -304,6 +304,7 @@ const DICT = {
   belt_only: { es: 'Sólo consumibles van al cinturón', en: 'Only consumables go in the belt' },
   hp_full: { es: 'Tu vida ya está al máximo', en: 'Your health is already full' },
   dodge: { es: '¡Esquivó!', en: 'Dodged!' },
+  miss: { es: 'Falló', en: 'Miss' },
   mp_full: { es: 'Tu maná ya está al máximo', en: 'Your mana is already full' },
   hp_gain: { es: '+{n} de vida', en: '+{n} health' },
   mp_gain: { es: '+{n} de maná', en: '+{n} mana' },

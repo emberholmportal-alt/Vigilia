@@ -18,7 +18,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { pickSprite, enemyStats, isRanged, rangedCousin, enemyAbility, enemyDmgType } from '../../shared/bestiary.js'
+import { pickSprite, enemyStats, isRanged, rangedCousin, enemyAbility, enemyDmgType, enemyEvasion } from '../../shared/bestiary.js'
 import { GATHER } from '../../shared/gather.js'
 import { rollLoot, hasLootTable } from '../../shared/loot.js'
 import { rollMonsterDrop } from '../../shared/drops.js'
@@ -452,6 +452,7 @@ export function setStats(pid, s) {
     // crit=100 (crit garantizado ×2) ni dmgMul=8 para one-shotear el mundo compartido.
     dmgMul: clampNum(s.dmgMul, 4) || 1, str: clampNum(s.str, 999),
     crit: clampNum(s.crit, 60), defense: clampNum(s.defense, 3000),
+    accuracy: clampNum(s.accuracy, 200),    // precisión del jugador: contrarresta la evasión de los enemigos ágiles
     avoidance: clampNum(s.avoidance, 90),   // % de esquiva del jugador (DEX + equipo); acotado a 90% (nunca invulnerable)
     hpRegen: clampNum(s.hpRegen, 999),      // regen pasivo de vida (HP/seg): equipo + herboristería. El server lo tickea (ver step)
     fireResist: clampNum(s.fireResist, 75), iceResist: clampNum(s.iceResist, 75),   // % de resistencia elemental (equipo); tope 75% (nunca inmune)
@@ -494,6 +495,13 @@ export function playerAttack(pid, eid) {
   const tnow = now()
   if (tnow < (patkAt.get(pid) || 0)) return
   patkAt.set(pid, tnow + MIN_PLAYER_ATK_CD)
+  // Precisión vs evasión: sólo los enemigos ágiles esquivan; la precisión del jugador lo contrarresta.
+  // Contra el resto (evasión 0) siempre pega. Nunca whiff en combate normal (le da propósito a accuracy).
+  const eva = e._ev !== undefined ? e._ev : (e._ev = enemyEvasion(e.s))
+  if (eva > 0 && Math.random() * 100 >= 100 - Math.max(0, eva - (st.accuracy || 0))) {
+    ctx.broadcast(pl.map, pl.ch, { t: 'edmg', i: e.i, hp: Math.max(0, e.hp), dmg: 0, miss: 1, by: pid })
+    return
+  }
   const { dmg, crit } = rollPlayerDamage(st)
   e.hp -= dmg
   ctx.broadcast(pl.map, pl.ch, { t: 'edmg', i: e.i, hp: Math.max(0, e.hp), dmg, crit, by: pid })

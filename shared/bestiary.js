@@ -107,6 +107,13 @@ export function enemyDmgType(sprite) {
   return 'physical'
 }
 
+// Evasión del enemigo (%) — sólo los ÁGILES esquivan los golpes del jugador; la precisión (accuracy
+// del equipo/árbol) lo contrarresta. El resto tiene 0 (siempre le pegás), así no hay whiffs en el
+// combate normal: la precisión sólo importa contra corredores y el wyvern del viento.
+export function enemyEvasion(sprite) {
+  return /runner|wyvern_air/.test(String(sprite || '')) ? 15 : 0
+}
+
 // "elite" en cualquier parte del nombre (no sólo al final): el élite de contrato diario
 // `goblin_elite_runner` terminaba en "runner" y se colaba como mob común (sin bonus de jefe).
 const BOSS = /boss|minotaur|elite/

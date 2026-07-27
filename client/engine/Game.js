@@ -471,6 +471,7 @@ export class Game {
       str: st.str || 10, crit: st.crit || 0, weaponKind: st.weaponKind || 'melee',
       defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
       avoidance: st.avoidance || 0,   // % de esquiva: el server lo tira al recibir daño enemigo (DEX + equipo)
+      accuracy: st.accuracy || 0,     // % de precisión: contrarresta la evasión de los enemigos ágiles (server)
       hpRegen: st.hpRegen || 0,       // regen pasivo de vida (HP/seg): el server lo tickea (parity con la barra)
       fireResist: st.fireResist || 0, iceResist: st.iceResist || 0,   // % resistencia elemental: el server la aplica al daño enemigo
       darkResist: st.darkResist || 0, lightningResist: st.lightningResist || 0,
@@ -1576,6 +1577,7 @@ export class Game {
   _onEdmg(m) {
     const e = this._netEnemies && this._netEnemies.get(m.i)
     if (!e) return
+    if (m.miss) { this._floatText(e.view.x, e.view.y + (e._hpY || -40), tt('miss'), '#b9c2cc'); return }   // el enemigo ágil esquivó (falta precisión)
     e.netDamage(m.hp, m.dmg, m.crit)
     this._floatText(e.view.x, e.view.y + (e._hpY || -40), m.crit ? `¡${m.dmg}!` : `${m.dmg}`, m.crit ? '#ff9a3a' : '#ffe08a')
   }
