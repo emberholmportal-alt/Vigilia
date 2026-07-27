@@ -35,6 +35,18 @@ export class RemotePlayer {
     this.nameText.y = -(this.paperdoll.anchorY + 6)
     this.view.addChild(this.nameText)
 
+    // Badge "ADM" (admin por wallet) en una línea aparte, arriba del nombre. Viene en el pub del jugador.
+    this.admText = new Text({
+      text: 'ADM', style: {
+        fontFamily: 'Georgia, serif', fontSize: 11, fontStyle: 'italic', fill: '#ffd24a',
+        stroke: { color: '#0a090c', width: 3 }, align: 'center', letterSpacing: 1,
+      },
+    })
+    this.admText.anchor.set(0.5, 1)
+    this.admText.y = -(this.paperdoll.anchorY + 6) - 15
+    this.admText.visible = !!p.admin
+    this.view.addChild(this.admText)
+
     // Barra de vida (aparece cuando está herido), como la de los enemigos.
     this.hpBar = new Graphics()
     this.hpBar.visible = false

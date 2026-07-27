@@ -463,9 +463,10 @@ wss.on('connection', (ws) => {
             // save manipulado (belt/graves con count enorme) en cuentas sin ledger persistido.
             if (!ledger) outSeed = grandfatherSeed(d)
           }
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, xp, hp, inv, outSeed, ledger, qclaimed, feats })
+          const admin = wallet.isAdmin(conn.username)   // rol admin por wallet (badge "ADM" sobre la cabeza)
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, xp, hp, admin, inv, outSeed, ledger, qclaimed, feats })
           conn.playerId = id
-          send({ t: 'present', you: id, players: present, map: m.map, channel })
+          send({ t: 'present', you: id, players: present, map: m.map, channel, admin })
           if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'seals', seals }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + sellos + bag
           return
         }

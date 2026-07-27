@@ -11,6 +11,31 @@ variables no requieren rebuild del cliente (ver §5).
 
 ---
 
+## ⚡ Checklist rápido (el plan actual: solo gate de acceso)
+
+**Dónde va cada cosa:** las variables de $VEL van en el **SERVIDOR** (`velgrim-static`), NO en el
+sitio estático (`vigilia`). El cliente lee la coin del server vía `/stats`.
+
+**Ya cargado en el server (`velgrim-static` → Environment):**
+- [x] `WALLET_REQUIRED=1` · `SOLANA_RPC`=<Helius> · `VEL_MIN=10000` · `VEL_SYMBOL=VEL`
+- [ ] `ADMIN_WALLETS` = `7GaQeABn63ExcLcMCXUHZy4hHk8uvgocVCwqmEV8xac4` (badge **ADM** sobre la cabeza; separá con coma para agregar más)
+
+**Antes de abrir al público:**
+- [ ] Borrar los usuarios de prueba (fresh start): en Render → `velgrim-static` → **Shell** →
+      `node tools/wipe_users.js --yes`  *(irreversible; borra cuentas/personajes/gremios/mercado)*.
+
+**El día del mint (una sola variable, en vivo):**
+- [ ] Crear la coin en pump.fun → copiar el contrato.
+- [ ] `velgrim-static` → Environment → **+ Add variable** → `VEL_MINT = <contrato>` → Save.
+- [ ] En cuanto guarda: se prende el gate (exige holdear ≥ `VEL_MIN`) y aparece el banner de la coin.
+- [ ] Verificar `https://velgrim-static.onrender.com/health` → `{"ok":true}`, y entrar con tu wallet.
+- [ ] Mirar el precio: ajustar `VEL_MIN` si 10.000 tokens es mucho/poco como "ticket de entrada".
+
+**Botón de pánico anti-lockout:** si el RPC se satura o algo deja a la gente afuera, borrá `VEL_MINT`
+(gate apagado, entra cualquiera con wallet) y lo re-agregás cuando se estabilice.
+
+---
+
 ## 0. Antes del vivo (una vez, sin apuro)
 
 - [ ] **RPC dedicado.** Conseguí un endpoint de Helius / QuickNode / Alchemy (mainnet). El RPC

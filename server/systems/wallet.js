@@ -20,6 +20,12 @@ import { issueToken } from './auth.js'
 const NONCE_TTL = 5 * 60 * 1000
 const challenges = new Map() // pubkey -> { message, exp }
 
+// Wallets con rol ADMIN (badge "ADM" sobre la cabeza). Allowlist por variable de entorno
+// ADMIN_WALLETS (direcciones de Solana separadas por coma). Va por WALLET, no por cuenta: sobrevive
+// a un wipe de usuarios (si esa wallet vuelve a crear personaje, sigue siendo admin).
+const ADMIN_WALLETS = new Set(String(process.env.ADMIN_WALLETS || '').split(',').map((s) => s.trim()).filter(Boolean))
+export const isAdmin = (pubkey) => ADMIN_WALLETS.has(String(pubkey || ''))
+
 // --- base58 (alfabeto Bitcoin) -> Buffer ---
 const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 const B58MAP = Object.fromEntries([...B58].map((c, i) => [c, i]))
