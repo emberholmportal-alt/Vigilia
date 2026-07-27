@@ -37,6 +37,17 @@ const graveLoadoutSnapshot = (s) => {
   for (const k in (s.equipment || {})) { const r = graveRec(s.equipment[k]); if (r) equip[k] = r }
   return { equip, belt: (s.belt || []).map(graveRec) }
 }
+// Equipo equipado + cinturón + su contenido como lista PLANA de registros recuperables. Al morir todo
+// esto cae a la lápida (penalidad: quedás sin equipo, visualmente sin armadura, hasta recuperarlo).
+// Sigue contabilizado en el ledger _out del server (estaba "fuera de la bolsa" equipado; ahora en la
+// tumba, igual de "fuera"), así bagGive al recuperar lo devuelve sin dupe ni mint.
+const graveGearRecs = (s) => {
+  const out = []
+  for (const k in (s.equipment || {})) { const r = graveRec(s.equipment[k]); if (r) out.push(r) }
+  const r = graveRec(s.equippedBelt); if (r) out.push(r)
+  for (const b of (s.belt || [])) { const rb = graveRec(b); if (rb) out.push(rb) }
+  return out
+}
 import { isDurable, durabilityMax, isRecall, itemById } from './data/items.js'
 import { setMuted } from './engine/audio.js'
 import { tt, setLangGlobal, itemName, raceName, questName } from './i18n.js'
@@ -1467,9 +1478,11 @@ export const useGameStore = create((set, get) => ({
   // equipo y el cinturón NO se pierden. Devuelve true si dejó algo.
   createGrave: async (zone, tx, ty) => {
     const s = get()
-    // Online: el bag es autoritativo del server. bagDump lo vacía y nos devuelve los registros
-    // (que van a la tumba client-side) + el oro de la tumba lo descuenta dropGraveReq. Espejamos
-    // el bag vacío. El equipo y el cinturón NO se pierden (no están en el bag).
+    // Online: el bag es autoritativo del server. bagDump lo vacía y nos devuelve los registros; el
+    // oro de la tumba lo descuenta dropGraveReq. Al morir TAMBIÉN cae el equipo + cinturón (penalidad):
+    // van a la lápida como ítems recuperables y el personaje queda SIN equipo (visualmente sin armadura)
+    // hasta recuperarlos. El ledger _out ya los cuenta (estaban "fuera de la bolsa"), así bagGive los
+    // devuelve sin dupe. Espejamos el bag vacío y limpiamos el equipo (onEquipmentChange -> paperdoll base).
     if (isOnline()) {
       const dump = await net.bagDump().catch(() => null)
       const items = ((dump && dump.ok && dump.items) || []).map((r) => {
@@ -1479,14 +1492,17 @@ export const useGameStore = create((set, get) => ({
         if (r.upgrade) rec.upgrade = r.upgrade
         return rec
       })
+      items.push(...graveGearRecs(s))   // equipo + cinturón caen a la lápida
       const gr = await net.dropGraveReq().catch(() => null)
       let goldDrop = 0
       if (gr && gr.ok) { if (typeof gr.gold === 'number') set({ gold: gr.gold }); goldDrop = gr.dropped || 0 }
       if (dump && dump.inv) get()._mirrorInv(dump.inv)
       if (!items.length && goldDrop <= 0) return false
       const id = (get()._graveId || 0) + 1
-      const snap = graveLoadoutSnapshot(s)   // armadura + cinturón (visual del ataúd; no se pierden)
-      set({ graves: [...(get().graves || []), { id, zone, tx, ty, items, gold: goldDrop, ...snap }], _graveId: id })
+      const snap = graveLoadoutSnapshot(s)   // aspecto del ataúd (la armadura que quedó adentro)
+      set({ equipment: emptyEquipment(), belt: [null, null, null, null], equippedBelt: null,
+        graves: [...(get().graves || []), { id, zone, tx, ty, items, gold: goldDrop, ...snap }], _graveId: id })
+      get().recomputeStats()   // stats sin equipo (menos defensa/vida); reviveFull rellenará la vida "desnuda"
       saveGame(get())
       return true
     }
@@ -1501,11 +1517,14 @@ export const useGameStore = create((set, get) => ({
       items.push(rec)
       inv[i] = null
     }
+    items.push(...graveGearRecs(s))   // equipo + cinturón también caen a la lápida (offline)
     const goldDrop = Math.floor((s.gold || 0) * GRAVE_GOLD_FRACTION)
     if (!items.length && goldDrop <= 0) return false
     const id = (s._graveId || 0) + 1
-    const snap = graveLoadoutSnapshot(s)   // armadura + cinturón (visual del ataúd; no se pierden)
-    set({ inventory: inv, gold: s.gold - goldDrop, graves: [...(s.graves || []), { id, zone, tx, ty, items, gold: goldDrop, ...snap }], _graveId: id })
+    const snap = graveLoadoutSnapshot(s)   // aspecto del ataúd (la armadura que quedó adentro)
+    set({ inventory: inv, gold: s.gold - goldDrop, equipment: emptyEquipment(), belt: [null, null, null, null], equippedBelt: null,
+      graves: [...(s.graves || []), { id, zone, tx, ty, items, gold: goldDrop, ...snap }], _graveId: id })
+    get().recomputeStats()
     saveGame(get())
     return true
   },
