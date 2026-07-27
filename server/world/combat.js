@@ -18,7 +18,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { pickSprite, enemyStats, isRanged, rangedCousin, enemyAbility } from '../../shared/bestiary.js'
+import { pickSprite, enemyStats, isRanged, rangedCousin, enemyAbility, enemyDmgType } from '../../shared/bestiary.js'
 import { GATHER } from '../../shared/gather.js'
 import { rollLoot, hasLootTable } from '../../shared/loot.js'
 import { rollMonsterDrop } from '../../shared/drops.js'
@@ -436,7 +436,8 @@ export function playerOpenChest(pid, cid) {
 }
 
 // --- stats de combate del jugador (las envía el cliente) ------------------------------------
-const pstats = new Map()   // playerId -> { dmgMin, dmgMax, dmgMul, str, crit, weaponKind, reach, defense }
+const pstats = new Map()   // playerId -> { dmgMin, dmgMax, dmgMul, str, crit, weaponKind, reach, defense, avoidance, hpRegen }
+const pregen = new Map()   // playerId -> fracción de HP de regen acumulada (p.hp es entero; ver step)
 // Backstop anti-cheat: el cliente calcula sus stats de combate (dependen del equipo), pero el
 // server las ACOTA a máximos sanos muy por encima de cualquier build legítima. Así un cliente
 // hackeado no puede mandar dmg=9999 y romper el mundo compartido de los demás. (La autoridad
@@ -451,13 +452,16 @@ export function setStats(pid, s) {
     // crit=100 (crit garantizado ×2) ni dmgMul=8 para one-shotear el mundo compartido.
     dmgMul: clampNum(s.dmgMul, 4) || 1, str: clampNum(s.str, 999),
     crit: clampNum(s.crit, 60), defense: clampNum(s.defense, 3000),
+    avoidance: clampNum(s.avoidance, 90),   // % de esquiva del jugador (DEX + equipo); acotado a 90% (nunca invulnerable)
+    hpRegen: clampNum(s.hpRegen, 999),      // regen pasivo de vida (HP/seg): equipo + herboristería. El server lo tickea (ver step)
+    fireResist: clampNum(s.fireResist, 75), iceResist: clampNum(s.iceResist, 75),   // % de resistencia elemental (equipo); tope 75% (nunca inmune)
     reach: clampNum(s.reach, 8) || 1.6,
     itemFind: clampNum(s.itemFind, 300),   // magic-find (acotado): mejora la rareza del loot de kills
     goldMul: Math.max(1, Math.min(1.1, Number(s.goldMul) || 1)),   // +oro de botín del gremio (acotado a +10%)
     weaponKind: (s.weaponKind === 'ranged' || s.weaponKind === 'mental') ? s.weaponKind : 'melee',
   })
 }
-export function dropPlayer(pid) { pstats.delete(pid); patkAt.delete(pid) }
+export function dropPlayer(pid) { pstats.delete(pid); patkAt.delete(pid); pregen.delete(pid) }
 
 // Cadencia de ataque autoritativa: el cooldown vivía sólo en el cliente (cosmético), así que un
 // cliente scripteado podía mandar 'atk' en loop y borrar los enemigos del canal. El swing legítimo
@@ -606,6 +610,16 @@ function step() {
       w.dead = still
     }
     for (const e of w.enemies.values()) stepEnemy(w, e, players, dt)
+    // Regen pasivo de vida AUTORITATIVO (hpRegen: equipo + herboristería). Sube p.hp en el server igual
+    // que el cliente lo sube local, así el sustain cuenta también EN combate (donde el server no acepta
+    // subidas de vida reportadas) y no se mata de más a un build de regen. Acumula fracciones (p.hp entero).
+    if (ctx.healPlayer) for (const p of players) {
+      const rg = (pstats.get(p.id) || {}).hpRegen || 0
+      if (rg <= 0) continue
+      const acc = (pregen.get(p.id) || 0) + rg * dt
+      if (acc >= 1) { const h = Math.floor(acc); pregen.set(p.id, acc - h); ctx.healPlayer(p.id, h) }
+      else pregen.set(p.id, acc)
+    }
     // reponer nodos de recursos agotados (vuelven a crecer en su lugar, con material fresco)
     if (w.nodeDead && w.nodeDead.length) {
       const still = []
@@ -634,6 +648,15 @@ function step() {
     }
     if (sendState) broadcastState(w, players)
   }
+}
+
+// Aplica la resistencia elemental del jugador al daño del enemigo según su tipo. El daño físico no se
+// toca (ya lo mitiga defense); fuego/hielo lo mitiga el resist correspondiente (tope 75% en setStats).
+// Nunca baja de 1.
+function resistDmg(dmg, ps, type) {
+  if (type === 'fire') return Math.max(1, Math.round(dmg * (1 - (ps.fireResist || 0) / 100)))
+  if (type === 'ice') return Math.max(1, Math.round(dmg * (1 - (ps.iceResist || 0) / 100)))
+  return dmg
 }
 
 function stepEnemy(w, e, players, dt) {
@@ -670,22 +693,30 @@ function stepEnemy(w, e, players, dt) {
   } else if (e.atkCd <= 0) {
     e.atkCd = ATK_CD
     e.d = vecToDir(dx, dy)
+    const etype = e._dt !== undefined ? e._dt : (e._dt = enemyDmgType(e.s))   // tipo de daño (físico/fuego/hielo), cacheado
     // SMASH: chance de golpe de ÁREA más fuerte (minotauro/caballero/élites) — pega a todos los
     // jugadores en radio; si no procea, golpe normal al objetivo.
     if (ab && ab.type === 'smash' && Math.random() < (ab.chance || 0.4)) {
       for (const p of players) {
         if (Math.hypot(p.x - e.x, p.y - e.y) > (ab.radius || 2)) continue
         const ps = pstats.get(p.id) || {}
-        const dmg = Math.max(1, Math.round(e.dmg * (ab.mult || 2)) - (ps.defense || 0))
-        ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg, smash: 1 })   // FX + predicción del cliente
+        if ((ps.avoidance || 0) > 0 && Math.random() * 100 < ps.avoidance) { ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg: 0, dodge: 1 }); continue }   // ESQUIVA (DEX + equipo): sin daño
+        const dmg = resistDmg(Math.max(1, Math.round(e.dmg * (ab.mult || 2)) - (ps.defense || 0)), ps, etype)
+        const hit = { t: 'ehit', i: e.i, dmg, smash: 1 }; if (etype !== 'physical') hit.el = etype   // el = fuego/hielo (el cliente colorea)
+        ctx.sendTo(p.id, hit)   // FX + predicción del cliente
         if (ctx.damagePlayer) ctx.damagePlayer(p.id, dmg)        // HP AUTORITATIVA (Fase 3): el server aplica el daño y decide la muerte
       }
       ctx.broadcast(w.map, w.ch, { t: 'esmash', i: e.i, x: r2(e.x), y: r2(e.y), r: ab.radius || 2 })  // FX (el cliente puede animarlo)
     } else {
       const st = pstats.get(tgt.id) || {}
-      const dmg = Math.max(1, e.dmg - (st.defense || 0))
-      ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg })   // FX + predicción del cliente
-      if (ctx.damagePlayer) ctx.damagePlayer(tgt.id, dmg)   // HP AUTORITATIVA (Fase 3)
+      if ((st.avoidance || 0) > 0 && Math.random() * 100 < st.avoidance) {   // ESQUIVA (DEX + equipo): sin daño
+        ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg: 0, dodge: 1 })
+      } else {
+        const dmg = resistDmg(Math.max(1, e.dmg - (st.defense || 0)), st, etype)
+        const hit = { t: 'ehit', i: e.i, dmg }; if (etype !== 'physical') hit.el = etype
+        ctx.sendTo(tgt.id, hit)   // FX + predicción del cliente
+        if (ctx.damagePlayer) ctx.damagePlayer(tgt.id, dmg)   // HP AUTORITATIVA (Fase 3)
+      }
     }
   }
 }

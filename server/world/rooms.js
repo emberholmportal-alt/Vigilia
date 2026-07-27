@@ -902,6 +902,15 @@ export function damagePlayer(id, dmg) {
   p.send({ t: 'php', id, hp: p.hp, hpMax: p.hpMax })   // al PROPIO cliente: reconcilia su barra al valor autoritativo (Fase 3)
   if (p.hp <= 0) forceDeath(p)
 }
+// Regen pasivo de vida AUTORITATIVO (lo tickea combat con el hpRegen del jugador). Sube p.hp hasta el
+// techo; no revive a un muerto. Sin broadcast: el cliente sube su propia barra con el mismo hpRegen y
+// reporta su vida por php (~4Hz) para los demás; acá sólo mantenemos p.hp preciso para la muerte.
+export function healPlayer(id, amt) {
+  const p = players.get(id); if (!p || p.dead || p.hp == null || !p.hpMax) return
+  amt = Math.max(0, Math.floor(Number(amt)) || 0); if (!amt || p.hp >= p.hpMax) return
+  p.hp = Math.min(p.hpMax, p.hp + amt); p._hpDirty = true
+}
+
 // Muerte AUTORITATIVA: la decide el server (no el cliente). Congela las acciones vía p.dead y avisa a
 // TODOS —incluido el propio cliente— así también un cliente honesto ve la caída en co-op. La penalidad
 // de oro (tumba) la sigue disparando el flujo del cliente (dropGrave), idempotente por muerte.
@@ -1054,6 +1063,7 @@ combat.init({
   awardGold: (id, amt, reason, x, y) => awardGold(id, amt, reason, x, y),   // faucets del mundo (kill/cofre)
   awardXp: (id, amt, reason) => awardXp(id, amt, reason),                    // XP autoritativa (kill/cofre)
   damagePlayer: (id, dmg) => damagePlayer(id, dmg),                          // HP autoritativa (Fase 3): daño enemigo -> muerte
+  healPlayer: (id, amt) => healPlayer(id, amt),                              // regen pasivo autoritativo (hpRegen)
   grantLoot: (id, drops) => grantLoot(id, drops),                           // ítems de loot (kill), autoritativos
   missionTick: (id, type, map, n) => missionTick(id, type, map, n),         // avance de misiones autoritativo
   recordBoss: (id, map) => recordBoss(id, map),                             // hazaña: jefe permanente derrotado

@@ -470,6 +470,9 @@ export class Game {
       dmgMin: st.dmgMin || 2, dmgMax: st.dmgMax || 5, dmgMul: st.dmgMul || 1,
       str: st.str || 10, crit: st.crit || 0, weaponKind: st.weaponKind || 'melee',
       defense: st.defense || 0, reach: (st.weaponKind && st.weaponKind !== 'melee') ? 6 : 1.6,
+      avoidance: st.avoidance || 0,   // % de esquiva: el server lo tira al recibir daño enemigo (DEX + equipo)
+      hpRegen: st.hpRegen || 0,       // regen pasivo de vida (HP/seg): el server lo tickea (parity con la barra)
+      fireResist: st.fireResist || 0, iceResist: st.iceResist || 0,   // % resistencia elemental: el server la aplica al daño enemigo de fuego/hielo
       level: st.level || 1,   // capacidad usable del bag autoritativo (parity con el HUD)
       itemFind: st.itemFind || 0,   // magic-find: el server lo usa al tirar el loot de kills
       goldMul: st.guildGoldMul || 1,   // +oro de botín del gremio (ventaja n1): el server lo aplica al oro de kill
@@ -1634,10 +1637,16 @@ export class Game {
   _onEhit(m) {
     if (this._dead || this._spectator || !this.player) return
     const dmg = m.dmg || 0
+    if (m.dodge) {   // ESQUIVA (DEX + equipo): el server negó el daño; mostramos el aviso
+      const p = this.player
+      this._floatText(p.view.x, p.view.y - 70, tt('dodge'), '#8ad9ff')
+      return
+    }
     if (dmg <= 0) return
     const hp = this.store.takeDamage(dmg)
     const p = this.player
-    this._floatText(p.view.x, p.view.y - 70, `-${dmg}`, '#ff6a5a')
+    const dcolor = m.el === 'fire' ? '#ff8a3a' : m.el === 'ice' ? '#7fd4ff' : '#ff6a5a'   // color por elemento (fuego/hielo/físico)
+    this._floatText(p.view.x, p.view.y - 70, `-${dmg}`, dcolor)
     this.store.degradeGear('armor', 1)
     if (this._hurtCd <= 0) { p.hurt(); playSfx('player_hit.ogg'); this._hurtCd = 0.5 }
     if (hp <= 0) this._playerDeath()
@@ -2403,6 +2412,17 @@ export class Game {
       if (this._healAccum >= 0.5 && hpMax) {   // ~vida completa en ~10s
         this.store.heal(Math.max(1, Math.round(hpMax * 0.05)))
         this._healAccum = 0
+      }
+    }
+
+    // Regen pasivo de vida por hpRegen (equipo + herboristería): en TODOS lados, no sólo el pueblo.
+    // El server tickea el MISMO hpRegen (autoritativo), acumulando fracciones igual que acá, así la
+    // barra y la vida del server quedan sincronizadas también en combate. Antes hpRegen no hacía nada.
+    if (!this._dead) {
+      const rg = this.store.getStats()?.hpRegen || 0
+      if (rg > 0) {
+        this._hpRegenAccum = (this._hpRegenAccum || 0) + rg * dt
+        if (this._hpRegenAccum >= 1) { const h = Math.floor(this._hpRegenAccum); this._hpRegenAccum -= h; this.store.heal(h) }
       }
     }
 
