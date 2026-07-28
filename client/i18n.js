@@ -534,7 +534,7 @@ const DICT = {
   wallet_optional: { es: 'Opcional — podés jugar sin billetera por ahora.', en: 'Optional — you can play without a wallet for now.' },
   wallet_required_hint: { es: 'Necesitás una billetera Solana para jugar.', en: 'You need a Solana wallet to play.' },
   back: { es: 'Volver', en: 'Back' },
-  loot_labels: { es: 'Loot', en: 'Loot' },
+  loot_labels: { es: 'Ítems', en: 'Loot' },
   run_on: { es: 'Corriendo', en: 'Running' },
   run_off: { es: 'Caminando', en: 'Walking' },
   run_hint: { es: 'Correr (gasta stamina) · Shift en PC', en: 'Run (uses stamina) · Shift on PC' },
