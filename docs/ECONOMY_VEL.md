@@ -78,13 +78,16 @@ el endgame no compra ahí.
 cualquier Fase 3** (ver §7). Ideas de sink continuo: loot-boxes comprables en oro, cosméticos,
 mantenimiento/upkeep, costos de forja de alto nivel más agresivos.
 
-### Deudas técnicas del oro (encontradas en auditoría)
-1. **Costos client-side:** reparar/forjar/respec/ofrenda mandan el **monto calculado por el
-   cliente**; el server solo chequea que alcance (no lo recalcula). No se puede mintear ni quedar
-   negativo, pero un cliente tramposo podría *pagar de menos*. → **Recalcular esos costos en el
-   server.**
-2. **Oro de la tumba en memoria:** `p._grave` vive solo en RAM; una desconexión antes de
-   recuperarla lo destruye (sink no intencional + bug de UX). → Persistir o avisar.
+### Deudas técnicas del oro (encontradas en auditoría) — ✅ RESUELTAS
+1. **Costos client-side → recalculados en el server.** `respec` / `repair` / `forge` los recalcula el
+   server del nivel real (`index.js` handler `spend` → `rooms.respecCostOf` / `repairCostOf` /
+   `forgeCostOf`), no confía en el monto del cliente: cierra el under-pay. La **ofrenda** usa el monto
+   del cliente pero es inofensiva por diseño: `spendGold(…, 'offering')` avanza la misión **por el oro
+   realmente gastado** (`rooms.js`), y la recompensa se gatea por ese progreso autoritativo — pagar de
+   menos sólo avanza menos.
+2. **Oro de la tumba → reacreditado al desconectar, sin dupe.** En `leave()` (`rooms.js`) `p._grave` se
+   devuelve al saldo persistido antes de soltar la sesión; al reconectar arranca en 0, así el recover no
+   acredita dos veces (el server es la fuente de verdad del oro).
 
 ---
 
