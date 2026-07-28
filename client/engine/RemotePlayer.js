@@ -25,14 +25,27 @@ export class RemotePlayer {
     this.view.addChild(this.paperdoll.view)
 
     // Etiqueta flotante: [SIGLA] nombre · raza (localizada desde el id) · Nv nivel — igual que el héroe.
+    const headY = -(this.paperdoll.anchorY + 6)
+    // Línea 2 (abajo): raza · nivel, chica.
+    this.infoText = new Text({
+      text: this._info(), style: {
+        fontFamily: 'Georgia, serif', fontSize: 11, fill: '#a9c6e0',
+        stroke: { color: '#0a090c', width: 3 }, align: 'center', wordWrap: false,
+      },
+    })
+    this.infoText.anchor.set(0.5, 1)
+    this.infoText.y = headY
+    this.view.addChild(this.infoText)
+
+    // Línea 1 (arriba): sólo el nombre, grande.
     this.nameText = new Text({
-      text: this._label(), style: {
-        fontFamily: 'Georgia, serif', fontSize: 16, fontWeight: '600', fill: '#bfe0ff',
+      text: this._name(), style: {
+        fontFamily: 'Georgia, serif', fontSize: 18, fontWeight: '700', fill: '#dcefff',
         stroke: { color: '#0a090c', width: 3.5 }, align: 'center', wordWrap: false,
       },
     })
     this.nameText.anchor.set(0.5, 1)
-    this.nameText.y = -(this.paperdoll.anchorY + 6)
+    this.nameText.y = headY - 13
     this.view.addChild(this.nameText)
 
     // Badge "ADM" (admin por wallet) en una línea aparte, arriba del nombre. Viene en el pub del jugador.
@@ -43,7 +56,7 @@ export class RemotePlayer {
       },
     })
     this.admText.anchor.set(0.5, 1)
-    this.admText.y = -(this.paperdoll.anchorY + 6) - 24
+    this.admText.y = headY - 37
     this.admText.visible = !!p.admin
     this.view.addChild(this.admText)
 
@@ -73,13 +86,13 @@ export class RemotePlayer {
   // El Game engancha acá para iniciar un intercambio al tocar a este jugador.
   onTap(cb) { this.view.on('pointertap', (e) => { e.stopPropagation(); cb(this) }) }
 
-  // Etiqueta flotante: [SIGLA] nombre · raza · Nv nivel. La sigla (estandarte) va adelante.
-  _label() {
-    const rn = raceName(raceById(this.race))
-    const nm = (this.guildTag ? `[${this.guildTag}] ` : '') + (this.name || 'Viajero')
-    return [nm, rn, tt('lv') + ' ' + (this.level || 1)].filter(Boolean).join(' · ')
+  // Nombre (línea grande) y datos (raza · nivel, línea chica), en dos renglones.
+  _name() { return (this.guildTag ? `[${this.guildTag}] ` : '') + (this.name || 'Viajero') }
+  _info() { return [raceName(raceById(this.race)), tt('lv') + ' ' + (this.level || 1)].filter(Boolean).join(' · ') }
+  relabel() {
+    if (this.nameText) this.nameText.text = this._name()
+    if (this.infoText) this.infoText.text = this._info()
   }
-  relabel() { if (this.nameText) this.nameText.text = this._label() }
   setGuildTag(tag) { this.guildTag = tag || null; this.relabel() }   // estandarte del gremio (n5)
   setLevel(lv) { this.level = lv | 0 || 1; this.relabel() }
 

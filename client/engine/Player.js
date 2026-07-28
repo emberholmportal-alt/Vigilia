@@ -33,18 +33,31 @@ export class Player {
     const headY = -(this.paperdoll.anchorY + 6) // arriba de la cabeza
 
     // Nombre flotante sobre la cabeza.
+    // Línea 2 (abajo): raza · nivel, chica. Va primero para quedar pegada a la cabeza.
+    this.infoText = new Text({
+      text: '',
+      style: {
+        fontFamily: 'Georgia, serif', fontSize: 11, fill: '#c9bfa6',
+        stroke: { color: '#0a090c', width: 3 }, align: 'center', wordWrap: false,
+      },
+    })
+    this.infoText.anchor.set(0.5, 1)
+    this.infoText.y = headY
+    this.view.addChild(this.infoText)
+
+    // Línea 1 (arriba): SÓLO el nombre, grande, en su propia línea.
     this.nameText = new Text({
       text: '',
       style: {
-        fontFamily: 'Georgia, serif', fontSize: 17, fontWeight: '600', fill: '#e6dcc6',
+        fontFamily: 'Georgia, serif', fontSize: 19, fontWeight: '700', fill: '#f2ead6',
         stroke: { color: '#0a090c', width: 3.5 }, align: 'center', wordWrap: false,
       },
     })
     this.nameText.anchor.set(0.5, 1)
-    this.nameText.y = headY
+    this.nameText.y = headY - 13
     this.view.addChild(this.nameText)
 
-    // Badge "ADM" (admin) en una línea aparte, ARRIBA del nombre/clase/nivel. Oculto salvo admins.
+    // Badge "ADM" (admin) en una línea aparte, ARRIBA del nombre. Oculto salvo admins.
     this.admText = new Text({
       text: 'ADM',
       style: {
@@ -53,7 +66,7 @@ export class Player {
       },
     })
     this.admText.anchor.set(0.5, 1)
-    this.admText.y = headY - 24
+    this.admText.y = headY - 37
     this.admText.visible = false
     this.view.addChild(this.admText)
 
@@ -76,10 +89,11 @@ export class Player {
   }
 
   setName(name, level, race, lvLabel = 'Nv', guildTag = null) {
-    const parts = [(guildTag ? `[${guildTag}] ` : '') + (name || '')]
-    if (race) parts.push(race)
-    if (level) parts.push(lvLabel + ' ' + level)
-    this.nameText.text = parts.join(' · ')
+    this.nameText.text = (guildTag ? `[${guildTag}] ` : '') + (name || '')
+    const info = []
+    if (race) info.push(race)
+    if (level) info.push(lvLabel + ' ' + level)
+    this.infoText.text = info.join(' · ')
   }
 
   // Muestra/oculta el badge "ADM" sobre la cabeza (rol admin por wallet).
