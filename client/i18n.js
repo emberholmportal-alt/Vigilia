@@ -77,6 +77,7 @@ const DICT = {
   smith_perfect: { es: 'Equipo impecable', en: 'Gear is pristine' },
   smith_nogold: { es: 'Sin oro ({n})', en: 'Not enough gold ({n})' },
   smith_repair: { es: 'Reparar todo — {n} oro', en: 'Repair all — {n} gold' },
+  smith_fix_one: { es: 'Reparar · {n}', en: 'Repair · {n}' },
   // alquimia
   alch_hint: { es: 'Juntá hierbas y cristales en el mundo; acá los volvés pociones.', en: 'Gather herbs and crystals out in the world; here you turn them into potions.' },
   alch_buy_hint: { es: 'Pociones y pergaminos de retorno, listos para llevar', en: 'Potions and return scrolls, ready to take' },

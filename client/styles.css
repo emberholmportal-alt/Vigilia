@@ -1565,13 +1565,21 @@ html, body, #root {
 .smith-ico { flex: 0 0 auto; display: flex; align-items: center; }
 .smith-name { flex: 1 1 auto; font-size: 13px; text-shadow: 0 1px 2px #000; }
 .smith-name em { color: var(--dim); font-style: normal; font-size: 10px; }
+.smith-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .smith-bar {
-  flex: 0 0 90px; height: 8px; border: 1px solid #3b3145; border-radius: 3px; overflow: hidden;
+  flex: 0 0 72px; height: 8px; border: 1px solid #3b3145; border-radius: 3px; overflow: hidden;
   background: rgba(20, 17, 26, 0.7);
 }
 .smith-bar i { display: block; height: 100%; background: linear-gradient(90deg, #b98b3a, #e6c85a); }
 .smith-bar i.broken { background: #b23b3b; }
-.smith-dur { flex: 0 0 auto; font-size: 11px; color: var(--parch); min-width: 52px; text-align: right; }
+.smith-dur { flex: 0 0 auto; font-size: 11px; color: var(--parch); min-width: 46px; text-align: right; }
+.smith-fix {
+  flex: 0 0 auto; font-family: Georgia, serif; font-size: 11px; white-space: nowrap;
+  color: var(--parch); background: linear-gradient(180deg, #2a2320, #17120e);
+  border: 1px solid #6b5320; border-radius: 4px; padding: 4px 9px; cursor: pointer; text-shadow: 0 1px 2px #000;
+}
+.smith-fix:active:not(:disabled) { filter: brightness(1.2); }
+.smith-fix:disabled { opacity: 0.45; cursor: default; border-color: var(--edge); }
 .smith-repair {
   margin-top: 10px; align-self: center; font-family: Georgia, serif; font-size: 14px;
   color: var(--parch); background: linear-gradient(180deg, #2a2320, #17120e);

@@ -277,6 +277,11 @@ export function repairCostOf(id) {
   const lv = p.level || 1
   return 30 + 14 * lv + 3 * lv * lv
 }
+// Reparar UNA pieza: la mitad de la tarifa plena (redondeo arriba). Autoritativo del server (mismo
+// nivel), coincide con store.repairCostOne. Reparar-todo sigue siendo el mejor trato con 2+ piezas.
+export function repairOneCostOf(id) {
+  return Math.ceil(repairCostOf(id) / 2)
+}
 
 // Costo en ORO de forjar (mejorar una pieza), AUTORITATIVO del server: por nivel. Coincide con
 // store.upgradeCost. Los cristales (que escalan con el upgrade) se validan aparte por bagConsume.

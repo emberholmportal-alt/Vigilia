@@ -499,6 +499,28 @@ export const useGameStore = create((set, get) => ({
     return { ok: true }
   },
 
+  // Costo de reparar UNA pieza: la MITAD de la tarifa plena (redondeo arriba). Reparar todo sigue
+  // siendo el mejor trato con 2+ piezas dañadas; lo individual conviene cuando falta una sola. El
+  // server lo recalcula (rooms.repairOneCostOf) del nivel real, no confía en el monto del cliente.
+  repairCostOne: () => { const lv = get().stats?.level || 1; return Math.ceil((30 + 14 * lv + 3 * lv * lv) / 2) },
+
+  // Repara SOLO la pieza del slot dado.
+  repairOne: async (slot) => {
+    const it = get().equipment[slot]
+    if (!isDurable(it) || it.dur == null || it.dur >= durabilityMax(it)) { get().showToast(tt('gear_impeccable')); return { ok: false } }
+    const cost = get().repairCostOne()
+    if (get().gold < cost) { get().showToast(tt('no_gold_repair')); return { ok: false } }
+    const r = await get()._spend(cost, 'repair_one', () => {
+      const eq = { ...get().equipment }
+      eq[slot] = { ...eq[slot], dur: durabilityMax(eq[slot]) }
+      set({ equipment: eq }); get().recomputeStats()
+    })
+    if (!r.ok) { get().showToast(tt('no_gold_repair')); return { ok: false } }
+    get().showToast(tt('gear_repaired', { n: cost }))
+    saveGame(get())
+    return { ok: true }
+  },
+
   // --- forja: mejorar equipo con Cristal de maná (excavación) + oro (skill forja) ---
   // Costo de mejorar una pieza: cristales + oro, crece con el nivel de forja actual.
   // Costo de mejorar: cristales (escalan con el upgrade, los verifica el server vía bagConsume) +

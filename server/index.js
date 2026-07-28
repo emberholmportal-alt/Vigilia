@@ -641,6 +641,7 @@ wss.on('connection', (ws) => {
           // aparte por bagConsume. Ofrenda es inofensiva (pagar de menos sólo avanza menos la misión).
           const amount = m.reason === 'respec' ? rooms.respecCostOf(conn.playerId)
             : m.reason === 'repair' ? rooms.repairCostOf(conn.playerId)
+            : m.reason === 'repair_one' ? rooms.repairOneCostOf(conn.playerId)
             : m.reason === 'forge' ? rooms.forgeCostOf(conn.playerId)
             : m.amount
           return send({ t: 'spendack', reason: m.reason, amount, ...rooms.spendGold(conn.playerId, amount, m.reason) })

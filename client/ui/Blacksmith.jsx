@@ -17,6 +17,8 @@ export default function Blacksmith() {
   const smithName = useGameStore((s) => s.smithName)
   const repairCost = useGameStore((s) => s.repairCost)
   const repairAll = useGameStore((s) => s.repairAll)
+  const repairCostOne = useGameStore((s) => s.repairCostOne)
+  const repairOne = useGameStore((s) => s.repairOne)
   const upgradeCost = useGameStore((s) => s.upgradeCost)
   const upgradeGear = useGameStore((s) => s.upgradeGear)
   const crystals = useGameStore((s) => s.inventory.reduce((n, it) => n + (it && it.id === 755 ? (it.count || 1) : 0), 0))
@@ -26,6 +28,7 @@ export default function Blacksmith() {
 
   const durables = Object.entries(equipment).filter(([, it]) => isDurable(it))
   const cost = repairCost()
+  const costOne = repairCostOne()
 
   return (
     <div className="modal-backdrop" onClick={() => setPanel(null)}>
@@ -57,6 +60,10 @@ export default function Blacksmith() {
                     </span>
                     <div className="smith-bar"><i className={dur <= 0 ? 'broken' : ''} style={{ width: `${pct * 100}%` }} /></div>
                     <span className="smith-dur">{dur <= 0 ? t('broken') : `${dur}/${max}`}</span>
+                    {dur < max && (
+                      <button className="smith-fix" disabled={gold < costOne} onClick={() => repairOne(sl)}
+                              title={t('smith_fix_one', { n: costOne })}>{t('smith_fix_one', { n: costOne })}</button>
+                    )}
                   </div>
                 )
               })}
