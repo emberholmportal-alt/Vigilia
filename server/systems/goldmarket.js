@@ -209,7 +209,13 @@ export async function settle(buyerId, buyerAccountId, buyerWallet, orderId, sig)
     if (!v.ok) return release({ ok: false, error: v.error, retry: !!v.retry })
 
     const removed = await db.goldOrderRemove(orderId)
-    if (!removed) return release({ ok: false, error: 'esa orden ya no está' })
+    if (!removed) {
+      // Doble-pago (raro): el pago verificó contra ESTA orden y este pagador, pero otro comprador ya la
+      // settleó y se llevó el oro (su lock venció con el pago en vuelo >LOCK_MS+gracia). No hay reembolso
+      // automático (el oro ya se entregó), así que lo dejamos LOGUEADO para reembolso manual del $VEL.
+      console.warn('[goldmkt] DOBLE-PAGO: pago válido (sig ' + sig.slice(0, 12) + '…, wallet ' + buyerWallet.slice(0, 6) + '…) para la orden ' + orderId + ' que ya no está. Requiere reembolso manual de ~' + o.price + ' ' + (process.env.VEL_SYMBOL || 'VEL') + '.')
+      return release({ ok: false, error: 'esa orden ya se vendió; si pagaste, guardá la transacción para el reembolso' })
+    }
     if (!rooms.creditAccountGold(buyerAccountId, removed.gold, 'market_buy')) await db.updateCharacterGold(buyerAccountId, (g) => g + removed.gold)
     else await rooms.flushGold(buyerAccountId)                // durabilidad: el comprador ya pagó on-chain; su oro tiene que persistir sí o sí
     const gold = rooms.playerGold(buyerId)

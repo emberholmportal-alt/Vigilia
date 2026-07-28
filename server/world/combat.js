@@ -732,7 +732,7 @@ function stepEnemy(w, e, players, dt) {
       for (const p of players) {
         if (Math.hypot(p.x - e.x, p.y - e.y) > (ab.radius || 2)) continue
         const ps = pstats.get(p.id) || {}
-        if ((ps.avoidance || 0) > 0 && Math.random() * 100 < ps.avoidance) { ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg: 0, dodge: 1 }); continue }   // ESQUIVA (DEX + equipo): sin daño
+        if ((ps.avoidance || 0) > 0 && Math.random() * 100 < ps.avoidance) { ctx.sendTo(p.id, { t: 'ehit', i: e.i, dmg: 0, dodge: 1 }); ctx.markCombat && ctx.markCombat(p.id); continue }   // ESQUIVA (DEX + equipo): sin daño, pero cuenta como combate
         const dmg = resistDmg(Math.max(1, Math.round(e.dmg * (ab.mult || 2)) - (ps.defense || 0)), ps, etype)
         const hit = { t: 'ehit', i: e.i, dmg, smash: 1 }; if (etype !== 'physical') hit.el = etype   // el = fuego/hielo (el cliente colorea)
         ctx.sendTo(p.id, hit)   // FX + predicción del cliente
@@ -741,8 +741,9 @@ function stepEnemy(w, e, players, dt) {
       ctx.broadcast(w.map, w.ch, { t: 'esmash', i: e.i, x: r2(e.x), y: r2(e.y), r: ab.radius || 2 })  // FX (el cliente puede animarlo)
     } else {
       const st = pstats.get(tgt.id) || {}
-      if ((st.avoidance || 0) > 0 && Math.random() * 100 < st.avoidance) {   // ESQUIVA (DEX + equipo): sin daño
+      if ((st.avoidance || 0) > 0 && Math.random() * 100 < st.avoidance) {   // ESQUIVA (DEX + equipo): sin daño, pero cuenta como combate
         ctx.sendTo(tgt.id, { t: 'ehit', i: e.i, dmg: 0, dodge: 1 })
+        ctx.markCombat && ctx.markCombat(tgt.id)
       } else {
         const dmg = resistDmg(Math.max(1, e.dmg - (st.defense || 0)), st, etype)
         const hit = { t: 'ehit', i: e.i, dmg }; if (etype !== 'physical') hit.el = etype

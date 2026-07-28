@@ -908,6 +908,13 @@ export function damagePlayer(id, dmg) {
   p.send({ t: 'php', id, hp: p.hp, hpMax: p.hpMax })   // al PROPIO cliente: reconcilia su barra al valor autoritativo (Fase 3)
   if (p.hp <= 0) forceDeath(p)
 }
+// Marca al jugador "en combate" (refresca la ventana anti-cura) SIN tocar HP ni difundir: para golpes
+// ESQUIVADOS, que no hacen daño pero igual son combate. Si no, un build de alta esquiva podría esquivar
+// todo por 3s y reportar vida llena gratis mientras lo atacan. Ver playerHp / COMBAT_WINDOW_MS.
+export function markCombat(id) {
+  const p = players.get(id); if (!p || p.dead) return
+  p._lastHitAt = Date.now()
+}
 // Regen pasivo de vida AUTORITATIVO (lo tickea combat con el hpRegen del jugador). Sube p.hp hasta el
 // techo; no revive a un muerto. Sin broadcast: el cliente sube su propia barra con el mismo hpRegen y
 // reporta su vida por php (~4Hz) para los demás; acá sólo mantenemos p.hp preciso para la muerte.
@@ -1069,6 +1076,7 @@ combat.init({
   awardGold: (id, amt, reason, x, y) => awardGold(id, amt, reason, x, y),   // faucets del mundo (kill/cofre)
   awardXp: (id, amt, reason) => awardXp(id, amt, reason),                    // XP autoritativa (kill/cofre)
   damagePlayer: (id, dmg) => damagePlayer(id, dmg),                          // HP autoritativa (Fase 3): daño enemigo -> muerte
+  markCombat: (id) => markCombat(id),                                        // esquiva: marca combate sin dañar (anti cura-gratis)
   healPlayer: (id, amt) => healPlayer(id, amt),                              // regen pasivo autoritativo (hpRegen)
   grantLoot: (id, drops) => grantLoot(id, drops),                           // ítems de loot (kill), autoritativos
   missionTick: (id, type, map, n) => missionTick(id, type, map, n),         // avance de misiones autoritativo

@@ -18,6 +18,7 @@ import { findAccount, createAccount } from '../db/db.js'
 import { issueToken } from './auth.js'
 
 const NONCE_TTL = 5 * 60 * 1000
+const MAX_CHALLENGES = 5000     // tope duro del Map: acota la memoria ante un flood de wallet_challenge
 const challenges = new Map() // pubkey -> { message, exp }
 
 // Wallets con rol ADMIN (badge "ADM" sobre la cabeza). Allowlist por variable de entorno
@@ -57,6 +58,18 @@ function verifySignature(pubkeyB58, message, sigHex) {
 
 // Mensaje-desafío para que la wallet firme. Guarda el texto exacto para verificar después.
 export function challenge(pubkey) {
+  // Acotar la memoria: un atacante puede pedir wallet_challenge con miles de pubkeys distintas y cada
+  // entrada vive NONCE_TTL. Sólo al llegar al tope barremos los vencidos (amortizado, no en cada
+  // llamada); si aún está lleno (flood dentro del TTL) tiramos la más vieja (Map preserva el orden).
+  if (challenges.size >= MAX_CHALLENGES) {
+    const now = Date.now()
+    for (const [k, v] of challenges) if (v.exp < now) challenges.delete(k)
+    while (challenges.size >= MAX_CHALLENGES) {
+      const oldest = challenges.keys().next().value
+      if (oldest === undefined) break
+      challenges.delete(oldest)
+    }
+  }
   const nonce = crypto.randomBytes(16).toString('hex')
   const message = `Velgrim — iniciá sesión.\nBilletera: ${pubkey}\nNonce: ${nonce}`
   challenges.set(pubkey, { message, exp: Date.now() + NONCE_TTL })
