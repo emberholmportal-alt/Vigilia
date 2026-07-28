@@ -516,7 +516,7 @@ export const useGameStore = create((set, get) => ({
     const up = upgradeLevel(it)
     if (up >= FORGE_MAX) { get().showToast(tt('forge_max')); return { ok: false } }
     const c = get().upgradeCost(it)
-    const haveCrystal = get().countItem(752)
+    const haveCrystal = get().countItem(755)   // Mastite: materia prima de la Forja (antes cristal de maná)
     if (haveCrystal < c.crystals) { get().showToast(tt('forge_need_crystals', { n: c.crystals })); return { ok: false } }
     if (s.gold < c.gold) { get().showToast(tt('forge_need_gold', { n: c.gold })); return { ok: false } }
     const r = await get()._spend(c.gold, 'forge', () => {
@@ -526,7 +526,7 @@ export const useGameStore = create((set, get) => ({
         let left = c.crystals
         const inv = get().inventory.slice()
         for (let i = 0; i < inv.length && left > 0; i++) {
-          const x = inv[i]; if (!x || x.id !== 752) continue
+          const x = inv[i]; if (!x || x.id !== 755) continue
           const take = Math.min(x.count || 1, left); left -= take
           inv[i] = (x.count || 1) - take > 0 ? { ...x, count: (x.count || 1) - take } : null
         }
@@ -536,7 +536,7 @@ export const useGameStore = create((set, get) => ({
       get().addSkillXp('forja', 16); get().recomputeStats()
     })
     if (!r.ok) { get().showToast(tt('forge_need_gold', { n: c.gold })); return { ok: false } }
-    if (isOnline()) { const cr = await net.bagConsume(752, c.crystals).catch(() => null); if (cr && cr.inv) get()._mirrorInv(cr.inv) }
+    if (isOnline()) { const cr = await net.bagConsume(755, c.crystals).catch(() => null); if (cr && cr.inv) get()._mirrorInv(cr.inv) }
     get().showToast(tt('forge_done', { name: itemName(it), n: up + 1 }))
     saveGame(get())
     return { ok: true }

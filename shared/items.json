@@ -7371,6 +7371,19 @@
       "equip_flags": null
     },
     {
+      "id": 755,
+      "name": "Mastite",
+      "name_en": "Mastite",
+      "slot": "crafting",
+      "icon": 517,
+      "tier": 0,
+      "price": 12,
+      "rarity": "comun",
+      "gfx": null,
+      "stats": {},
+      "equip_flags": null
+    },
+    {
       "id": 775,
       "name": "Poción de aguante",
       "name_en": "Stamina Potion",

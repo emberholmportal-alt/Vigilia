@@ -19,7 +19,7 @@ export default function Blacksmith() {
   const repairAll = useGameStore((s) => s.repairAll)
   const upgradeCost = useGameStore((s) => s.upgradeCost)
   const upgradeGear = useGameStore((s) => s.upgradeGear)
-  const crystals = useGameStore((s) => s.inventory.reduce((n, it) => n + (it && it.id === 752 ? (it.count || 1) : 0), 0))
+  const crystals = useGameStore((s) => s.inventory.reduce((n, it) => n + (it && it.id === 755 ? (it.count || 1) : 0), 0))
   const setPanel = useGameStore((s) => s.setPanel)
   const t = useT()
   const [tab, setTab] = useState('repair')
