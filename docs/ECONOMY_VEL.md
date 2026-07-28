@@ -73,10 +73,14 @@ loot**. Los sumideros recurrentes (reparar/forjar/respec) son modestos y en su m
 por ítem*. El sumidero estructural más grande —el spread 4:1— **solo muerde si comprás al NPC**, y
 el endgame no compra ahí.
 
-**Falta un sumidero de oro continuo de endgame.** Con el modelo *membership* esto es un tema de
-*feel* (no amenaza al token porque el oro está cerrado), pero **hay que resolverlo antes de
-cualquier Fase 3** (ver §7). Ideas de sink continuo: loot-boxes comprables en oro, cosméticos,
-mantenimiento/upkeep, costos de forja de alto nivel más agresivos.
+**Sumidero de oro continuo de endgame → upkeep del equipo.** El mantenimiento cubre este rol: el
+equipo se desgasta con el uso (arma al atacar, armadura al recibir golpes; el roto puede destruirse)
+y reparar tiene una **curva super-lineal** (`30 + 14·nivel + 3·nivel²`, server-autoritativa en
+`rooms.repairCostOf`): ~47 de oro a nivel 1 pero ~1135 a nivel 17, así el endgame quema oro de forma
+continua sin castigar a los nuevos. *(Caveat: el desgaste se dispara client-side; un cliente tramposo
+puede evitar el sink —no es un exploit, solo se saltea un costo. Endurecerlo = mover el desgaste al
+server, cambio mayor, para más adelante.)* Otros sinks posibles a futuro: cosméticos u forja de alto
+nivel más cara.
 
 ### Deudas técnicas del oro (encontradas en auditoría) — ✅ RESUELTAS
 1. **Costos client-side → recalculados en el server.** `respec` / `repair` / `forge` los recalcula el

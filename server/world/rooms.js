@@ -269,10 +269,13 @@ export function respecCostOf(id) {
 
 // Costo de reparar TODO el equipo, AUTORITATIVO del server: tarifa por nivel (no por durabilidad,
 // que es client-side). Coincide con store.repairCost. Cierra el under-pay de la reparación sin
-// tener que trackear la durabilidad pieza por pieza en el server.
+// tener que trackear la durabilidad pieza por pieza en el server. Curva super-lineal (cuadrática):
+// barata para los nuevos, cara en el endgame -> sumidero de oro continuo de nivel alto.
 export function repairCostOf(id) {
   const p = players.get(id)
-  return p ? 30 + 20 * (p.level || 1) : 0
+  if (!p) return 0
+  const lv = p.level || 1
+  return 30 + 14 * lv + 3 * lv * lv
 }
 
 // Costo en ORO de forjar (mejorar una pieza), AUTORITATIVO del server: por nivel. Coincide con
