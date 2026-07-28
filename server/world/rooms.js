@@ -35,6 +35,11 @@ const AOI_R2 = AOI_RADIUS * AOI_RADIUS
 const MOVE_TILES_PER_SEC = Number(process.env.MOVE_TILES_PER_SEC || 12)   // ~1.9× correr (headroom para buffs/latencia)
 const MOVE_BASE_SLACK = 4        // tiles de gracia por movimiento (redondeo/jitter/primer envío)
 const MOVE_DT_CAP_MS = 2000      // tope del dt acumulable (no dejar que una pausa larga habilite un salto enorme)
+// Techo del hpMax que el cliente declara. El build legítimo más extremo (nivel alto, todo en VIT,
+// best-in-slot con HP) ronda ~3.500; 5.000 deja aire de sobra y mata la inmortalidad por hpMax
+// gigante (un cliente trampeado que declaraba millones de HP y nunca moría). Igual que se acota el
+// daño en setStats. Si a futuro el nivel sube muchísimo, subir esta constante.
+const HP_MAX_CAP = 5000
 
 const players = new Map()    // id -> { id, name, race, map, ch, x, y, dir, send }
 const observers = new Map()  // id -> { id, map, ch, send }  (mirones: ven pero no son vistos)
@@ -284,7 +289,7 @@ export function setStats(id, stats) {
     // el daño de arma) y el server lo ACOTA. La vida VIVA (p.hp) la dueña el server; al conocer el
     // techo por primera vez, arranca llena. Un cambio de equipo que baja el techo clampa la vida.
     if (stats.hpMax) {
-      const hm = Math.max(1, Math.min(9999999, Math.floor(Number(stats.hpMax)) || 1))
+      const hm = Math.max(1, Math.min(HP_MAX_CAP, Math.floor(Number(stats.hpMax)) || 1))
       p.hpMax = hm
       if (p.hp == null) p.hp = (p._seedHp > 0 && p._seedHp <= hm) ? p._seedHp : hm   // vida persistida si es válida, si no llena (dead/0/inválida -> llena)
       else if (p.hp > hm) p.hp = hm
@@ -927,7 +932,7 @@ function forceDeath(p) {
 // subida (las curas en combate las modela el server: ver useItem). Nunca por encima del techo.
 export function playerHp(id, hp, hpMax) {
   const p = players.get(id); if (!p) return
-  if (hpMax) p.hpMax = Math.max(1, Math.min(9999999, hpMax | 0))
+  if (hpMax) p.hpMax = Math.max(1, Math.min(HP_MAX_CAP, hpMax | 0))
   const reported = Math.max(0, Math.min(p.hpMax || (hpMax | 0) || 1, hp | 0))
   const before = p.hp
   if (p.hp == null) p.hp = reported

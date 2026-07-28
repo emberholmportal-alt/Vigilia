@@ -16,23 +16,34 @@ variables no requieren rebuild del cliente (ver §5).
 **Dónde va cada cosa:** las variables de $VEL van en el **SERVIDOR** (`velgrim-static`), NO en el
 sitio estático (`vigilia`). El cliente lee la coin del server vía `/stats`.
 
+> **Plan de gate (importante):** arrancamos con el gate **APAGADO** (anunciamos la coin pero entra
+> cualquiera con wallet) y lo **prendemos horas después**, cuando los compradores ya settlearon y
+> pump.fun/Jupiter indexaron. Así no lockeás la sala en el pico ni dejás afuera a quien recién compró.
+> **NO cargar `VEL_MIN` en T0** — se agrega después.
+
 **Ya cargado en el server (`velgrim-static` → Environment):**
-- [x] `WALLET_REQUIRED=1` · `SOLANA_RPC`=<Helius> · `VEL_MIN=10000` · `VEL_SYMBOL=VEL`
+- [x] `WALLET_REQUIRED=1` · `SOLANA_RPC`=<Helius> · `VEL_SYMBOL=VEL`
 - [ ] `ADMIN_WALLETS` = `7GaQeABn63ExcLcMCXUHZy4hHk8uvgocVCwqmEV8xac4` (badge **ADM** sobre la cabeza; separá con coma para agregar más)
+- [ ] **`VEL_MIN` NO cargado todavía** (queda vacío en T0; el gate se prende recién en el paso "unas horas después").
 
 **Antes de abrir al público:**
 - [ ] Borrar los usuarios de prueba (fresh start): en Render → `velgrim-static` → **Shell** →
       `node tools/wipe_users.js --yes`  *(irreversible; borra cuentas/personajes/gremios/mercado)*.
 
-**El día del mint (una sola variable, en vivo):**
+**El día del mint — T0, durante el stream (gate APAGADO, cero lockout):**
 - [ ] Crear la coin en pump.fun → copiar el contrato.
 - [ ] `velgrim-static` → Environment → **+ Add variable** → `VEL_MINT = <contrato>` → Save.
-- [ ] En cuanto guarda: se prende el gate (exige holdear ≥ `VEL_MIN`) y aparece el banner de la coin.
+- [ ] Confirmar que **`VEL_MIN` sigue vacío**: con mint pero sin mínimo, el total pedido es 0 →
+      **entra cualquiera con wallet** (la coin ya se muestra y el link de compra aparece).
 - [ ] Verificar `https://velgrim-static.onrender.com/health` → `{"ok":true}`, y entrar con tu wallet.
-- [ ] Mirar el precio: ajustar `VEL_MIN` si 10.000 tokens es mucho/poco como "ticket de entrada".
 
-**Botón de pánico anti-lockout:** si el RPC se satura o algo deja a la gente afuera, borrá `VEL_MINT`
-(gate apagado, entra cualquiera con wallet) y lo re-agregás cuando se estabilice.
+**Unas horas después — prender el peaje (cuando ya haya holders y precio):**
+- [ ] `velgrim-static` → Environment → **+ Add variable** → `VEL_MIN = <tokens>` (ej. `10000`) → Save.
+- [ ] Desde ese momento se exige holdear ≥ `VEL_MIN`. Ajustar el número según el precio.
+
+**Botón de pánico anti-lockout:** si el RPC se satura o algo deja a la gente afuera, **borrá `VEL_MINT`**
+(gate apagado, entra cualquiera con wallet) y lo re-agregás cuando se estabilice. Borrar solo `VEL_MIN`
+**no alcanza** si el problema es el RPC: mientras `VEL_MINT` exista, cada login sigue leyendo balance.
 
 ---
 
@@ -114,8 +125,11 @@ VEL_TREASURY = <wallet del 5%, con ATA de $VEL creada>
 
 ## 4. Rollback en caliente (si algo se rompe en vivo)
 
-- **Se lockeó la sala / RPC caído** → borrá `VEL_MIN_USD` y `VEL_MIN` (o `VEL_MINT`). El gate vuelve
-  a apagado al instante (próximo login). Nadie más queda afuera.
+- **RPC caído / lockeó por el RPC** → **borrá `VEL_MINT`** (es lo único que corta el lockout: mientras
+  el mint exista, cada login lee balance on-chain y *fail-closea* aunque no haya mínimo). Re-agregás el
+  mint cuando el RPC se estabilice.
+- **Querés bajar el peaje pero el RPC anda** → borrá `VEL_MIN_USD` y `VEL_MIN`: el gate queda anunciado
+  pero abierto (mínimo 0), sin tocar el mint. (Si el problema es el RPC, esto **no** alcanza — ver arriba.)
 - **Problema en el marketplace** → borrá `VEL_MARKET` (o ponelo distinto de `on`). Vuelve a
   `{ off:true }`; el oro escrowed en órdenes abiertas se recupera con `cancel`.
 - Los cambios de env en Render aplican en el próximo arranque del server / próximo request según la

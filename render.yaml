@@ -43,6 +43,8 @@ services:
         sync: false
       - key: VEL_MIN_USD       # mínimo de acceso en USD (ej. 3). Modo dinámico por oráculo.
         sync: false
+      - key: VEL_MIN           # mínimo fijo en tokens (ej. 10000). Respaldo del oráculo / gate simple.
+        sync: false
       - key: VEL_SYMBOL        # símbolo mostrado (ej. VEL)
         sync: false
       - key: VEL_BUY_URL       # link de compra (pump.fun/coin/<mint> por defecto)
@@ -54,6 +56,8 @@ services:
       - key: VEL_TREASURY      # wallet APARTE que cobra el 5% de cada venta de oro
         sync: false
       - key: VEL_RPC_PUBLIC    # RPC público para el cliente (blockhash). NO una RPC con API key.
+        sync: false
+      - key: ADMIN_WALLETS     # wallets admin (badge ADM sobre la cabeza), separadas por coma.
         sync: false
 
   # --- Cliente (sitio estático de Vite) ---
