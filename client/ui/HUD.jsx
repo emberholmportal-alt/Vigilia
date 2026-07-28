@@ -201,13 +201,15 @@ export default function HUD({ onExitSpectate }) {
         <MenuRow onPanel={togglePanel} />
         <BuffBar />
 
-        {/* Estamina ARRIBA del cinturón: así la barra de acción baja y queda pegada a la XP. */}
-        <StaminaBar />
-
         <div className="globe-row">
           <HpGlobe />
-          <ActionBar belt={belt} gold={gold} onUseBelt={useBelt} beltCap={beltCap} />
-          <DesktopBar belt={belt} onPanel={togglePanel} onUseBelt={useBelt} beltCap={beltCap} />
+          {/* La estamina se apila JUSTO encima de la barra de acción (mismo ancho), pegada,
+              empezando sobre el primer slot del cinturón. */}
+          <div className="bar-stack">
+            <StaminaBar />
+            <ActionBar belt={belt} gold={gold} onUseBelt={useBelt} beltCap={beltCap} />
+            <DesktopBar belt={belt} onPanel={togglePanel} onUseBelt={useBelt} beltCap={beltCap} />
+          </div>
           <MpGlobe />
         </div>
 
