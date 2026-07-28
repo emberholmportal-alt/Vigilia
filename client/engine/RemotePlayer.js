@@ -27,8 +27,8 @@ export class RemotePlayer {
     // Etiqueta flotante: [SIGLA] nombre · raza (localizada desde el id) · Nv nivel — igual que el héroe.
     this.nameText = new Text({
       text: this._label(), style: {
-        fontFamily: 'Georgia, serif', fontSize: 12, fill: '#bfe0ff',
-        stroke: { color: '#0a090c', width: 3 }, align: 'center',
+        fontFamily: 'Georgia, serif', fontSize: 16, fontWeight: '600', fill: '#bfe0ff',
+        stroke: { color: '#0a090c', width: 3.5 }, align: 'center', wordWrap: false,
       },
     })
     this.nameText.anchor.set(0.5, 1)
@@ -38,12 +38,12 @@ export class RemotePlayer {
     // Badge "ADM" (admin por wallet) en una línea aparte, arriba del nombre. Viene en el pub del jugador.
     this.admText = new Text({
       text: 'ADM', style: {
-        fontFamily: 'Georgia, serif', fontSize: 11, fontStyle: 'italic', fill: '#ffd24a',
+        fontFamily: 'Georgia, serif', fontSize: 12, fontStyle: 'italic', fill: '#ffd24a',
         stroke: { color: '#0a090c', width: 3 }, align: 'center', letterSpacing: 1,
       },
     })
     this.admText.anchor.set(0.5, 1)
-    this.admText.y = -(this.paperdoll.anchorY + 6) - 15
+    this.admText.y = -(this.paperdoll.anchorY + 6) - 24
     this.admText.visible = !!p.admin
     this.view.addChild(this.admText)
 

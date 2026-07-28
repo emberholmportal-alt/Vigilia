@@ -200,6 +200,10 @@ export default function HUD({ onExitSpectate }) {
         </button>
         <MenuRow onPanel={togglePanel} />
         <BuffBar />
+
+        {/* Estamina ARRIBA del cinturón: así la barra de acción baja y queda pegada a la XP. */}
+        <StaminaBar />
+
         <div className="globe-row">
           <HpGlobe />
           <ActionBar belt={belt} gold={gold} onUseBelt={useBelt} beltCap={beltCap} />
@@ -207,11 +211,9 @@ export default function HUD({ onExitSpectate }) {
           <MpGlobe />
         </div>
 
-        <StaminaBar />
-
         <div className="xp-strip" title={t('xp_of', { lv: level, into: prog.into, need: prog.need })}
              style={{ backgroundImage: `url(${UI}bar_xp_background.png)` }}>
-          <div className="xp-strip-fill" style={{ width: `${prog.pct * 96}%`, backgroundImage: `url(${UI}bar_xp.png)` }} />
+          <div className="xp-strip-fill" style={{ width: `${prog.pct * 96}%` }} />
         </div>
       </div>
     </>

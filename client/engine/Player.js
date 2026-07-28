@@ -36,8 +36,8 @@ export class Player {
     this.nameText = new Text({
       text: '',
       style: {
-        fontFamily: 'Georgia, serif', fontSize: 13, fill: '#e6dcc6',
-        stroke: { color: '#0a090c', width: 3 }, align: 'center',
+        fontFamily: 'Georgia, serif', fontSize: 17, fontWeight: '600', fill: '#e6dcc6',
+        stroke: { color: '#0a090c', width: 3.5 }, align: 'center', wordWrap: false,
       },
     })
     this.nameText.anchor.set(0.5, 1)
@@ -48,12 +48,12 @@ export class Player {
     this.admText = new Text({
       text: 'ADM',
       style: {
-        fontFamily: 'Georgia, serif', fontSize: 11, fontStyle: 'italic', fill: '#ffd24a',
+        fontFamily: 'Georgia, serif', fontSize: 12, fontStyle: 'italic', fill: '#ffd24a',
         stroke: { color: '#0a090c', width: 3 }, align: 'center', letterSpacing: 1,
       },
     })
     this.admText.anchor.set(0.5, 1)
-    this.admText.y = headY - 15
+    this.admText.y = headY - 24
     this.admText.visible = false
     this.view.addChild(this.admText)
 

@@ -951,7 +951,8 @@ html, body, #root {
 }
 .xp-strip-fill {
   position: absolute; left: 2%; top: 31.25%; bottom: 31.25%;   /* región del relleno (246x6 en 256x16) */
-  background-size: 100% 100%; background-repeat: no-repeat;
+  background: linear-gradient(180deg, #c79bff 0%, #9a5bff 45%, #6f2fd6 100%);
+  border-radius: 2px; box-shadow: 0 0 7px rgba(154,107,255,0.65), inset 0 0 3px rgba(255,255,255,0.35);
   transition: width 0.3s ease;
 }
 
@@ -2084,5 +2085,5 @@ html, body, #root {
 .run-toggle:hover { border-color: var(--gold); }
 .run-toggle.on { border-color: var(--gold); color: #f0dc8f; box-shadow: 0 0 9px rgba(201,162,39,0.4); }
 .stamina-bar { flex: 1; height: 8px; min-width: 70px; max-width: 220px; background: rgba(10,8,12,0.82); border: 1px solid #3a3020; border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6); }
-.stamina-fill { height: 100%; background: linear-gradient(180deg, #7fe09a, #3a9a52); transition: width 0.12s linear; }
-.stamina-fill.low { background: linear-gradient(180deg, #e6b055, #b06a1e); }
+.stamina-fill { height: 100%; background: linear-gradient(180deg, #ffe07a, #d4a017); box-shadow: 0 0 6px rgba(255,214,74,0.45); transition: width 0.12s linear; }
+.stamina-fill.low { background: linear-gradient(180deg, #e6795a, #a83820); box-shadow: none; }
