@@ -173,9 +173,12 @@ export async function unlock(buyerAccountId, orderId) {
 
 // Cerrar la compra: el comprador ya firmó+mandó el pago y nos pasa la firma. Verificamos on-chain y,
 // si pagó lo pactado a vendedor+tesoro con el memo de la orden, le entregamos el oro escrowed.
-export async function settle(buyerId, buyerAccountId, orderId, sig) {
+export async function settle(buyerId, buyerAccountId, buyerWallet, orderId, sig) {
   if (!enabled()) return off()
   if (!buyerAccountId) return { ok: false, error: 'no autenticado' }
+  // La wallet del que settlea es OBLIGATORIA: ata el oro al que realmente pagó on-chain (anti front-run
+  // con firma ajena). En prod siempre está (pubkey SIWS); validamos igual.
+  if (!buyerWallet || !B58_PUBKEY.test(buyerWallet)) return { ok: false, error: 'necesitás tu wallet para cerrar la compra' }
   if (typeof sig !== 'string' || sig.length < 32 || sig.length > 128) return { ok: false, error: 'firma inválida' }
   return db.withLock('gold:' + (orderId | 0), async () => {
     // Anti-replay: una firma settlea UNA sola orden, una sola vez (guarda global). Si ya se usó, corta.
@@ -186,17 +189,18 @@ export async function settle(buyerId, buyerAccountId, orderId, sig) {
     if (!o) return release({ ok: false, error: 'esa orden ya no está' })
     // NO exigimos ser el dueño del lock: el pago on-chain es la AUTORIDAD. Si el lock del comprador
     // venció y otro reservó la orden mientras su transferencia estaba en vuelo, su pago —verificado
-    // abajo contra ESTA orden (memo velmkt:id + montos exactos a vendedor+tesoro)— igual vale y le
-    // entregamos el oro escrowed. El $VEL ya se movió on-chain y es irreversible; el lock es sólo una
-    // reserva blanda anti-carrera. Esto cierra el fund-loss documentado en LOCK_MS (comprador pagaba y
-    // no recibía nada). La gracia de re-lock (GOLD_RELOCK_GRACE_MS) minimiza el doble-pago; el resto lo
-    // serializan withLock('gold:id') + el remove atómico + el anti-replay de la firma.
+    // abajo contra ESTA orden (memo velmkt:id + montos exactos a vendedor+tesoro + que el PAGADOR sea
+    // esta wallet)— igual vale y le entregamos el oro escrowed. El $VEL ya se movió on-chain y es
+    // irreversible; el lock es sólo una reserva blanda anti-carrera. Esto cierra el fund-loss documentado
+    // en LOCK_MS (comprador pagaba y no recibía nada). El binding pagador↔cobrador (payer en verifyPayment)
+    // impide que un tercero settlee con una firma ajena. La gracia de re-lock (GOLD_RELOCK_GRACE_MS)
+    // minimiza el doble-pago; el resto lo serializan withLock('gold:id') + remove atómico + anti-replay.
 
     const decimals = await chain.mintDecimals(process.env.VEL_MINT)
     if (decimals < 0) return release({ ok: false, error: 'no se pudo leer el token, reintentá', retry: true })
     const { sellerBase, treasuryBase } = split(o.price, decimals)
     const v = await chain.verifyPayment({
-      sig, mint: process.env.VEL_MINT, memo: 'velmkt:' + o.id,
+      sig, mint: process.env.VEL_MINT, memo: 'velmkt:' + o.id, payer: buyerWallet,
       expect: [
         { owner: o.seller_wallet, minBase: BigInt(sellerBase) },
         { owner: process.env.VEL_TREASURY, minBase: BigInt(treasuryBase) },

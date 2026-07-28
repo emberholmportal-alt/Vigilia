@@ -605,7 +605,7 @@ wss.on('connection', (ws) => {
         }
         case 'goldmkt_settle': {  // cerré el pago on-chain (firma) -> verificar y recibir el oro
           if (conn.playerId == null || !conn.accountId) return
-          return send({ t: 'goldmkt', op: 'settle', id: m.id, ...(await goldmarket.settle(conn.playerId, conn.accountId, m.id, m.sig)) })
+          return send({ t: 'goldmkt', op: 'settle', id: m.id, ...(await goldmarket.settle(conn.playerId, conn.accountId, conn.username, m.id, m.sig)) })
         }
         // ---------- Bag autoritativo: transferencias entre el bag y equipo/cinturón/tumba/forja ----------
         case 'bag_take': {   // sacar un ítem del bag por índice (equipar / mandar al cinturón)

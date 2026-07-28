@@ -85,7 +85,7 @@ function collectMemos(tx) {
 // Verifica una transacción de pago del marketplace. Devuelve { ok } o { ok:false, error, retry? }.
 // `retry:true` = todavía no está confirmada/visible (el caller puede pedir reintentar); sin retry =
 // rechazo definitivo (pagó de menos, a quien no era, o el memo no ata la orden).
-export async function verifyPayment({ sig, mint, expect, memo }) {
+export async function verifyPayment({ sig, mint, expect, memo, payer }) {
   let tx
   try { tx = await rpc('getTransaction', [sig, { encoding: 'jsonParsed', commitment: 'finalized', maxSupportedTransactionVersion: 0 }]) }
   catch { return { ok: false, error: 'no se pudo leer la transacción', retry: true } }
@@ -97,6 +97,16 @@ export async function verifyPayment({ sig, mint, expect, memo }) {
   for (const { owner, minBase } of expect) {
     const delta = ownerBalance(post, owner, mint) - ownerBalance(pre, owner, mint)
     if (delta < minBase) return { ok: false, error: 'el pago no alcanza (' + owner.slice(0, 6) + '…)' }
+  }
+  // Atar el pago al PAGADOR: la firma de Solana es pública, así que sin esto cualquiera que mire el
+  // tesoro podría tomar la firma de un pago ajeno y settlear la orden desde SU cuenta, robándose el oro
+  // escrowed (el comprador real pagaba y no recibía nada). Exigimos que la wallet que settlea sea la que
+  // efectivamente PAGÓ: su balance del mint cae por al menos el total (vendedor + tesoro). Una wallet que
+  // no participó en la tx tiene delta 0 y no pasa.
+  if (payer) {
+    const totalMin = expect.reduce((s, e) => s + e.minBase, 0n)
+    const payerDelta = ownerBalance(post, payer, mint) - ownerBalance(pre, payer, mint)
+    if (payerDelta > -totalMin) return { ok: false, error: 'ese pago no salió de tu wallet' }
   }
   // Memo EXACTO (no substring): 'velmkt:70' NO debe validar la orden 7. Un match por prefijo dejaría
   // que un pago de la orden 70 settlee la orden 7 (mismo vendedor) y le queme el pago al comprador real.
