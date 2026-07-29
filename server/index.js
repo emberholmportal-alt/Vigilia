@@ -201,6 +201,7 @@ wss.on('connection', (ws) => {
           const led = rooms.ledgerOf(conn.accountId)
           const qc = rooms.questClaimsOf(conn.accountId)
           const ft = rooms.featsOf(conn.accountId)
+          const ms = rooms.missionStateOf(conn.accountId)   // { mprog, claimed } o null (misiones diarias server-owned)
           const data = { ...(m.char || {}) }
           await db.withAccountLock(conn.accountId, async () => {
             const existing = await db.loadCharacter(conn.accountId)
@@ -231,6 +232,15 @@ wss.on('connection', (ws) => {
             // sesión viva o preservadas del personaje; un save del cliente no las inventa ni las borra.
             if (ft != null) data._feats = ft
             else if (ed) { if (ed._feats && typeof ed._feats === 'object') data._feats = ed._feats; else delete data._feats }
+            // Misiones diarias (server-owned): avance del día + reclamadas. Igual que las quests/ledger:
+            // de la sesión viva o preservadas del personaje; un save del cliente no las inventa ni borra.
+            if (ms != null) {
+              if (ms.mprog) data._mprog = ms.mprog; else delete data._mprog
+              if (ms.claimed) data._claimed = ms.claimed; else delete data._claimed
+            } else if (ed) {
+              if (ed._mprog && typeof ed._mprog === 'object') data._mprog = ed._mprog; else delete data._mprog
+              if (ed._claimed && typeof ed._claimed === 'object') data._claimed = ed._claimed; else delete data._claimed
+            }
             // CREACIÓN (personaje inexistente): el server ASIGNA el kit inicial canónico (oro/equipo/
             // inventario/cinturón + ledger), ignorando el blob del cliente. Cierra "crearse con oro/
             // equipo falso". El ledger canónico se persiste ya, así el 1er join no grandfatherea.
@@ -442,7 +452,7 @@ wss.on('connection', (ws) => {
           if (oldPid != null) await rooms.leaveFlush(oldPid)
           conn.playerId = null
           // Oro + inventario autoritativos: se cargan del personaje al entrar (fuente de verdad).
-          let gold = 0, seals = 0, xp = 0, hp = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null
+          let gold = 0, seals = 0, xp = 0, hp = 0, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null, mprog = null, claimed = null
           if (!m.spectator) {
             const ch = await db.loadCharacter(conn.accountId)
             gold = Math.floor(Number(ch?.data?.gold) || 0)
@@ -452,6 +462,10 @@ wss.on('connection', (ws) => {
             inv = ch?.data?.inventory || null
             qclaimed = Array.isArray(ch?.data?._qclaimed) ? ch.data._qclaimed : null
             feats = (ch?.data?._feats && typeof ch.data._feats === 'object') ? ch.data._feats : null   // hazañas server-owned
+            // Misiones diarias server-owned: avance del día + reclamadas (persistidas en el save). El
+            // server las recarga para que el progreso/claim sobrevivan reinicios y reconexiones.
+            mprog = (ch?.data?._mprog && typeof ch.data._mprog === 'object') ? ch.data._mprog : null
+            claimed = (ch?.data?._claimed && typeof ch.data._claimed === 'object') ? ch.data._claimed : null
             guildTag = await guilds.tagOf(conn.accountId)   // estandarte sobre la cabeza (sigla del gremio)
             const d = ch?.data || {}
             // Ledger "checkout" AUTORITATIVO (Fase A.3): si el personaje ya tiene ledger guardado, se
@@ -464,10 +478,14 @@ wss.on('connection', (ws) => {
             if (!ledger) outSeed = grandfatherSeed(d)
           }
           const admin = wallet.isAdmin(conn.username)   // rol admin por wallet (badge "ADM" sobre la cabeza)
-          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, xp, hp, admin, inv, outSeed, ledger, qclaimed, feats })
+          const { id, channel, present } = rooms.join(send, { name: m.name, race: m.race, body: m.body, map: m.map, x: m.x, y: m.y, dir: m.dir, channel: m.channel, spectator: m.spectator, gfx: m.gfx, accountId: conn.accountId, gold, seals, xp, hp, admin, inv, outSeed, ledger, qclaimed, feats, mprog, claimed })
           conn.playerId = id
           send({ t: 'present', you: id, players: present, map: m.map, channel, admin })
-          if (!m.spectator) { send({ t: 'gold', gold, reason: 'init' }); send({ t: 'seals', seals }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) }) }   // sincroniza saldo + sellos + bag
+          if (!m.spectator) {
+            send({ t: 'gold', gold, reason: 'init' }); send({ t: 'seals', seals }); send({ t: 'inv', inv: rooms.invOf(conn.accountId) })   // sincroniza saldo + sellos + bag
+            const msync = rooms.missionSyncOf(id)   // avance REAL del día + reclamadas: reconcilia la UI con la verdad del server
+            if (msync) send({ t: 'mprog', ...msync })
+          }
           return
         }
 

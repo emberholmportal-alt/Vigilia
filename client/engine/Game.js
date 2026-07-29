@@ -418,6 +418,7 @@ export class Game {
     // Trade P2P (Kintara #3): pedido / apertura / estado / cierre / cancelación -> store.
     net.on('inspect', (m) => this.store.onInspect(m))   // tarjeta pública de otro jugador (respuesta a inspect)
     net.on('feats', (m) => this.store.onFeats(m))       // mis propias hazañas (server-owned)
+    net.on('mprog', (m) => this.store.onMprog(m))       // progreso real de misiones diarias (reconcilia UI)
     net.on('guild_invite', (m) => this.store.onGuildInvite(m))   // invitación de gremio entrante
     net.on('gchat', (m) => this.store.onGuildChat(m))            // chat de gremio entrante
     net.on('trade_req', (m) => this.store.onTradeReq(m))

@@ -98,6 +98,8 @@ class Net {
         else if (m.t === 'inspect') this._emit(m.t, m)
         // mis propias hazañas (server-owned): al entrar y al ganar un jefe / alcanzar una zona
         else if (m.t === 'feats') this._emit(m.t, m)
+        // progreso REAL de misiones diarias (server-owned): al entrar, para reconciliar la UI
+        else if (m.t === 'mprog') this._emit(m.t, m)
         // invitación de gremio entrante
         else if (m.t === 'guild_invite') this._emit(m.t, m)
         // chat de gremio entrante

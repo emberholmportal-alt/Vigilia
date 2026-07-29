@@ -644,6 +644,25 @@ export const useGameStore = create((set, get) => ({
     if (prev && m?.feats && m.feats.bosses > prev.bosses) get().showToast(tt('feat_boss_earned', { n: m.feats.bosses, total: m.feats.bossTotal }))
     set({ myFeats: m?.feats || null })
   },
+  // Progreso REAL de misiones diarias que manda el server al entrar: RECONCILIA la UI con la verdad
+  // autoritativa. El cliente contaba sus propios eventos (y antes contaba kills de cualquier mapa),
+  // así que podía mostrar "completa" una misión que el server no dejaba reclamar. Acá pisamos el
+  // avance y las reclamadas con lo que el server sabe, des-trabando las que estaban divergentes.
+  onMprog: (m) => {
+    if (!m || !m.day) return
+    const day = String(m.day)
+    // Asegurá el set del día del server (regenera si el cliente tenía otro día cacheado).
+    const s0 = get()
+    if (s0.missionsDate !== day || !s0.missions.length) set({ missions: dailyMissions(day), missionsDate: day })
+    const prog = (m.prog && typeof m.prog === 'object') ? m.prog : {}
+    const claimed = new Set(Array.isArray(m.claimed) ? m.claimed : [])
+    const missions = get().missions.map((x) => {
+      const p = Math.max(0, Math.min(x.target, Math.floor(Number(prog[x.id]) || 0)))
+      return { ...x, progress: p, claimed: claimed.has(x.id) }
+    })
+    set({ missions })
+    saveGame(get())
+  },
   // Tarjeta pública de MI jugador (lo que ven los demás al inspeccionarme). Sólo display.
   getPublicCard: () => {
     const s = get(); const st = s.stats; if (!st) return null
@@ -1354,9 +1373,13 @@ export const useGameStore = create((set, get) => ({
   missionProgress: (type, n = 1) => {
     const s = get()
     if (!s.missions.length || s.missionsDate !== todayStr()) return
+    const curMap = s.mapName
     let changed = false, justDone = null
     const missions = s.missions.map((m) => {
       if (m.type !== type || m.claimed || m.progress >= m.target) return m
+      // Misión atada a un mapa: sólo avanza EN ese mapa, IGUAL que el server (missionTick). Sin esto,
+      // matar en cualquier lado marcaba completas misiones de otros mapas y el server rechazaba el claim.
+      if (m.map && curMap && m.map !== curMap) return m
       const progress = Math.min(m.target, m.progress + n)
       changed = true
       if (progress >= m.target) justDone = m
@@ -1836,6 +1859,7 @@ export const storeApi = {
   getPublicCard: () => useGameStore.getState().getPublicCard(),
   onInspect: (m) => useGameStore.getState().onInspect(m),
   onFeats: (m) => useGameStore.getState().onFeats(m),
+  onMprog: (m) => useGameStore.getState().onMprog(m),
   onGuildInvite: (m) => useGameStore.getState().onGuildInvite(m),
   onGuildChat: (m) => useGameStore.getState().onGuildChat(m),
   onTradeReq: (m) => useGameStore.getState().onTradeReq(m),

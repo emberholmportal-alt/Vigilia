@@ -110,7 +110,7 @@ function broadcastAoI(map, ch, x, y, msg, exceptId) {
 
 // Registra un jugador y lo mete a un canal del mapa. Devuelve id, canal y los presentes de ese
 // canal (sin él). `channel` (opcional) pide un canal concreto; si no hay lugar, se reasigna.
-export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, xp = 0, hp = 0, admin = false, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null } = {}) {
+export function join(send, { name, race, body, map, x, y, dir = 7, channel, spectator, gfx, accountId, gold = 0, seals = 0, xp = 0, hp = 0, admin = false, inv = null, outSeed = null, ledger = null, qclaimed = null, feats = null, guildTag = null, mprog = null, claimed = null } = {}) {
   const id = seq++
   // Mirón: entra como observador al canal MÁS POBLADO (donde hay gente para ver). No se suma
   // a los jugadores, no cuenta como online y nadie lo ve; sólo recibe lo del canal.
@@ -152,6 +152,13 @@ export function join(send, { name, race, body, map, x, y, dir = 7, channel, spec
   // Quests narrativas YA reclamadas (server-owned, persistido): así la recompensa no se re-cobra tras
   // reiniciar/reloguear (antes vivía sólo en memoria -> mint por relogin con cliente tocado).
   p._qclaimed = new Set(Array.isArray(qclaimed) ? qclaimed : [])
+  // Progreso de las misiones diarias, PERSISTIDO (antes vivía sólo en memoria -> se perdía al reiniciar
+  // el server o al reconectar, y el claim rechazaba misiones que el cliente mostraba completas). El
+  // check de día (todayStr) en missionTick/claimMission descarta lo que sea de otro día.
+  p._mprog = (mprog && typeof mprog === 'object' && mprog.day && mprog.prog && typeof mprog.prog === 'object')
+    ? { day: String(mprog.day), prog: { ...mprog.prog } } : null
+  p._claimed = (claimed && claimed.day && Array.isArray(claimed.ids))
+    ? { day: String(claimed.day), set: new Set(claimed.ids) } : null
   p.feats = normalizeFeats(feats)   // hazañas server-owned (jefes derrotados + zona más profunda)
   p.guildTag = guildTag || null     // estandarte sobre la cabeza (sigla del gremio)
   p.admin = !!admin                 // rol admin (badge "ADM" sobre la cabeza; allowlist por wallet)
@@ -785,6 +792,28 @@ export async function flushInv(accountId) {
 export function questClaimsOf(accountId) {
   for (const p of players.values()) if (p.accountId === accountId) return [...(p._qclaimed || [])]
   return null
+}
+// Estado de misiones diarias (server-owned) para PERSISTIR: avance del día (_mprog) y reclamadas
+// (_claimed). Igual que el ledger/quests: se guarda en el blob desde la sesión viva y se recarga al
+// entrar, así el progreso y los claims sobreviven reinicios/reconexiones (antes vivían sólo en RAM,
+// y un redeploy des-completaba las misiones). null si la cuenta no está online.
+export function missionStateOf(accountId) {
+  for (const p of players.values()) if (p.accountId === accountId) {
+    const mprog = (p._mprog && p._mprog.day) ? { day: p._mprog.day, prog: { ...p._mprog.prog } } : null
+    const claimed = (p._claimed && p._claimed.day) ? { day: p._claimed.day, ids: [...p._claimed.set] } : null
+    return { mprog, claimed }
+  }
+  return null
+}
+// Snapshot del progreso REAL del día para mandarle al cliente al entrar y RECONCILIAR su UI con la
+// verdad del server (des-traba misiones que el cliente creía completas por contar kills de otro mapa).
+// Devuelve el avance sólo del día de hoy; si el guardado es de otro día, arranca en cero.
+export function missionSyncOf(id) {
+  const p = players.get(id); if (!p) return null
+  const day = todayStr()
+  const prog = (p._mprog && p._mprog.day === day) ? { ...p._mprog.prog } : {}
+  const claimed = (p._claimed && p._claimed.day === day) ? [...p._claimed.set] : []
+  return { day, prog, claimed }
 }
 // Flush de emergencia ante apagado (SIGTERM de un deploy / SIGINT): persiste oro+bag+ledger de TODOS
 // los jugadores online antes de que el proceso muera, porque el handler de 'close' del socket no
