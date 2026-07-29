@@ -99,7 +99,12 @@ html, body, #root {
   display: block; width: 100%; max-width: 380px; height: auto; margin: 0 auto 4px;
   filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.7));
 }
-.tagline { color: var(--dim); margin: 10px 0 22px; font-style: italic; }
+.tagline { color: var(--dim); margin: 10px 0 8px; font-style: italic; }
+.start-msg {
+  color: var(--parch); margin: 0 auto 20px; max-width: 34ch; font-size: 13.5px; line-height: 1.5;
+  text-align: center; text-shadow: 0 1px 2px #000;
+}
+.start-msg::before, .start-msg::after { content: '✦'; color: var(--gold); opacity: 0.5; margin: 0 8px; font-size: 11px; }
 
 /* contadores del landing (online / mensuales) */
 .counters { display: flex; gap: 18px; justify-content: center; margin: 0 0 16px; flex-wrap: wrap; }
@@ -144,9 +149,16 @@ html, body, #root {
   border: 1px solid #6b5320; border-radius: 4px; padding: 8px 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(201, 162, 39, 0.2);
   transition: border-color 0.15s, color 0.15s;
+  display: inline-flex; align-items: center; gap: 7px; text-decoration: none;
 }
+.htp-link svg { font-size: 15px; }
 .htp-link:hover { border-color: var(--gold); color: #f0dc8f; }
 .htp-link:active { transform: translateY(1px); }
+/* Botones de marca (misma forma, acento propio): pump.fun verde, X gris/plata. */
+.htp-link.coin-link { color: #8ce6b0; border-color: #2f7a4f; }
+.htp-link.coin-link:hover { color: #c3f7d9; border-color: #4fd48a; }
+.htp-link.x-link { color: #e8e8ec; border-color: #4b4b54; }
+.htp-link.x-link:hover { color: #fff; border-color: #9aa0aa; }
 
 .gframe-backdrop {
   position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px;

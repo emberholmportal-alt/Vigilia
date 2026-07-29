@@ -10,9 +10,11 @@ import { deviceAuth } from '../net/online.js'
 import HowToPlay from './HowToPlay.jsx'
 import Docs from './Docs.jsx'
 import Embers from './Embers.jsx'
-import { Globe, Plug, Eye } from './Icon.jsx'
+import { Globe, Plug, Eye, Xlogo, PumpFun } from './Icon.jsx'
 
 const LOGO = (import.meta.env.BASE_URL || '/') + 'velgrinlogo.png'
+const COIN_URL = 'https://pump.fun/coin/DMHHf9xk3XrDr9Hy71fQ52RQVJA2QXsevdZjJcLCpump'
+const TWITTER_URL = 'https://x.com/VelgrimOnline'
 const short = (a) => (a ? a.slice(0, 4) + '…' + a.slice(-4) : '')
 
 export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, loading }) {
@@ -92,6 +94,7 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
       <div className="start-inner">
         <img className="start-logo" src={LOGO} alt="Velgrim" />
         <p className="tagline">{t('start_tag')}</p>
+        <p className="start-msg">{t('start_msg')}</p>
 
         {stats?.vel?.on && (
           <a className="coin-live" href={stats.vel.buyUrl} target="_blank" rel="noreferrer">
@@ -157,6 +160,12 @@ export default function StartScreen({ onPlay, onSpectate, onNew, canContinue, lo
         <div className="htp-links">
           <button className="htp-link" onClick={() => setShowGuide(true)}>{t('how_to_play')}</button>
           <button className="htp-link" onClick={() => setShowDocs(true)}>{t('docs_link')}</button>
+          <a className="htp-link coin-link" href={stats?.vel?.buyUrl || COIN_URL} target="_blank" rel="noreferrer" title={t('coin_link')}>
+            <PumpFun /> {t('coin_link')}
+          </a>
+          <a className="htp-link x-link" href={TWITTER_URL} target="_blank" rel="noreferrer" title={t('twitter_link')}>
+            <Xlogo /> {t('twitter_link')}
+          </a>
         </div>
         </div>
 

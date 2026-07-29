@@ -91,6 +91,9 @@ const DICT = {
   chat_toggle_channel: { es: 'Cambiar canal (Mundo / Gremio)', en: 'Toggle channel (World / Guild)' },
   // inicio
   start_tag: { es: 'Triston es el último refugio antes de la oscuridad.', en: 'Triston is the last refuge before the dark.' },
+  start_msg: { es: 'Velgrim ya vive on-chain. Holdeá $VEL para cruzar el portal y sumate a la comunidad.', en: 'Velgrim is live on-chain. Hold $VEL to cross the portal and join the community.' },
+  coin_link: { es: '$VEL en pump.fun', en: '$VEL on pump.fun' },
+  twitter_link: { es: 'Seguinos en X', en: 'Follow on X' },
   start_new: { es: 'Nueva partida', en: 'New game' },
   start_credit: { es: 'Arte, sprites, tilesets y mapas: Flare — Empyrean Campaign, © Flare Team, bajo licencia CC-BY-SA 3.0.', en: 'Art, sprites, tilesets and maps: Flare — Empyrean Campaign, © Flare Team, licensed CC-BY-SA 3.0.' },
   start_begin: { es: 'Comenzar', en: 'Begin' },

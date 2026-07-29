@@ -53,6 +53,27 @@ export const Plug = (p) => <S {...p}><path d="M9 3v6M15 3v6M6 9h12v2a6 6 0 0 1-1
 // Alijo / bodega (baúl de guardado en el pueblo)
 export const Stash = (p) => <S {...p}><rect x="3" y="7" width="18" height="13" rx="1.5" /><path d="M3 12h18" /><path d="M8 7V5a4 4 0 0 1 8 0v2" /><path d="M10.5 12h3v3h-3z" fill="currentColor" stroke="none" /></S>
 
+// Logo de X (ex-Twitter): glifo oficial, relleno con el color del texto.
+export const Xlogo = (p) => (
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"
+       style={{ verticalAlign: '-0.13em', flex: '0 0 auto' }} {...p}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+)
+
+// Logo de pump.fun: la píldora diagonal (verde con la mitad clara), en sus colores de marca.
+export const PumpFun = (p) => (
+  <svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"
+       style={{ verticalAlign: '-0.13em', flex: '0 0 auto' }} {...p}>
+    <defs><clipPath id="pf-pill"><rect x="5.5" y="3" width="13" height="18" rx="6.5" transform="rotate(-45 12 12)" /></clipPath></defs>
+    <g clipPath="url(#pf-pill)">
+      <rect x="-3" y="-3" width="30" height="30" fill="#4fd48a" />
+      <path d="M-3 27 L27 -3 L27 27 Z" fill="#d8f7e6" />
+    </g>
+    <rect x="5.5" y="3" width="13" height="18" rx="6.5" transform="rotate(-45 12 12)" fill="none" stroke="#0c2018" strokeWidth="1.1" opacity="0.3" />
+  </svg>
+)
+
 // Moneda de oro (visual dorada, no emoji). `n` = cantidad opcional al lado.
 export function Gold({ n, size = 15 }) {
   return (
