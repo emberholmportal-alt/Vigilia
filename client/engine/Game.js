@@ -93,20 +93,10 @@ export class Game {
     this.dayNight.rect.zIndex = 4.9e6
     app.stage.addChild(this.dayNight.rect)
 
-    // Luz cálida y SUAVE que acompaña al personaje de noche: un ÚNICO sprite radial en espacio de
-    // pantalla, aditivo y con alfa bajo -> "abre" la penumbra alrededor del héroe sin parecer un
-    // spotlight amarillo duro. Barato (un solo sprite, SIN máscaras ni render-targets) -> mantiene los
-    // 60fps en móvil. De día / bajo techo queda apagado. (Antes probé una máscara sobre la cortina de
-    // 8000px: correcta pero carísima por-frame -> laguéo. Un sprite aditivo es el camino performante.)
-    this.playerLight = new Sprite(makeLightTexture())
-    this.playerLight.anchor.set(0.5)
-    this.playerLight.blendMode = 'add'
-    this.playerLight.eventMode = 'none'
-    this.playerLight.visible = false
-    this.playerLight.zIndex = 4.95e6
-    this.playerLight.scale.set(1.05)
+    // La luz del personaje ahora la maneja DayNight: la oscuridad es una viñeta radial centrada en el
+    // héroe (centro transparente = área clara, sin nada encima; bordes oscuros). Sin sprite aditivo
+    // aparte (eso se veía "nublado"). Ver DayNight + el place() en el update loop.
     this._lightPt = new Point()
-    app.stage.addChild(this.playerLight)
 
     // Fauna: bandadas de día, murciélagos de noche. Sobre el clima, debajo del fundido.
     this.fauna = new Fauna(app.renderer)
@@ -2369,20 +2359,18 @@ export class Game {
     this._pt = (this._pt || 0) + dt
     this.particles.update(dt, this._pt)
     if (this.weather) this.weather.update(dt)
-    if (this.dayNight && this._outdoor) this.dayNight.update(dt)
-    // Luz nocturna del personaje: un halo cálido y suave (un solo sprite aditivo, barato). Más fuerte
-    // cuanto más cerrada la noche, pero con tope bajo para que no parezca un spotlight. De día / bajo
-    // techo, apagado. Sigue al jugador en espacio de pantalla.
-    if (this.playerLight) {
-      const dark = this.dayNight ? (1 - this.dayNight.light) : 0
-      if (dark > 0.04 && this.player && !this._spectator && this._outdoor) {
+    if (this.dayNight && this._outdoor) {
+      this.dayNight.update(dt)
+      // Centrar la viñeta de oscuridad en el jugador (o en el centro de pantalla si aún no hay) y
+      // escalarla para cubrir la pantalla: el centro (transparente) deja ver el área del héroe clara,
+      // los bordes quedan oscuros con el color de la hora.
+      const scr = this.app.renderer.screen
+      let cx = scr.width / 2, cy = scr.height / 2
+      if (this.player && !this._spectator) {
         this.player.view.getGlobalPosition(this._lightPt)
-        this.playerLight.position.set(this._lightPt.x, this._lightPt.y - 24)
-        this.playerLight.alpha = Math.min(0.5, dark * 0.6)
-        this.playerLight.visible = true
-      } else {
-        this.playerLight.visible = false
+        cx = this._lightPt.x; cy = this._lightPt.y - 24
       }
+      this.dayNight.place(cx, cy, Math.hypot(scr.width, scr.height) * 0.72)
     }
     if (this.fauna && this._outdoor) this.fauna.update(dt, this.dayNight?.isNight)
 
@@ -2558,29 +2546,6 @@ function randInt(range) {
   const a = Array.isArray(range) ? range[0] : range
   const b = Array.isArray(range) ? range[1] : range
   return a + Math.floor(Math.random() * (b - a + 1))
-}
-
-// Textura de halo cálido (gradiente radial) para la luz que acompaña al personaje de noche.
-let _lightTex = null
-// Textura de la luz nocturna: halo radial cálido y SUAVE (crema/ámbar), con alfa bajo y un degradé
-// largo hacia el borde -> se lee como una calidez que abre la penumbra, no como un disco amarillo.
-// Se combina en modo aditivo con alfa acotado en runtime.
-function makeLightTexture(size = 512) {
-  if (_lightTex) return _lightTex
-  const cnv = document.createElement('canvas'); cnv.width = cnv.height = size
-  const ctx = cnv.getContext('2d')
-  // Caída MARCADA (no suave): un charco de luz definido, no una niebla. El grueso de la luz vive en el
-  // núcleo y se apaga rápido (~transparente al 55% del radio), así hay CONTRASTE con la oscuridad en
-  // vez de un lavado lechoso sobre toda la pantalla.
-  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.04, size / 2, size / 2, size / 2)
-  g.addColorStop(0, 'rgba(255,238,208,0.64)')
-  g.addColorStop(0.16, 'rgba(255,223,176,0.4)')
-  g.addColorStop(0.34, 'rgba(252,205,148,0.16)')
-  g.addColorStop(0.55, 'rgba(245,196,140,0.035)')
-  g.addColorStop(1, 'rgba(245,196,140,0)')
-  ctx.fillStyle = g; ctx.fillRect(0, 0, size, size)
-  _lightTex = Texture.from(cnv)
-  return _lightTex
 }
 
 // Tile caminable al azar dentro del rectángulo de un spawner.
