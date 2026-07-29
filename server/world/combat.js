@@ -117,13 +117,22 @@ const isWalkable = (map, x, y) => {
   return (map.coll[yi] && map.coll[yi][xi]) === 0
 }
 function randInt(r) { const a = Array.isArray(r) ? r[0] : r, b = Array.isArray(r) ? r[1] : r; return a + Math.floor(Math.random() * (b - a + 1)) }
-function randTileIn(map, sp) {
-  for (let i = 0; i < 14; i++) {
+// Tile caminable al azar dentro de la caja del spawner. Si `avoid` (jugadores) + `minD`, evita tiles
+// a menos de `minD` tiles de cualquier jugador (que suele estar juntando loot donde murió el enemigo).
+// Guarda un fallback caminable por si TODA la caja está cerca de un jugador (mejor spawnear que dejar
+// el spawner vacío) — pasa sólo en cajas chicas; en las normales las 18 tiradas encuentran un tile lejos.
+function randTileIn(map, sp, avoid, minD) {
+  let fallback = null
+  const tries = (avoid && avoid.length) ? 18 : 14
+  for (let i = 0; i < tries; i++) {
     const x = sp.x + Math.floor(Math.random() * (sp.w || 1))
     const y = sp.y + Math.floor(Math.random() * (sp.h || 1))
-    if (isWalkable(map, x, y)) return { x, y }
+    if (!isWalkable(map, x, y)) continue
+    if (!fallback) fallback = { x, y }
+    if (avoid && minD && avoid.some((p) => Math.abs((p.x | 0) - x) < minD && Math.abs((p.y | 0) - y) < minD)) continue
+    return { x, y }
   }
-  return null
+  return fallback
 }
 
 // Tile caminable en un anillo [rMin, rMax] alrededor de (cx, cy), sin repetir. Para densificar la
@@ -193,9 +202,10 @@ const MELEE = 1.4        // alcance cuerpo a cuerpo
 const RANGED_REACH = 6   // alcance de arqueros/magos
 const SPEED = 2.3        // tiles por segundo
 const ATK_CD = 1.3       // segundos entre ataques del enemigo
-const RESPAWN = 12       // segundos base para reponer un enemigo muerto (escala con la gente)
-const MIN_RESPAWN = 4    // piso del respawn cuando el canal está lleno de jugadores
+const RESPAWN = 20       // segundos base para reponer un enemigo muerto (escala con la gente)
+const MIN_RESPAWN = 8    // piso del respawn cuando el canal está lleno de jugadores
 const MAX_PER_MAP = 48
+const NO_SPAWN_NEAR = 4  // tiles (Chebyshev): no reponer un enemigo tan cerca de un jugador (que está juntando loot)
 const NODE_RESPAWN = 25  // segundos para que un nodo de recurso vuelva a crecer
 const GATHER_REACH = 2.4 // tiles: alcance para juntar un nodo
 const CHEST_RESPAWN = 90 // segundos base para que un cofre saqueado reaparezca (escala con la gente)
@@ -240,8 +250,8 @@ function pickMaterial(mine) {
   return { id: mat.id, name: mat.name, glow: mat.glow, base: mat.base, skill }
 }
 
-function spawnEnemy(map, sp) {
-  const tile = randTileIn(map, sp)
+function spawnEnemy(map, sp, avoid, minD) {
+  const tile = randTileIn(map, sp, avoid, minD)
   if (!tile) return null
   const level = randInt(sp.level || [1, 1])
   let sprite = pickSprite(sp.category || 'goblin')
@@ -348,11 +358,20 @@ export function ensureWorld(map, ch) {
   const usedNear = new Set()
   const near = buildNearSpawners(md, usedNear)
   const enemies = new Map()
-  for (const sp of [...near, ...md.spawners]) {
-    const n = randInt(sp.n || [1, 1])
-    for (let i = 0; i < n && enemies.size < MAX_PER_MAP; i++) {
-      const e = spawnEnemy(md, sp)
+  // Reparto ROUND-ROBIN bajo el tope: 1 enemigo por spawner por vuelta, hasta llegar al tope o a que
+  // todos completen su cupo. Así en los mapas que piden MÁS de MAX_PER_MAP, TODAS las regiones quedan
+  // pobladas (un poco más ralas) en vez de las primeras de la lista llenas y el resto de zonas vacías.
+  const quota = [...near, ...md.spawners].map((sp) => ({ sp, left: randInt(sp.n || [1, 1]) }))
+  let placed = true
+  while (placed && enemies.size < MAX_PER_MAP) {
+    placed = false
+    for (const q of quota) {
+      if (q.left <= 0) continue
+      if (enemies.size >= MAX_PER_MAP) break
+      const e = spawnEnemy(md, q.sp)
       if (e) enemies.set(e.i, e)
+      q.left--
+      placed = true
     }
   }
   // Nodos de recursos (hierbas / vetas de cristal), compartidos por el canal. El pueblo no tiene.
@@ -633,7 +652,7 @@ function step() {
       for (const d of w.dead) {
         if (t >= d.at) {
           const e = d.boss ? spawnBoss(w.md, { sprite: d.sprite, level: d.level })
-            : d.el ? spawnElite(w.md, d.sprite, d.contract) : spawnEnemy(w.md, d.sp)
+            : d.el ? spawnElite(w.md, d.sprite, d.contract) : spawnEnemy(w.md, d.sp, players, NO_SPAWN_NEAR)
           if (e) { w.enemies.set(e.i, e); ctx.broadcast(w.map, w.ch, { t: 'espawn', es: [pubEnemy(e)] }) }
         } else still.push(d)
       }
