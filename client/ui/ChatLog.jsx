@@ -49,7 +49,7 @@ export default function ChatLog() {
             ) : (
               <><span className="chat-tag" style={{ color: CHANNEL[m.channel]?.color }}>
                 ({CHANNEL[m.channel]?.key ? t(CHANNEL[m.channel].key) : m.channel})
-              </span> {m.text}</>
+              </span>{m.name ? <span className="chat-name"> {m.name}:</span> : null} {m.text}</>
             )}
           </div>
         ))}
