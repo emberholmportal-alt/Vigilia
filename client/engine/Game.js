@@ -104,7 +104,7 @@ export class Game {
     this.playerLight.eventMode = 'none'
     this.playerLight.visible = false
     this.playerLight.zIndex = 4.95e6
-    this.playerLight.scale.set(1.5)
+    this.playerLight.scale.set(1.05)
     this._lightPt = new Point()
     app.stage.addChild(this.playerLight)
 
@@ -2569,11 +2569,15 @@ function makeLightTexture(size = 512) {
   if (_lightTex) return _lightTex
   const cnv = document.createElement('canvas'); cnv.width = cnv.height = size
   const ctx = cnv.getContext('2d')
-  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.06, size / 2, size / 2, size / 2)
-  g.addColorStop(0, 'rgba(255,236,206,0.5)')
-  g.addColorStop(0.4, 'rgba(255,222,180,0.26)')
-  g.addColorStop(0.75, 'rgba(240,200,150,0.08)')
-  g.addColorStop(1, 'rgba(240,200,150,0)')
+  // Caída MARCADA (no suave): un charco de luz definido, no una niebla. El grueso de la luz vive en el
+  // núcleo y se apaga rápido (~transparente al 55% del radio), así hay CONTRASTE con la oscuridad en
+  // vez de un lavado lechoso sobre toda la pantalla.
+  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.04, size / 2, size / 2, size / 2)
+  g.addColorStop(0, 'rgba(255,238,208,0.64)')
+  g.addColorStop(0.16, 'rgba(255,223,176,0.4)')
+  g.addColorStop(0.34, 'rgba(252,205,148,0.16)')
+  g.addColorStop(0.55, 'rgba(245,196,140,0.035)')
+  g.addColorStop(1, 'rgba(245,196,140,0)')
   ctx.fillStyle = g; ctx.fillRect(0, 0, size, size)
   _lightTex = Texture.from(cnv)
   return _lightTex
