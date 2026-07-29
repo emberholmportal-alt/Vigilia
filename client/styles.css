@@ -1289,6 +1289,31 @@ html, body, #root {
 .hof-name em { color: var(--dim); font-style: normal; font-size: 11px; }
 .hof-you { color: var(--gold); font-weight: 700; }
 .hof-metric { flex: none; color: #d9c79a; font-size: 12px; font-variant-numeric: tabular-nums; }
+/* Gremio en la hoja: info propia/sin-gremio + botón que abre el ranking en su modal. */
+.char-guild-row-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.char-guild-rankbtn {
+  flex: none; cursor: pointer; font-family: Georgia, serif; font-size: 11px; color: #d9a24a; white-space: nowrap;
+  background: rgba(156, 122, 46, 0.12); border: 1px solid #6b5320; border-radius: 5px; padding: 5px 10px;
+  display: inline-flex; align-items: center; gap: 5px; transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.char-guild-rankbtn:hover { border-color: var(--gold); color: #f0dc8f; background: rgba(156, 122, 46, 0.22); }
+/* Modal de ranking de gremios (mismo look que el Salón de la Fama). */
+.grank-body { min-height: 200px; max-height: 52vh; gap: 5px; }
+.grank-row {
+  display: flex; align-items: center; gap: 11px; padding: 9px 10px;
+  background: rgba(20, 17, 26, 0.45); border: 1px solid #2a2433; border-radius: 6px;
+}
+.grank-row.mine { border-color: var(--gold); background: rgba(90, 70, 20, 0.28); }
+.grank-n { flex: none; width: 24px; text-align: center; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
+.grank-chip {
+  flex: none; min-width: 36px; height: 23px; display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 7px; border-radius: 5px; color: #14110a; font-weight: 700; font-size: 12px; letter-spacing: 0.04em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.grank-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #f2ead6; font-size: 14px; }
+.grank-meta { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.grank-meta b { color: #d9c79a; font-size: 12px; font-variant-numeric: tabular-nums; }
+.grank-meta i { color: var(--dim); font-style: normal; font-size: 10.5px; }
 .char-stat {
   display: flex; justify-content: space-between; align-items: baseline;
   border-bottom: 1px solid rgba(120, 104, 80, 0.25); padding-bottom: 3px;

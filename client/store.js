@@ -1191,6 +1191,7 @@ export const useGameStore = create((set, get) => ({
   hallData: null,
   hallBusy: false,
   openHall: () => { set({ panel: 'hall' }); get().requestHall() },
+  openGuildRank: () => { set({ panel: 'guildrank' }); get().refreshGuild() },   // ranking de gremios en su propio modal
   requestHall: async () => {
     if (!ONLINE || !net.connected) { set({ hallData: null }); return }
     set({ hallBusy: true })

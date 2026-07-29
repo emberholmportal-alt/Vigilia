@@ -24,6 +24,7 @@ import Blacksmith from './ui/Blacksmith.jsx'
 import Alchemy from './ui/Alchemy.jsx'
 import Guild from './ui/Guild.jsx'
 import HallOfFame from './ui/HallOfFame.jsx'
+import GuildRanking from './ui/GuildRanking.jsx'
 import Missions from './ui/Missions.jsx'
 import MouseBind from './ui/MouseBind.jsx'
 import BootSplash from './ui/BootSplash.jsx'
@@ -156,6 +157,7 @@ export default function App() {
       {phase === 'game' && panel === 'alchemy' && <Alchemy />}
       {phase === 'game' && panel === 'guild' && <Guild />}
       {phase === 'game' && panel === 'hall' && <HallOfFame />}
+      {phase === 'game' && panel === 'guildrank' && <GuildRanking />}
       {phase === 'game' && panel === 'market' && <Market />}
       {phase === 'game' && panel === 'goldmarket' && <GoldMarket />}
       {phase === 'game' && panel === 'stash' && <Stash />}

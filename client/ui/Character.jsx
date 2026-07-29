@@ -33,6 +33,7 @@ export default function Character() {
   const guildRanking = useGameStore((s) => s.guildRanking)
   const refreshGuild = useGameStore((s) => s.refreshGuild)
   const openHall = useGameStore((s) => s.openHall)
+  const openGuildRank = useGameStore((s) => s.openGuildRank)
   const t = useT()
   // Refrescá membresía + ranking al abrir la hoja (el server es autoritativo). Los datos ya
   // vienen cacheados del arranque, así que esto sólo los mantiene frescos, no bloquea la UI.
@@ -51,7 +52,7 @@ export default function Character() {
     [t('stat_mp'), `${s.mp}/${s.mpMax}`],
     [t('stat_dmg'), s.dmgMin != null ? `${s.dmgMin}–${s.dmgMax}` : '—'],
     [t('stat_def'), s.defense || 0],
-    ...(s.crit ? [[t('stat_crit'), `${s.crit}%`]] : []),
+    ...(s.crit ? [[t('stat_crit'), `${+s.crit.toFixed(1)}%`]] : []),
     ...(s.hpRegen ? [[t('stat_hpregen'), `${s.hpRegen}/s`]] : []),
     ...(s.itemFind ? [[t('stat_magicfind'), `+${s.itemFind}%`]] : []),
     [t('stat_speed'), s.speedMul ? `×${s.speedMul}` : '×1'],
@@ -110,37 +111,28 @@ export default function Character() {
               se hace sólo en la Casa de Gremios (NPC), así que acá no hay acciones. */}
           <div className="char-guild">
             <div className="char-guild-head">{t('char_guild')}</div>
-            {guild ? (
-              <div className="char-guild-mine">
-                <span className="char-guild-chip" style={{ background: guild.color }}>{guild.tag}</span>
-                <div className="char-guild-txt">
-                  <b>{guild.name}</b>
-                  <span>{t('guild_level_n', { n: guild.level })} · {t('guild_' + (guildRole || 'member'))}
-                    {myRank > 0 ? ` · ${t('char_guild_rank_you', { n: myRank })}` : ''}</span>
+            <div className="char-guild-row-top">
+              {guild ? (
+                <div className="char-guild-mine">
+                  <span className="char-guild-chip" style={{ background: guild.color }}>{guild.tag}</span>
+                  <div className="char-guild-txt">
+                    <b>{guild.name}</b>
+                    <span>{t('guild_level_n', { n: guild.level })} · {t('guild_' + (guildRole || 'member'))}
+                      {myRank > 0 ? ` · ${t('char_guild_rank_you', { n: myRank })}` : ''}</span>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="char-guild-none">
-                <b>{t('char_no_guild')}</b>
-                <span>{t('char_guild_hall')}</span>
-              </div>
-            )}
-
-            {ranking.length > 0 && (
-              <>
-                <div className="char-guild-sub">{t('char_guild_top')}</div>
-                <div className="char-guild-rank">
-                  {ranking.map((g, i) => (
-                    <div key={g.id} className={'char-guild-row' + (guild && g.id === guild.id ? ' mine' : '')}>
-                      <span className="char-guild-n">{i + 1}</span>
-                      <span className="char-guild-chip sm" style={{ background: g.color }}>{g.tag}</span>
-                      <span className="char-guild-name">{g.name}</span>
-                      <span className="char-guild-meta">{t('guild_power_n', { n: g.power ?? 0 })} · {t('guild_members_n', { n: g.members })}</span>
-                    </div>
-                  ))}
+              ) : (
+                <div className="char-guild-none">
+                  <b>{t('char_no_guild')}</b>
+                  <span>{t('char_guild_hall')}</span>
                 </div>
-              </>
-            )}
+              )}
+              {ranking.length > 0 && (
+                <button className="char-guild-rankbtn" onClick={openGuildRank} title={t('guildrank_title')}>
+                  {t('char_guild_top')} <span className="char-hall-cta">›</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <button className="char-hall-btn" onClick={openHall}>
