@@ -93,6 +93,28 @@ para dar profundidad, y siluetas gordas y legibles.
 
 ---
 
+## 4.5 Vibe coding — el eje satírico central
+
+El término lo acuñó **Andrej Karpathy el 2 de febrero de 2025**: describir cómo se programa
+hablándole a una IA, **aceptando lo que escribe sin leerlo**, y pegándole los errores de
+vuelta hasta que anda. Su frase: *"entregate a las vibras, abrazá las exponenciales, y
+olvidate de que el código existe."* Pensado para proyectos de fin de semana descartables.
+
+En semanas se volvió fenómeno: salió en el New York Times, el Guardian, Ars Technica, generó
+memes ("vibe debugging") y fue **Palabra del Año 2025** del diccionario Collins. Para 2026
+Karpathy ya decía que había quedado viejo y prefería "agentic engineering".
+
+**Lo que nos da:**
+1. **Un motor de juego completo.** Vos no hackeás: le pagás a una IA para que hackee. La
+   progresión es comprar mejores modelos. Es la escalada de armas de How to Fish, pero de IAs.
+2. **El mejor chiste sobre la IA que existe:** pagás **por token** por un pensamiento que la
+   mitad de las veces es **una mentira dicha con seguridad absoluta.** Esa es la alucinación,
+   nuestro motor de caos.
+3. **Sátira que pega hacia arriba:** a la industria de la IA, a los modelos "tier", a las
+   suscripciones, al hype — nunca a una víctima.
+
+---
+
 ## 5. La realidad ya escribió la sátira
 
 El leak de **GTA VI** (2022): 90 videos del juego en desarrollo, uno de los leaks más grandes
@@ -129,5 +151,6 @@ Fuentes:
 - [Schedule 1 — sistema de policía (Fandom Wiki)](https://schedule-1.fandom.com/wiki/Police)
 - [Schedule 1 — cómo escapar de la policía (TheGamer)](https://www.thegamer.com/schedule-1-how-to-escape-police-search-wanted-guide/)
 - [Low-poly y flat shading (Game Developer)](https://www.gamedeveloper.com/design/how-to-make-low-poly-look-good)
+- [Vibe coding — origen e historia (CodeRabbit)](https://www.coderabbit.ai/blog/a-semantic-history-how-the-term-vibe-coding-went-from-a-tweet-to-prod)
 - [El leak de GTA VI (NBC News)](https://www.nbcnews.com/tech/tech-news/hacker-targets-grand-theft-auto-vi-apparent-leak-rcna593634)
 - [Kurtaj, el Fire TV Stick y Lapsus$ (Kotaku)](https://kotaku.com/gta-6-vi-hack-leaker-arrested-teenager-london-laspsus-1849573250)
