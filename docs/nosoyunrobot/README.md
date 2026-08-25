@@ -20,7 +20,9 @@ Cinco actos, cinco géneros, ningún tutorial:
 | [`LORE.md`](LORE.md) | Mundo, voz, facciones, titulares generativos y los 8 finales |
 | [`IMPLEMENTACION.md`](IMPLEMENTACION.md) | Arquitectura, tick loop, saves, rendimiento y las 6 fases con criterio de aceptación |
 
-**Estado:** concepto cerrado, sin código todavía. Próximo paso: Fase 0 (`IMPLEMENTACION.md` §7).
+**Pitch visual:** [`pitch.html`](pitch.html) — página autocontenida con el Acto I jugable y la simulación del mapa 12×7 corriendo.
+
+**Estado:** concepto cerrado, sin código de juego todavía. Próximo paso: Fase 0 (`IMPLEMENTACION.md` §7).
 
 **Relación con Velgrim:** comparte repo y stack, **nada más**. Sin servidor, sin base de datos
 y sin un solo asset licenciado. Ver `IMPLEMENTACION.md` §1.
