@@ -1,242 +1,269 @@
-# LEAK INC. — diseño
+# CÓMO HACKEAR — diseño
 
-> **Sos un pibe en una pieza a las dos de la mañana. Hackeás estudios y filtrás sus juegos.
-> Cuanto más famoso te hacés, más fácil es encontrarte.**
+> Un pibe, un garaje, y una industria entera que se está cagando de miedo.
+> **Hackeás estudios, filtrás sus juegos, y cuanto más pánico causás, más te pagan
+> y más gente te viene a buscar.**
 
-Una pantalla. Un botón. Diez minutos por partida. Seis finales.
+3D low-poly, ojos saltones, primera persona. Cinco zonas, cinco jefes, y armas hechas
+de basura informática.
 
----
-
-## 1. El bucle (esto es TODO el juego)
-
-```
-   ┌──────────────┐   se llena   ┌────────────────────┐
-   │  RIPEAR      │ ───────────► │  ¿DÓNDE LO SOLTÁS? │
-   │ (un botón)   │              │  6 destinos        │
-   └──────────────┘              └─────────┬──────────┘
-          ▲                                │
-          │                       ┌────────▼────────┐
-          │                       │ CLOUT + PLATA   │
-          │                       │ + EXPEDIENTE ▲  │
-          │                       └────────┬────────┘
-   ┌──────┴───────┐                        │
-   │  MEJORAS     │ ◄──────────────────────┘
-   │  y BECARIOS  │
-   └──────────────┘
-```
-
-**Tres recursos y una barra. Nada más.**
-
-| | Qué es | Para qué |
-|---|---|---|
-| **CLOUT** | Seguidores, credibilidad | Desbloquea objetivos más grandes |
-| **PLATA** | Guita | Comprar mejoras y becarios |
-| **EXPEDIENTE** `0–100` | La carpeta que la Agencia arma sobre vos | Al 100 te allanan |
-| *(paquete)* | El progreso del rip actual | Se llena y se suelta |
-
-Si algún sistema no sirve a esos cuatro, no entra.
+Referencias y por qué: [`REFERENTES.md`](REFERENTES.md).
 
 ---
 
-## 2. RIPEAR — el único verbo
+## 1. La idea en una frase
 
-Un botón enorme en el medio de la pantalla. Lo tocás y la barra del paquete sube.
-Cuando se llena, tenés **un archivo** en las manos.
-
-- `+1` por tap al principio. Las mejoras suben eso.
-- Los **becarios** ripean solos: es el idle.
-- El botón hace ruido, tiembla, escupe partículas de archivos `.zip`. **Tiene que dar gusto
-  tocarlo.** Si el botón no es rico, no hay juego.
+*How to Fish* te engaña: parece pesca tranquila y termina con francotiradores y peces-jefe.
+**Acá el engaño es al revés:** parece un juego de hackear y a los cuatro minutos hay un
+notificador judicial corriéndote por el jardín mientras vos le pegás con un teclado mecánico.
 
 ---
 
-## 3. Los objetivos — la escalada (lección de How to Fish)
+## 2. EL NIVEL DE PÁNICO — el sistema central
 
-Cada objetivo se desbloquea con CLOUT. El chiste es que la lista no para de crecer.
+No es tu nivel de búsqueda. Es **cuánto miedo tiene la industria**. Uno solo, global,
+gigante en pantalla.
 
-| # | Objetivo | Lo que sacás | Clout que pide |
+**Y acá está el truco que no tiene ninguno de los tres referentes:**
+
+> ### El pánico es tu lista de precios Y tu sentencia.
+> Cuanto más asustados están, **más pagan por lo que filtrás**. Y más gente hay
+> buscándote. Un solo número que es la recompensa y el castigo.
+
+| Pánico | Cómo se ve el mundo | Multiplicador de precio | Quién te busca |
 |---|---|---|---|
-| 1 | Un indie de tres personas | El menú de opciones | — |
-| 2 | Un estudio mediano | Un personaje sin texturas | 50 |
-| 3 | Un estudio mediano | La banda sonora en `.wav` | 200 |
-| 4 | Una editorial | El guion completo del DLC | 800 |
-| 5 | Una editorial | La build jugable, con la marca de agua | 3 k |
-| 6 | Un fabricante de consolas | **La consola nueva entera** | 12 k |
-| 7 | Un motor gráfico | El código fuente | 40 k |
-| 8 | La editorial madre | Los correos del CEO | 150 k |
-| 9 | Un estudio cerrado hace 9 años | **El juego que nunca empezaron a hacer** | 600 k |
-| 10 | — | **LEAK INC.**, el juego que estás jugando | 2 M |
+| `0–19` **CALMA** | Vecinos regando el pasto | ×1 | Nadie |
+| `20–39` **RUMOR** | Los foros hablan. Aparecen insiders truchos | ×1,6 | Un notificador judicial |
+| `40–59` **COMUNICADO** | Los estudios postergan anuncios | ×2,5 | Pasantes de compliance |
+| `60–79` **EMBARGO** | No se anuncia nada. Los tráilers son gameplay falso | ×4 | Seguridad privada. **Patrullas en el barrio** |
+| `80–94` **HISTERIA** | Cancelan el E3. Hay drones | ×7 | Cazarrecompensas armados |
+| `95–100` **LA REDADA** | — | — | Todos, a la vez, en tu casa |
 
-El objetivo 10 es el final "SE FILTRÓ SOLO". Es la broma de toda la partida y es el
-screenshot que la gente va a publicar.
+**Baja solo** si no filtrás nada por un rato. Eso genera el ritmo del juego:
+**ráfaga → esconderse → ráfaga.** Igual que el toque de queda de Schedule I, pero al revés:
+acá el peligro no viene de la hora, viene de vos.
 
----
-
-## 4. Dónde lo soltás — la decisión (lección de Schedule I)
-
-Cuando el paquete se llena aparecen seis tarjetas. Elegís una. Tarda dos segundos.
-
-| Destino | Clout | Plata | Expediente | Copy |
-|---|---|---|---|---|
-| **El foro** | `+` | — | `+1` | *"Nueve personas lo vieron. Tres te creyeron."* |
-| **Tu Discord** | `++` | `+` | `+2` | *"Cuatrocientos pibes y un mod que es de la Agencia."* |
-| **@fuentefiable** | `++++` | — | `+3` | *"Lo publica como propio. Le va a ir muy bien."* |
-| **Un youtuber de 8 M** | `++++++` | `++` | `+8` | *"Va a decir 'fuentes internas'. Las fuentes internas sos vos."* |
-| **La prensa seria** | `++` | `++++` | `+5` | *"Te van a pedir verificar. Verificar deja rastro."* |
-| **Vendérselo al rival** | — | `++++++` | `+12` | *"Ellos no filtran nada. Lo usan."* |
-| **Guardártelo** | — | — | `−3` | *"Nadie se entera. Vos sabés."* |
-
-**La preferencia (copiada de los clientes de Schedule I):** cada archivo tiene un tipo
-(`video`, `audio`, `texto`, `código`, `hardware`). Si el destino prefiere ese tipo, **cobrás
-doble**. Un video de gameplay le sirve al youtuber; los correos del CEO, a la prensa; el
-código fuente, al estudio rival. Se aprende jugando, sin tutorial.
-
-**"Guardártelo" existe para que el juego tenga un freno.** Es la única forma de bajar el
-expediente sin gastar plata, y cuesta una filtración entera. Ese es el dilema.
+**Se sube el pánico a propósito.** Antes de una filtración grande conviene hacer tres
+chiquitas para inflar el precio. El jugador bueno **se pone en peligro a propósito**, que es
+exactamente lo que hace divertido a Plague Inc.
 
 ---
 
-## 5. El organigrama (lección de Plague Inc, sin mapamundi)
+## 3. El bucle, en tres lugares físicos
 
-Un cuadro corporativo de doce cajitas. Empezás abajo a la izquierda, en el indie.
-Cuando entrás a una **editorial**, se te abren todos los estudios que compró — porque vos no
-hackeaste doce estudios, hackeaste al que les hace la facturación a los doce.
-
-Es el mecanismo de propagación de Plague Inc, es más barato de dibujar que un mapa, y es un
-chiste sobre la concentración de la industria. Tres cosas con un solo sistema.
-
-**Las burbujas:** cada tanto aparece un `.zip` flotando sobre el organigrama. Dura tres
-segundos. Lo tocás y te llevás plata o un archivo gratis. Se copia entero de Plague Inc,
-sin vergüenza, porque es el mejor gesto táctil que inventó el género.
-
----
-
-## 6. Mejoras y becarios (~14)
-
-| Mejora | Efecto | Copy |
-|---|---|---|
-| **Segundo monitor** | +1 por tap | *"Ahora ves el doble de nada."* |
-| **Un becario** | ripea solo, 1/s | *"No le pagás. Le decís que es una pasantía."* |
-| **Más becarios** | escala | *"Tenés un organigrama. Sos lo que odiabas."* |
-| **Café de máquina** | +50% velocidad, +ruido | — |
-| **VPN de tres dólares** | −20% expediente | *"Dice que es de Islandia. Es de Quilmes."* |
-| **Modo incógnito** | **no hace absolutamente nada**, sale $1 | *"Te sentís más seguro. Eso es algo."* |
-| **Un Fire TV Stick** | desbloquea ripear desde hoteles | *"Preguntale a Arion."* |
-| **Cambiarte el nombre** | expediente a la mitad. **Una sola vez** | *"Perdés la mitad del clout. Es lo que hay."* |
-| **El abogado del foro** | el expediente sube 25% más lento | *"No es abogado. Pero sabe."* |
-| **Bot que repostea** | clout pasivo | — |
-| **Ficharlo a @fuentefiable** | deja de robarte el crédito | *"Ahora te roba el crédito para vos."* |
-| **Sponsor de una VPN de verdad** | plata pasiva, +expediente | *"Sos un influencer de seguridad. Tenés un código de descuento."* |
-| **Servidor en un país raro** | −30% expediente, caro | — |
-| **Borrar los metadatos** | el próximo leak no suma expediente | *"Lo que te agarra siempre es el metadato."* |
-
----
-
-## 7. EL EXPEDIENTE — el reloj
-
-No es una barra abstracta: es **una carpeta que se llena de renglones**, y cada renglón es
-una prueba concreta que se escribe sola en pantalla.
+Todo pasa caminando, en primera persona. Nada de menús.
 
 ```
-EXPEDIENTE 4471/E — AGENTE KESSLER
-─────────────────────────────────
-✔ Registro de acceso, 03:14
-✔ El .zip conserva el nombre de usuario del sistema
-✔ Se reflejó una lata de gaseosa en el monitor
-✔ Publicó desde la misma IP que el foro
-✔ Un mod del Discord colabora con la investigación
-✔ Usó su usuario de Steam de 2014
-□ ...
+   ┌─────────────────┐        ┌──────────────────┐        ┌────────────────┐
+   │   EL GARAJE     │  ───►  │    LA CALLE      │  ───►  │  EL COMPRADOR  │
+   │ las torres      │        │ con el pendrive  │        │ el que paga    │
+   │ ripean solas    │        │ encima, de noche │        │                │
+   └────────▲────────┘        └──────────────────┘        └───────┬────────┘
+            │                    ▲ acá está TODA                  │
+            │                      la tensión                     │
+            └──────────── plata, y el pánico sube ────────────────┘
 ```
 
-**Ver escribirse ese renglón es la tensión del juego.** Y es puro texto: cuesta cero.
+**La lección grande de Schedule I:** el juego no es producir, **el juego es el viaje**.
+Vas con el pendrive encima, de noche, y hay un tipo parado en la esquina que no sabés si
+es un vecino o es de compliance.
 
-| Expediente | Qué pasa |
+### 3.1 En el garaje — RIPEAR
+Comprás **torres** y las enchufás donde quieras. Cada torre ripea sola. Más torres = más
+producción, más calor, **más ruido**. El ruido es literal: los vecinos se quejan, y una queja
+de vecino es un renglón en el expediente.
+
+Un pendrive lleno = una filtración lista para llevar.
+
+### 3.2 En la calle — LLEVARLO
+Salís. De noche hay más gente buscándote (toque de queda de Schedule I). Con el pendrive
+encima, **si te alcanzan lo perdés**. Podés correr, esconderte detrás de un auto, o pelear.
+
+Los perseguidores tienen los tres estados de Schedule I, traducidos:
+| Estado | Qué hacen |
 |---|---|
-| `0–24` | Nadie te busca |
-| `25–49` | Alguien abrió un caso. Empieza a aparecer Kessler |
-| `50–74` | Te nombran en la prensa. Los destinos caros se ponen más caros |
-| `75–89` | Un allanamiento a otro. Tenés un susto |
-| `90–99` | Un auto raro en la cuadra. La música cambia |
-| `100` | **ALLANAMIENTO** |
+| **NOTIFICANDO** | Te quieren entregar un papel. Si te tocan, perdés plata |
+| **BUSCADO** | Te corren para sacarte el pendrive |
+| **ORDEN DE CAPTURA** | Te corren armados |
+
+### 3.3 En el comprador — FILTRARLO
+Seis compradores, cada uno en un lugar distinto del mapa, **cada uno con preferencias**
+(la mecánica de clientes de Schedule I):
+
+| Comprador | Dónde | Quiere | Paga | Pánico |
+|---|---|---|---|---|
+| **El pibe del cyber** | a media cuadra | lo que sea | poco | `+1` |
+| **El Discord** | tu propia pieza | video | poco, seguro | `+2` |
+| **@fuentefiable** | en un banco de la plaza | texto | clout, no plata | `+3` |
+| **El youtuber** | una camioneta con vidrios polarizados | video | mucho | `+8` |
+| **La periodista** | un café que cierra a las 2 | correos, documentos | bien | `+5` |
+| **El estudio rival** | un estacionamiento vacío | código, hardware | muchísimo | `+12` |
+
+Si el tipo de archivo coincide con lo que ese comprador prefiere, **cobrás doble**.
+Y **variar el punto de entrega baja el calor** — repetir el mismo comprador tres veces
+seguidas lo duplica. Robado directo de Schedule I y funciona.
 
 ---
 
-## 8. Los eventos caóticos (~16)
+## 4. Las armas — basura informática (escalada de How to Fish)
 
-Aparecen solos, tienen dos opciones y se resuelven en un tap. **Ninguna opción es gratis.**
+`manos → puño americano → pistola → escopeta → SMG → rifle` se traduce así:
 
-- **Tu vieja golpea la puerta.** `[Apagar todo]` perdés el paquete · `[Seguir]` +expediente
-- **DMCA.** `[Bajarlo]` −clout · `[Dejarlo]` +clout +expediente
-- **Un pibe filtró lo mismo doce minutos antes.** `[Publicar igual]` mitad de clout ·
-  `[Filtrarle los datos a él]` +clout +expediente, y una línea fea en la carpeta
-- **El estudio te ofrece plata para que no lo publiques.** `[Aceptar]` +++plata −clout ·
-  `[Publicar]` +clout. **Aceptar tres veces desbloquea el final ADQUIRIDO**
-- **Un periodista quiere verificar.** `[Contestar]` +credibilidad, +expediente · `[Ignorar]` −clout
-- **Se te murió el disco.** Perdés el paquete. Sin opciones. La vida es así
-- **Alguien de adentro te escribe.** Archivo gratis · pero *"¿y si es Kessler?"*
-- **Allanaron a otro pibe.** −expediente. *"Creen que fue él. No hagas nada."*
-- **Te invitan a un podcast.** `[Ir]` mucho clout, mucho expediente · `[No ir]` nada
-- **Se cayó el foro.** Tres destinos bloqueados un rato
-- **Un estudio anuncia que va a anunciar algo.** Puro chiste, sin efecto
-- **Un fan te hace un remera con tu logo.** +clout. Y sale en el expediente
+| # | Arma | Tipo | Qué hace | Copy |
+|---|---|---|---|---|
+| 1 | **Las manos** | — | Nada, básicamente | *"Tenés túnel carpiano."* |
+| 2 | **El teclado mecánico** | melee | Duplica el golpe. Se compra apenas podés | *"Switches azules. Hace un ruido bárbaro al pegar."* |
+| 3 | **La antena wifi** | melee largo | Alcance enorme, daño ridículo | *"Trescientos metros de alcance. Dos de daño."* |
+| 4 | **El router** | granada | Pulso que apaga a todos tres segundos | *"Reiniciá y probá de nuevo."* |
+| 5 | **La pistola de calor** | pistola | Es para desoldar. También sirve | *"Doscientos ochenta grados."* |
+| 6 | **La sopladora de hojas** | escopeta de aire | No mata: **empuja**. Puro caos físico | *"Era de mi viejo."* |
+| 7 | **La impresora 3D** | ametralladora | Escupe piezas sin terminar | *"Adherencia de la primera capa: mala."* |
+| 8 | **El cañón de placas de video** | lanzacohetes | Área grande | *"Cada disparo sale ochocientos dólares."* |
+| 9 | **El Fire TV Stick** | francotirador | Apuntás con el control. Alcance infinito | *"Preguntale a Arion."* |
+| 10 | **El NDA** | definitiva | Se lo tirás a alguien y **deja de existir legalmente** | *"No podés hablar de esto."* |
+
+**La sopladora es el arma más importante del juego** y no hace daño. Empuja gente por
+el escenario. En cooperativo va a ser insoportable, que es el objetivo.
 
 ---
 
-## 9. Los seis finales
+## 5. Enemigos
 
-| Final | Cómo se saca | Qué pasa |
+| Enemigo | Aparece con pánico | Qué hace |
 |---|---|---|
-| **ALLANAMIENTO** | Expediente 100 | Nueve de la mañana. Se llevan el router, la tablet de tu vieja y una campera que no es tuya. Kessler te dice que le pareció prolijo tu trabajo |
-| **CONTRATADO** | Clout alto + expediente alto | El estudio que más filtraste te ficha como **Jefe de Seguridad**. Cobrás bien. Tu primer día lo pasás borrando la filtración de otro pibe |
-| **RECLUTADO** | Expediente 100 con clout muy alto | La Agencia te ofrece laburo en vez de cárcel. Firmás. Ahora armás expedientes vos |
-| **ADQUIRIDO** | Aceptar tres sobornos | Una empresa compra tu foro y lo pone detrás de un muro de pago. Tus 400 mil seguidores tienen que pagar 4,99 por mes para leerte |
-| **SE FILTRÓ SOLO** | Objetivo 10 | Filtrás **LEAK INC.** El juego se cierra y aparece en un foro. La partida termina con tu propio nombre en la carpeta |
-| **EL KIOSCO** | Retirarte con plata alta y expediente bajo | Cerrás todo y abrís un kiosco. **Es el único final feliz y está escondido**, porque nadie se retira a tiempo |
+| **El notificador** | 20 | Camina hacia vos con un papel. Si te toca, perdés plata |
+| **El pasante de compliance** | 40 | Lento, con carpeta. Te marca en el mapa |
+| **El consultor** | 40 | **Ataque de PowerPoint**: te habla y te baja la vida sin tocarte |
+| **Seguridad privada** | 60 | Campera, walkie, garrote |
+| **El moderador** | 60 | Te **banea**: no podés usar armas diez segundos |
+| **El cazarrecompensas** | 80 | Armado. En serio |
+| **Dron de la Agencia** | 80 | Vuela, te ilumina, sube el pánico solo con verte |
 
-Cada final genera una **tarjeta compartible** en PNG: tu alias, el final, cuántos archivos
-filtraste y el mejor renglón de tu expediente.
+Todos con ojos saltones. Todos ligeramente ridículos al caminar. Cuando les pegás, salen
+volando y quedan tirados con los brazos para arriba.
 
 ---
 
-## 10. Cómo se ve
+## 6. Las cinco zonas y los cinco jefes
 
-**Chunky, saturado, barato a propósito.** How to Fish y Schedule I ganaron viéndose así.
+Estructura de How to Fish, tal cual: **zona → tarea → jefe → se abre la siguiente**.
+
+| # | Zona | La tarea | El jefe |
+|---|---|---|---|
+| 1 | **El garaje y tu cuadra** | Filtrar tu primer archivo | *(ninguno — es el tutorial)* |
+| 2 | **El barrio** | Diez filtraciones sin que te agarren | **EL INFLUENCER** — te tira hilos que hacen daño. Su barra de vida son ocho millones de seguidores |
+| 3 | **El parque de oficinas** | Entrar a tres estudios medianos | **EL ABOGADO** — invulnerable hasta que le rompés el maletín. Ataca con demandas que te frenan |
+| 4 | **El data center** | Aguantar una noche entera con pánico arriba de 70 | **LA AUDITORÍA** — no es una persona. Es una nube de papeles que te persigue |
+| 5 | **El campus de la editorial** | Filtrar el juego que todavía no anunciaron | **EL CEO** — flota sobre un escenario de keynote y ataca **anunciando cosas** |
+| ★ | *(el final)* | — | **AGENTE KESSLER** — te conoce mejor que vos |
+
+---
+
+## 7. Los objetivos (la escalada absurda)
+
+| # | Lo que filtrás | Tipo |
+|---|---|---|
+| 1 | El menú de opciones de un indie | texto |
+| 2 | Un personaje sin texturas | video |
+| 3 | La banda sonora entera en `.wav` | audio |
+| 4 | El guion completo del DLC | texto |
+| 5 | La build jugable con marca de agua | video |
+| 6 | **La consola nueva entera** | hardware |
+| 7 | El código fuente del motor | código |
+| 8 | Los correos del CEO | texto |
+| 9 | **El juego que nunca empezaron a hacer** | video |
+| 10 | **CÓMO HACKEAR**, el juego que estás jugando | código |
+
+---
+
+## 8. Los finales
+
+| Final | Cómo | Qué pasa |
+|---|---|---|
+| **ALLANAMIENTO** | Pánico 100 | Nueve y diez de la mañana. Se llevan el router, la tablet de tu vieja y una campera que no es tuya |
+| **CONTRATADO** | Mucho clout con mucho pánico | El estudio que más filtraste te ficha como **Jefe de Seguridad**. Tu primer día lo pasás borrando la filtración de otro pibe |
+| **RECLUTADO** | Pánico 100 con clout altísimo | La Agencia te ofrece laburo en vez de cárcel. Ahora armás expedientes vos |
+| **ADQUIRIDO** | Aceptar tres sobornos | Compran tu foro y lo ponen tras un muro de pago de 4,99 |
+| **SE FILTRÓ SOLO** | Objetivo 10 | Filtrás este juego. La partida termina con tu propio nombre en el expediente |
+| **EL E3** | Pánico en 100 durante cinco minutos sin que te agarren | La industria deja de anunciar cosas **para siempre**. Ganaste y arruinaste todo |
+| **EL KIOSCO** | Retirarte con plata y pánico bajo | Vendés todo y abrís un kiosco. **El único final feliz, y casi nadie lo saca** |
+
+Cada final da una tarjeta compartible en PNG.
+
+---
+
+## 9. Cómo se ve — la biblia visual
+
+Todo sale de la investigación de `REFERENTES.md` §4.
+
+### Los personajes
+- **Cabeza:** una esfera. Sin boca, sin nariz, sin cejas.
+- **Ojos saltones:** dos esferas blancas grandes, pupilas negras chicas, **con inercia** —
+  se siguen moviendo un toque después de que el tipo frena. Toda la actuación está ahí.
+- **Cuerpo:** una cápsula. **Brazos:** dos tubos. **Manos:** ninguna, un tubo redondeado.
+- Proporciones mal a propósito: cabeza grande, piernas cortas.
+- Caminan tiesos. Cuando les pegás, salen volando.
+
+### El render
+- **Flat shading, cero texturas.** Cada cara un color plano. Es lo que hace que se vea
+  *cristalino* en vez de barroso.
+- **Luz de color fuerte y contrastada.** Es lo que salva a un low-poly de verse barato:
+  el violeta de una lámpara contra el crema de una pared.
+- **Niebla** para dar profundidad y para no dibujar lo que está lejos.
+- Siluetas gordas y legibles. Todo se reconoce por su forma, no por su detalle.
+
+### Paleta
+| | |
+|---|---|
+| Noche | `#1a1428` violeta sucio |
+| Asfalto | `#2a2438` |
+| Pared del garaje | `#e8dcc0` crema |
+| Luz de las torres | `#c86bff` violeta · `#31e6ff` cyan |
+| Faroles | `#ffb020` naranja sodio |
+| Piel | `#c89a72` |
+| **Pánico** | `#ff3b30` |
+
+### Tipografía
+- **Título:** manuscrita blanca, con temblor, sobre el 3D. Igual que la portada de
+  How to Fish.
+- **HUD:** una redonda gorda. Números grandes. Nada elegante.
+
+---
+
+## 10. Implementación
+
+**Three.js sobre el stack del repo.** Vite ya está; three.js es la única dependencia nueva.
+Sin servidor: `localStorage`. Segundo entry (`hack.html`), no toca nada de Velgrim.
 
 | | |
 |---|---|
-| **Fondo** | La pieza a las 2 AM: violeta sucio, luz de monitor, una tira LED barata |
-| **Superficies** | Cartón y papel: crema `#fff4dd`, con cinta de embalar y stickers |
-| **Acentos** | Verde lima `#c8ff2e`, magenta `#ff3d9a`, cyan `#31e6ff`, naranja `#ff8a1f` |
-| **Alarma** | Rojo `#ff3b30` para el expediente |
-| **Contornos** | Negro grueso de 3 px y sombra dura corrida. Nada de degradés elegantes |
-| **Tipografía** | Display **Bungee** (cartel de kiosco, gorda, gritona) + cuerpo **Rubik** |
-| **Movimiento** | Todo tiembla, rebota y se pasa de rosca. Números que saltan, no que se deslizan |
+| **Geometría** | Toda procedural, desde primitivas. Cero modelos, cero archivos |
+| **Materiales** | `MeshLambertMaterial` con `flatShading: true` |
+| **Personajes** | Una función `hacerTipo(colores)` que devuelve un `Group` |
+| **Física** | Ninguna librería. Colisión de círculos contra paredes, gravedad a mano |
+| **Disparo** | Raycast desde la cámara contra esferas de colisión |
+| **Presupuesto** | 60 fps con 20 tipos en pantalla en un Samsung de gama media |
+| **Controles** | WASD + mouse con pointer lock. Joystick táctil en celular |
 
-Cero assets: emoji, formas CSS y canvas. Un dev solo lo hace de noche.
-
----
-
-## 11. Implementación
-
-Mismo stack que el repo: **Vite + React + zustand**, `localStorage`, sin servidor.
-Segundo entry de Vite (`leak.html`), no toca nada de Velgrim.
+### Fases
 
 | Fase | Qué | Aceptación |
 |---|---|---|
-| **0** | El botón RIPEAR, el paquete, los 6 destinos, el expediente, un final | Alguien juega 3 minutos y quiere volver a jugar |
-| **1** | 10 objetivos, 14 mejoras, becarios (idle) | Una partida completa dura 8–12 min |
-| **2** | Organigrama + burbujas | El organigrama se entiende sin explicación |
-| **3** | 16 eventos + los 6 finales | Ningún final aparece en menos del 5% de las partidas |
-| **4** | Tarjeta PNG + alias + Filtración del Día (semilla diaria) | Se comparte en dos taps |
+| **0** | Garaje + primera persona + un tipo con ojos saltones + el arma en pantalla | Camina y dispara a 60 fps. Los ojos saltones se ven graciosos |
+| **1** | Torres, pendrive, un comprador, el medidor de pánico | Un ciclo completo: ripear → llevar → cobrar |
+| **2** | La calle, la noche, tres tipos de enemigo, cuatro armas | El viaje con el pendrive encima da miedo |
+| **3** | Los seis compradores, preferencias, calor por repetir | Se nota que conviene variar |
+| **4** | Zonas 2 y 3 con sus jefes | Los jefes son distintos entre sí y son graciosos |
+| **5** | Zonas 4 y 5, los siete finales, tarjeta compartible | Ningún final aparece en menos del 5% de las partidas |
 
-**Duración objetivo:** 8–12 minutos por partida. 4–6 partidas para ver todos los finales.
+**Duración objetivo:** 25–40 minutos por partida.
 
 ---
 
-## 12. Línea roja
+## 11. Línea roja
 
-Nada operativamente útil: ni comandos, ni herramientas reales, ni técnicas que alguien pueda
-copiar. "Ripear" es tocar un botón. Los objetivos son estudios inventados. Toda la gracia
-está en la industria, los NDA, los embargos y los influencers — **nunca en enseñar a hacerlo**.
-Y el protagonista pierde, o lo compran, en cinco de los seis finales.
+Nada operativamente útil: ni comandos, ni herramientas reales, ni técnicas copiables.
+"Ripear" es enchufar un pendrive en una torre que hace ruido. Los estudios son inventados.
+Toda la gracia está en los NDA, los embargos, los consultores y los influencers —
+**nunca en enseñar a hacerlo.** Y el protagonista pierde, o lo compran, en cinco de los
+siete finales.
