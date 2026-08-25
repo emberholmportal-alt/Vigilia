@@ -1,10 +1,27 @@
 # REFERENTES — la investigación
 
-Lo que hay que copiar, con datos, no con impresiones.
+LEEK INC. es un **incremental** con sátira de oficina. Sus padres son distintos a los de
+un shooter; esto es lo que le robamos a cada uno.
 
 ---
 
-## 1. How to Fish (Dazed Games, agosto 2026)
+## 0. El género: incrementales (de dónde sale la dopamina)
+
+| Juego | La lección |
+|---|---|
+| **Cookie Clicker** | El bucle base: click → número → mejora → número más rápido. Y los **desbloqueos** que cambian la pantalla como recompensa |
+| **Universal Paperclips** | Un incremental **tiene final y tiene giros**: cada fase cambia el verbo. No es la misma pantalla 3 horas |
+| **A Dark Room** | Empezar **minúsculo y misterioso**. Una sola acción, y el juego se va revelando |
+| **Adventure Capitalist** | La **automatización** (managers) y el **prestige** con multiplicador permanente. El idle que premia volver |
+| **Progress Knight / Kittens** | Progresión por **roles/ascensos**, cada uno desbloquea mecánicas nuevas |
+
+**Los siete ingredientes de dopamina** (los aplicamos todos, ver GDD §2): feedback
+inmediato, número siempre subiendo, compras baratas al inicio, automatización, desbloqueos
+que cambian la pantalla, prestige con multiplicador, y eventos/combos para los picos.
+
+---
+
+## 1. How to Fish — la escalada absurda y verse barato
 
 **Los números.** US$ 7,99. **268.101 jugadores concurrentes en cuatro días** — más que
 *Marathon*, el extraction shooter de 200 millones de Bungie, que picó en 88.337. 96% positivas.
