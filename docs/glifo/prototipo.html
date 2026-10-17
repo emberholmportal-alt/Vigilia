@@ -1,0 +1,992 @@
+<title>Velgrim Glifo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=JetBrains+Mono:wght@400;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: el mundo es un canvas de caracteres a pantalla completa; el HUD flota en los bordes. */
+:root{
+  --void:#08070b; --crypt:#16131c; --edge:#3a3144; --bone:#d9cdb5; --dim:#8b8194;
+  --ember:#e0702a; --blood:#c0303f; --frost:#8fb4d8;
+  --f-title:Cinzel, "Trajan Pro", Georgia, serif;
+  --f-body:Spectral, Georgia, serif;
+  --f-glyph:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(--bone);
+  font-family:var(--f-body);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;background:var(--void)}
+.vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 52%,rgba(0,0,0,.6) 100%)}
+.top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  padding:calc(8px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 18px max(12px,env(safe-area-inset-left,0px));
+  pointer-events:none;background:linear-gradient(180deg,rgba(8,7,11,.88),rgba(8,7,11,0))}
+.brand b{display:block;font-family:var(--f-title);font-weight:700;letter-spacing:.16em;font-size:15px}
+.brand .sub{display:block;font-family:var(--f-glyph);font-size:10px;color:var(--dim);letter-spacing:.06em;margin-top:2px;font-variant-numeric:tabular-nums}
+.hp{font-family:var(--f-glyph);color:var(--blood);font-size:16px;letter-spacing:2px;margin-top:6px}
+.kills{font-family:var(--f-glyph);font-size:11px;color:var(--dim);margin-top:2px}
+.wx{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px;max-width:58%;pointer-events:auto}
+.wx button{font-family:var(--f-glyph);font-size:11px;background:rgba(22,19,28,.88);color:var(--dim);
+  border:1px solid var(--edge);padding:7px 8px;border-radius:2px;cursor:pointer}
+.wx button[aria-pressed="true"]{color:var(--bone);border-color:var(--ember)}
+.wx button:focus-visible,.act:focus-visible{outline:2px solid var(--frost);outline-offset:2px}
+.log{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:120px;
+  bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:3px;pointer-events:none}
+.log p{margin:0;font-size:14px;font-style:italic;color:var(--bone);text-shadow:0 1px 3px #000;transition:opacity 1.2s}
+.log p.old{opacity:0}
+.acts{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;gap:10px}
+.act{width:66px;height:66px;border-radius:50%;border:1px solid var(--edge);background:rgba(22,19,28,.82);color:var(--bone);
+  display:grid;place-items:center;align-content:center;gap:0;cursor:pointer;position:relative;overflow:hidden;touch-action:none}
+.act i{font-style:normal;font-family:var(--f-glyph);font-size:24px;line-height:1;color:var(--ember)}
+.act small{font-family:var(--f-title);font-size:9px;letter-spacing:.12em}
+.act::after{content:"";position:absolute;inset:0;background:rgba(8,7,11,.72);transform:scaleY(var(--cd,0));transform-origin:bottom}
+.stick{position:fixed;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;border:1px dashed var(--edge);pointer-events:none;display:none}
+.stick .knob{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;
+  background:rgba(217,205,181,.14);border:1px solid var(--dim)}
+.help{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,calc(100% - 32px));
+  background:rgba(22,19,28,.94);border:1px solid var(--edge);padding:18px 18px 14px;pointer-events:none}
+.help h1{font-family:var(--f-title);font-size:18px;letter-spacing:.14em;margin:0 0 6px;text-wrap:balance}
+.help p{margin:0 0 10px;font-size:14px;line-height:1.45;color:var(--bone)}
+.help dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0 0 12px;font-size:13px}
+.help dt{font-family:var(--f-glyph);color:var(--ember)}
+.help dd{margin:0;color:var(--dim)}
+.help .go{font-family:var(--f-glyph);font-size:11px;color:var(--dim);letter-spacing:.08em}
+.help.gone{display:none}
+@media (prefers-reduced-motion:reduce){.log p{transition:none}}
+</style>
+
+<canvas id="game" aria-label="El mundo de Velgrim, dibujado solo con caracteres"></canvas>
+<div class="vig"></div>
+<header class="top">
+  <div class="brand">
+    <b>VELGRIM</b>
+    <span class="sub" id="sub">modo glifo · prototipo</span>
+    <div class="hp" id="hp" aria-label="Vida"></div>
+    <div class="kills" id="kills"></div>
+  </div>
+  <div class="wx" role="group" aria-label="Clima">
+    <button id="w-clear" data-w="clear">1 Despejado</button>
+    <button id="w-rain" data-w="rain">2 Lluvia</button>
+    <button id="w-storm" data-w="storm">3 Tormenta</button>
+    <button id="w-fog" data-w="fog">4 Niebla</button>
+  </div>
+</header>
+<div class="log" id="log" aria-live="polite"></div>
+<div class="acts">
+  <button class="act" id="b-fire" aria-label="Brasa (K)"><i>*</i><small>BRASA</small></button>
+  <button class="act" id="b-slash" aria-label="Tajo (Espacio)"><i>/</i><small>TAJO</small></button>
+</div>
+<div class="stick" id="stick"><div class="knob" id="knob"></div></div>
+<div class="help" id="help">
+  <h1>MODO GLIFO</h1>
+  <p>Todo lo que ves es texto: el pasto, el agua, la lluvia, el fuego y los aparecidos. Cada letra tiene física propia.</p>
+  <dl>
+    <dt>WASD</dt><dd>moverse (en el celu: arrastrá a la izquierda)</dd>
+    <dt>Espacio</dt><dd>Tajo, corta pasto y símbolos en el aire</dd>
+    <dt>K</dt><dd>Brasa, prende el pasto seco</dd>
+    <dt>1–4</dt><dd>cambiar el clima</dd>
+  </dl>
+  <span class="go">tocá o apretá una tecla para empezar</span>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ───────────────────────── Canvas + atlas de glifos ─────────────────────────
+// Cada glifo se rasteriza una sola vez por (carácter, color cuantizado) en un atlas
+// y después se copia con drawImage: miles de celdas por frame sin fillText.
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d', { alpha: false });
+const bgc = document.createElement('canvas');
+const bctx = bgc.getContext('2d');
+const atlas = document.createElement('canvas');
+atlas.width = atlas.height = 2048;
+const actx = atlas.getContext('2d');
+const FONT = '"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace';
+const REF = 12; // filas extra arriba de la vista: de ahí sale el reflejo del agua
+
+let dpr = 1, W = 0, H = 0, fs = 16, cw = 10, chh = 16, ASP = 1.6, cols = 0, rows = 0;
+let slotW = 0, slotH = 0, perRow = 0, maxSlots = 0, nextSlot = 0;
+const cache = new Map();
+const gids = new Map();
+
+function atlasReset() {
+  slotW = Math.ceil(cw * 1.7); slotH = Math.ceil(chh * 1.25);
+  perRow = Math.floor(2048 / slotW);
+  maxSlots = perRow * Math.floor(2048 / slotH);
+  nextSlot = 0; cache.clear();
+  actx.clearRect(0, 0, 2048, 2048);
+  actx.font = `${fs}px ${FONT}`;
+  actx.textAlign = 'center'; actx.textBaseline = 'middle';
+}
+function gid(c) { let i = gids.get(c); if (i === undefined) { i = gids.size; gids.set(c, i); } return i; }
+function glyph(c, px, py, r, g, b) {
+  r = r < 0 ? 0 : r > 255 ? 255 : r | 0;
+  g = g < 0 ? 0 : g > 255 ? 255 : g | 0;
+  b = b < 0 ? 0 : b > 255 ? 255 : b | 0;
+  const q = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+  if (q === 0) return;
+  const key = gid(c) * 4096 + q;
+  let s = cache.get(key);
+  if (s === undefined) {
+    if (nextSlot >= maxSlots) atlasReset();
+    s = nextSlot++;
+    const sx = (s % perRow) * slotW, sy = ((s / perRow) | 0) * slotH;
+    actx.fillStyle = `rgb(${(r >> 4) * 17},${(g >> 4) * 17},${(b >> 4) * 17})`;
+    actx.fillText(c, sx + slotW / 2, sy + slotH / 2);
+    cache.set(key, s);
+  }
+  ctx.drawImage(atlas, (s % perRow) * slotW, ((s / perRow) | 0) * slotH, slotW, slotH,
+    (px - slotW / 2) | 0, (py - slotH / 2) | 0, slotW, slotH);
+}
+
+// ───────────────────────── Ruido ─────────────────────────
+function hash(x, y) {
+  let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function vnoise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function fbm(x, y) { return vnoise(x, y) * 0.6 + vnoise(x * 2.1, y * 2.1) * 0.3 + vnoise(x * 4.3, y * 4.3) * 0.1; }
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+// ───────────────────────── Mundo ─────────────────────────
+const WW = 160, WH = 110;
+const GRASS = 0, PATH = 1, WATER = 2, TREE = 3, WALL = 4, FLOOR = 5, FIRE = 6, ROCK = 7, GRAVE = 8, DEAD = 9;
+const OPQ   = [0, 0, 0, .55, 1, 0, 0, .3, .15, .35]; // cuánto tapa la luz cada tile
+const SOLID = [0, 0, 1, 1, 1, 0, 1, 1, 1, 1];
+const N = WW * WH;
+const tile = new Uint8Array(N), tall = new Uint8Array(N), shore = new Uint8Array(N);
+const ga = new Float32Array(N), gv = new Float32Array(N), flat = new Float32Array(N);
+const burn = new Float32Array(N), ash = new Float32Array(N);
+const burning = [], ashes = [];
+const T = (x, y) => (x < 0 || y < 0 || x >= WW || y >= WH) ? TREE : tile[y * WW + x];
+
+const SX = 70, SY = 52;           // spawn
+const FX = SX - 5, FY = SY - 1;   // fogata
+const RX = SX + 18, RY = SY - 17, RWD = 17, RHT = 10; // ruinas
+
+(function gen() {
+  const lcx = SX + 3, lcy = SY + 12;
+  for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
+    const i = y * WW + x, n = fbm(x * .055, y * .055);
+    let t = GRASS;
+    if (n > .64) t = TREE; else if (n < .27) t = WATER;
+    if (t === GRASS && hash(x, y) > .988) t = ROCK;
+    const lx = (x - lcx) / 17, ly = (y - lcy) / 6.5;
+    if (lx * lx + ly * ly + (vnoise(x * .25, y * .25) - .5) * .5 < 1) t = WATER;
+    if (x < 3 || y < 3 || x >= WW - 3 || y >= WH - 3) t = TREE;
+    tile[i] = t;
+    tall[i] = fbm(x * .13 + 40, y * .13 + 9) > .47 ? 1 : 0;
+    ga[i] = rnd(-.2, .2);
+  }
+  // camino
+  for (let x = 3; x < WW - 3; x++) {
+    const py = SY - 4 + Math.round(Math.sin(x * .07) * 2 + Math.sin(x * .023) * 3);
+    for (let d = 0; d < 2; d++) { const i = (py + d) * WW + x; if (tile[i] !== WATER) tile[i] = PATH; }
+  }
+  // árboles en la orilla norte del lago: son los que se reflejan
+  for (let y = 2; y < WH; y++) for (let x = 0; x < WW; x++) {
+    const i = y * WW + x;
+    if (tile[i] !== WATER || tile[i - WW] === WATER) continue;
+    if (Math.abs(x - lcx) > 20 || Math.abs(y - lcy) > 9) continue;
+    if (hash(x, y * 3) > .55 && tile[i - WW] === GRASS) tile[i - WW] = TREE;
+    if (hash(x * 7, y) > .7 && tile[i - 2 * WW] === GRASS) tile[i - 2 * WW] = TREE;
+  }
+  // ruinas
+  for (let y = RY - 1; y <= RY + RHT; y++) for (let x = RX - 1; x <= RX + RWD; x++) {
+    const i = y * WW + x;
+    const inside = x >= RX && x < RX + RWD && y >= RY && y < RY + RHT;
+    if (!inside) { tile[i] = GRASS; continue; }
+    const border = x === RX || x === RX + RWD - 1 || y === RY || y === RY + RHT - 1;
+    const door = y === RY + RHT - 1 && Math.abs(x - (RX + 8)) <= 1;
+    if (border) tile[i] = (door || hash(x, y) > .82) ? FLOOR : WALL;
+    else tile[i] = ((x - RX) % 5 === 2 && (y - RY === 3 || y - RY === 6)) ? WALL : FLOOR;
+  }
+  // tumbas
+  for (let k = 0; k < 6; k++) tile[(RY + 2 + ((k / 3) | 0) * 3) * WW + RX - 7 + (k % 3) * 2] = GRAVE;
+  // claro de la fogata + spawn
+  for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) {
+    const i = (FY + y) * WW + FX + x;
+    if (x * x + y * y <= 8 && tile[i] !== WATER) tile[i] = PATH;
+    const j = (SY + y) * WW + SX + x;
+    if (tile[j] !== PATH) tile[j] = GRASS;
+  }
+  tile[FY * WW + FX] = FIRE;
+  // distancia a la orilla (para el espejo del agua)
+  for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
+    const i = y * WW + x;
+    if (tile[i] === WATER) shore[i] = (y > 0 && tile[i - WW] === WATER) ? Math.min(255, shore[i - WW] + 1) : 1;
+  }
+})();
+
+// ───────────────────────── Glifos ─────────────────────────
+const SHORT = [',', '.', '\'', '"', ',', '`'];
+const FIREG = ['^', '*', '"', '\'', '^', ';'];
+const FLIP = { '/': '\\', '\\': '/', '^': 'v', 'v': '^', '\'': ',', ',': '\'', '`': ',', '"': ',',
+  '.': '\'', '_': '‾', '‾': '_', 'A': 'V', 'V': 'A', 'M': 'W', 'W': 'M', 'n': 'u', 'u': 'n',
+  'm': 'w', 'w': 'm', '†': '+', 'Ψ': 'ᛘ', '(': '(', ')': ')', 'y': 'ʎ', '!': '¡', '?': '¿' };
+const ART = [' .-^-. ', '( o o )', ' )/W\\( ', ' \' \' \' '];
+
+// ───────────────────────── Estado ─────────────────────────
+const P = { x: SX + .5, y: SY + .5, fx: 0, fy: 1, hp: 10, max: 10, inv: 0, dead: 0, cdS: 0, cdF: 0, slash: 0, regen: 0, kills: 0, hurt: 0, sx: 0, sy: 0 };
+const cam = { x: P.x, y: P.y };
+const enemies = [];
+const projs = [], parts = [], drops = [], flashes = [];
+let bolt = [], boltT = 0, flash = 0, nextStrike = 4, thunder = -1, shake = 0;
+let time = 0, weather = 'clear';
+const WEATHER = {
+  clear: { rain: 0,   wind: .35, fog: 0,   amb: [.30, .29, .40], name: 'Despejado' },
+  rain:  { rain: .6,  wind: .7,  fog: .08, amb: [.21, .23, .30], name: 'Lluvia' },
+  storm: { rain: 1,   wind: 1.3, fog: .12, amb: [.12, .13, .19], name: 'Tormenta' },
+  fog:   { rain: .04, wind: .12, fog: .85, amb: [.30, .31, .33], name: 'Niebla' },
+};
+const env = { rain: 0, windBase: .35, wind: .35, fog: 0, amb: [.30, .29, .40] };
+
+function makeEnemy(hx, hy) {
+  const e = { hx, hy, x: hx, y: hy, hp: 4, max: 4, state: 'idle', t: rnd(0, 10), cd: rnd(1.5, 3), tele: 0, dead: 0, fade: 0, burnT: 0, gl: [] };
+  for (let r = 0; r < ART.length; r++) for (let c = 0; c < ART[r].length; c++) {
+    const ch = ART[r][c]; if (ch === ' ') continue;
+    e.gl.push({ ch, ox: c - 3, oy: r - 1.5, x: hx + rnd(-8, 8), y: hy + rnd(-5, 5), vx: 0, vy: 0, st: 'ret', t: 0, wait: 0, eye: ch === 'o' });
+  }
+  return e;
+}
+enemies.push(makeEnemy(RX + 5, RY + 5), makeEnemy(RX + 12, RY + 4), makeEnemy(RX - 4, RY + 9), makeEnemy(SX + 26, SY + 11));
+
+// ───────────────────────── Región de render ─────────────────────────
+let RW = 0, RH = 0, rch = [], rr, rg, rb, lr, lg, lb, emis, isW, bgImg;
+let x0 = 0, y0 = 0, left = 0, top = 0, viewW = 0, viewH = 0;
+function alloc() {
+  RW = cols; RH = rows + REF;
+  const n = RW * RH;
+  rch = new Array(n).fill(' ');
+  rr = new Float32Array(n); rg = new Float32Array(n); rb = new Float32Array(n);
+  lr = new Float32Array(n); lg = new Float32Array(n); lb = new Float32Array(n);
+  emis = new Uint8Array(n); isW = new Uint8Array(n);
+  bgc.width = RW; bgc.height = rows;
+  bgImg = bctx.createImageData(RW, rows);
+}
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  const cssW = window.innerWidth, cssH = window.innerHeight;
+  W = cv.width = Math.max(1, Math.round(cssW * dpr));
+  H = cv.height = Math.max(1, Math.round(cssH * dpr));
+  const base = clamp(Math.min(cssW, cssH) / 27, 12, 19);
+  fs = Math.round(base * dpr); cw = Math.round(fs * .6); chh = Math.round(fs * 1.02); ASP = chh / cw;
+  cols = Math.ceil(W / cw) + 2; rows = Math.ceil(H / chh) + 2;
+  alloc(); atlasReset();
+}
+window.addEventListener('resize', resize);
+
+// ───────────────────────── UI ─────────────────────────
+const $ = id => document.getElementById(id);
+const logEl = $('log');
+function say(text) {
+  const p = document.createElement('p'); p.textContent = text;
+  logEl.appendChild(p);
+  while (logEl.children.length > 3) logEl.removeChild(logEl.firstChild);
+  setTimeout(() => p.classList.add('old'), 5500);
+  setTimeout(() => p.remove(), 7000);
+}
+function setWeather(w) {
+  if (!WEATHER[w] || (w === weather && time > 0)) return;
+  weather = w;
+  for (const b of document.querySelectorAll('.wx button')) b.setAttribute('aria-pressed', String(b.dataset.w === w));
+  const lines = { clear: 'El cielo se abre. Las estrellas no dicen nada.', rain: 'Empieza a llover. El agua borra las brasas.',
+    storm: 'Se viene la tormenta. Cuidado con los árboles.', fog: 'La niebla se come el mundo, letra por letra.' };
+  if (time > 0) say(lines[w]);
+  if (w === 'storm') nextStrike = 2;
+}
+for (const b of document.querySelectorAll('.wx button')) b.addEventListener('click', e => { e.stopPropagation(); setWeather(b.dataset.w); hideHelp(); });
+let helpOn = true;
+function hideHelp() { if (!helpOn) return; helpOn = false; $('help').classList.add('gone'); }
+
+// ───────────────────────── Input ─────────────────────────
+const keys = new Set();
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  hideHelp();
+  if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
+  if (e.repeat) return;
+  keys.add(k);
+  if (k === ' ' || k === 'j') slash();
+  if (k === 'k') castFire();
+  if ('1234'.includes(k) && k.length === 1) setWeather(['clear', 'rain', 'storm', 'fog'][+k - 1]);
+});
+window.addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+window.addEventListener('blur', () => keys.clear());
+
+const stick = { id: null, ox: 0, oy: 0, dx: 0, dy: 0 };
+const stickEl = $('stick'), knobEl = $('knob');
+cv.addEventListener('pointerdown', e => {
+  hideHelp();
+  if (e.pointerType !== 'mouse' && e.clientX < window.innerWidth * .55 && stick.id === null) {
+    stick.id = e.pointerId; stick.ox = e.clientX; stick.oy = e.clientY; stick.dx = stick.dy = 0;
+    stickEl.style.left = e.clientX + 'px'; stickEl.style.top = e.clientY + 'px'; stickEl.style.display = 'block';
+    knobEl.style.transform = 'translate(0,0)';
+    cv.setPointerCapture(e.pointerId);
+  } else {
+    // tocar/clickear el mundo: tajo hacia ese punto
+    const dx = (e.clientX * dpr - P.sx) / cw, dy = (e.clientY * dpr - P.sy) / cw, d = Math.hypot(dx, dy);
+    if (d > .3) { P.fx = dx / d; P.fy = dy / d; }
+    slash();
+  }
+});
+cv.addEventListener('pointermove', e => {
+  if (e.pointerId !== stick.id) return;
+  let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy;
+  const d = Math.hypot(dx, dy), m = 48;
+  if (d > m) { dx *= m / d; dy *= m / d; }
+  stick.dx = dx / m; stick.dy = dy / m;
+  knobEl.style.transform = `translate(${dx}px,${dy}px)`;
+});
+const endStick = e => { if (e.pointerId !== stick.id) return; stick.id = null; stick.dx = stick.dy = 0; stickEl.style.display = 'none'; };
+cv.addEventListener('pointerup', endStick);
+cv.addEventListener('pointercancel', endStick);
+const bind = (id, fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); hideHelp(); fn(); });
+bind('b-slash', () => slash());
+bind('b-fire', () => castFire());
+
+// ───────────────────────── Partículas ─────────────────────────
+function part(x, y, vx, vy, life, ch, r, g, b, o = {}) {
+  if (parts.length > 700) return;
+  parts.push({ x, y, vx, vy, t: 0, life, ch, r, g, b, drag: o.drag ?? 2, rise: o.rise ?? 0, text: o.text || null, ground: !!o.ground });
+}
+function floater(x, y, text, r, g, b) { part(x, y - .6, 0, -1.6, 1, '', r, g, b, { text, drag: .5 }); }
+
+// ───────────────────────── Fuego ─────────────────────────
+function ignite(i) {
+  if (burn[i] > 0 || ash[i] > 0 || burning.length > 380) return;
+  const t = tile[i];
+  if (t !== GRASS && t !== TREE) return;
+  burn[i] = t === TREE ? rnd(5, 8) : rnd(1.8, 3.2);
+  burning.push(i);
+}
+function igniteArea(x, y, rad) {
+  for (let yy = Math.floor(y - rad); yy <= y + rad; yy++) for (let xx = Math.floor(x - rad); xx <= x + rad; xx++) {
+    if (xx < 0 || yy < 0 || xx >= WW || yy >= WH) continue;
+    if (Math.hypot(xx + .5 - x, (yy + .5 - y) * ASP) <= rad * 1.3) ignite(yy * WW + xx);
+  }
+}
+let burnAcc = 0;
+function burnTick() {
+  const wdir = Math.sign(env.wind);
+  for (let k = burning.length - 1; k >= 0; k--) {
+    const i = burning[k];
+    burn[i] -= .1 * (1 + env.rain * 1.6);
+    const x = i % WW, y = (i / WW) | 0;
+    if (burn[i] <= 0) {
+      burn[i] = 0; burning[k] = burning[burning.length - 1]; burning.pop();
+      if (tile[i] === TREE) tile[i] = DEAD; else { ash[i] = 1; ashes.push(i); }
+      continue;
+    }
+    if (Math.random() < .12) part(x + .5, y + .2, env.wind * .8, -1.2, rnd(1, 2), Math.random() < .5 ? '.' : '°', 90, 86, 92, { drag: .3 });
+    for (let d = 0; d < 4; d++) {
+      const nx = x + (d === 0 ? 1 : d === 1 ? -1 : 0), ny = y + (d === 2 ? 1 : d === 3 ? -1 : 0);
+      if (nx < 0 || ny < 0 || nx >= WW || ny >= WH) continue;
+      const j = ny * WW + nx, t = tile[j];
+      if (burn[j] > 0 || ash[j] > 0) continue;
+      let p = t === GRASS ? (tall[j] ? .085 : .045) : t === TREE ? .025 : 0;
+      if (!p) continue;
+      if (flat[j] > .6) p *= .35;
+      if (nx - x !== 0) p *= (nx - x) === wdir ? 1 + Math.abs(env.wind) : .6;
+      p *= 1 - env.rain * .85;
+      if (Math.random() < p) ignite(j);
+    }
+  }
+  for (let k = ashes.length - 1; k >= 0; k--) {
+    const i = ashes[k];
+    ash[i] -= .1 / 45;
+    if (ash[i] <= 0) { ash[i] = 0; flat[i] = 0; ga[i] = 0; ashes[k] = ashes[ashes.length - 1]; ashes.pop(); }
+  }
+}
+// fogata: autómata de calor sobre una grilla chica
+const FW = 9, FH = 7;
+const heat = new Float32Array(FW * (FH + 1));
+let fireAcc = 0;
+function fireTick() {
+  const base = FH * FW;
+  for (let x = 0; x < FW; x++) heat[base + x] = rnd(.6, 1.05) * Math.max(0, 1 - Math.abs(x - 4) / 4.5) * (1 - env.rain * .45);
+  const wl = clamp(env.wind * .45, -.8, .8);
+  for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
+    const b = (y + 1) * FW;
+    const l = heat[b + Math.max(0, x - 1)], m = heat[b + x], r = heat[b + Math.min(FW - 1, x + 1)];
+    heat[y * FW + x] = Math.max(0, (l * (1 + wl) + m * 1.15 + r * (1 - wl)) / 3.12 - rnd(.025, .085));
+  }
+  if (Math.random() < .5) part(FX + .5 + rnd(-.5, .5), FY - 1, env.wind * 1.2 + rnd(-.4, .4), rnd(-2.6, -1.4), rnd(.8, 1.8), Math.random() < .7 ? '.' : '\'', 255, 140, 50, { drag: .4 });
+}
+
+// ───────────────────────── Combate ─────────────────────────
+function slash() {
+  if (P.cdS > 0 || P.dead > 0) return;
+  P.cdS = .36; P.slash = .2;
+  flashes.push({ x: P.x + P.fx, y: P.y + P.fy / ASP, t: .12, r: .5, g: .5, b: .6, rad: 4 });
+  for (const e of enemies) {
+    if (e.state === 'dead') continue;
+    const dx = e.x - P.x, dy = (e.y - P.y) * ASP, d = Math.hypot(dx, dy) || 1;
+    if (d < 3.6 && (dx * P.fx + dy * P.fy) / d > .2) hitEnemy(e, 1, P.x, P.y);
+    for (const g of e.gl) {
+      if (g.st !== 'fly' || g.wait > 0) continue;
+      const gx = g.x - P.x, gy = (g.y - P.y) * ASP, gd = Math.hypot(gx, gy) || 1;
+      if (gd < 3.2 && (gx * P.fx + gy * P.fy) / gd > 0) {
+        g.st = 'sc'; g.t = .5; g.vx = gx / gd * 10; g.vy = gy / gd * 10 / ASP;
+        for (let s = 0; s < 3; s++) part(g.x, g.y, rnd(-6, 6), rnd(-4, 4), .3, '+', 230, 230, 255, { drag: 4 });
+      }
+    }
+  }
+  // el tajo corta el pasto alto
+  for (let yy = Math.floor(P.y - 2); yy <= P.y + 2; yy++) for (let xx = Math.floor(P.x - 3); xx <= P.x + 3; xx++) {
+    const dx = xx + .5 - P.x, dy = (yy + .5 - P.y) * ASP, d = Math.hypot(dx, dy) || 1;
+    if (d > 2.8 || (dx * P.fx + dy * P.fy) / d < .3) continue;
+    const i = yy * WW + xx;
+    if (tile[i] === GRASS && tall[i] && flat[i] < .6 && !burn[i] && !ash[i]) {
+      flat[i] = 1;
+      if (Math.random() < .5) part(xx + .5, yy + .5, P.fx * rnd(2, 5) + rnd(-1, 1), P.fy * rnd(1, 3) / ASP - 1, .6, Math.random() < .5 ? ',' : '\'', 80, 130, 64, { drag: 3 });
+    }
+  }
+}
+function castFire() {
+  if (P.cdF > 0 || P.dead > 0) return;
+  P.cdF = 1.1;
+  projs.push({ x: P.x + P.fx * .6, y: P.y + P.fy * .6 / ASP, vx: P.fx * 15, vy: P.fy * 15 / ASP, t: .75 });
+}
+function explode(x, y) {
+  const t = T(Math.floor(x), Math.floor(y));
+  if (t === WATER) {
+    for (let s = 0; s < 10; s++) part(x, y, rnd(-3, 3), rnd(-3, 0), rnd(.6, 1.2), '°', 170, 175, 190, { drag: 1.5 });
+  } else {
+    igniteArea(x, y, 1.7);
+    for (let s = 0; s < 16; s++) part(x, y, rnd(-7, 7), rnd(-5, 4), rnd(.3, .7), Math.random() < .5 ? '*' : '.', 255, rnd(90, 200), 40, { drag: 3 });
+  }
+  flashes.push({ x, y, t: .3, r: 1.2, g: .6, b: .2, rad: 8 });
+  for (const e of enemies) {
+    if (e.state === 'dead') continue;
+    if (Math.hypot(e.x - x, (e.y - y) * ASP) < 2.6) hitEnemy(e, 2, x, y);
+  }
+}
+function hitEnemy(e, dmg, fx, fy) {
+  if (e.state === 'dead') return;
+  e.hp -= dmg;
+  floater(e.x, e.y - 2, '-' + dmg, 255, 210, 120);
+  for (const g of e.gl) {
+    if (g.st === 'fly') continue;
+    const dx = g.x - fx, dy = (g.y - fy) * ASP, d = Math.hypot(dx, dy) || 1, s = rnd(6, 12);
+    g.vx = dx / d * s; g.vy = dy / d * s / ASP; g.st = 'sc'; g.t = rnd(.22, .4);
+  }
+  e.tele = 0;
+  if (e.hp <= 0) {
+    e.state = 'dead'; e.dead = 6; P.kills++; shake = Math.max(shake, .25);
+    for (const g of e.gl) { const a = rnd(0, Math.PI * 2), s = rnd(2, 8); g.vx = Math.cos(a) * s; g.vy = Math.sin(a) * s / ASP; g.st = 'd'; g.t = 0; }
+    say(P.kills === 1 ? 'El aparecido se deshace en letras sueltas. Ya van a volver a juntarse.' : 'Otro aparecido se desarma.');
+    updateHud();
+  }
+}
+let toldLaunch = false;
+function launch(e) {
+  const pool = e.gl.filter(g => g.st === 'b' && !g.eye);
+  for (let i = pool.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  pool.slice(0, 6).forEach((g, k) => { g.st = 'fly'; g.wait = k * .07; g.t = 1.25; });
+  if (!toldLaunch) { toldLaunch = true; say('El aparecido se desarma y te tira sus propias letras. Cortalas en el aire.'); }
+}
+function hurt(d, sx, sy) {
+  if (P.dead > 0 || P.inv > 0) return;
+  P.hp -= d; P.inv = .55; P.hurt = .3; shake = Math.max(shake, .22);
+  floater(P.x, P.y - 1, '-' + d, 255, 70, 70);
+  const dx = P.x - sx, dy = (P.y - sy) * ASP, dd = Math.hypot(dx, dy) || 1;
+  tryMove(dx / dd * .5, dy / dd * .5 / ASP);
+  if (P.hp <= 0) { P.hp = 0; P.dead = 2.5; say('Caés. El fuego te llama de vuelta.'); }
+  updateHud();
+}
+
+// ───────────────────────── Clima ─────────────────────────
+function strike() {
+  const tx = left + rnd(4, viewW - 4), ty = top + rnd(viewH * .3, viewH * .85);
+  bolt = [];
+  let x = tx + rnd(-5, 5);
+  for (let y = Math.floor(top) - 1; y <= ty; y++) {
+    const rem = ty - y, pull = Math.sign(tx - x) * (rem < 6 ? 1 : 0);
+    const dx = pull || (Math.random() < .33 ? -1 : Math.random() < .5 ? 0 : 1);
+    bolt.push({ x: x + .5, y: y + .5, ch: dx < 0 ? '/' : dx > 0 ? '\\' : '|' });
+    x += dx;
+  }
+  boltT = .3; flash = 1.2; thunder = .35;
+  const cx = Math.floor(tx), cy = Math.floor(ty), t = T(cx, cy);
+  if (t === GRASS || t === TREE) { igniteArea(cx + .5, cy + .5, 1.2); ignite(cy * WW + cx); }
+  for (let s = 0; s < 18; s++) part(cx + .5, cy + .5, rnd(-8, 8), rnd(-6, 3), rnd(.2, .6), '*', 230, 235, 255, { drag: 3 });
+  for (const e of enemies) if (e.state !== 'dead' && Math.hypot(e.x - tx, (e.y - ty) * ASP) < 3.5) hitEnemy(e, 2, tx, ty);
+  if (Math.hypot(P.x - tx, (P.y - ty) * ASP) < 1.8) hurt(2, tx, ty);
+}
+
+// ───────────────────────── Update ─────────────────────────
+function tryMove(dx, dy) {
+  const nx = P.x + dx, ny = P.y + dy;
+  if (!SOLID[T(Math.floor(nx), Math.floor(P.y))]) P.x = nx;
+  if (!SOLID[T(Math.floor(P.x), Math.floor(ny))]) P.y = ny;
+}
+function updateHud() {
+  const full = Math.ceil(P.hp / 2), tot = P.max / 2;
+  $('hp').textContent = '♥'.repeat(full) + '♡'.repeat(Math.max(0, tot - full));
+  $('kills').textContent = P.kills ? `aparecidos deshechos: ${P.kills}` : '';
+}
+function update(dt) {
+  time += dt;
+  const w = WEATHER[weather], k = Math.min(1, dt * .8);
+  env.rain += (w.rain - env.rain) * k;
+  env.windBase += (w.wind - env.windBase) * k;
+  env.fog += (w.fog - env.fog) * k;
+  for (let c = 0; c < 3; c++) env.amb[c] += (w.amb[c] - env.amb[c]) * k;
+  env.wind = env.windBase * (.55 + .8 * vnoise(time * .25, 7.3));
+
+  // jugador
+  if (P.dead > 0) {
+    P.dead -= dt;
+    if (P.dead <= 0) { P.x = FX + .5; P.y = FY + 2.5; P.hp = P.max; P.inv = 1.5; updateHud(); say('Volvés junto al fuego.'); }
+  } else {
+    let ix = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
+    let iy = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
+    if (Math.hypot(stick.dx, stick.dy) > .15) { ix = stick.dx; iy = stick.dy; }
+    const m = Math.hypot(ix, iy);
+    if (m > 0) {
+      if (m > 1) { ix /= m; iy /= m; }
+      P.fx = ix / Math.max(m, .001); P.fy = iy / Math.max(m, .001);
+      const n = Math.hypot(P.fx, P.fy); P.fx /= n; P.fy /= n;
+      tryMove(ix * 7 * dt, iy * 7 * dt / ASP);
+    }
+    P.regen += dt;
+    if (P.regen > 4 && P.hp < P.max) { P.regen = 0; P.hp++; updateHud(); }
+    const pi = Math.floor(P.y) * WW + Math.floor(P.x);
+    if (burn[pi] > 0) hurt(1, P.x, P.y + .1);
+  }
+  P.inv = Math.max(0, P.inv - dt); P.hurt = Math.max(0, P.hurt - dt);
+  P.cdS = Math.max(0, P.cdS - dt); P.cdF = Math.max(0, P.cdF - dt); P.slash = Math.max(0, P.slash - dt);
+  $('b-slash').style.setProperty('--cd', (P.cdS / .36).toFixed(2));
+  $('b-fire').style.setProperty('--cd', (P.cdF / 1.1).toFixed(2));
+
+  const ck = Math.min(1, dt * 5);
+  cam.x += (P.x - cam.x) * ck; cam.y += (P.y - cam.y) * ck;
+
+  // pasto: resorte por celda empujado por viento + criaturas
+  const pushers = [{ x: P.x, y: P.y, s: 1, tr: P.dead <= 0 }];
+  for (const e of enemies) if (e.state !== 'dead') pushers.push({ x: e.x, y: e.y + 1.5, s: 1.8, tr: false });
+  for (const p of projs) pushers.push({ x: p.x, y: p.y, s: 1.2, tr: false });
+  const gy0 = Math.max(0, y0 - REF), gy1 = Math.min(WH - 1, y0 + rows), gx0 = Math.max(0, x0 - 1), gx1 = Math.min(WW - 1, x0 + cols);
+  const wsp = .6 + env.windBase * 1.6, damp = Math.max(0, 1 - 5 * dt);
+  for (let y = gy0; y <= gy1; y++) for (let x = gx0; x <= gx1; x++) {
+    const i = y * WW + x;
+    if (tile[i] !== GRASS || burn[i] > 0 || ash[i] > 0) continue;
+    let tgt = env.wind * (vnoise(x * .11 - time * wsp, y * .18 + time * .1) * 1.5 - .25);
+    for (const p of pushers) {
+      const dx = x + .5 - p.x, dy = (y + .5 - p.y) * ASP, d2 = dx * dx + dy * dy, R = 2 * p.s;
+      if (d2 < R * R) {
+        tgt += (dx >= 0 ? 1 : -1) * (R - Math.sqrt(d2)) * .9;
+        if (p.tr && d2 < .8 && tall[i]) flat[i] = Math.min(1, flat[i] + dt * 2.5);
+      }
+    }
+    gv[i] += (tgt - ga[i]) * 30 * dt; gv[i] *= damp; ga[i] += gv[i] * dt;
+    if (flat[i] > 0) flat[i] = Math.max(0, flat[i] - dt * .04);
+  }
+
+  burnAcc += dt; while (burnAcc >= .1) { burnAcc -= .1; burnTick(); }
+  fireAcc += dt; while (fireAcc >= 1 / 30) { fireAcc -= 1 / 30; fireTick(); }
+
+  // aparecidos
+  for (const e of enemies) {
+    e.t += dt;
+    if (e.state === 'dead') {
+      e.dead -= dt;
+      for (const g of e.gl) { g.x += g.vx * dt; g.y += g.vy * dt; g.vx *= 1 - 1.5 * dt; g.vy *= 1 - 1.5 * dt; g.t += dt; }
+      if (e.dead <= 0) {
+        e.state = 'idle'; e.hp = e.max; e.x = e.hx; e.y = e.hy; e.fade = 0; e.cd = 2;
+        for (const g of e.gl) { g.st = 'ret'; g.x = e.x + rnd(-9, 9); g.y = e.y + rnd(-6, 6); g.vx = g.vy = 0; }
+      }
+      continue;
+    }
+    e.fade = Math.min(1, e.fade + dt * .7);
+    const dx = P.x - e.x, dyM = (P.y - e.y) * ASP, dM = Math.hypot(dx, dyM) || 1;
+    const aggro = P.dead <= 0 && dM < 15;
+    let mx, my;
+    if (aggro) {
+      const nx = dx / dM, ny = dyM / dM, want = dM > 7 ? 1 : dM < 4.5 ? -.7 : 0, orb = Math.sin(e.t * .7 + e.hx) * 1.1;
+      mx = nx * want * 2.6 - ny * orb; my = ny * want * 2.6 + nx * orb;
+    } else {
+      mx = (e.hx - e.x) * .4 + Math.sin(e.t * .5) * .8; my = (e.hy - e.y) * ASP * .4 + Math.cos(e.t * .37) * .6;
+    }
+    if (e.tele > 0) { mx *= .15; my *= .15; }
+    e.x += mx * dt; e.y += my * dt / ASP;
+    e.cd -= dt;
+    if (aggro && dM < 10.5 && e.cd <= 0 && e.tele <= 0) e.tele = .75;
+    if (e.tele > 0) { e.tele -= dt; if (e.tele <= 0) { launch(e); e.cd = rnd(2.4, 3.8); } }
+    const ei = Math.floor(e.y + 1) * WW + Math.floor(e.x);
+    if (burn[ei] > 0) { e.burnT -= dt; if (e.burnT <= 0) { e.burnT = .6; hitEnemy(e, 1, e.x, e.y + 1); } }
+
+    for (const g of e.gl) {
+      const tx = e.x + g.ox + Math.sin(e.t * 2.2 + g.oy * 1.3) * .14, ty = e.y + g.oy + Math.cos(e.t * 1.7 + g.ox) * .07;
+      if (g.st === 'fly' && g.wait > 0) {
+        g.wait -= dt; g.x = tx; g.y = ty;
+        if (g.wait <= 0) {
+          const ax = P.x - g.x, ay = (P.y - g.y) * ASP, ad = Math.hypot(ax, ay) || 1, sp = rnd(-.2, .2);
+          const c = Math.cos(sp), s = Math.sin(sp), ux = (ax * c - ay * s) / ad, uy = (ax * s + ay * c) / ad;
+          g.vx = ux * 12; g.vy = uy * 12 / ASP;
+        }
+        continue;
+      }
+      if (g.st === 'b') {
+        const kk = Math.min(1, dt * 14);
+        g.x += (tx - g.x) * kk; g.y += (ty - g.y) * kk;
+        if (e.tele > 0) g.x += rnd(-.12, .12);
+      } else if (g.st === 'fly') {
+        g.x += g.vx * dt; g.y += g.vy * dt; g.t -= dt;
+        if (Math.random() < .35) part(g.x, g.y, 0, 0, .25, g.ch, 160, 120, 200, { drag: 0 });
+        if (P.dead <= 0 && Math.hypot(g.x - P.x, (g.y - P.y) * ASP) < .85) { hurt(1, g.x, g.y); g.st = 'ret'; }
+        if (g.t <= 0 || T(Math.floor(g.x), Math.floor(g.y)) === WALL) g.st = 'ret';
+      } else if (g.st === 'sc') {
+        g.x += g.vx * dt; g.y += g.vy * dt; g.vx *= 1 - 4 * dt; g.vy *= 1 - 4 * dt; g.t -= dt;
+        if (g.t <= 0) g.st = 'ret';
+      } else if (g.st === 'ret') {
+        g.vx += (tx - g.x) * 38 * dt; g.vy += (ty - g.y) * 38 * dt;
+        const dd = Math.max(0, 1 - 5 * dt); g.vx *= dd; g.vy *= dd;
+        g.x += g.vx * dt; g.y += g.vy * dt;
+        if (Math.abs(tx - g.x) < .15 && Math.abs(ty - g.y) < .15) g.st = 'b';
+      }
+    }
+  }
+
+  // proyectiles
+  for (let i = projs.length - 1; i >= 0; i--) {
+    const p = projs[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.t -= dt;
+    part(p.x, p.y, rnd(-.5, .5), rnd(-.5, .5), .35, Math.random() < .5 ? '.' : '\'', 255, 150, 60, { drag: 2 });
+    const cx = Math.floor(p.x), cy = Math.floor(p.y), t = T(cx, cy);
+    let boom = p.t <= 0;
+    if (SOLID[t] && t !== WATER && t !== FIRE) { boom = true; if (t === TREE) ignite(cy * WW + cx); }
+    for (const e of enemies) if (e.state !== 'dead' && Math.hypot(e.x - p.x, (e.y - p.y) * ASP) < 1.6) boom = true;
+    if (boom) { explode(p.x, p.y); projs.splice(i, 1); }
+  }
+
+  // partículas
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const q = parts[i];
+    q.t += dt;
+    if (q.t >= q.life) { parts[i] = parts[parts.length - 1]; parts.pop(); continue; }
+    const d = Math.max(0, 1 - q.drag * dt);
+    q.vx *= d; q.vy *= d; q.x += q.vx * dt; q.y += q.vy * dt;
+  }
+  for (let i = flashes.length - 1; i >= 0; i--) { flashes[i].t -= dt; if (flashes[i].t <= 0) flashes.splice(i, 1); }
+
+  // lluvia
+  const want = Math.round(env.rain * 300 * (viewW * viewH) / 3200);
+  while (drops.length < want) drops.push({ x: left + rnd(-2, viewW + 2), y: top + rnd(-2, viewH + 4), z: rnd(0, 16) });
+  if (drops.length > want) drops.length = want;
+  for (const d of drops) {
+    d.z -= 28 * dt;
+    if (d.z <= 0 || d.x < left - 4 || d.x > left + viewW + 4 || d.y < top - 4 || d.y > top + viewH + 8) {
+      if (d.z <= 0) {
+        const t = T(Math.floor(d.x), Math.floor(d.y));
+        if (t === WATER) part(d.x, d.y, 0, 0, .4, 'o', 120, 150, 190, { drag: 0, ground: true });
+        else if (Math.random() < .4) part(d.x, d.y, 0, 0, .15, '.', 130, 150, 180, { drag: 0, ground: true });
+      }
+      d.x = left + rnd(-2, viewW + 2); d.y = top + rnd(-2, viewH + 4); d.z = rnd(6, 16);
+    }
+  }
+  // tormenta
+  if (weather === 'storm' && time > 1) { nextStrike -= dt; if (nextStrike <= 0) { strike(); nextStrike = rnd(4, 10); } }
+  if (thunder > 0) { thunder -= dt; if (thunder <= 0) shake = Math.max(shake, .45); }
+  boltT = Math.max(0, boltT - dt);
+  flash = Math.max(0, flash - dt * 3.2);
+  if (boltT > 0 && boltT < .16 && Math.random() < .25) flash = Math.max(flash, .6);
+  shake = Math.max(0, shake - dt);
+}
+
+// ───────────────────────── Luz ─────────────────────────
+function vis(ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay, n = Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)));
+  let v = 1;
+  for (let s = 1; s < n; s++) {
+    const t = s / n, o = OPQ[T(Math.floor(ax + dx * t), Math.floor(ay + dy * t))];
+    if (o) { v *= 1 - o; if (v < .05) return 0; }
+  }
+  return v;
+}
+function addLight(lx, ly, r, g, b, rad, occ) {
+  const ry = rad / ASP, oy = y0 - REF;
+  const ja = Math.max(0, Math.floor(ly - ry) - oy), jb = Math.min(RH - 1, Math.ceil(ly + ry) - oy);
+  const ia = Math.max(0, Math.floor(lx - rad) - x0), ib = Math.min(RW - 1, Math.ceil(lx + rad) - x0);
+  for (let j = ja; j <= jb; j++) {
+    const wy = j + oy, dy = (wy + .5 - ly) * ASP;
+    for (let i = ia; i <= ib; i++) {
+      const wx = i + x0, dx = wx + .5 - lx, d = Math.sqrt(dx * dx + dy * dy);
+      if (d >= rad) continue;
+      let f = 1 - d / rad; f *= f;
+      if (occ) { f *= vis(lx, ly, wx + .5, wy + .5); if (f <= .002) continue; }
+      const k = j * RW + i;
+      lr[k] += r * f; lg[k] += g * f; lb[k] += b * f;
+    }
+  }
+}
+
+// ───────────────────────── Render ─────────────────────────
+let fpsS = 60, cells = 0;
+function render() {
+  viewW = W / cw; viewH = H / chh;
+  const shX = shake > 0 ? rnd(-1, 1) * shake * .9 : 0, shY = shake > 0 ? rnd(-1, 1) * shake * .5 : 0;
+  left = cam.x - viewW / 2 + shX; top = cam.y - viewH / 2 + shY;
+  x0 = Math.floor(left); y0 = Math.floor(top);
+  const fx = (left - x0) * cw, fy = (top - y0) * chh, oy = y0 - REF;
+
+  // 1. glifo + color base de cada celda
+  for (let j = 0; j < RH; j++) {
+    const wy = j + oy;
+    for (let i = 0; i < RW; i++) {
+      const wx = i + x0, k = j * RW + i;
+      let ch = ' ', r = 0, g = 0, b = 0;
+      emis[k] = 0; isW[k] = 0;
+      if (wx < 0 || wy < 0 || wx >= WW || wy >= WH) { ch = '♣'; r = 30; g = 62; b = 38; }
+      else {
+        const ti = wy * WW + wx, t = tile[ti], h = hash(wx, wy);
+        switch (t) {
+          case GRASS:
+            if (burn[ti] > 0) { const f = Math.random(); ch = FIREG[(f * FIREG.length) | 0]; r = 255; g = 80 + f * 130; b = 30; emis[k] = 1; }
+            else if (ash[ti] > 0) {
+              if (ash[ti] < .35) { ch = h < .5 ? ',' : '\''; r = 52; g = 78; b = 46; }
+              else { ch = h < .4 ? '.' : h < .7 ? ',' : ' '; r = 72; g = 64; b = 60; if (ash[ti] > .8 && Math.random() < .03) { ch = '.'; r = 220; g = 90; b = 30; emis[k] = 1; } }
+            } else {
+              const a = ga[ti], sh = Math.min(1, Math.abs(a)) * 40;
+              if (flat[ti] > .55) { ch = h < .5 ? '.' : '_'; r = 58; g = 82; b = 50; }
+              else if (tall[ti]) { ch = a > .42 ? '/' : a < -.42 ? '\\' : '|'; r = 62 + sh * .6; g = 108 + sh; b = 56 + sh * .4; }
+              else { ch = a > .5 ? '\'' : a < -.5 ? '`' : SHORT[(h * SHORT.length) | 0]; r = 54 + sh * .5; g = 88 + sh * .8; b = 50; }
+            }
+            break;
+          case PATH: { const v = .8 + h * .35; ch = h < .55 ? '.' : h < .8 ? '·' : ':'; r = 118 * v; g = 96 * v; b = 68 * v; break; }
+          case WATER: isW[k] = 1; break;
+          case TREE:
+            if (burn[ti] > 0) { ch = h < .55 ? '♣' : '♠'; r = 255; g = rnd(70, 170); b = 30; emis[k] = 1; }
+            else { const s = vnoise(wx * .3 + time * env.windBase * .9, wy * .3) * 26; ch = h < .55 ? '♣' : '♠'; r = 34 + s * .4; g = 80 + s; b = 46; }
+            break;
+          case DEAD: ch = 'Ψ'; r = 74; g = 64; b = 60; break;
+          case WALL: { const v = .85 + h * .3; ch = h < .7 ? '#' : '▓'; r = 130 * v; g = 122 * v; b = 114 * v; break; }
+          case FLOOR: if (h < .12) { ch = ','; r = 60; g = 84; b = 52; } else { ch = h < .6 ? '.' : h < .8 ? '·' : ' '; r = 92; g = 88; b = 84; } break;
+          case FIRE: ch = '≡'; r = 120; g = 64; b = 34; break;
+          case ROCK: ch = h < .5 ? 'o' : 'O'; r = 112; g = 110; b = 118; break;
+          case GRAVE: ch = '†'; r = 158; g = 154; b = 166; break;
+        }
+      }
+      rch[k] = ch; rr[k] = r; rg[k] = g; rb[k] = b;
+    }
+  }
+  // llamas de la fogata
+  for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
+    const hv = heat[y * FW + x]; if (hv < .13) continue;
+    const i = FX - 4 + x - x0, j = FY - FH + y - oy;
+    if (i < 0 || j < 0 || i >= RW || j >= RH) continue;
+    const k = j * RW + i;
+    rch[k] = hv < .25 ? '.' : hv < .4 ? ':' : hv < .55 ? '^' : hv < .7 ? '*' : hv < .85 ? '#' : '&';
+    const t = clamp((hv - .13) / .8, 0, 1);
+    rr[k] = 140 + 115 * Math.min(1, t * 1.6); rg[k] = 30 + 200 * t * t; rb[k] = 15 + 110 * Math.max(0, t - .7) * 3; emis[k] = 1;
+  }
+
+  // 2. luz
+  const amb = env.amb, fl = flash;
+  const ar = amb[0] + fl * .9, ag = amb[1] + fl * .9, ab = amb[2] + fl * 1.1;
+  lr.fill(ar); lg.fill(ag); lb.fill(ab);
+  const fh = heat[(FH - 2) * FW + 4];
+  addLight(FX + .5, FY + .2, 1.1 * (.75 + fh * .4), .55 * (.75 + fh * .4), .2, 12 * (1 - env.rain * .25) + Math.sin(time * 9) * .4, true);
+  if (P.dead <= 0) addLight(P.x, P.y, .55, .45, .32, 7.5, true);
+  for (const e of enemies) {
+    if (e.state === 'dead') continue;
+    const tl = e.tele > 0 ? 1 : 0;
+    addLight(e.x, e.y - .5, .5 + tl * .6, .08, .14 + tl * .1, (3.5 + tl * 3) * e.fade, false);
+  }
+  for (const p of projs) addLight(p.x, p.y, 1, .5, .15, 5, false);
+  for (const f of flashes) addLight(f.x, f.y, f.r, f.g, f.b, f.rad, true);
+  for (const i of burning) {
+    const bx = i % WW, by = (i / WW) | 0;
+    if (bx < x0 - 3 || bx > x0 + RW + 3 || by < oy - 3 || by > oy + RH + 3) continue;
+    addLight(bx + .5, by + .5, .5, .22, .06, 3.2, false);
+  }
+
+  // 3. combinar luz con tierra
+  for (let k = 0; k < RW * RH; k++) {
+    if (isW[k] || emis[k]) continue;
+    rr[k] *= lr[k] * 1.25; rg[k] *= lg[k] * 1.25; rb[k] *= lb[k] * 1.25;
+  }
+
+  // 4. agua: espejo de la orilla con ondas
+  const rip = .45 + env.rain * .7;
+  for (let j = REF; j < RH; j++) {
+    const wy = j + oy;
+    for (let i = 0; i < RW; i++) {
+      const k = j * RW + i; if (!isW[k]) continue;
+      const wx = i + x0, d = shore[wy * WW + wx];
+      const wave = vnoise(wx * .35 + time * .7, wy * .9 - time * .25);
+      const off = Math.round(Math.sin(wy * 1.7 + time * 2.6) * rip + (vnoise(wx * .5, wy * .5 + time * 2) - .5) * env.rain * 2);
+      const sj = j - 2 * d + 1, si = i + off, L = (lr[k] + lg[k] + lb[k]) / 3;
+      let ch, r, g, b;
+      const sk = sj * RW + si;
+      if (d <= 10 && sj >= 0 && si >= 0 && si < RW && !isW[sk] && rch[sk] !== ' ' && wave < .64 - env.rain * .12) {
+        const f = .55 * (1 - d / 11);
+        ch = FLIP[rch[sk]] || rch[sk];
+        r = rr[sk] * f + 16 * lr[k]; g = rg[sk] * f + 34 * lg[k]; b = rb[sk] * f + 70 * lb[k];
+      } else {
+        ch = wave > .62 ? '~' : wave > .48 ? '-' : wave < .3 ? ' ' : '·';
+        r = 40 * lr[k] * 1.3; g = 76 * lg[k] * 1.3; b = 128 * lb[k] * 1.3;
+      }
+      if (hash(wx, wy + Math.floor(time * 3)) > .996 && L > .25) { ch = '*'; r = g = b = 200 * L; }
+      rch[k] = ch; rr[k] = r; rg[k] = g; rb[k] = b;
+    }
+  }
+
+  // 5. niebla + fondo suavizado (halo de luz por debajo de los glifos)
+  const bd = bgImg.data, fog = env.fog;
+  cells = 0;
+  for (let j = REF; j < RH; j++) {
+    const wy = j + oy;
+    for (let i = 0; i < RW; i++) {
+      const k = j * RW + i, wx = i + x0;
+      let fgf = 0;
+      if (fog > .01) {
+        fgf = fog * (.35 + .65 * vnoise(wx * .07 + time * .25, wy * .11 - time * .05));
+        fgf = Math.min(.93, fgf + fog * Math.min(1, Math.hypot(wx + .5 - P.x, (wy + .5 - P.y) * ASP) / 22) * .55);
+        const fc = 78 * (ar + ag + ab) / 3 + 22;
+        rr[k] += (fc - rr[k]) * fgf; rg[k] += (fc * 1.03 - rg[k]) * fgf; rb[k] += (fc * 1.12 - rb[k]) * fgf;
+      }
+      const p = ((j - REF) * RW + i) * 4;
+      bd[p]     = clamp((lr[k] - amb[0]) * 26 + (isW[k] ? 5 : 0) + fgf * 40, 0, 255);
+      bd[p + 1] = clamp((lg[k] - amb[1]) * 18 + (isW[k] ? 11 : 0) + fgf * 42, 0, 255);
+      bd[p + 2] = clamp((lb[k] - amb[2]) * 18 + (isW[k] ? 22 : 0) + fgf * 48, 0, 255);
+      bd[p + 3] = 255;
+    }
+  }
+  bctx.putImageData(bgImg, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.fillStyle = '#08070b'; ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(bgc, 0, 0, RW, rows, -fx, -fy, RW * cw, rows * chh);
+
+  // 6. celdas
+  for (let j = REF; j < RH; j++) {
+    const py = (j - REF) * chh - fy + chh / 2;
+    for (let i = 0; i < RW; i++) {
+      const k = j * RW + i, c = rch[k];
+      if (c === ' ') continue;
+      glyph(c, i * cw - fx + cw / 2, py, rr[k], rg[k], rb[k]); cells++;
+    }
+  }
+
+  const SXp = x => (x - left) * cw, SYp = y => (y - top) * chh;
+  const lightAt = (x, y) => {
+    const i = Math.floor(x) - x0, j = Math.floor(y) - oy;
+    if (i < 0 || j < 0 || i >= RW || j >= RH) return 1;
+    const k = j * RW + i; return (lr[k] + lg[k] + lb[k]) / 3;
+  };
+  // reflejo de criaturas en el agua de abajo
+  const reflect = (c, x, y, r, g, b) => {
+    const cx = Math.floor(x);
+    for (let s = 1; s < 4; s++) {
+      const wy = Math.floor(y) + s, t = T(cx, wy);
+      if (t === WATER) {
+        const ry = 2 * wy - y; if (T(cx, Math.floor(ry)) !== WATER) return;
+        const off = Math.sin(ry * 1.7 + time * 2.6) * rip * .6;
+        glyph(FLIP[c] || c, SXp(x + off), SYp(ry), r * .4, g * .45, b * .6 + 20);
+        return;
+      }
+      if (SOLID[t]) return;
+    }
+  };
+
+  // 7. partículas de suelo
+  for (const q of parts) {
+    if (!q.ground) continue;
+    const a = 1 - q.t / q.life; ctx.globalAlpha = a;
+    glyph(q.ch, SXp(q.x), SYp(q.y), q.r, q.g, q.b);
+  }
+  ctx.globalAlpha = 1;
+
+  // 8. aparecidos
+  for (const e of enemies) {
+    const L = Math.max(.6, lightAt(e.x, e.y));
+    for (const g of e.gl) {
+      let r = 186, gg = 196, b = 222, a = e.fade;
+      if (e.state === 'dead') { a = Math.max(0, 1 - g.t / 1.8); r = 150; gg = 130; b = 200; }
+      else if (g.eye) { r = 255; gg = 60; b = 60; }
+      else if (e.tele > 0) { const t = 1 - e.tele / .75; r += (255 - r) * t; gg *= 1 - t * .6; b *= 1 - t * .5; }
+      else if (g.st === 'fly' && g.wait <= 0) { r = 230; gg = 150; b = 255; }
+      if (a <= 0.02) continue;
+      const m = g.eye ? 1 : L;
+      ctx.globalAlpha = a;
+      reflect(g.ch, g.x, g.y, r * m, gg * m, b * m);
+      glyph(g.ch, SXp(g.x), SYp(g.y), r * m, gg * m, b * m);
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // 9. jugador
+  P.sx = SXp(P.x); P.sy = SYp(P.y);
+  if (P.dead <= 0 && !(P.inv > 0 && P.hurt <= 0 && Math.floor(time * 16) % 2)) {
+    const L = Math.max(.9, lightAt(P.x, P.y)), hr = P.hurt > 0;
+    const r = hr ? 255 : 244 * Math.min(1.1, L), g = hr ? 80 : 226 * Math.min(1.1, L), b = hr ? 80 : 188 * Math.min(1.1, L);
+    reflect('@', P.x, P.y, r, g, b);
+    glyph('@', P.sx, P.sy, r, g, b);
+  }
+  // tajo: arco de glifos que barre
+  if (P.slash > 0) {
+    const prog = 1 - P.slash / .2, base = Math.atan2(P.fy, P.fx);
+    for (let s = 0; s < 9; s++) {
+      const u = s / 8, ang = base - 1.05 + u * 2.1;
+      if (Math.abs(u - prog) > .35) continue;
+      const rM = 2.1, x = P.x + Math.cos(ang) * rM, y = P.y + Math.sin(ang) * rM / ASP;
+      let ta = ((ang + Math.PI / 2) % Math.PI + Math.PI) % Math.PI;
+      const c = ta < Math.PI / 8 || ta > Math.PI * 7 / 8 ? '-' : ta < Math.PI * 3 / 8 ? '\\' : ta < Math.PI * 5 / 8 ? '|' : '/';
+      ctx.globalAlpha = 1 - Math.abs(u - prog) / .35;
+      glyph(c, SXp(x), SYp(y), 235, 235, 255);
+    }
+    ctx.globalAlpha = 1;
+  }
+  // proyectiles
+  for (const p of projs) glyph('*', SXp(p.x), SYp(p.y), 255, 200, 90);
+  // partículas de aire
+  for (const q of parts) {
+    if (q.ground) continue;
+    const a = 1 - q.t / q.life; ctx.globalAlpha = a;
+    if (q.text) {
+      const x = SXp(q.x) - (q.text.length - 1) * cw / 2;
+      for (let c = 0; c < q.text.length; c++) glyph(q.text[c], x + c * cw, SYp(q.y), q.r, q.g, q.b);
+    } else glyph(q.ch, SXp(q.x), SYp(q.y), q.r, q.g, q.b);
+  }
+  ctx.globalAlpha = 1;
+  // lluvia
+  if (drops.length) {
+    const wd = env.wind, ch = wd > .35 ? '\\' : wd < -.35 ? '/' : '|', bri = .6 + fl * .8;
+    ctx.globalAlpha = .55;
+    for (const d of drops) glyph(ch, SXp(d.x - wd * d.z * .3), SYp(d.y - d.z * .5), 120 * bri, 140 * bri, 175 * bri);
+    ctx.globalAlpha = 1;
+  }
+  // rayo
+  if (boltT > 0) for (const s of bolt) glyph(s.ch, SXp(s.x), SYp(s.y), 240, 244, 255);
+}
+
+// ───────────────────────── Loop ─────────────────────────
+let last = 0, hudAcc = 0;
+function frame(ts) {
+  const dt = Math.min(.05, (ts - last) / 1000 || .016); last = ts;
+  update(dt);
+  render();
+  fpsS += (1 / Math.max(dt, .001) - fpsS) * .05;
+  hudAcc += dt;
+  if (hudAcc > .5) { hudAcc = 0; $('sub').textContent = `modo glifo · ${Math.round(fpsS)} fps · ${(cells / 1000).toFixed(1)}k glifos`; }
+  requestAnimationFrame(frame);
+}
+async function boot() {
+  resize();
+  try { await Promise.race([document.fonts.load(`${fs}px "JetBrains Mono"`), new Promise(r => setTimeout(r, 1500))]); } catch (_) {}
+  atlasReset();
+  setWeather('clear'); updateHud();
+  say('Triston quedó atrás. Acá afuera todo está escrito con letras.');
+  requestAnimationFrame(t => { last = t; frame(t); });
+}
+boot();
+})();
+</script>
