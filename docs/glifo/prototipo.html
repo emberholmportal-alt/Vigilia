@@ -971,10 +971,10 @@ function render() {
 // ───────────────────────── Loop ─────────────────────────
 let last = 0, hudAcc = 0;
 function frame(ts) {
-  const dt = Math.min(.05, (ts - last) / 1000 || .016); last = ts;
+  const raw = (ts - last) / 1000 || .016, dt = Math.min(.05, raw); last = ts;
   update(dt);
   render();
-  fpsS += (1 / Math.max(dt, .001) - fpsS) * .05;
+  fpsS += (1 / Math.max(raw, .001) - fpsS) * .05;
   hudAcc += dt;
   if (hudAcc > .5) { hudAcc = 0; $('sub').textContent = `modo glifo · ${Math.round(fpsS)} fps · ${(cells / 1000).toFixed(1)}k glifos`; }
   requestAnimationFrame(frame);

@@ -167,9 +167,9 @@ Recomiendo **A primero**: se valida la estética con jugadores reales sin bifurc
 
 ## 6. Rendimiento
 
-- Medido en Chromium headless **sin GPU** (412×860, dpr 2): la lógica entera (luz, pasto, fuego,
+- Medido en Chromium headless **sin GPU** (412×860, dpr 1 y 2): la lógica entera (luz, pasto, fuego,
   IA) cuesta **< 1 ms por frame**. Todo el resto es dibujar ~2.500 glifos, que sin GPU da
-  25–45 fps según el clima. Falta medir en el Samsung; con Pixi y un solo draw call debería sobrar margen.
+  23–56 fps según el clima y la resolución. Falta medir en el Samsung; con Pixi y un solo draw call debería sobrar margen.
 - Límites: ~3.000 celdas visibles, 700 partículas, 380 celdas ardiendo, raycast de luz solo en
   radios cortos.
 

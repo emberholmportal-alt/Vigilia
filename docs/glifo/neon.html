@@ -1,0 +1,1190 @@
+<title>Nueva Ceniza</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: la ciudad es un canvas de caracteres a pantalla completa; el HUD es una terminal flotante en los bordes. */
+:root{
+  --night:#05040a; --panel:#0e0b18; --edge:#2c2342; --text:#d6d2e6; --dim:#7d7596;
+  --magenta:#ff2aa8; --cyan:#2aebff; --acid:#ffdc32; --alarm:#ff3b4a;
+  --f-display:"Chakra Petch", "Eurostile", "Arial Narrow", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--night);color:var(--text);
+  font-family:var(--f-mono);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#city{position:fixed;inset:0;width:100%;height:100%;display:block;background:var(--night)}
+.fx{position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,transparent 50%,rgba(0,0,0,.65) 100%),
+             repeating-linear-gradient(180deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px)}
+.top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  padding:calc(8px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 22px max(12px,env(safe-area-inset-left,0px));
+  pointer-events:none;background:linear-gradient(180deg,rgba(5,4,10,.92),rgba(5,4,10,0))}
+.brand b{display:block;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.2em;color:var(--text);
+  text-shadow:0 0 8px rgba(42,235,255,.55)}
+.brand b em{font-style:normal;color:var(--magenta);text-shadow:0 0 8px rgba(255,42,168,.7)}
+.brand .sub{display:block;font-size:10px;color:var(--dim);letter-spacing:.06em;margin-top:2px;font-variant-numeric:tabular-nums}
+.hp{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10px;color:var(--dim);letter-spacing:.1em}
+.hp span{color:var(--cyan);font-size:13px;letter-spacing:1px;text-shadow:0 0 6px rgba(42,235,255,.6)}
+.alert{display:inline-block;margin-top:6px;font-family:var(--f-display);font-weight:700;font-size:11px;letter-spacing:.24em;
+  color:var(--alarm);border:1px solid var(--alarm);padding:2px 6px;text-shadow:0 0 8px rgba(255,59,74,.8);visibility:hidden}
+.alert.on{visibility:visible;animation:blink .5s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.wx{display:grid;grid-template-columns:repeat(2,auto);gap:4px;pointer-events:auto}
+.wx button{font-family:var(--f-mono);font-size:10px;letter-spacing:.04em;background:rgba(14,11,24,.9);color:var(--dim);
+  border:1px solid var(--edge);padding:7px 8px;cursor:pointer;text-align:left}
+.wx button[aria-pressed="true"]{color:var(--text);border-color:var(--magenta);box-shadow:0 0 10px rgba(255,42,168,.35) inset}
+.wx button:focus-visible,.act:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.log{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:118px;
+  bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:3px;pointer-events:none}
+.log p{margin:0;font-size:12px;line-height:1.35;color:var(--text);text-shadow:0 1px 3px #000;transition:opacity 1.2s}
+.log p::before{content:"> ";color:var(--magenta)}
+.log p.old{opacity:0}
+.acts{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;gap:10px}
+.act{width:64px;height:64px;border:1px solid var(--edge);background:rgba(14,11,24,.85);color:var(--text);
+  display:grid;place-items:center;align-content:center;cursor:pointer;position:relative;overflow:hidden;touch-action:none;
+  clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.act i{font-style:normal;font-size:22px;line-height:1;color:var(--cyan);text-shadow:0 0 8px rgba(42,235,255,.8)}
+.act#b-emp i{color:var(--magenta);text-shadow:0 0 8px rgba(255,42,168,.8)}
+.act small{font-family:var(--f-display);font-weight:700;font-size:9px;letter-spacing:.16em;margin-top:2px}
+.act::after{content:"";position:absolute;inset:0;background:rgba(5,4,10,.75);transform:scaleY(var(--cd,0));transform-origin:bottom}
+.stick{position:fixed;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;border:1px dashed var(--edge);pointer-events:none;display:none}
+.stick .knob{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;
+  background:rgba(42,235,255,.12);border:1px solid var(--cyan)}
+.help{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(350px,calc(100% - 32px));
+  background:rgba(14,11,24,.95);border:1px solid var(--edge);padding:18px;pointer-events:none;
+  box-shadow:0 0 0 1px rgba(255,42,168,.15),0 0 40px rgba(255,42,168,.12)}
+.help h1{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.18em;margin:0 0 8px;text-wrap:balance}
+.help h1 em{font-style:normal;color:var(--magenta)}
+.help p{margin:0 0 12px;font-size:12px;line-height:1.5;color:var(--text)}
+.help dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:0 0 12px;font-size:12px}
+.help dt{color:var(--cyan)}
+.help dd{margin:0;color:var(--dim)}
+.help .go{font-size:10px;color:var(--dim);letter-spacing:.1em}
+.help.gone{display:none}
+@media (prefers-reduced-motion:reduce){.alert.on{animation:none}.log p{transition:none}}
+</style>
+
+<canvas id="city" aria-label="Nueva Ceniza, una ciudad dibujada solo con caracteres"></canvas>
+<div class="fx"></div>
+<header class="top">
+  <div class="brand">
+    <b>NUEVA <em>CENIZA</em></b>
+    <span class="sub" id="sub">barrio 9 · 03:17</span>
+    <div class="hp">INTEGRIDAD <span id="hp"></span></div>
+    <span class="alert" id="alert">ALERTA</span>
+  </div>
+  <div class="wx" role="group" aria-label="Clima">
+    <button id="w-drizzle" data-w="drizzle">1 Llovizna</button>
+    <button id="w-storm" data-w="storm">2 Aguacero</button>
+    <button id="w-smog" data-w="smog">3 Smog</button>
+    <button id="w-blackout" data-w="blackout">4 Apagón</button>
+  </div>
+</header>
+<div class="log" id="log" aria-live="polite"></div>
+<div class="acts">
+  <button class="act" id="b-emp" aria-label="Pulso EMP (K)"><i>◎</i><small>PULSO</small></button>
+  <button class="act" id="b-slash" aria-label="Tajo (Espacio)"><i>/</i><small>TAJO</small></button>
+</div>
+<div class="stick" id="stick"><div class="knob" id="knob"></div></div>
+<div class="help" id="help">
+  <h1>NUEVA <em>CENIZA</em></h1>
+  <p>Una ciudad entera escrita con caracteres. Cada cartel, gota, auto y dron es texto que se mueve. Los drones de seguridad barren las calles con un cono rojo: si te ven, se desarman y te tiran sus letras.</p>
+  <dl>
+    <dt>WASD</dt><dd>moverse (celu: arrastrá a la izquierda)</dd>
+    <dt>Espacio</dt><dd>Tajo monofilo: corta letras en el aire</dd>
+    <dt>K</dt><dd>Pulso EMP: apaga drones, autos y neones</dd>
+    <dt>1–4</dt><dd>clima y apagón</dd>
+  </dl>
+  <span class="go">tocá o apretá una tecla para entrar</span>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ════════════════════════ Canvas + atlas de glifos ════════════════════════
+const cv = document.getElementById('city');
+const ctx = cv.getContext('2d', { alpha: false });
+const mk = () => { const c = document.createElement('canvas'); return [c, c.getContext('2d')]; };
+const [bgc, bctx] = mk();          // halo de luz (1 celda = 1 px)
+const [emc, ectx] = mk();          // mapa emisivo para el bloom
+const [blc, blctx] = mk();         // bloom desenfocado
+const [atlas, actx] = mk();
+atlas.width = atlas.height = 2048;
+const FONT = '"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace';
+const REF = 14;                    // filas extra arriba: de ahí sale el reflejo del piso mojado
+const HAS_FILTER = 'filter' in blctx;
+
+let dpr = 1, W = 0, H = 0, fs = 14, cw = 8, chh = 14, ASP = 1.7, cols = 0, rows = 0;
+let slotW = 0, slotH = 0, perRow = 0, maxSlots = 0, nextSlot = 0;
+const cache = new Map(), gids = new Map();
+function atlasReset() {
+  slotW = Math.ceil(cw * 1.6); slotH = Math.ceil(chh * 1.2);
+  perRow = Math.floor(2048 / slotW); maxSlots = perRow * Math.floor(2048 / slotH);
+  nextSlot = 0; cache.clear(); actx.clearRect(0, 0, 2048, 2048);
+  actx.font = `${fs}px ${FONT}`; actx.textAlign = 'center'; actx.textBaseline = 'middle';
+}
+function gid(c) { let i = gids.get(c); if (i === undefined) { i = gids.size; gids.set(c, i); } return i; }
+// Los glifos se encolan y se dibujan juntos en flush(): primero se rasteriza todo lo que falta y
+// después se copia. Mezclar fillText y drawImage obliga al navegador a re-sincronizar el atlas
+// entero en cada glifo nuevo (~8 ms cada vez), y la ciudad estrena colores en cada frame.
+const MAXD = 24000, DC = new Array(MAXD), DK = new Int32Array(MAXD), DX = new Float32Array(MAXD), DY = new Float32Array(MAXD), DA = new Float32Array(MAXD);
+let dn = 0, galpha = 1;
+function glyph(c, px, py, r, g, b) {
+  r = r < 0 ? 0 : r > 255 ? 255 : r | 0; g = g < 0 ? 0 : g > 255 ? 255 : g | 0; b = b < 0 ? 0 : b > 255 ? 255 : b | 0;
+  const q = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+  if (q === 0 || galpha <= .01 || dn >= MAXD) return;
+  DC[dn] = c; DK[dn] = gid(c) * 4096 + q; DX[dn] = px; DY[dn] = py; DA[dn] = galpha; dn++;
+}
+function raster(key, c) {
+  const q = key & 4095, s = nextSlot++;
+  const sx = (s % perRow) * slotW, sy = ((s / perRow) | 0) * slotH;
+  actx.fillStyle = `rgb(${(q >> 8) * 17},${((q >> 4) & 15) * 17},${(q & 15) * 17})`;
+  actx.fillText(c, sx + slotW / 2, sy + slotH / 2);
+  cache.set(key, s);
+}
+function flush() {
+  for (let pass = 0; pass < 2; pass++) {
+    let full = false;
+    for (let n = 0; n < dn; n++) {
+      if (cache.has(DK[n])) continue;
+      if (nextSlot >= maxSlots) { full = true; break; }
+      raster(DK[n], DC[n]);
+    }
+    if (!full) break;
+    atlasReset();
+  }
+  let a = 1; ctx.globalAlpha = 1;
+  for (let n = 0; n < dn; n++) {
+    const s = cache.get(DK[n]); if (s === undefined) continue;
+    if (DA[n] !== a) { a = DA[n]; ctx.globalAlpha = a; }
+    ctx.drawImage(atlas, (s % perRow) * slotW, ((s / perRow) | 0) * slotH, slotW, slotH,
+      (DX[n] - slotW / 2) | 0, (DY[n] - slotH / 2) | 0, slotW, slotH);
+  }
+  ctx.globalAlpha = 1; dn = 0;
+}
+
+// ════════════════════════ Ruido y azar ════════════════════════
+function hash(x, y) {
+  let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function vnoise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+let seed = 9137;
+const srand = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const sint = (a, b) => a + Math.floor(srand() * (b - a + 1));
+const spick = a => a[Math.floor(srand() * a.length)];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+// ════════════════════════ La ciudad ════════════════════════
+// Bandas de 24 filas: 0–1 vereda ancha · 2 calle · 3 carril oeste · 4 línea · 5 carril este · 6 calle · 7 vereda · 8–23 manzana.
+// En cada manzana los edificios ocupan el borde sur (filas 18–23) y miran a la calle; atrás queda el patio,
+// que es donde caen los techos. Así ningún edificio tapa una calle. Pasajes verticales cada 30 columnas.
+const BX = 8, BY = 7, WW = BX * 30, WH = BY * 24;
+const SIDE = 1, ROAD = 2, MARK = 3, ALLEY = 4, CROSS = 5, PLAZA = 6, LOT = 7, BLD = 8, HOLE = 9;
+const WALK = [0, 1, 1, 1, 1, 1, 1, 1, 0, 1];
+const ground = new Uint8Array(WW * WH), bldAt = new Int16Array(WW * WH).fill(-1), reflK = new Uint8Array(WW * WH);
+const blocked = new Uint8Array(WW * WH);
+const G = (x, y) => (x < 0 || y < 0 || x >= WW || y >= WH) ? BLD : ground[y * WW + x];
+const NEON = [[255, 42, 168], [42, 235, 255], [255, 220, 50], [255, 60, 74], [170, 90, 255], [70, 255, 150], [255, 140, 40]];
+const SIGNS = ['RAMEN', 'BAR', 'HOTEL', 'FARMACIA 24H', 'IMPLANTES', 'CHIPS', 'KIOSCO', 'EMPEÑOS', 'CLÍNICA', 'KARAOKE',
+  'NEURO', 'TATUAJES', 'CAMBIO', 'OJOS NUEVOS', 'MOTEL', 'ARCADE', 'LOCUTORIO', 'PARRILLA', 'FERNET', 'PIZZA',
+  'DROGUERÍA', 'RECICLADO', 'SALÓN', 'CYBER', 'HELADOS', 'SUSHI', 'GOMERÍA', 'MEMORIAS'];
+const VSIGNS = ['HOTEL', 'BAR', 'NEURO', 'CHIPS', 'MOTEL', 'SUSHI', 'CYBER', 'ABIERTO', 'RAMEN', 'DATOS'];
+const MARQ = ['NEUROLINK 2.0 · CUOTAS SIN INTERÉS · ', 'SE BUSCA: SUJETO 7741 · RECOMPENSA 40K · ',
+  'LLUVIA ÁCIDA NIVEL 3 · USE CAPUCHA · ', 'CORPORACIÓN VELGRIM · SU FUTURO ES NUESTRO · ',
+  'OJOS NUEVOS EN 20 MINUTOS · SIN TURNO · ', 'TOQUE DE QUEDA 04:00 · DRONES ACTIVOS · '];
+const STYLES = [ // pared, color
+  { wall: '░', c: [62, 60, 78] }, { wall: '▓', c: [36, 50, 82] }, { wall: '≡', c: [80, 48, 52] }, { wall: '▒', c: [66, 70, 80] } ];
+const buildings = [], lamps = [], stalls = [], vend = [], holes = [];
+const PLAZA_B = { bx: 4, by: 3 };
+const HOLO = { x: PLAZA_B.bx * 30 + 17, y: PLAZA_B.by * 24 + 8 + 10 };
+
+(function gen() {
+  for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
+    const r = y % 24, c = x % 30, i = y * WW + x;
+    let t;
+    if (r <= 7) {
+      if (r <= 1 || r === 7) t = SIDE;
+      else if (c >= 1 && c <= 3) t = CROSS;
+      else t = r === 4 ? MARK : ROAD;
+    } else t = (c >= 1 && c <= 3) ? ALLEY : (c === 0 || c === 4) ? SIDE : LOT;
+    ground[i] = t;
+  }
+  for (let by = 0; by < BY; by++) for (let bx = 0; bx < BX; bx++) {
+    const top = by * 24 + 8, x0 = bx * 30 + 5, x1 = bx * 30 + 30;
+    if (bx === PLAZA_B.bx && by === PLAZA_B.by) {
+      for (let y = top; y < top + 16; y++) for (let x = x0; x < x1; x++) ground[y * WW + x] = PLAZA;
+      for (let k = 0; k < 4; k++) if (k !== 2) stalls.push({ x: x0 + 1 + k * 6, y: top + 14, w: 4, c: NEON[(k * 3 + 1) % NEON.length] });
+      continue;
+    }
+    let cx = x0;
+    while (cx < x1) {
+      let w = sint(5, 10);
+      if (x1 - (cx + w) < 5) w = x1 - cx;
+      if (srand() < .1) { // baldío con máquina expendedora
+        if (w >= 3) vend.push({ x: cx + 1 + sint(0, w - 3), y: top + 15, c: spick(NEON) });
+      } else {
+        const h = srand() < .3 ? sint(8, 10) : sint(3, 7);
+        addBuilding(cx, top + 10, w, 6, h);
+      }
+      cx += w;
+    }
+  }
+  // faroles y alcantarillas
+  for (let by = 0; by < BY; by++) for (let x = 6; x < WW; x += 11) {
+    if (x % 30 <= 4) continue;
+    for (const r of [1, 7]) { const y = by * 24 + r; lamps.push({ x, y, warm: hash(x, y) > .4, broken: hash(y, x) > .82, off: 0 }); blocked[y * WW + x] = 1; }
+    if (hash(x, by) > .6) { const y = by * 24 + (hash(by, x) > .5 ? 2 : 6); ground[y * WW + x] = HOLE; holes.push({ x, y }); }
+  }
+  for (const v of vend) blocked[v.y * WW + v.x] = 1;
+  for (const s of stalls) for (let x = s.x; x < s.x + s.w; x++) blocked[s.y * WW + x] = 1;
+  for (let y = HOLO.y - 1; y <= HOLO.y + 1; y++) for (let x = HOLO.x - 1; x <= HOLO.x + 1; x++) blocked[y * WW + x] = 1;
+  // distancia a la fachada de arriba (para el espejo del piso mojado)
+  for (let x = 0; x < WW; x++) for (let y = 0; y < WH; y++) {
+    const i = y * WW + x;
+    if (ground[i] === BLD) continue;
+    for (let k = 1; k <= 12 && y - k >= 0; k++) if (ground[(y - k) * WW + x] === BLD) { reflK[i] = k; break; }
+  }
+  buildings.sort((a, b) => a.front - b.front);
+})();
+
+function addBuilding(x, y, w, d, h) {
+  const id = buildings.length;
+  const b = { id, x, y, w, d, h, front: y + d - 1, style: sint(0, 3), occ: .25 + srand() * .45, shop: srand() < .6,
+    shopC: spick(NEON), door: sint(1, Math.max(1, w - 2)), sign: null, panel: null, roof: [] };
+  for (let yy = y; yy < y + d; yy++) for (let xx = x; xx < x + w; xx++) { ground[yy * WW + xx] = BLD; bldAt[yy * WW + xx] = id; }
+  const mkSign = (text, vert) => ({ text, vert, c: spick(NEON), mode: srand() < .35 ? 1 : srand() < .2 ? 2 : 0,
+    broken: sint(0, text.length - 1), thr: srand() * .9, seed: sint(1, 9999), off: 0 });
+  if (h >= 8 && srand() < .5) { // torre: cartel vertical en la esquina y, si es ancha, pantalla con marquesina
+    const v = spick(VSIGNS.filter(t => t.length <= h - 1));
+    b.sign = mkSign(v, true); b.sign.col = srand() < .5 ? 0 : w - 1; b.sign.z = 1;
+    if (w >= 7) b.panel = { text: spick(MARQ), c: spick(NEON), z: h - 2, seed: sint(0, 99), thr: srand() * .8 };
+  } else if (srand() < .85) {
+    const t = spick(SIGNS.filter(t => t.length <= w - 2).concat(['BAR']));
+    b.sign = mkSign(t, false); b.sign.col = Math.floor((w - t.length) / 2); b.sign.z = h >= 4 ? 2 : 1;
+  }
+  for (let k = 0; k < Math.floor(w * d / 10); k++) b.roof.push({ x: x + sint(1, w - 2), y: y + sint(1, d - 2), t: spick(['▣', '▣', '◘', '▤', '◍', '╫']) });
+  buildings.push(b);
+}
+
+// ════════════════════════ Estado ════════════════════════
+const P = { x: HOLO.x + .5, y: PLAZA_B.by * 24 + 24 + .5, fx: 0, fy: -1, hp: 10, max: 10, inv: 0, dead: 0, cdS: 0, cdE: 0, slash: 0,
+  regen: 0, hurt: 0, sx: 0, sy: 0, seenT: 0 };
+const cam = { x: P.x, y: P.y - 4 };
+const peds = [], cars = [], flyers = [], drones = [], parts = [], drops = [], pulses = [], flashes = [];
+let time = 0, weather = 'drizzle', shake = 0, glitch = 0, alarm = 0, clock = 3 * 60 + 17;
+const WEATHER = {
+  drizzle:  { rain: .35, wet: .65, smog: .12, wind: .25, power: 1,  amb: [.11, .09, .19], name: 'Llovizna' },
+  storm:    { rain: 1,   wet: 1,   smog: .18, wind: .9,  power: 1,  amb: [.08, .07, .15], name: 'Aguacero' },
+  smog:     { rain: .03, wet: .35, smog: .85, wind: .1,  power: 1,  amb: [.15, .12, .19], name: 'Smog' },
+  blackout: { rain: .45, wet: .75, smog: .12, wind: .3,  power: 0,  amb: [.045, .045, .08], name: 'Apagón' },
+};
+const env = { rain: .35, wet: .65, smog: .12, wind: .25, power: 1, amb: [.11, .09, .19] };
+
+const SIDEROW = r => r === 0 || r === 1 || r === 7;
+const PED_COL = [[90, 80, 120], [70, 90, 110], [120, 80, 80], [80, 100, 80], [110, 100, 70], [60, 60, 70]];
+const PED_BODY = ['i', 'ı', 'ỉ', 'í', 'ì', 'î'];
+const LINES = ['¿Tenés fuego?', 'Los drones no duermen.', 'Dicen que arriba no llueve.', 'Chips baratos en el 9.',
+  'No mires a las cámaras.', 'Mi hermano vendió un ojo.', 'Llueve desde el martes.', '¿Viste el holograma nuevo?',
+  'Velgrim compró el barrio.', 'Esa lluvia te come la ropa.', 'Me cortaron la luz otra vez.', 'Hay laburo en el puerto.'];
+for (let k = 0; k < 150; k++) {
+  let x, y;
+  for (let tries = 0; tries < 40; tries++) {
+    x = sint(2, WW - 3); y = sint(0, BY - 1) * 24 + spick([0, 1, 7]);
+    if (srand() < .3) { x = sint(0, BX - 1) * 30 + sint(1, 3); y = sint(1, WH - 2); }
+    if (WALK[G(x, y)] && !blocked[y * WW + x]) break;
+  }
+  const vert = x % 30 >= 1 && x % 30 <= 3 && !SIDEROW(y % 24);
+  peds.push({ x: x + .5, y: y + .5, dx: vert ? 0 : (srand() < .5 ? -1 : 1), dy: vert ? (srand() < .5 ? -1 : 1) : 0,
+    sp: 1.3 + srand() * 1.6, umb: srand() < .55 ? spick(NEON) : null, col: spick(PED_COL), body: spick(PED_BODY),
+    say: 0, flee: 0, t: srand() * 10 });
+}
+for (let by = 0; by < BY; by++) for (const lane of [3, 5]) for (let k = 0; k < 4; k++) {
+  const dir = lane === 3 ? -1 : 1;
+  cars.push({ x: (k * WW / 4 + srand() * 30) % WW, y: by * 24 + lane + .5, dir, sp: 0, max: 8 + srand() * 6,
+    col: spick([[150, 150, 165], [60, 60, 70], [140, 40, 50], [40, 70, 120], [190, 180, 160]]), stall: 0, honk: 0 });
+}
+for (let k = 0; k < 9; k++) flyers.push({ x: srand() * WW, y: sint(10, WH - 10) + .5, z: sint(13, 24), dir: srand() < .5 ? -1 : 1,
+  sp: 9 + srand() * 9, cop: k < 2, t: srand() * 9 });
+const DRONE = ['╓─◉─╖', '╙┬─┬╜'];
+function makeDrone(ax, ay, bx, by) {
+  const d = { ax, ay, bx, by, x: ax, y: ay, z: 2.6, to: 1, face: 0, t: srand() * 10, state: 'patrol', hp: 3, cd: 2, tele: 0,
+    dead: 0, stun: 0, fade: 0, gl: [] };
+  for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) d.gl.push({ ch: DRONE[r][c], ox: c - 2, oy: r - 1, x: ax, y: ay - 30, vx: 0, vy: 0, st: 'ret', t: 0, wait: 0, eye: DRONE[r][c] === '◉', grd: 0 });
+  drones.push(d);
+}
+{
+  const b = PLAZA_B.by * 24 + 24, l = PLAZA_B.bx * 30;
+  makeDrone(l - 22, b + 4.5, l + 18, b + 4.5);
+  makeDrone(l + 2.5, b - 20, l + 2.5, b + 20);
+  makeDrone(l + 40, b - 24 + 4.5, l + 70, b - 24 + 4.5);
+  makeDrone(l - 40, b + 1, l - 10, b + 1);
+  makeDrone(l + 32.5, b + 2, l + 32.5, b + 30);
+  makeDrone(l - 28, b + 24 + 4.5, l + 10, b + 24 + 4.5);
+}
+
+// ════════════════════════ Región de render ════════════════════════
+let RW = 0, RH = 0, rch = [], rr, rg, rb, em, dep, lay, rk, lr, lg, lb, bgImg, emImg;
+let x0 = 0, y0 = 0, oy = 0, left = 0, top = 0, viewW = 0, viewH = 0;
+function alloc() {
+  RW = cols; RH = rows + REF; const n = RW * RH;
+  rch = new Array(n).fill(' ');
+  rr = new Float32Array(n); rg = new Float32Array(n); rb = new Float32Array(n); em = new Float32Array(n);
+  dep = new Int16Array(n); lay = new Uint8Array(n); rk = new Uint8Array(n);
+  lr = new Float32Array(n); lg = new Float32Array(n); lb = new Float32Array(n);
+  for (const c of [bgc, emc, blc]) { c.width = RW; c.height = rows; }
+  bgImg = bctx.createImageData(RW, rows); emImg = ectx.createImageData(RW, rows);
+}
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  const cssW = window.innerWidth, cssH = window.innerHeight;
+  W = cv.width = Math.max(1, Math.round(cssW * dpr)); H = cv.height = Math.max(1, Math.round(cssH * dpr));
+  const base = clamp(Math.min(cssW, cssH) / 36, 9.5, 15);
+  fs = Math.round(base * dpr); cw = Math.round(fs * .6); chh = Math.round(fs * 1.05); ASP = chh / cw;
+  cols = Math.ceil(W / cw) + 2; rows = Math.ceil(H / chh) + 2;
+  alloc(); atlasReset();
+}
+window.addEventListener('resize', resize);
+function put(i, j, ch, r, g, b, e, d, l) {
+  if (i < 0 || j < 0 || i >= RW || j >= RH) return;
+  const k = j * RW + i;
+  if (l >= 2 && dep[k] > d) return;
+  rch[k] = ch; rr[k] = r; rg[k] = g; rb[k] = b; em[k] = e; dep[k] = d; lay[k] = l;
+}
+
+// ════════════════════════ UI ════════════════════════
+const $ = id => document.getElementById(id);
+const logEl = $('log');
+function say(text) {
+  const p = document.createElement('p'); p.textContent = text; logEl.appendChild(p);
+  while (logEl.children.length > 3) logEl.removeChild(logEl.firstChild);
+  setTimeout(() => p.classList.add('old'), 6000); setTimeout(() => p.remove(), 7500);
+}
+function setWeather(w) {
+  if (!WEATHER[w] || (w === weather && time > 0)) return;
+  weather = w;
+  for (const b of document.querySelectorAll('.wx button')) b.setAttribute('aria-pressed', String(b.dataset.w === w));
+  const lines = { drizzle: 'Llovizna fina. El neón se pega al asfalto.', storm: 'Se larga el aguacero. Las calles se vuelven espejos.',
+    smog: 'Sube el smog. Los carteles se vuelven manchas de color.', blackout: 'Se corta la luz del barrio. Los drones ven igual.' };
+  if (time > 0) say(lines[w]);
+}
+for (const b of document.querySelectorAll('.wx button')) b.addEventListener('click', e => { e.stopPropagation(); setWeather(b.dataset.w); hideHelp(); });
+let helpOn = true;
+function hideHelp() { if (!helpOn) return; helpOn = false; $('help').classList.add('gone'); }
+
+// ════════════════════════ Input ════════════════════════
+const keys = new Set();
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase(); hideHelp();
+  if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
+  if (e.repeat) return;
+  keys.add(k);
+  if (k === ' ' || k === 'j') slash();
+  if (k === 'k') emp();
+  if (k.length === 1 && '1234'.includes(k)) setWeather(['drizzle', 'storm', 'smog', 'blackout'][+k - 1]);
+});
+window.addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+window.addEventListener('blur', () => keys.clear());
+const stick = { id: null, ox: 0, oy: 0, dx: 0, dy: 0 };
+const stickEl = $('stick'), knobEl = $('knob');
+cv.addEventListener('pointerdown', e => {
+  hideHelp();
+  if (e.pointerType !== 'mouse' && e.clientX < window.innerWidth * .55 && stick.id === null) {
+    stick.id = e.pointerId; stick.ox = e.clientX; stick.oy = e.clientY; stick.dx = stick.dy = 0;
+    stickEl.style.left = e.clientX + 'px'; stickEl.style.top = e.clientY + 'px'; stickEl.style.display = 'block';
+    knobEl.style.transform = 'translate(0,0)'; cv.setPointerCapture(e.pointerId);
+  } else {
+    const dx = (e.clientX * dpr - P.sx) / cw, dy = (e.clientY * dpr - P.sy) / cw, d = Math.hypot(dx, dy);
+    if (d > .3) { P.fx = dx / d; P.fy = dy / d; }
+    slash();
+  }
+});
+cv.addEventListener('pointermove', e => {
+  if (e.pointerId !== stick.id) return;
+  let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy; const d = Math.hypot(dx, dy), m = 48;
+  if (d > m) { dx *= m / d; dy *= m / d; }
+  stick.dx = dx / m; stick.dy = dy / m; knobEl.style.transform = `translate(${dx}px,${dy}px)`;
+});
+const endStick = e => { if (e.pointerId !== stick.id) return; stick.id = null; stick.dx = stick.dy = 0; stickEl.style.display = 'none'; };
+cv.addEventListener('pointerup', endStick); cv.addEventListener('pointercancel', endStick);
+const bind = (id, fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); hideHelp(); fn(); });
+bind('b-slash', () => slash()); bind('b-emp', () => emp());
+
+// ════════════════════════ Partículas ════════════════════════
+// x/y en "fila de pantalla" (y ya incluye la altura); lit = la tiñe la luz de la celda.
+function part(x, y, vx, vy, life, ch, r, g, b, o = {}) {
+  if (parts.length > 900) return;
+  parts.push({ x, y, vx, vy, t: 0, life, ch, r, g, b, drag: o.drag ?? 2, grav: o.grav ?? 0, lit: !!o.lit, text: o.text || null, ground: !!o.ground });
+}
+function floater(x, y, text, r, g, b, life = 1.1) { part(x, y, 0, -1.4, life, '', r, g, b, { text, drag: .6 }); }
+
+// ════════════════════════ Combate ════════════════════════
+function slash() {
+  if (P.cdS > 0 || P.dead > 0) return;
+  P.cdS = .32; P.slash = .18;
+  flashes.push({ x: P.x + P.fx, y: P.y + P.fy / ASP, t: .1, r: .2, g: .6, b: .8, rad: 4 });
+  for (const d of drones) {
+    if (d.state === 'dead') continue;
+    const dx = d.x - P.x, dy = (d.y - P.y) * ASP, dd = Math.hypot(dx, dy) || 1;
+    if (dd < 3.8 && (dx * P.fx + dy * P.fy) / dd > .15) hitDrone(d, 1, P.x, P.y);
+    for (const g of d.gl) {
+      if (g.st !== 'fly' || g.wait > 0) continue;
+      const gx = g.x - P.x, gy = (g.y - P.y) * ASP, gd = Math.hypot(gx, gy) || 1;
+      if (gd < 3.4 && (gx * P.fx + gy * P.fy) / gd > -.1) {
+        g.st = 'sc'; g.t = .5; g.vx = gx / gd * 11; g.vy = gy / gd * 11 / ASP;
+        for (let s = 0; s < 4; s++) part(g.x, g.y, rnd(-7, 7), rnd(-4, 4), .3, pick(['+', '×', '·']), 120, 240, 255, { drag: 4 });
+      }
+    }
+  }
+  for (const p of peds) if (Math.hypot(p.x - P.x, (p.y - P.y) * ASP) < 3) { p.flee = 3; if (Math.random() < .5) floater(p.x, p.y - 2, '¡Eh!', 200, 200, 210); }
+}
+function emp() {
+  if (P.cdE > 0 || P.dead > 0) return;
+  P.cdE = 4; glitch = .35; shake = Math.max(shake, .2);
+  pulses.push({ x: P.x, y: P.y, t: 0 });
+  flashes.push({ x: P.x, y: P.y, t: .35, r: .5, g: 1.2, b: 1.6, rad: 12 });
+  const R = 11;
+  const near = (x, y) => Math.hypot(x - P.x, (y - P.y) * ASP) < R;
+  let n = 0;
+  for (const b of buildings) if (b.sign && near(b.x + b.w / 2, b.front + 1)) { b.sign.off = time + rnd(5, 9); n++;
+    for (let s = 0; s < 6; s++) part(b.x + b.sign.col + rnd(0, 3), b.front - b.sign.z, rnd(-3, 3), rnd(-2, 1), rnd(.3, .8), '*', 255, 230, 140, { grav: 14, drag: 1 }); }
+  for (const l of lamps) if (near(l.x, l.y)) l.off = time + rnd(5, 9);
+  for (const c of cars) if (near(c.x + 2, c.y)) c.stall = rnd(3, 5);
+  for (const d of drones) if (d.state !== 'dead' && near(d.x, d.y)) { d.stun = 3.5; hitDrone(d, 1, P.x, P.y); }
+  for (const p of peds) if (near(p.x, p.y)) p.flee = 4;
+  say(n ? 'El pulso revienta los neones de la cuadra. Por unos segundos, la oscuridad es tuya.' : 'Pulso EMP.');
+}
+function hitDrone(d, dmg, fx, fy) {
+  if (d.state === 'dead') return;
+  d.hp -= dmg; d.tele = 0; glitch = Math.max(glitch, .12);
+  floater(d.x, d.y - d.z - 2, '-' + dmg, 120, 240, 255);
+  for (const g of d.gl) {
+    if (g.st === 'fly') continue;
+    const dx = g.x - fx, dy = (g.y - fy) * ASP, dd = Math.hypot(dx, dy) || 1, s = rnd(5, 11);
+    g.vx = dx / dd * s; g.vy = dy / dd * s / ASP; g.st = 'sc'; g.t = rnd(.2, .35);
+  }
+  if (d.state === 'patrol') alertAll(d.x, d.y, 'Un dron grita tu posición a la red.');
+  if (d.hp <= 0) {
+    d.state = 'dead'; d.dead = 12; shake = Math.max(shake, .25);
+    for (const g of d.gl) { g.vx = rnd(-4, 4); g.vy = rnd(-6, -1); g.st = 'd'; g.t = 0; g.grd = d.y + g.oy * .3 + rnd(-.3, .3); }
+    for (let s = 0; s < 20; s++) part(d.x, d.y - d.z, rnd(-8, 8), rnd(-7, 2), rnd(.3, .8), '*', 255, rnd(150, 240), 80, { grav: 16, drag: .8 });
+    say('El dron se desarma en letras sueltas. Los datos se escurren por el piso.');
+  }
+}
+function alertAll(x, y, msg) {
+  let any = false;
+  for (const d of drones) if (d.state === 'patrol' && Math.hypot(d.x - x, (d.y - y) * ASP) < 26) { d.state = 'alert'; d.cd = rnd(.8, 1.8); any = true; }
+  if (any && alarm <= 0 && msg) say(msg);
+  alarm = 7;
+}
+let toldLaunch = false;
+function launch(d) {
+  const pool = d.gl.filter(g => g.st === 'b' && !g.eye);
+  for (let i = pool.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  pool.slice(0, 5).forEach((g, k) => { g.st = 'fly'; g.wait = k * .08; g.t = 1.3; });
+  if (!toldLaunch) { toldLaunch = true; say('El dron se desarma y te dispara sus propias piezas. Cortalas en el aire.'); }
+}
+function hurt(d, sx, sy, why) {
+  if (P.dead > 0 || P.inv > 0) return;
+  P.hp -= d; P.inv = .6; P.hurt = .3; shake = Math.max(shake, .25); glitch = Math.max(glitch, .25);
+  floater(P.x, P.y - 2, '-' + d, 255, 70, 90);
+  const dx = P.x - sx, dy = (P.y - sy) * ASP, dd = Math.hypot(dx, dy) || 1;
+  tryMove(dx / dd * .8, dy / dd * .8 / ASP);
+  if (why) say(why);
+  if (P.hp <= 0) { P.hp = 0; P.dead = 2.6; say('Señal perdida. Reiniciando implante…'); }
+  updateHud();
+}
+
+// ════════════════════════ Update ════════════════════════
+const walk = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y); return WALK[G(xi, yi)] && !blocked[yi * WW + xi]; };
+function tryMove(dx, dy) {
+  if (walk(P.x + dx, P.y)) P.x += dx;
+  if (walk(P.x, P.y + dy)) P.y += dy;
+}
+function updateHud() {
+  $('hp').textContent = '▮'.repeat(P.hp) + '▯'.repeat(P.max - P.hp);
+}
+function update(dt) {
+  time += dt; clock += dt * .5;
+  const w = WEATHER[weather], k = Math.min(1, dt * .7);
+  for (const key of ['rain', 'wet', 'smog', 'wind']) env[key] += (w[key] - env[key]) * k;
+  env.power += (w.power - env.power) * Math.min(1, dt * .45);
+  for (let c = 0; c < 3; c++) env.amb[c] += (w.amb[c] - env.amb[c]) * k;
+
+  // jugador
+  if (P.dead > 0) {
+    P.dead -= dt;
+    if (P.dead <= 0) { P.x = HOLO.x + .5; P.y = PLAZA_B.by * 24 + 24 + .5; P.hp = P.max; P.inv = 2; updateHud(); say('Implante reiniciado. Volvés a la plaza.'); }
+  } else {
+    let ix = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
+    let iy = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
+    if (Math.hypot(stick.dx, stick.dy) > .15) { ix = stick.dx; iy = stick.dy; }
+    const m = Math.hypot(ix, iy);
+    if (m > 0) {
+      if (m > 1) { ix /= m; iy /= m; }
+      const n = Math.hypot(ix, iy); P.fx = ix / n; P.fy = iy / n;
+      tryMove(ix * 8 * dt, iy * 8 * dt / ASP);
+      if (env.wet > .4 && Math.random() < dt * 6) part(P.x + rnd(-.3, .3), P.y + .3, 0, 0, .3, pick(['.', '°']), 120, 140, 180, { ground: true, lit: true });
+    }
+    P.regen += dt;
+    if (P.regen > 3.5 && P.hp < P.max && alarm <= 0) { P.regen = 0; P.hp++; updateHud(); }
+  }
+  P.inv = Math.max(0, P.inv - dt); P.hurt = Math.max(0, P.hurt - dt);
+  P.cdS = Math.max(0, P.cdS - dt); P.cdE = Math.max(0, P.cdE - dt); P.slash = Math.max(0, P.slash - dt);
+  $('b-slash').style.setProperty('--cd', (P.cdS / .32).toFixed(2));
+  $('b-emp').style.setProperty('--cd', (P.cdE / 4).toFixed(2));
+  const ck = Math.min(1, dt * 5);
+  cam.x += (P.x - cam.x) * ck; cam.y += (P.y - 3 - cam.y) * ck;
+
+  // peatones
+  for (const p of peds) {
+    p.t += dt; p.flee = Math.max(0, p.flee - dt); p.say = Math.max(0, p.say - dt);
+    let sp = p.sp * (p.flee > 0 ? 2.6 : 1);
+    if (alarm > 0 && Math.hypot(p.x - P.x, p.y - P.y) < 14) sp *= 1.8;
+    const nx = p.x + p.dx * sp * dt, ny = p.y + p.dy * sp * dt;
+    const pd = Math.hypot(nx - P.x, (ny - P.y) * ASP);
+    if (!walk(nx, ny) || (pd < 1.1 && P.dead <= 0)) {
+      if (p.dx && Math.random() < .5) { const turn = Math.random() < .5 ? -1 : 1; if (walk(p.x, p.y + turn)) { p.dy = turn; p.dx = 0; } else { p.dx *= -1; } }
+      else if (p.dy) { p.dy *= -1; } else p.dx *= -1;
+    } else { p.x = nx; p.y = ny; }
+    const cx = Math.floor(p.x) % 30, ry = Math.floor(p.y) % 24;
+    if (p.dx && cx === 2 && Math.random() < dt * .8) { p.dx = 0; p.dy = Math.random() < .5 ? -1 : 1; p.x = Math.floor(p.x) + .5; }
+    else if (p.dy && SIDEROW(ry) && Math.random() < dt * (cx !== 2 ? 1.5 : .6)) { p.dy = 0; p.dx = Math.random() < .5 ? -1 : 1; p.y = Math.floor(p.y) + .5; }
+    if (pd < 4 && p.say <= 0 && Math.random() < dt * .25 && P.dead <= 0) { p.say = 12; floater(p.x, p.y - 3, pick(LINES), 190, 185, 210, 2.6); }
+  }
+
+  // autos: frenan si hay alguien adelante en el carril
+  for (const c of cars) {
+    c.honk = Math.max(0, c.honk - dt);
+    let want = c.max;
+    if (c.stall > 0) { c.stall -= dt; want = 0; }
+    const head = c.dir > 0 ? c.x + 5 : c.x;
+    const ahead = (ox, oy) => { if (Math.abs(oy - c.y) > .9) return false; let d = (ox - head) * c.dir; if (d < -WW / 2) d += WW; return d > -1 && d < 7; };
+    if (P.dead <= 0 && ahead(P.x, P.y)) { want = 0; if (c.honk <= 0 && c.sp > 2) { c.honk = 3; floater(head, c.y - 2, '¡BIIIP!', 255, 220, 120); } }
+    for (const p of peds) if (ahead(p.x, p.y)) { want = 0; break; }
+    for (const o of cars) if (o !== c && o.y === c.y) { let d = (o.x - c.x) * c.dir; if (d < 0) d += WW; if (d > 0 && d < 8) want = Math.min(want, o.sp * .9); }
+    c.sp += clamp(want - c.sp, -30 * dt, 6 * dt);
+    c.x = (c.x + c.dir * c.sp * dt + WW) % WW;
+    if (P.dead <= 0 && Math.abs(P.y - c.y) < .7 && P.x > c.x - .2 && P.x < c.x + 5.2 && c.sp > 3) hurt(2, P.x - c.dir, c.y, 'Te pasa por arriba un auto. Mirá antes de cruzar.');
+    if (env.wet > .5 && c.sp > 5 && Math.random() < dt * 8) part(c.dir > 0 ? c.x - .5 : c.x + 5.5, c.y + rnd(-.3, .3), -c.dir * rnd(2, 5), rnd(-1, 0), .4, pick(['°', '.', '·']), 150, 170, 200, { drag: 3, lit: true });
+  }
+  for (const f of flyers) { f.t += dt; f.x += f.dir * f.sp * dt; if (f.x < -20) f.x += WW + 40; if (f.x > WW + 20) f.x -= WW + 40; }
+
+  // reflector policial
+  for (const f of flyers) if (f.cop && P.dead <= 0) {
+    const sx = f.x + Math.sin(f.t * .7) * 6, sy = f.y + 4 + Math.cos(f.t * .5) * 3;
+    if (Math.hypot(P.x - sx, (P.y - sy) * ASP) < 4 && alarm <= 0) alertAll(P.x, P.y, 'Te clava el reflector de una patrulla aérea. Los drones vienen.');
+  }
+
+  // drones
+  let anyAlert = false;
+  for (const d of drones) {
+    d.t += dt;
+    if (d.state === 'dead') {
+      d.dead -= dt;
+      for (const g of d.gl) {
+        g.t += dt;
+        if (g.t < 1.4) { g.vy += 22 * dt; g.x += g.vx * dt; g.y += g.vy * dt; if (g.y > g.grd) { g.y = g.grd; g.vy *= -.35; g.vx *= .6; } }
+        else if (g.ch !== '0' && g.ch !== '1') { g.ch = Math.random() < .5 ? '0' : '1'; }
+        else if (Math.random() < dt * 2) g.y += .3;
+      }
+      if (d.dead <= 0) {
+        d.state = 'patrol'; d.hp = 3; d.x = d.ax; d.y = d.ay; d.to = 1; d.fade = 0; d.stun = 0;
+        for (let k2 = 0; k2 < d.gl.length; k2++) { const g = d.gl[k2]; g.ch = DRONE[g.oy + 1][g.ox + 2]; g.st = 'ret'; g.x = d.x + rnd(-6, 6); g.y = d.y - 34; g.vx = g.vy = 0; }
+      }
+      continue;
+    }
+    d.fade = Math.min(1, d.fade + dt * .8);
+    d.stun = Math.max(0, d.stun - dt);
+    d.z += ((d.stun > 0 ? .5 : 2.6 + Math.sin(d.t * 2) * .25) - d.z) * Math.min(1, dt * 3);
+    const dx = P.x - d.x, dy = (P.y - d.y) * ASP, dist = Math.hypot(dx, dy) || 1;
+    if (d.stun <= 0) {
+      if (d.state === 'patrol') {
+        const tx = d.to ? d.bx : d.ax, ty = d.to ? d.by : d.ay, ex = tx - d.x, ey = (ty - d.y) * ASP, ed = Math.hypot(ex, ey);
+        if (ed < .5) d.to ^= 1; else { d.x += ex / ed * 3.2 * dt; d.y += ey / ed * 3.2 * dt / ASP; }
+        d.face = Math.atan2(ey, ex) + Math.sin(d.t * 1.3) * .8;
+        // detección: cono de 50°, 10 de alcance; si estás a oscuras te ve peor
+        let a = Math.atan2(dy, dx) - d.face; a = Math.atan2(Math.sin(a), Math.cos(a));
+        const lit = P.lit ?? .5, range = 4 + 7 * clamp(lit * 1.6, 0, 1);
+        if (P.dead <= 0 && dist < range && Math.abs(a) < .45) { P.seenT += dt; if (P.seenT > .35) alertAll(d.x, d.y, 'Un dron te escanea. ALERTA en la cuadra.'); }
+      } else {
+        anyAlert = true;
+        d.face = Math.atan2(dy, dx);
+        const want = dist > 7 ? 1 : dist < 4.5 ? -.6 : 0, orb = Math.sin(d.t * .8 + d.ax) * 1.4;
+        if (d.tele <= 0) { d.x += (dx / dist * want * 4.2 - dy / dist * orb) * dt; d.y += (dy / dist * want * 4.2 + dx / dist * orb) * dt / ASP; }
+        d.cd -= dt;
+        if (dist < 11 && d.cd <= 0 && d.tele <= 0 && P.dead <= 0) d.tele = .7;
+        if (d.tele > 0) { d.tele -= dt; if (d.tele <= 0) { launch(d); d.cd = rnd(2.2, 3.4); } }
+        if (alarm <= 0) { d.state = 'patrol'; }
+      }
+    }
+    const sy = d.y - d.z;
+    for (const g of d.gl) {
+      const tx = d.x + g.ox, ty = sy + g.oy + Math.sin(d.t * 3 + g.ox) * .05;
+      if (g.st === 'fly' && g.wait > 0) {
+        g.wait -= dt; g.x = tx; g.y = ty;
+        if (g.wait <= 0) { const ax = P.x - g.x, ay = (P.y - .5 - g.y) * ASP, ad = Math.hypot(ax, ay) || 1, s = rnd(-.15, .15);
+          const c = Math.cos(s), sn = Math.sin(s); g.vx = (ax * c - ay * sn) / ad * 14; g.vy = (ax * sn + ay * c) / ad * 14 / ASP; }
+        continue;
+      }
+      if (g.st === 'b') { const kk = Math.min(1, dt * 14); g.x += (tx - g.x) * kk; g.y += (ty - g.y) * kk; if (d.tele > 0 || d.stun > 0) g.x += rnd(-.15, .15); }
+      else if (g.st === 'fly') {
+        g.x += g.vx * dt; g.y += g.vy * dt; g.t -= dt;
+        if (Math.random() < .6) part(g.x, g.y, 0, 0, .35, Math.random() < .5 ? '0' : '1', 60, 255, 170, { drag: 0 });
+        if (P.dead <= 0 && Math.hypot(g.x - P.x, (g.y - (P.y - .5)) * ASP) < .9) { hurt(1, g.x, g.y + .5); g.st = 'ret'; }
+        if (g.t <= 0) g.st = 'ret';
+      } else if (g.st === 'sc') { g.x += g.vx * dt; g.y += g.vy * dt; g.vx *= 1 - 4 * dt; g.vy *= 1 - 4 * dt; g.t -= dt; if (g.t <= 0) g.st = 'ret'; }
+      else if (g.st === 'ret') {
+        g.vx += (tx - g.x) * 36 * dt; g.vy += (ty - g.y) * 36 * dt; const dd = Math.max(0, 1 - 5 * dt); g.vx *= dd; g.vy *= dd;
+        g.x += g.vx * dt; g.y += g.vy * dt;
+        if (Math.abs(tx - g.x) < .15 && Math.abs(ty - g.y) < .15) g.st = 'b';
+      }
+    }
+  }
+  if (!anyAlert) P.seenT = Math.max(0, P.seenT - dt);
+  if (alarm > 0) { let watching = false; for (const d of drones) if (d.state === 'alert' && Math.hypot(d.x - P.x, (d.y - P.y) * ASP) < 14) watching = true;
+    alarm = watching && P.dead <= 0 ? Math.max(alarm, 3) : alarm - dt;
+    if (alarm <= 0) { alarm = 0; say('Perdieron tu rastro. La red vuelve a patrullar.'); } }
+  $('alert').classList.toggle('on', alarm > 0);
+
+  // vapor de alcantarillas
+  for (const h of holes) if (Math.abs(h.x - P.x) < viewW && Math.abs(h.y - P.y) < viewH && Math.random() < dt * 5)
+    part(h.x + .5 + rnd(-.3, .3), h.y, env.wind * 2 + rnd(-.4, .4), rnd(-2.2, -1.2), rnd(1.4, 2.6), pick(['░', '▒', '░', '·']), 120, 120, 135, { drag: .5, lit: true });
+  // chispas de faroles rotos
+  for (const l of lamps) if (l.broken && Math.random() < dt * .15 && Math.abs(l.x - P.x) < viewW) for (let s = 0; s < 5; s++) part(l.x + .5, l.y - 3, rnd(-2, 2), rnd(-2, 0), .6, '*', 255, 220, 140, { grav: 14, drag: .5 });
+
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const q = parts[i]; q.t += dt;
+    if (q.t >= q.life) { parts[i] = parts[parts.length - 1]; parts.pop(); continue; }
+    const dd = Math.max(0, 1 - q.drag * dt); q.vx *= dd; q.vy = q.vy * dd + q.grav * dt; q.x += q.vx * dt; q.y += q.vy * dt;
+  }
+  for (let i = flashes.length - 1; i >= 0; i--) { flashes[i].t -= dt; if (flashes[i].t <= 0) flashes.splice(i, 1); }
+  for (let i = pulses.length - 1; i >= 0; i--) { pulses[i].t += dt; if (pulses[i].t > .6) pulses.splice(i, 1); }
+
+  // lluvia
+  const want = Math.round(env.rain * .13 * viewW * viewH);
+  while (drops.length < want) drops.push({ x: left + rnd(-2, viewW + 2), y: top + rnd(-2, viewH + 6), z: rnd(0, 14) });
+  if (drops.length > want) drops.length = want;
+  for (const d of drops) {
+    d.z -= 30 * dt;
+    if (d.z <= 0 || d.x < left - 4 || d.x > left + viewW + 4 || d.y < top - 4 || d.y > top + viewH + 8) {
+      if (d.z <= 0 && Math.random() < .45) part(d.x, d.y, 0, 0, .14, Math.random() < .5 ? '.' : ',', 140, 160, 200, { drag: 0, ground: true, lit: true });
+      d.x = left + rnd(-2, viewW + 2); d.y = top + rnd(-2, viewH + 6); d.z = rnd(6, 14);
+    }
+  }
+  shake = Math.max(0, shake - dt); glitch = Math.max(0, glitch - dt);
+}
+
+// ════════════════════════ Luz ════════════════════════
+function addLight(lx, ly, r, g, b, rad) {
+  const ry = rad / ASP;
+  const ja = Math.max(0, Math.floor(ly - ry) - oy), jb = Math.min(RH - 1, Math.ceil(ly + ry) - oy);
+  const ia = Math.max(0, Math.floor(lx - rad) - x0), ib = Math.min(RW - 1, Math.ceil(lx + rad) - x0);
+  if (ja > jb || ia > ib) return;
+  const inv = 1 / rad;
+  for (let j = ja; j <= jb; j++) {
+    const dy = (j + oy + .5 - ly) * ASP, dy2 = dy * dy;
+    for (let i = ia; i <= ib; i++) {
+      const dx = i + x0 + .5 - lx, d = Math.sqrt(dx * dx + dy2);
+      if (d >= rad) continue;
+      let f = 1 - d * inv; f *= f;
+      const k = j * RW + i; lr[k] += r * f; lg[k] += g * f; lb[k] += b * f;
+    }
+  }
+}
+function signLevel(s, idx) {
+  if (time < s.off) return Math.random() < .01 ? .8 : 0;
+  const p = env.power - s.thr;
+  if (p < 0) return 0;
+  if (p < .06) return Math.random() < .5 ? 1 : .05;
+  if (s.mode === 1 && idx === s.broken) return vnoise(time * 7, s.seed) > .5 ? 1 : .08;
+  if (s.mode === 2) return hash(Math.floor(time * 9), s.seed) > .9 ? .15 : .85 + .15 * Math.sin(time * 40);
+  return 1;
+}
+const FLIP = { '/': '\\', '\\': '/', '^': 'v', 'v': '^', '\'': ',', ',': '\'', '▀': '▄', '▄': '▀', '╓': '╙', '╙': '╓', '╖': '╜', '╜': '╖',
+  '┬': '┴', '┴': '┬', '⌒': '‿', '▲': '▼', '▼': '▲', '◓': '◒', '╤': '╧', 'M': 'W', 'W': 'M', 'V': 'A', 'A': 'V', 'U': 'Ո' };
+
+// ════════════════════════ Render ════════════════════════
+const RAMP = '.,-~:;=!*#$@';
+const holoZ = new Float32Array(30 * 15), holoL = new Int8Array(30 * 15);
+let fpsS = 60, cells = 0;
+function compose() {
+  const lights = [];
+  // 1. piso
+  for (let j = 0; j < RH; j++) {
+    const wy = j + oy;
+    for (let i = 0; i < RW; i++) {
+      const wx = i + x0, k = j * RW + i;
+      let ch = ' ', r = 0, g = 0, b = 0;
+      dep[k] = wy; lay[k] = 0; em[k] = 0; rk[k] = 0;
+      if (wx < 0 || wy < 0 || wx >= WW || wy >= WH) { rch[k] = ' '; rr[k] = rg[k] = rb[k] = 0; continue; }
+      const gi = wy * WW + wx, t = ground[gi], h = hash(wx, wy);
+      rk[k] = reflK[gi];
+      switch (t) {
+        case SIDE: ch = (wx + (wy >> 1)) % 3 === 0 ? '·' : h < .1 ? ',' : h > .97 ? '▫' : ' '; r = 78; g = 76; b = 94; break;
+        case ROAD: ch = h < .1 ? '.' : h > .985 ? 'o' : ' '; r = 58; g = 58; b = 70; break;
+        case MARK: ch = wx % 4 < 2 ? '─' : ' '; r = 150; g = 128; b = 40; break;
+        case CROSS: { const rr0 = wy % 24; ch = rr0 % 2 ? ' ' : '▬'; r = 120; g = 120; b = 132; break; }
+        case ALLEY: ch = h < .25 ? '·' : h < .32 ? ':' : h > .96 ? pick2(h) : ' '; r = 64; g = 60; b = 70; if (h > .96) { r = 92; g = 82; b = 64; } break;
+        case PLAZA: { const dx = wx - HOLO.x, dy = (wy - HOLO.y) * 1.7, d = Math.sqrt(dx * dx + dy * dy);
+          ch = Math.abs(d - 7) < .5 || Math.abs(d - 11) < .5 ? '○' : (wx + wy) % 4 === 0 ? '·' : ' '; r = 84; g = 74; b = 104; break; }
+        case LOT: if (wy % 24 === 23 || wy % 24 === 22) { ch = wx % 3 === 0 ? '¦' : h < .15 ? '.' : ' '; r = 60; g = 60; b = 70; }
+          else { ch = h > .965 ? '▤' : h > .94 ? '◘' : h > .92 ? '"' : (wy % 5 === 0 && hash(wx >> 2, wy) > .55) ? '~' : h < .12 ? '·' : ' ';
+            r = 62; g = 58; b = 70; if (ch === '~') { r = 90; g = 80; b = 110; } }
+          break;
+        case HOLE: ch = 'Ø'; r = 100; g = 100; b = 112; break;
+        case BLD: ch = ' '; break;
+      }
+      rch[k] = ch; rr[k] = r; rg[k] = g; rb[k] = b;
+    }
+  }
+  // 2. edificios, de atrás para adelante (pintor)
+  const pw = clamp(env.power * 1.15, 0, 1);
+  for (const B of buildings) {
+    if (B.x + B.w < x0 || B.x > x0 + RW) continue;
+    if (B.front < oy || B.y - B.h > oy + RH) continue;
+    const st = STYLES[B.style], [wr, wg, wb] = st.c;
+    // techo
+    for (let fy = B.y; fy <= B.front; fy++) {
+      const j = fy - B.h - oy; if (j < 0 || j >= RH) continue;
+      for (let fx = B.x; fx < B.x + B.w; fx++) {
+        const i = fx - x0; if (i < 0 || i >= RW) continue;
+        const edge = fx === B.x || fx === B.x + B.w - 1 || fy === B.y;
+        const ch = fy === B.front ? '▀' : edge ? '▓' : (hash(fx * 3, fy) < .3 ? '·' : ' ');
+        const m = fy === B.front ? 1.25 : edge ? .9 : .7;
+        put(i, j, ch, wr * m + 6, wg * m + 4, wb * m + 12, 0, B.front, 1);
+      }
+    }
+    for (const f of B.roof) {
+      const i = f.x - x0, j = f.y - B.h - oy;
+      if (f.t === '╫') { put(i, j, '╫', 110, 110, 120, 0, B.front, 1); if (Math.sin(time * 3 + B.id) > .6) { put(i, j - 1, '•', 255, 40, 50, 1, B.front, 1); } }
+      else put(i, j, f.t, 90, 94, 108, 0, B.front, 1);
+    }
+    // fachada
+    const tv = hash(B.id, 77) > .7;
+    for (let z = 0; z < B.h; z++) {
+      const j = B.front - z - oy; if (j < 0 || j >= RH) continue;
+      for (let fx = B.x; fx < B.x + B.w; fx++) {
+        const i = fx - x0; if (i < 0 || i >= RW) continue;
+        const c = fx - B.x;
+        let ch, r = wr, g = wg, b = wb, e = 0;
+        if (c === 0 || c === B.w - 1) { ch = '▌'; r *= .8; g *= .8; b *= .8; if (c === B.w - 1) ch = '▐'; }
+        else if (z === 0) {
+          if (c === B.door) { ch = '▯'; r = 30; g = 28; b = 36; if (B.shop && pw > .3) { r = 200; g = 160; b = 90; e = .7; } }
+          else if (B.shop && pw > .2) { const [sr, sg, sb] = B.shopC; ch = '▒'; r = sr * .45 + 60; g = sg * .45 + 50; b = sb * .45 + 40; e = .55 * pw; }
+          else { ch = '╪'; r = 70; g = 70; b = 80; }
+        } else if (z % 5 === 0 && z !== B.h - 1) { ch = '═'; r *= 1.15; g *= 1.15; b *= 1.15; }
+        else if (B.style === 1 || c % 2 === 1) {
+          const hv = hash(fx * 131 + z, B.id + 7);
+          if (hv < B.occ * pw) {
+            ch = '▪';
+            if (tv && hv < .05) { const f = .5 + .5 * vnoise(time * 6, fx + z); r = 90 * f; g = 140 * f; b = 255 * f; }
+            else if (hv < B.occ * pw * .35) { r = 150; g = 200; b = 255; } else { r = 255; g = 186; b = 110; }
+            e = .75;
+          } else if (pw < .3 && hv < B.occ * .12) { ch = '▪'; r = 255; g = 130; b = 40; e = .4 + .2 * Math.sin(time * 9 + fx); } // velas en el apagón
+          else { ch = B.style === 1 ? '▫' : '▫'; r = 34; g = 40; b = 56; }
+        } else ch = st.wall;
+        put(i, j, ch, r, g, b, e, B.front, 1);
+      }
+    }
+    // cartel de neón
+    const S = B.sign;
+    if (S) {
+      const [sr, sg, sb] = S.c; let on = 0;
+      for (let n = 0; n < S.text.length; n++) {
+        const fx = S.vert ? B.x + S.col : B.x + S.col + n, z = S.vert ? S.z + S.text.length - 1 - n : S.z;
+        const lv = signLevel(S, n); on += lv;
+        const ch = S.text[n] === ' ' ? '·' : S.text[n];
+        if (lv > .02) put(fx - x0, B.front - z - oy, ch, sr * lv + 30 * lv, sg * lv + 30 * lv, sb * lv + 30 * lv, 1, B.front, 1);
+        else put(fx - x0, B.front - z - oy, ch, 40, 36, 48, 0, B.front, 1);
+      }
+      on /= S.text.length;
+      if (on > .05) {
+        const cx = S.vert ? B.x + S.col + .5 : B.x + S.col + S.text.length / 2, cz = S.vert ? S.z + S.text.length / 2 : S.z;
+        lights.push([cx, B.front - cz + .5, sr / 255 * .9 * on, sg / 255 * .9 * on, sb / 255 * .9 * on, S.vert ? 7 : 6 + S.text.length * .4]);
+      }
+    }
+    // pantalla gigante con marquesina
+    const Pn = B.panel;
+    if (Pn && env.power > Pn.thr) {
+      const [pr, pg, pb] = Pn.c, len = Pn.text.length, off = Math.floor(time * 7);
+      for (let row = 0; row < 2; row++) for (let fx = B.x + 1; fx < B.x + B.w - 1; fx++) {
+        const z = Pn.z - row, n = (fx - B.x + off) % len;
+        const ch = row === 0 ? Pn.text[n] : ((fx + off) % 6 < 3 ? '▄' : ' ');
+        const f = row === 0 ? 1 : .5;
+        put(fx - x0, B.front - z - oy, ch === ' ' ? '·' : ch, pr * f, pg * f, pb * f, 1, B.front, 1);
+      }
+      lights.push([B.x + B.w / 2, B.front - Pn.z + .5, pr / 255 * .7, pg / 255 * .7, pb / 255 * .7, 9]);
+    }
+  }
+  // 3. elementos sobre la calle (con prueba de profundidad)
+  for (const l of lamps) {
+    if (l.x < x0 - 8 || l.x > x0 + RW + 8 || l.y < oy || l.y > oy + RH + 4) continue;
+    const i = l.x - x0;
+    put(i, l.y - oy, '┴', 80, 80, 92, 0, l.y, 2);
+    put(i, l.y - 1 - oy, '│', 74, 74, 86, 0, l.y, 2);
+    put(i, l.y - 2 - oy, '│', 74, 74, 86, 0, l.y, 2);
+    let on = env.power > .35 && time > l.off;
+    if (l.broken) on = on && vnoise(time * 5, l.x) > .45;
+    const [r, g, b] = l.warm ? [255, 190, 100] : [200, 230, 255];
+    put(i, l.y - 3 - oy, '╤', on ? r : 60, on ? g : 60, on ? b : 70, on ? 1 : 0, l.y, 2);
+    if (on) lights.push([l.x + .5, l.y - 1.5, r / 255 * .75, g / 255 * .75, b / 255 * .75, 7]);
+  }
+  for (const v of vend) {
+    if (v.x < x0 - 6 || v.x > x0 + RW + 6) continue;
+    const on = env.power > .5, [r, g, b] = v.c;
+    put(v.x - x0, v.y - oy, '▣', on ? r : 50, on ? g : 50, on ? b : 60, on ? .9 : 0, v.y, 2);
+    put(v.x - x0, v.y - 1 - oy, '▀', on ? r * .7 : 50, on ? g * .7 : 50, on ? b * .7 : 60, on ? .9 : 0, v.y, 2);
+    if (on) lights.push([v.x + .5, v.y - .5, r / 255 * .5, g / 255 * .5, b / 255 * .5, 4]);
+  }
+  for (const s of stalls) {
+    if (s.x < x0 - 8 || s.x > x0 + RW + 8) continue;
+    const [r, g, b] = s.c;
+    for (let x = s.x; x < s.x + s.w; x++) {
+      put(x - x0, s.y - oy, '▄', 90, 70, 60, 0, s.y, 2);
+      put(x - x0, s.y - 2 - oy, (x - s.x) % 2 ? '▀' : '▄', r * .55, g * .55, b * .55, .6, s.y, 2);
+    }
+    put(s.x - x0, s.y - 1 - oy, '│', 80, 80, 90, 0, s.y, 2); put(s.x + s.w - 1 - x0, s.y - 1 - oy, '│', 80, 80, 90, 0, s.y, 2);
+    put(s.x + 1 - x0, s.y - 1 - oy, '•', 255, 70, 40, 1, s.y, 2); put(s.x + s.w - 2 - x0, s.y - 1 - oy, '•', 255, 70, 40, 1, s.y, 2);
+    lights.push([s.x + s.w / 2, s.y - 1, .7, .3, .15, 5]);
+  }
+  // holograma: toro ASCII que gira (z-buffer propio), flotando sobre la plaza
+  if (Math.abs(HOLO.x - (x0 + RW / 2)) < RW && HOLO.y > oy - 10 && HOLO.y - 20 < oy + RH && env.power > .15) {
+    const HWd = 28, HHt = 14, A = time * .8, Bn = time * .45;
+    holoZ.fill(0); holoL.fill(-1);
+    const cA = Math.cos(A), sA = Math.sin(A), cB = Math.cos(Bn), sB = Math.sin(Bn), K2 = 5, K1 = HWd * K2 * 3 / (8 * 3);
+    for (let th = 0; th < 6.283; th += .2) {
+      const ct = Math.cos(th), stt = Math.sin(th);
+      for (let ph = 0; ph < 6.283; ph += .055) {
+        const cp = Math.cos(ph), sp = Math.sin(ph), cx = 2 + ct, cy = stt;
+        const x = cx * (cB * cp + sA * sB * sp) - cy * cA * sB, y = cx * (sB * cp - sA * cB * sp) + cy * cA * cB;
+        const ooz = 1 / (K2 + cA * cx * sp + cy * sA);
+        const xp = Math.floor(HWd / 2 + K1 * ooz * x), yp = Math.floor(HHt / 2 - K1 * ooz * y / ASP);
+        if (xp < 0 || yp < 0 || xp >= HWd || yp >= HHt) continue;
+        const L = cp * ct * sB - cA * ct * sp - sA * stt + cB * (cA * stt - ct * sA * sp);
+        const idx = yp * HWd + xp;
+        if (ooz > holoZ[idx]) { holoZ[idx] = ooz; holoL[idx] = L > 0 ? Math.min(11, Math.floor(L * 8)) : 0; }
+      }
+    }
+    const baseRow = HOLO.y - 4 - HHt, flick = env.power < .6 ? (Math.random() < .3 ? .3 : 1) : 1;
+    const gl = Math.random() < .04 ? Math.floor(rnd(0, HHt)) : -1;
+    for (let r0 = 0; r0 < HHt; r0++) {
+      const scan = ((r0 + Math.floor(time * 10)) % 4 === 0) ? .45 : 1, sh = r0 === gl ? Math.round(rnd(-3, 3)) : 0;
+      for (let c0 = 0; c0 < HWd; c0++) {
+        const l = holoL[r0 * HWd + c0]; if (l < 0) continue;
+        const t = l / 11, f = (.35 + .65 * t) * scan * flick;
+        put(HOLO.x - HWd / 2 + c0 + sh - x0, baseRow + r0 - oy, RAMP[l], (60 + 195 * (1 - t)) * f, (230 * t + 40) * f, 255 * f, .9, HOLO.y, 2);
+      }
+    }
+    const title = 'VELGRIM // NUEVA CENIZA';
+    for (let n = 0; n < title.length; n++) {
+      const ch = Math.random() < .02 ? pick(['#', '%', '&', '?']) : title[n];
+      put(HOLO.x - (title.length >> 1) + n - x0, baseRow - 2 - oy, ch, 255 * flick, 60 * flick, 180 * flick, 1, HOLO.y, 2);
+    }
+    for (let z = 1; z <= 4; z++) put(HOLO.x - x0, HOLO.y - z - oy, (z + Math.floor(time * 8)) % 3 ? '│' : '┊', 40, 200, 255, .6 * flick, HOLO.y, 2);
+    put(HOLO.x - x0, HOLO.y - oy, '▲', 120, 200, 255, .8, HOLO.y, 2);
+    lights.push([HOLO.x + .5, HOLO.y - 10, .25 * flick, .7 * flick, 1 * flick, 16]);
+  }
+
+  // 4. luz
+  const amb = env.amb;
+  lr.fill(amb[0]); lg.fill(amb[1]); lb.fill(amb[2]);
+  for (const L of lights) addLight(L[0], L[1], L[2], L[3], L[4], L[5]);
+  if (P.dead <= 0) addLight(P.x, P.y - .5, .12, .35, .45, 4.5);
+  for (const c of cars) {
+    if (c.x < x0 - 20 || c.x > x0 + RW + 20 || c.y < oy || c.y > oy + RH) continue;
+    if (c.stall > 0) continue;
+    const head = c.dir > 0 ? c.x + 5 : c.x;
+    addLight(head + c.dir * 3, c.y, .8, .78, .62, 5); addLight(head + c.dir * 7, c.y, .45, .45, .38, 4.5);
+    addLight(c.dir > 0 ? c.x - 1 : c.x + 6, c.y, .6, .05, .08, 2.5);
+  }
+  for (const f of flyers) {
+    if (f.x < x0 - 20 || f.x > x0 + RW + 20) continue;
+    addLight(f.x + 2, f.y - f.z + 1.5, .35, .4, .55, 6);
+    if (f.cop) { const sx = f.x + Math.sin(f.t * .7) * 6, sy = f.y + 4 + Math.cos(f.t * .5) * 3; addLight(sx, sy, .55, .62, .8, 5);
+      const blue = Math.floor(time * 6) % 2; addLight(f.x + 2, f.y - f.z + 2, blue ? .1 : .7, .05, blue ? .8 : .1, 7); }
+  }
+  for (const d of drones) {
+    if (d.state === 'dead' || d.stun > 0) continue;
+    const al = d.state === 'alert' ? 1.4 : 1;
+    for (let s = 1; s <= 3; s++) addLight(d.x + Math.cos(d.face) * s * 2.6, d.y + Math.sin(d.face) * s * 2.6 / ASP, .45 * al, .03, .06, 2.2 + s * .5);
+    addLight(d.x, d.y - d.z, .5, .05, .08, 3);
+  }
+  for (const f of flashes) addLight(f.x, f.y, f.r, f.g, f.b, f.rad);
+  for (const p of pulses) addLight(p.x, p.y, .3, .8, 1, 4 + p.t * 18);
+
+  // 5. color final
+  const n = RW * RH;
+  for (let k = 0; k < n; k++) {
+    if (em[k] > 0) { const e = .65 + em[k] * .45; rr[k] *= e; rg[k] *= e; rb[k] *= e; }
+    else { const m = 1.45; rr[k] *= lr[k] * m; rg[k] *= lg[k] * m; rb[k] *= lb[k] * m; }
+  }
+  // 6. piso mojado: espejo de las fachadas de arriba
+  const rip = .4 + env.rain * .8;
+  for (let j = REF; j < RH; j++) {
+    const wy = j + oy;
+    const wob = Math.sin(wy * 1.9 + time * 3.1) * rip;
+    for (let i = 0; i < RW; i++) {
+      const k = j * RW + i; if (lay[k] !== 0) continue;
+      const K = rk[k]; if (!K) continue;
+      const wx = i + x0;
+      const pud = clamp((vnoise(wx * .13, wy * .32) - (1 - env.wet) * .75) * 2.4, 0, 1) * env.wet;
+      if (pud < .05) continue;
+      const si = i + Math.round(wob + (vnoise(wx * .6, wy + time * 3) - .5) * env.rain * 2.2), sj = j - 2 * K + 1;
+      if (si < 0 || si >= RW || sj < 0) continue;
+      const sk = sj * RW + si; if (lay[sk] === 0) continue;
+      const f = pud * .62 * (1 - K / 14);
+      const sr = rr[sk] * f, sg = rg[sk] * f, sb = rb[sk] * f;
+      if (sr + sg + sb > rr[k] + rg[k] + rb[k] && rch[sk] !== ' ') rch[k] = FLIP[rch[sk]] || rch[sk];
+      rr[k] += sr; rg[k] += sg; rb[k] += sb;
+      if (em[sk] > 0) em[k] = -f; // marca reflejo emisivo para el bloom
+    }
+  }
+  // 7. smog teñido por el neón + mapas de halo y bloom
+  const bd = bgImg.data, ed = emImg.data, smog = env.smog;
+  for (let j = REF; j < RH; j++) {
+    const wy = j + oy;
+    for (let i = 0; i < RW; i++) {
+      const k = j * RW + i, wx = i + x0;
+      let s = 0;
+      if (smog > .02) {
+        s = smog * (.3 + .7 * vnoise(wx * .06 + time * .2, wy * .1 - time * .06));
+        s = Math.min(.9, s + smog * Math.min(1, Math.hypot(wx - P.x, (wy - P.y) * ASP) / 26) * .5);
+        const fr = 30 + lr[k] * 80, fg = 26 + lg[k] * 70, fb = 40 + lb[k] * 80;
+        rr[k] += (fr - rr[k]) * s; rg[k] += (fg - rg[k]) * s; rb[k] += (fb - rb[k]) * s;
+      }
+      const p = ((j - REF) * RW + i) * 4;
+      bd[p] = clamp((lr[k] - amb[0]) * 20 + s * (20 + lr[k] * 60), 0, 255);
+      bd[p + 1] = clamp((lg[k] - amb[1]) * 16 + s * (18 + lg[k] * 50), 0, 255);
+      bd[p + 2] = clamp((lb[k] - amb[2]) * 20 + s * (30 + lb[k] * 60), 0, 255);
+      bd[p + 3] = 255;
+      const e = em[k] > 0 ? .55 : em[k] < 0 ? -em[k] * .7 : 0;
+      ed[p] = clamp(rr[k] * e, 0, 255); ed[p + 1] = clamp(rg[k] * e, 0, 255); ed[p + 2] = clamp(rb[k] * e, 0, 255); ed[p + 3] = 255;
+    }
+  }
+}
+function pick2(h) { return h > .985 ? '≡' : '▫'; }
+
+function render() {
+  viewW = W / cw; viewH = H / chh;
+  const shX = shake > 0 ? rnd(-1, 1) * shake : 0, shY = shake > 0 ? rnd(-1, 1) * shake * .5 : 0;
+  left = cam.x - viewW / 2 + shX; top = cam.y - viewH / 2 + shY;
+  x0 = Math.floor(left); y0 = Math.floor(top); oy = y0 - REF;
+  const fx = (left - x0) * cw, fy = (top - y0) * chh;
+  compose();
+
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  ctx.fillStyle = '#05040a'; ctx.fillRect(0, 0, W, H);
+  bctx.putImageData(bgImg, 0, 0); ectx.putImageData(emImg, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(bgc, 0, 0, RW, rows, -fx, -fy, RW * cw, rows * chh);
+
+  cells = 0;
+  for (let j = REF; j < RH; j++) {
+    const py = (j - REF) * chh - fy + chh / 2;
+    for (let i = 0; i < RW; i++) {
+      const k = j * RW + i, c = rch[k];
+      if (c === ' ') continue;
+      glyph(c, i * cw - fx + cw / 2, py, rr[k], rg[k], rb[k]); cells++;
+    }
+  }
+  const SX = x => (x - left) * cw, SY = y => (y - top) * chh;
+  const cellK = (x, y) => { const i = Math.floor(x) - x0, j = Math.floor(y) - oy; return (i < 0 || j < 0 || i >= RW || j >= RH) ? -1 : j * RW + i; };
+  const lightAt = (x, y) => { const k = cellK(x, y); return k < 0 ? [.3, .3, .3] : [lr[k], lg[k], lb[k]]; };
+  const visible = (x, row, gy) => { const k = cellK(x, row); return k < 0 || dep[k] <= Math.floor(gy); };
+  const wetAt = (x, y) => env.wet * clamp((vnoise(Math.floor(x) * .13, Math.floor(y) * .32) - (1 - env.wet) * .75) * 2.4, 0, 1);
+
+  // partículas de suelo
+  for (const q of parts) {
+    if (!q.ground) continue;
+    galpha = 1 - q.t / q.life;
+    if (q.lit) { const L = lightAt(q.x, q.y); glyph(q.ch, SX(q.x), SY(q.y), q.r * L[0] * 1.6 + 20, q.g * L[1] * 1.6 + 20, q.b * L[2] * 1.6 + 20); }
+    else glyph(q.ch, SX(q.x), SY(q.y), q.r, q.g, q.b);
+  }
+  galpha = 1;
+
+  // autos (con reflejo de faros sobre el asfalto mojado)
+  for (const c of cars) {
+    if (c.x < x0 - 6 || c.x > x0 + RW + 1 || c.y < top - 2 || c.y > top + viewH + 2) continue;
+    const L = lightAt(c.x + 2, c.y), lit = c.stall <= 0;
+    for (let s = 0; s < 5; s++) {
+      const x = c.x + s + .5, isHead = c.dir > 0 ? s === 4 : s === 0, isTail = c.dir > 0 ? s === 0 : s === 4;
+      if (!visible(x, c.y, c.y)) continue;
+      let ch = s === 2 ? '█' : '▄', r = c.col[0] * (L[0] * 1.3 + .15), g = c.col[1] * (L[1] * 1.3 + .15), b = c.col[2] * (L[2] * 1.3 + .15);
+      if (isHead) { ch = '■'; if (lit) { r = 255; g = 240; b = 200; } }
+      if (isTail) { ch = '■'; if (lit) { r = 255; g = 40; b = 50; } }
+      glyph(ch, SX(x), SY(c.y), r, g, b);
+      const wv = wetAt(x, c.y + 1);
+      if (wv > .1 && (isHead || isTail) && lit) {
+        galpha = wv * .55;
+        glyph('│', SX(x), SY(c.y + 1), r, g, b); glyph('┊', SX(x), SY(c.y + 2), r * .6, g * .6, b * .6);
+        galpha = 1;
+      }
+    }
+  }
+
+  // peatones
+  for (const p of peds) {
+    if (p.x < left - 1 || p.x > left + viewW + 1 || p.y < top - 1 || p.y > top + viewH + 3) continue;
+    const L = lightAt(p.x, p.y), m = .9;
+    const bob = Math.abs(Math.sin(p.t * p.sp * 3)) * .08;
+    const wv = wetAt(p.x, p.y + 1);
+    if (visible(p.x, p.y, p.y)) {
+      const r = p.col[0] * L[0] * m * 2 + 14, g = p.col[1] * L[1] * m * 2 + 14, b = p.col[2] * L[2] * m * 2 + 18;
+      glyph(p.body, SX(p.x), SY(p.y - bob), r, g, b);
+      if (wv > .15) { galpha = wv * .4; glyph('!', SX(p.x), SY(p.y + 1), r, g, b); galpha = 1; }
+    }
+    if (p.umb && env.rain > .15 && visible(p.x, p.y - 1, p.y)) {
+      const [ur, ug, ub] = p.umb, on = env.power > .2 || hash(p.x | 0, 3) > .5;
+      glyph('⌒', SX(p.x), SY(p.y - 1 - bob), on ? ur : 60, on ? ug : 60, on ? ub : 70);
+      if (on && wv > .15) { galpha = wv * .45; glyph('‿', SX(p.x), SY(p.y + 2), ur, ug, ub); galpha = 1; }
+    }
+  }
+
+  // drones y sus letras
+  for (const d of drones) {
+    if (d.x < left - 8 || d.x > left + viewW + 8 || d.y < top - 6 || d.y > top + viewH + 10) continue;
+    if (d.state !== 'dead' && visible(d.x, d.y, d.y)) glyph('·', SX(d.x), SY(d.y), 40, 20, 30);
+    for (const g of d.gl) {
+      let r = 170, gg = 176, b = 196, a = d.fade;
+      if (d.state === 'dead') { if (g.ch === '0' || g.ch === '1') { r = 60; gg = 255; b = 160; a = Math.max(0, 1 - (g.t - 1.4) / 3); } else { r = 140; gg = 140; b = 160; } }
+      else if (g.eye) { r = 255; gg = d.stun > 0 ? 200 : 40; b = 60; }
+      else if (d.tele > 0) { const t = 1 - d.tele / .7; r += (255 - r) * t; gg *= 1 - t * .7; b *= 1 - t * .6; }
+      else if (g.st === 'fly' && g.wait <= 0) { r = 80; gg = 255; b = 200; }
+      if (a <= .02) continue;
+      let ch = g.ch;
+      if (d.stun > 0 && Math.random() < .3) ch = pick(['#', '%', '░', '?', '0', '1']);
+      galpha = a;
+      glyph(ch, SX(g.x), SY(g.y), r, gg, b);
+    }
+    galpha = 1;
+  }
+
+  // jugador
+  P.sx = SX(P.x); P.sy = SY(P.y);
+  if (P.dead <= 0 && !(P.inv > 0 && P.hurt <= 0 && Math.floor(time * 16) % 2)) {
+    const hr = P.hurt > 0, vis = visible(P.x, P.y, P.y);
+    const [r, g, b] = hr ? [255, 70, 90] : vis ? [235, 255, 255] : [40, 160, 200];
+    glyph('@', P.sx, P.sy, r, g, b);
+    if (vis && wetAt(P.x, P.y + 1) > .15) { galpha = .35; glyph('@', P.sx, SY(P.y + 1), r, g, b); galpha = 1; }
+    const L = lightAt(P.x, P.y); P.lit = (L[0] + L[1] + L[2]) / 3;
+  }
+  if (P.slash > 0) {
+    const prog = 1 - P.slash / .18, base = Math.atan2(P.fy, P.fx);
+    for (let s = 0; s < 11; s++) {
+      const u = s / 10, ang = base - 1.15 + u * 2.3;
+      if (Math.abs(u - prog) > .3) continue;
+      const x = P.x + Math.cos(ang) * 2.3, y = P.y - .4 + Math.sin(ang) * 2.3 / ASP;
+      const ta = ((ang + Math.PI / 2) % Math.PI + Math.PI) % Math.PI;
+      const c = ta < Math.PI / 8 || ta > Math.PI * 7 / 8 ? '─' : ta < Math.PI * 3 / 8 ? '╲' : ta < Math.PI * 5 / 8 ? '│' : '╱';
+      galpha = 1 - Math.abs(u - prog) / .3; glyph(c, SX(x), SY(y), 150, 250, 255);
+    }
+    galpha = 1;
+  }
+  for (const p of pulses) {
+    const R = p.t * 18, a = 1 - p.t / .6, nP = Math.ceil(R * 6.3 * .9);
+    galpha = a;
+    for (let s = 0; s < nP; s++) { const an = s / nP * Math.PI * 2; glyph(s % 3 ? '░' : '▒', SX(p.x + Math.cos(an) * R), SY(p.y + Math.sin(an) * R / ASP), 120, 230, 255); }
+    galpha = 1;
+  }
+
+  // partículas de aire
+  for (const q of parts) {
+    if (q.ground) continue;
+    galpha = 1 - q.t / q.life;
+    let r = q.r, g = q.g, b = q.b;
+    if (q.lit) { const L = lightAt(q.x, q.y); r = q.r * L[0] * 1.7 + 10; g = q.g * L[1] * 1.7 + 10; b = q.b * L[2] * 1.7 + 14; }
+    if (q.text) { const x = SX(q.x) - (q.text.length - 1) * cw / 2; for (let c = 0; c < q.text.length; c++) glyph(q.text[c], x + c * cw, SY(q.y), r, g, b); }
+    else glyph(q.ch, SX(q.x), SY(q.y), r, g, b);
+  }
+  galpha = 1;
+
+  // autos voladores (por encima de todo)
+  for (const f of flyers) {
+    if (f.x < left - 8 || f.x > left + viewW + 2) continue;
+    const row = f.y - f.z; if (row < top - 2 || row > top + viewH + 2) continue;
+    const body = f.dir > 0 ? ['▸', '▬', '█', '▬', '◆'] : ['◆', '▬', '█', '▬', '◂'];
+    for (let s = 0; s < 5; s++) {
+      const isHead = f.dir > 0 ? s === 4 : s === 0, isTail = f.dir > 0 ? s === 0 : s === 4;
+      let r = 90, g = 96, b = 120;
+      if (isHead) { r = 240; g = 250; b = 255; }
+      if (isTail) { r = 255; g = 50; b = 70; }
+      if (f.cop && s === 2) { const bl = Math.floor(time * 6) % 2; r = bl ? 60 : 255; g = 40; b = bl ? 255 : 60; }
+      glyph(body[s], SX(f.x + s), SY(row), r, g, b);
+    }
+    galpha = .35;
+    for (let s = 1; s < 5; s++) glyph('─', SX(f.x - f.dir * s * 1.2 + (f.dir > 0 ? 0 : 4)), SY(row), 255, 60, 80);
+    galpha = 1;
+    if (f.cop) { // haz del reflector
+      const sx = f.x + 2 + Math.sin(f.t * .7) * 6, sy = f.y + 4 + Math.cos(f.t * .5) * 3;
+      galpha = .18;
+      for (let s = 1; s < 8; s++) { const t = s / 8; glyph('┊', SX(f.x + 2 + (sx - f.x - 2) * t), SY(row + (sy - row) * t), 170, 200, 255); }
+      galpha = 1;
+    }
+  }
+
+  // lluvia, teñida por la luz que atraviesa
+  if (drops.length) {
+    const wd = env.wind, ch = wd > .4 ? '╲' : wd < -.4 ? '╱' : '│';
+    galpha = .5;
+    for (const d of drops) {
+      const x = d.x - wd * d.z * .3, y = d.y - d.z * .5, L = lightAt(x, y);
+      glyph(ch, SX(x), SY(y), 50 + L[0] * 170, 60 + L[1] * 170, 80 + L[2] * 170);
+    }
+    galpha = 1;
+  }
+
+  galpha = 1; flush();
+
+  // bloom: mapa emisivo desenfocado, sumado encima
+  blctx.clearRect(0, 0, RW, rows);
+  if (HAS_FILTER) blctx.filter = 'blur(1.6px)';
+  blctx.drawImage(emc, 0, 0);
+  if (HAS_FILTER) blctx.filter = 'none';
+  ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .75;
+  ctx.drawImage(blc, 0, 0, RW, rows, -fx, -fy, RW * cw, rows * chh);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+
+  // glitch: tiras de pantalla corridas
+  if (glitch > 0) {
+    const nS = Math.ceil(glitch * 20);
+    for (let s = 0; s < nS; s++) {
+      const y = Math.floor(rnd(0, H)), h = Math.floor(rnd(1, 3) * chh), dx = Math.round(rnd(-40, 40) * dpr);
+      ctx.drawImage(cv, 0, y, W, h, dx, y, W, h);
+    }
+  }
+}
+
+// ════════════════════════ Loop ════════════════════════
+let last = 0, hudAcc = 0;
+function frame(ts) {
+  const raw = (ts - last) / 1000 || .016, dt = Math.min(.05, raw); last = ts;
+  update(dt); render();
+  fpsS += (1 / Math.max(raw, .001) - fpsS) * .05;
+  hudAcc += dt;
+  if (hudAcc > .5) {
+    hudAcc = 0;
+    const mins = Math.floor(clock) % (24 * 60), hh = String(Math.floor(mins / 60)).padStart(2, '0'), mm = String(mins % 60).padStart(2, '0');
+    $('sub').textContent = `barrio 9 · ${hh}:${mm} · ${WEATHER[weather].name.toLowerCase()} · ${Math.round(fpsS)} fps · ${(cells / 1000).toFixed(1)}k glifos`;
+  }
+  requestAnimationFrame(frame);
+}
+async function boot() {
+  resize();
+  try { await Promise.race([document.fonts.load(`${fs}px "JetBrains Mono"`), new Promise(r => setTimeout(r, 1500))]); } catch (_) {}
+  atlasReset(); setWeather('drizzle'); updateHud();
+  say('Nueva Ceniza, barrio 9. Llueve desde hace once días.');
+  requestAnimationFrame(t => { last = t; frame(t); });
+}
+boot();
+})();
+</script>
