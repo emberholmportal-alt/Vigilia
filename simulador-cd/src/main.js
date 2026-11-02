@@ -1,0 +1,1153 @@
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* =========================================================================
+   Simulador de Centro de Distribución (Argentina) — prototipo
+   Picking por pedido con terminal RF, reposición desde pulmón (FEFO),
+   armado de pallet ARLOG 1000×1200 por peso/resistencia, enfilmado
+   con envolvedora y despacho por andén. Físicas: cannon-es.
+   ========================================================================= */
+
+// ---------- helpers ----------
+const rand = (a, b) => a + Math.random() * (b - a);
+const randi = (a, b) => Math.floor(rand(a, b + 1));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const wrapA = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+const fmt = (v, d = 1) => v.toFixed(d).replace('.', ',');
+const distXZ = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.05, ...o });
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const $ = id => document.getElementById(id);
+const isMobile = matchMedia('(pointer:coarse)').matches;
+
+// ---------- constantes del dominio ----------
+const PAL = { w: 1.2, h: 0.15, d: 1.0 };          // pallet ARLOG 1000×1200 mm
+const CELL_X = 0.4, CELL_Z = 1 / 3;               // grilla 3×3 sobre el pallet
+const BOX_W = 0.37, BOX_D = 0.30;                 // huella de las cajas
+const MAX_H = 1.60;                               // altura máx. pallet armado (incluye pallet)
+const LEVEL_Y = [0, 1.45, 2.85];                  // nivel 0 picking, 1-2 pulmón
+const WRAP = { x: 7, z: -6.5 };                   // envolvedora
+const DOCK = { x: 11, z: 3, minx: 9.4, maxx: 12.6, minz: 1.5, maxz: 4.5 };
+const START = { x: 3.6, z: 0.05 };
+
+const SKUS = [
+  { id: 'GAS', name: 'Gaseosa cola 6×2,25 L', short: 'Gaseosa', w: 14.2, h: 0.34, res: 70, cat: 'bebida', color: '#c0392b' },
+  { id: 'AGU', name: 'Agua mineral 6×2 L', short: 'Agua', w: 12.4, h: 0.33, res: 70, cat: 'bebida', color: '#2e86c1' },
+  { id: 'LAV', name: 'Lavandina 12×1 L', short: 'Lavandina', w: 13.1, h: 0.28, res: 55, cat: 'quimico', color: '#8e44ad' },
+  { id: 'ACE', name: 'Aceite girasol 12×900 ml', short: 'Aceite', w: 11.6, h: 0.29, res: 45, cat: 'alimento', color: '#f1c40f' },
+  { id: 'YER', name: 'Yerba mate 10×1 kg', short: 'Yerba', w: 10.4, h: 0.25, res: 40, cat: 'alimento', color: '#27ae60' },
+  { id: 'HAR', name: 'Harina 000 10×1 kg', short: 'Harina', w: 10.2, h: 0.22, res: 40, cat: 'alimento', color: '#dfe6e9' },
+  { id: 'ARR', name: 'Arroz largo fino 10×1 kg', short: 'Arroz', w: 10.1, h: 0.21, res: 40, cat: 'alimento', color: '#b2bec3' },
+  { id: 'DET', name: 'Detergente 12×750 ml', short: 'Detergente', w: 9.6, h: 0.26, res: 35, cat: 'quimico', color: '#16a085' },
+  { id: 'VIN', name: 'Vino tinto 6×750 ml (vidrio)', short: 'Vino', w: 8.1, h: 0.32, res: 14, cat: 'bebida', fragile: true, color: '#7b2442' },
+  { id: 'GAL', name: 'Galletitas dulces 24 u.', short: 'Galletitas', w: 3.6, h: 0.30, res: 8, cat: 'alimento', fragile: true, color: '#e67e22' },
+  { id: 'PAP', name: 'Papas fritas 20 bolsas', short: 'Papas', w: 2.1, h: 0.36, res: 3, cat: 'alimento', fragile: true, color: '#f39c12' },
+];
+const CLIENTES = ['Autoservicio Don Pepe (Lanús)', 'Almacén La Esquina (Rosario)', 'Súper Barrio Norte (Córdoba)', 'Mayorista El Sol (Mar del Plata)', 'Despensa Los Tilos (La Plata)', 'Minimercado San Martín (Mendoza)'];
+
+// ---------- audio (beeps de la terminal RF) ----------
+let actx = null;
+function beep(ok = true) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = ok ? 'sine' : 'square'; o.frequency.value = ok ? 1650 : 220;
+    g.gain.value = ok ? 0.06 : 0.05; o.connect(g).connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + (ok ? 0.09 : 0.3));
+  } catch (e) { /* sin audio */ }
+}
+
+// ---------- renderer / escena ----------
+const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: !isMobile, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.5 : 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1b1f24);
+scene.fog = new THREE.Fog(0x1b1f24, 28, 60);
+const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 200);
+
+scene.add(new THREE.HemisphereLight(0xe8eef5, 0x403a33, 1.0));
+const sun = new THREE.DirectionalLight(0xffffff, 1.7);
+sun.position.set(6, 18, 8);
+sun.castShadow = true;
+sun.shadow.mapSize.set(isMobile ? 1024 : 2048, isMobile ? 1024 : 2048);
+Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, near: 1, far: 50 });
+sun.shadow.bias = -0.0005;
+scene.add(sun, sun.target);
+
+// ---------- física ----------
+const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
+world.broadphase = new CANNON.SAPBroadphase(world);
+world.solver.iterations = 20;
+world.allowSleep = false;
+const mBox = new CANNON.Material('box'), mPal = new CANNON.Material('pallet'), mFloor = new CANNON.Material('floor');
+world.addContactMaterial(new CANNON.ContactMaterial(mBox, mBox, { friction: 0.55, restitution: 0.0 }));
+world.addContactMaterial(new CANNON.ContactMaterial(mBox, mPal, { friction: 0.6, restitution: 0.0 }));
+world.addContactMaterial(new CANNON.ContactMaterial(mBox, mFloor, { friction: 0.5, restitution: 0.05 }));
+world.defaultContactMaterial.contactEquationStiffness = 1e7;
+world.defaultContactMaterial.contactEquationRelaxation = 3;
+const floorBody = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane(), material: mFloor });
+floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+world.addBody(floorBody);
+
+// ---------- texturas por canvas ----------
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
+function floorTexture() {
+  const t = canvasTex(512, 512, (g, w, h) => {
+    g.fillStyle = '#8b8e90'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 2500; i++) { const v = randi(120, 160); g.fillStyle = `rgba(${v},${v},${v},0.25)`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+    g.strokeStyle = 'rgba(40,40,40,.35)'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+  });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 4.5);
+  return t;
+}
+function skuTexture(s) {
+  return canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#b98b5e'; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(0,0,0,.07)'; for (let i = 0; i < w; i += 6) g.fillRect(i, 0, 2, h);
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, 118, w, 20);           // cinta
+    g.fillStyle = s.color; g.fillRect(14, 22, w - 28, 76);
+    g.fillStyle = '#111'; g.font = 'bold 30px sans-serif'; g.textAlign = 'center';
+    g.fillStyle = ['#dfe6e9', '#b2bec3', '#f1c40f', '#f39c12'].includes(s.color) ? '#222' : '#fff';
+    g.fillText(s.short.toUpperCase(), w / 2, 72);
+    g.fillStyle = '#2b1d10'; g.font = 'bold 26px sans-serif'; g.fillText(fmt(s.w) + ' kg', w / 2, 178);
+    g.font = '18px sans-serif'; g.fillText('↑↑  ESTE LADO ARRIBA', w / 2, 210);
+    if (s.fragile) { g.fillStyle = '#b30000'; g.font = 'bold 24px sans-serif'; g.fillText('FRÁGIL 🍷', w / 2, 244); }
+    else if (s.cat === 'quimico') { g.fillStyle = '#5b2a86'; g.font = 'bold 20px sans-serif'; g.fillText('PROD. LIMPIEZA', w / 2, 244); }
+    else { g.font = '16px sans-serif'; g.fillText(`APILAR MÁX ${s.res} kg`, w / 2, 244); }
+  });
+}
+function textTex(lines, w, h, bg, fg, sizes) {
+  return canvasTex(w, h, (g) => {
+    if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); }
+    g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+    lines.forEach((l, i) => {
+      let fs = sizes[i] || sizes[0]; g.font = `bold ${fs}px sans-serif`;
+      const mw = g.measureText(l).width; if (mw > w * 0.94) { fs = Math.floor(fs * w * 0.94 / mw); g.font = `bold ${fs}px sans-serif`; }
+      g.fillText(l, w / 2, (h / (lines.length + 1)) * (i + 1));
+    });
+  });
+}
+function floorLabel(text, x, z, wd = 3, rot = 0, color = 'rgba(255,214,10,.85)') {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(wd, wd / 4),
+    new THREE.MeshBasicMaterial({ map: textTex([text], 512, 128, null, color, [64]), transparent: true, depthWrite: false }));
+  m.rotation.set(-Math.PI / 2, 0, rot); m.position.set(x, 0.012, z); scene.add(m);
+}
+function floorRect(cx, cz, w, d, color) {
+  const mat = new THREE.MeshBasicMaterial({ color }), t = 0.08;
+  [[cx, cz - d / 2, w, t], [cx, cz + d / 2, w, t], [cx - w / 2, cz, t, d], [cx + w / 2, cz, t, d]].forEach(([x, z, a, b]) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(a, b), mat); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.01, z); scene.add(m);
+  });
+}
+
+// ---------- materiales / geometrías compartidas ----------
+const skuMat = {}, skuGeo = {};
+SKUS.forEach(s => { skuMat[s.id] = std(0xffffff, { map: skuTexture(s), roughness: 0.9 }); skuGeo[s.id] = new THREE.BoxGeometry(BOX_W, s.h, BOX_D); });
+const woodMat = std(0xb58a5a, { roughness: 0.95 });
+const filmMat = new THREE.MeshStandardMaterial({ color: 0xd6ecff, transparent: true, opacity: 0.28, roughness: 0.15, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false });
+
+function palletGeometry() {
+  const parts = [], add = (w, h, d, x, y, z) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, z); parts.push(g); };
+  for (let i = 0; i < 7; i++) add(1.2, 0.022, 0.11, 0, 0.064, -0.45 + i * 0.15);       // tablas superiores
+  for (const x of [-0.55, 0, 0.55]) add(0.1, 0.022, 1.0, x, 0.042, 0);                  // largueros
+  for (const x of [-0.55, 0, 0.55]) for (const z of [-0.45, 0, 0.45]) add(0.1, 0.084, 0.1, x, -0.011, z); // tacos
+  for (const z of [-0.45, 0, 0.45]) add(1.2, 0.022, 0.1, 0, -0.064, z);                 // patines
+  return mergeGeometries(parts);
+}
+const PALLET_GEO = palletGeometry();
+const newPalletMesh = () => { const m = new THREE.Mesh(PALLET_GEO, woodMat); m.castShadow = m.receiveShadow = true; return m; };
+
+// ---------- piso, paredes, zonas ----------
+{
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(24, 18), std(0xffffff, { map: floorTexture(), roughness: 0.95 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.set(1.5, 0, -2.5); floor.receiveShadow = true; scene.add(floor);
+  const wallMat = std(0x9aa3ab);
+  const wall = (w, h, d, x, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat); m.position.set(x, h / 2, z); m.receiveShadow = true; scene.add(m); };
+  wall(24, 5, 0.2, 1.5, -11.5); wall(0.2, 5, 18, -10.5, -2.5);
+  wall(0.2, 5, 13, 13.5, -5); wall(0.2, 5, 2, 13.5, 5.5);
+  // andén: puerta + camión
+  const frame = std(0xf2b705);
+  [[13.4, 1.4], [13.4, 4.6]].forEach(([x, z]) => { const m = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3.2, 0.2), frame); m.position.set(x, 1.6, z); scene.add(m); });
+  const trailer = new THREE.Mesh(new THREE.BoxGeometry(8, 2.7, 2.5), std(0xeeeeee));
+  trailer.position.set(17.8, 1.35 + 1.2, 3); trailer.castShadow = true; scene.add(trailer);
+  const tfloor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.1, 2.5), std(0x555555)); tfloor.position.set(17.8, 1.15, 3); scene.add(tfloor);
+  const leveler = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 2.2), std(0x6b6b6b, { metalness: 0.6 })); leveler.position.set(13.6, 0.03, 3); scene.add(leveler);
+  // pintura de piso
+  floorRect(START.x + 1.2, START.z, 3.4, 2.6, 0x3ddc84); floorLabel('ZONA DE ARMADO', START.x + 1.2, START.z + 1.7, 2.6, 0, 'rgba(61,220,132,.9)');
+  floorRect(WRAP.x, WRAP.z, 3.4, 3.4, 0xffd60a); floorLabel('ENVOLVEDORA', WRAP.x, WRAP.z + 2.2, 2.4);
+  floorRect((DOCK.minx + DOCK.maxx) / 2, DOCK.z, DOCK.maxx - DOCK.minx, DOCK.maxz - DOCK.minz, 0x4da3ff); floorLabel('ANDÉN 1 · DESPACHO', DOCK.x, DOCK.z - 1.95, 3, 0, 'rgba(77,163,255,.95)');
+  floorLabel('PASILLO 1', 1.6, -5.35, 2.2); floorLabel('PASILLO 2', 1.6, 0.05, 2.2);
+  floorRect(9.2, -1.5, 1.6, 1.4, 0xbbbbbb); floorLabel('PALLETS VACÍOS', 9.2, -0.4, 1.8, 0, 'rgba(200,200,200,.9)');
+  for (let i = 0; i < 6; i++) { const p = newPalletMesh(); p.position.set(9.2, 0.075 + i * 0.15, -1.5); p.rotation.y = rand(-0.05, 0.05); scene.add(p); }
+}
+
+// ---------- racks y ubicaciones ----------
+const ROWS = [{ L: 'A', z: -7.5, f: 1 }, { L: 'B', z: -3.2, f: -1 }, { L: 'C', z: -2.1, f: 1 }, { L: 'D', z: 2.2, f: -1 }];
+const MOD_W = 1.4, X0 = -7, NMOD = 5;
+const RACK_RECTS = [
+  { minx: -7.1, maxx: 0.1, minz: -8.1, maxz: -6.9 },
+  { minx: -7.1, maxx: 0.1, minz: -3.8, maxz: -1.5 },
+  { minx: -7.1, maxx: 0.1, minz: 1.6, maxz: 2.8 },
+];
+const positions = [];
+const layerGeo = new THREE.BoxGeometry(1.15, 0.36, 0.95);
+const pulmonFilmGeo = new THREE.BoxGeometry(1.19, 1.16, 0.99);
+const decorMats = ['#6d8a5e', '#8a6d5e', '#5e6d8a', '#8a8a5e'].map(c => std(0xffffff, { map: skuTexture({ short: 'OTRO CLIENTE', color: c, w: 9, res: 40 }) }));
+
+function makeLoadGroup(mat, film) {
+  const g = new THREE.Group();
+  const p = newPalletMesh(); p.position.y = 0.075; g.add(p);
+  g.userData.layers = [0, 1, 2].map(i => { const m = new THREE.Mesh(layerGeo, mat); m.position.y = 0.15 + 0.18 + i * 0.37; m.castShadow = true; g.add(m); return m; });
+  const f = new THREE.Mesh(pulmonFilmGeo, filmMat); f.position.y = 0.15 + 0.57; f.visible = !!film; g.add(f); g.userData.film = f;
+  return g;
+}
+function setPickLayers(pos) { const n = Math.ceil(pos.stock / 4); pos.pick.userData.layers.forEach((m, i) => m.visible = i < n); }
+const fmtDate = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+function newPulmon(pos, lvl) {
+  const days = Math.random() < 0.5 ? randi(25, 110) : randi(140, 420);
+  const vence = new Date(Date.now() + days * 864e5);
+  const g = makeLoadGroup(pos.sku ? skuMat[pos.sku.id] : pos.decor, true);
+  g.position.set(pos.x, LEVEL_Y[lvl], pos.z); scene.add(g);
+  return { group: g, lvl, vence, lote: 'L' + randi(2300, 2899) + '-' + 'ABCDEFGH'[randi(0, 7)] };
+}
+function ensurePulmon(pos) {
+  for (const l of [1, 2]) if (!pos.pulmon[l]) pos.pulmon[l] = newPulmon(pos, l);
+  const a = pos.pulmon[1], b = pos.pulmon[2];   // garantizamos vencimientos distintos para que FEFO importe
+  if (Math.abs(a.vence - b.vence) < 30 * 864e5) b.vence = new Date(a.vence.getTime() + randi(60, 200) * 864e5);
+}
+{
+  const blue = std(0x1f4fa0, { metalness: 0.4, roughness: 0.5 }), orange = std(0xf26b1d, { metalness: 0.3, roughness: 0.5 });
+  const up = [], bm = [];
+  const box = (arr, w, h, d, x, y, z) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, z); arr.push(g); };
+  const skuOrder = shuffle([...Array(ROWS.length * NMOD).keys()]);
+  let k = 0;
+  for (const row of ROWS) {
+    for (let i = 0; i <= NMOD; i++) {
+      const x = X0 + i * MOD_W;
+      for (const dz of [-0.5, 0.5]) box(up, 0.08, 4.2, 0.08, x, 2.1, row.z + dz);
+      for (const y of [0.4, 1.9, 3.4]) box(up, 0.04, 0.04, 1.0, x, y, row.z);
+    }
+    for (let i = 0; i < NMOD; i++) {
+      const x = X0 + i * MOD_W + MOD_W / 2;
+      for (const y of LEVEL_Y.slice(1)) for (const dz of [-0.5, 0.5]) box(bm, MOD_W - 0.08, 0.12, 0.06, x, y - 0.06, row.z + dz);
+      const code = `${row.L}-${String(i + 1).padStart(2, '0')}`;
+      const idx = skuOrder[k++];
+      const sku = idx < SKUS.length ? SKUS[idx] : null;
+      const pos = { code: code + '-0', row: row.L, x, z: row.z, f: row.f, sku, decor: decorMats[idx % 4], stock: randi(6, 12), pulmon: [null, null, null] };
+      pos.front = { x, z: row.z + row.f * 1.15 };
+      pos.pick = makeLoadGroup(sku ? skuMat[sku.id] : pos.decor, false);
+      pos.pick.position.set(x, 0, row.z); scene.add(pos.pick); setPickLayers(pos);
+      ensurePulmon(pos);
+      // cartel de ubicación en la viga
+      const lbl = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.26),
+        new THREE.MeshBasicMaterial({ map: textTex([pos.code, sku ? sku.short : '—'], 256, 108, '#fdfdfd', '#111', [40, 28]) }));
+      lbl.position.set(x, LEVEL_Y[1] - 0.06, row.z + row.f * 0.54); lbl.rotation.y = row.f > 0 ? 0 : Math.PI; scene.add(lbl);
+      positions.push(pos);
+    }
+  }
+  const mu = new THREE.Mesh(mergeGeometries(up), blue), mb = new THREE.Mesh(mergeGeometries(bm), orange);
+  mu.castShadow = mb.castShadow = true; mu.receiveShadow = mb.receiveShadow = true; scene.add(mu, mb);
+}
+
+// ---------- envolvedora ----------
+const wrapper = {};
+{
+  const g = new THREE.Group(); g.position.set(WRAP.x, 0, WRAP.z); scene.add(g);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.05, 0.08, 40), std(0x3b3f45, { metalness: 0.5, roughness: 0.4 }));
+  base.position.y = 0.04; base.receiveShadow = true; g.add(base);
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.02, 40), std(0x8c949c, { metalness: 0.6, roughness: 0.3 }));
+  plate.position.y = 0.085; g.add(plate);
+  const mark = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.022, 0.05), std(0xffd60a)); mark.position.set(0.45, 0.09, 0); plate.add(mark);
+  const mast = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.3, 0.18), std(0x2d6cdf, { metalness: 0.3 }));
+  mast.position.set(1.35, 1.15, 0); mast.castShadow = true; g.add(mast);
+  const car = new THREE.Group(); g.add(car);
+  const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 16), std(0xcfe8ff, { transparent: true, opacity: 0.8 }));
+  roll.position.set(1.18, 0, 0); car.add(roll);
+  const cbox = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.6, 0.3), std(0x2d6cdf)); cbox.position.set(1.33, 0, 0); car.add(cbox);
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.1, 0.25), std(0x444a52)); panel.position.set(1.4, 0.55, 1.0); g.add(panel);
+  Object.assign(wrapper, { group: g, plate, car });
+}
+const WRAP_RECT = { minx: WRAP.x + 1.15, maxx: WRAP.x + 1.6, minz: WRAP.z - 0.3, maxz: WRAP.z + 1.2 };
+
+// ---------- autoelevador ----------
+function buildForklift() {
+  const g = new THREE.Group();
+  const yel = std(0xf2b705, { roughness: 0.6 }), dark = std(0x222222), grey = std(0x666a70, { metalness: 0.5, roughness: 0.4 });
+  const add = (geo, mat, x, y, z, parent = g) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
+  add(new THREE.BoxGeometry(1.0, 0.7, 1.5), yel, 0, 0.6, -0.95);
+  add(new THREE.BoxGeometry(1.02, 0.65, 0.35), std(0x3a3a3a), 0, 0.62, -1.78);
+  add(new THREE.BoxGeometry(0.45, 0.15, 0.45), dark, 0, 1.0, -1.05);
+  for (const [x, z] of [[-0.46, -0.45], [0.46, -0.45], [-0.46, -1.5], [0.46, -1.5]]) add(new THREE.BoxGeometry(0.05, 1.2, 0.05), dark, x, 1.55, z);
+  add(new THREE.BoxGeometry(1.0, 0.05, 1.15), dark, 0, 2.15, -0.98);
+  const wg = new THREE.CylinderGeometry(0.26, 0.26, 0.2, 14); wg.rotateZ(Math.PI / 2);
+  for (const [x, z] of [[-0.52, -0.4], [0.52, -0.4], [-0.52, -1.5], [0.52, -1.5]]) add(wg, dark, x, 0.26, z);
+  add(new THREE.BoxGeometry(0.34, 0.42, 0.22), std(0xff7a00), 0, 1.3, -1.05);   // operador con chaleco
+  add(new THREE.SphereGeometry(0.12, 12, 10), std(0xd9a77c), 0, 1.65, -1.05);
+  add(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 12), std(0xffffff), 0, 1.75, -1.05);
+  for (const x of [-0.33, 0.33]) add(new THREE.BoxGeometry(0.08, 2.2, 0.1), grey, x, 1.15, -0.12);
+  const inner = new THREE.Group(); g.add(inner);
+  for (const x of [-0.24, 0.24]) add(new THREE.BoxGeometry(0.07, 2.2, 0.08), grey, x, 1.15, -0.06, inner);
+  const carriage = new THREE.Group(); g.add(carriage);
+  add(new THREE.BoxGeometry(0.8, 0.5, 0.05), dark, 0, 0.25, 0, carriage);
+  for (const x of [-0.28, 0.28]) add(new THREE.BoxGeometry(0.1, 0.045, 1.1), grey, x, 0.022, 0.55, carriage);
+  const light = add(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff9900 }), 0, 2.22, -0.6);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(2.1, 2.3, 40), new THREE.MeshBasicMaterial({ color: 0xff3030, transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.02; ring.position.z = -0.4; g.add(ring);
+  g.visible = false; scene.add(g);
+  return { g, inner, carriage, light, setFork(h) { carriage.position.y = h; inner.position.y = Math.max(0, h - 1.0); } };
+}
+const forklift = buildForklift();
+
+// ---------- operario ----------
+function buildWorker() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const skin = std(0xd9a77c), pants = std(0x24364a), shirt = std(0x3c4d60), vest = std(0xff7a00, { emissive: 0x331500 }), boot = std(0x1d1d1d), refl = std(0xeeeeee, { metalness: 0.6, roughness: 0.3 });
+  const mk = (geo, mat, x, y, z, parent) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
+  const hips = new THREE.Group(); hips.position.y = 0.9; body.add(hips);
+  const leg = s => {
+    const thigh = new THREE.Group(); thigh.position.x = s * 0.1; hips.add(thigh);
+    mk(new THREE.CylinderGeometry(0.075, 0.065, 0.45, 8), pants, 0, -0.225, 0, thigh);
+    const shin = new THREE.Group(); shin.position.y = -0.45; thigh.add(shin);
+    mk(new THREE.CylinderGeometry(0.062, 0.05, 0.42, 8), pants, 0, -0.21, 0, shin);
+    mk(new THREE.BoxGeometry(0.12, 0.08, 0.25), boot, 0, -0.42, 0.04, shin);
+    return { thigh, shin };
+  };
+  const L = leg(-1), R = leg(1);
+  const torso = new THREE.Group(); hips.add(torso);
+  mk(new THREE.BoxGeometry(0.38, 0.55, 0.21), shirt, 0, 0.29, 0, torso);
+  mk(new THREE.BoxGeometry(0.4, 0.42, 0.24), vest, 0, 0.26, 0, torso);
+  for (const y of [0.17, 0.33]) mk(new THREE.BoxGeometry(0.405, 0.035, 0.245), refl, 0, y, 0, torso);
+  const head = mk(new THREE.SphereGeometry(0.12, 14, 12), skin, 0, 0.7, 0, torso);
+  const hair = mk(new THREE.SphereGeometry(0.125, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), std(0x2b2b2b), 0, 0.72, -0.01, torso);
+  const arm = s => {
+    const sh = new THREE.Group(); sh.position.set(s * 0.25, 0.5, 0); torso.add(sh);
+    mk(new THREE.CylinderGeometry(0.055, 0.05, 0.3, 8), shirt, 0, -0.15, 0, sh);
+    const fo = new THREE.Group(); fo.position.y = -0.3; sh.add(fo);
+    mk(new THREE.CylinderGeometry(0.05, 0.045, 0.28, 8), skin, 0, -0.14, 0, fo);
+    mk(new THREE.BoxGeometry(0.08, 0.09, 0.08), std(0x3d6b2f), 0, -0.3, 0, fo); // guantes
+    return { sh, fo };
+  };
+  const AL = arm(-1), AR = arm(1);
+  const hold = new THREE.Group(); hold.position.set(0, 0.04, 0.38); torso.add(hold);
+  root.userData = { body, L, R, torso, AL, AR, hold, head, hair };
+  scene.add(root);
+  return root;
+}
+const worker = buildWorker();
+const player = { pos: new THREE.Vector3(START.x, 0, START.z), vel: new THREE.Vector3(), yaw: -Math.PI / 2, phase: 0, walk: 0, crouch: 0, carry: 0 };
+function poseWorker() {
+  const u = worker.userData, w = player.walk, c = player.crouch, ph = player.phase, cr = player.carry;
+  worker.position.copy(player.pos); worker.rotation.y = player.yaw;
+  u.body.position.y = -0.48 * c;
+  const s = Math.sin(ph);
+  u.L.thigh.rotation.x = s * 0.55 * w - 1.3 * c; u.R.thigh.rotation.x = -s * 0.55 * w - 1.3 * c;
+  u.L.shin.rotation.x = Math.max(0, -s) * 0.7 * w + 2.2 * c; u.R.shin.rotation.x = Math.max(0, s) * 0.7 * w + 2.2 * c;
+  u.torso.rotation.x = 0.4 * c + 0.06 * w;
+  const swing = -s * 0.5 * w * (1 - cr);
+  u.AL.sh.rotation.x = lerp(swing, -1.15, cr) - 0.7 * c * (1 - cr); u.AR.sh.rotation.x = lerp(-swing, -1.15, cr) - 0.7 * c * (1 - cr);
+  u.AL.fo.rotation.x = u.AR.fo.rotation.x = lerp(-0.25, -0.45, cr);
+  u.AL.sh.rotation.z = -0.08; u.AR.sh.rotation.z = 0.08;
+}
+
+// ---------- pallet de trabajo + transpaleta (zorra) ----------
+const palletGroup = new THREE.Group(); scene.add(palletGroup);
+palletGroup.add(newPalletMesh());
+const zorra = new THREE.Group(); palletGroup.add(zorra);
+{
+  const red = std(0xc0392b, { roughness: 0.5 }), dark = std(0x222222);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 0.42), red); head.position.set(0.72, 0.05, 0); head.castShadow = true; zorra.add(head);
+  const wg = new THREE.CylinderGeometry(0.09, 0.09, 0.08, 12); wg.rotateX(Math.PI / 2);
+  for (const z of [-0.1, 0.1]) { const w = new THREE.Mesh(wg, dark); w.position.set(0.72, -0.07, z); zorra.add(w); }
+  for (const z of [-0.28, 0.28]) { const f = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.05, 0.16), red); f.position.set(0.05, -0.04, z); zorra.add(f); }
+}
+const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1, 8), std(0x222222)); handle.castShadow = true; scene.add(handle);
+// film (cinta) — geometría dinámica, en coordenadas locales del pallet
+const FILM_MAX = 7000;
+const filmGeo = new THREE.BufferGeometry();
+filmGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(FILM_MAX * 18), 3));
+filmGeo.setDrawRange(0, 0);
+const filmMesh = new THREE.Mesh(filmGeo, filmMat); filmMesh.frustumCulled = false; palletGroup.add(filmMesh);
+let filmSegs = 0;
+
+const palletBody = new CANNON.Body({ type: CANNON.Body.KINEMATIC, shape: new CANNON.Box(new CANNON.Vec3(0.6, 0.075, 0.5)), material: mPal });
+world.addBody(palletBody);
+const palletCtl = { mode: 'trailer', target: null, spin: 0, soft: 0 };
+const palletYaw = () => 2 * Math.atan2(palletBody.quaternion.y, palletBody.quaternion.w);
+function resetPallet() {
+  palletBody.position.set(START.x + 1.55, 0.075, START.z);
+  palletBody.quaternion.setFromEuler(0, Math.PI, 0);
+  palletBody.velocity.setZero(); palletBody.angularVelocity.setZero();
+  palletCtl.mode = 'trailer';
+}
+
+// ---------- estado del juego ----------
+const S = {
+  mode: 'start', lines: [], held: null, boxes: [], columns: Array.from({ length: 9 }, () => []),
+  incidents: [], wrapped: false, t0: 0, orderNo: 4800 + randi(0, 99), cliente: '', repo: null,
+  placeSel: 4, ghosts: [], wrap: null, anim: null, help: true, dirty: true, remito: '', fpOn: true, fpLook: null,
+};
+
+function toast(msg, kind = 'ok', ms = 3200) {
+  const d = document.createElement('div'); d.className = 'toast ' + kind; d.innerHTML = msg;
+  $('toasts').prepend(d); setTimeout(() => d.remove(), ms);
+  while ($('toasts').children.length > 3) $('toasts').lastChild.remove();
+}
+function incident(type, text, pts) {
+  S.incidents.push({ type, text, pts }); toast(`⚠ ${text} <b>(${pts})</b>`, 'bad', 4200); beep(false); S.dirty = true;
+}
+
+// ---------- pedido ----------
+function newOrder() {
+  S.orderNo++; S.cliente = CLIENTES[randi(0, CLIENTES.length - 1)];
+  S.remito = `R-0003-${String(randi(10000, 99999)).padStart(8, '0')}`;
+  const cands = shuffle(positions.filter(p => p.sku));
+  const n = randi(5, 6);
+  S.lines = cands.slice(0, n).map(p => ({ pos: p, sku: p.sku, qty: randi(1, 3), picked: 0 }));
+  let total = S.lines.reduce((a, l) => a + l.qty, 0);
+  while (total > 15) { const l = S.lines.find(l => l.qty > 1); l.qty--; total--; }
+  // una línea con faltante en picking -> obliga a reponer
+  let rl = S.lines.find(l => l.qty >= 2 && !l.sku.fragile) || S.lines[0];
+  if (rl.qty < 2) rl.qty = 2;
+  for (const l of S.lines) { l.pos.stock = Math.max(l.pos.stock, l.qty + randi(0, 4)); ensurePulmon(l.pos); setPickLayers(l.pos); }
+  rl.pos.stock = rl.qty - 1; setPickLayers(rl.pos);
+  S.lines.sort((a, b) => a.pos.code.localeCompare(b.pos.code));
+  S.incidents = []; S.wrapped = false; S.held = null; S.t0 = performance.now(); S.dirty = true;
+  S.columns = Array.from({ length: 9 }, () => []);
+}
+const orderComplete = () => !S.held && S.lines.every(l => l.picked >= l.qty) && !S.boxes.some(b => b.fallen && !b.onPallet());
+const nextLine = () => S.lines.find(l => l.picked < l.qty);
+
+// ---------- pallet lógico ----------
+const colLocal = c => ({ x: ((c % 3) - 1) * CELL_X, z: (Math.floor(c / 3) - 1) * CELL_Z });
+const colHeight = c => S.columns[c].reduce((a, b) => a + b.sku.h, 0);
+const loadTop = () => PAL.h + Math.max(0, ...S.columns.map((_, c) => colHeight(c)));
+function cog(extra) {
+  let w = 0, x = 0, z = 0;
+  S.columns.forEach((col, c) => col.forEach(b => { const p = colLocal(c); w += b.sku.w; x += p.x * b.sku.w; z += p.z * b.sku.w; }));
+  if (extra) { const p = colLocal(extra.c); w += extra.sku.w; x += p.x * extra.sku.w; z += p.z * extra.sku.w; }
+  return w ? Math.hypot(x / w, z / w) : 0;
+}
+function evalPlacement(c, sku) {
+  const st = S.columns[c], below = st[st.length - 1], r = []; let lvl = 0;
+  const hNow = colHeight(c);
+  if (PAL.h + hNow + sku.h > MAX_H) return { lvl: 3, r: [`Supera la altura máxima de ${fmt(MAX_H, 2)} m`] };
+  if (below) {
+    if (sku.cat === 'quimico' && below.sku.cat !== 'quimico') { lvl = 2; r.push('Químico sobre alimento/bebida'); }
+    if (sku.w > below.sku.w + 1.5) { lvl = 2; r.push(`Pesado (${fmt(sku.w)} kg) sobre liviano (${fmt(below.sku.w)} kg)`); }
+  }
+  let above = sku.w;
+  for (let k = st.length - 1; k >= 0; k--) {
+    if (!st[k].crushed && above > st[k].sku.res) { lvl = 2; r.push(`Aplasta ${st[k].sku.short} (soporta ${st[k].sku.res} kg)`); break; }
+    above += st[k].sku.w;
+  }
+  if (cog({ c, sku }) > 0.12) { lvl = Math.max(lvl, 1); r.push('Centro de gravedad desplazado'); }
+  const nb = [c - 3, c + 3, c % 3 ? c - 1 : -1, c % 3 < 2 ? c + 1 : -1].filter(n => n >= 0 && n < 9);
+  if (hNow + sku.h - Math.min(...nb.map(colHeight)) > 0.5) { lvl = Math.max(lvl, 1); r.push('Torre más alta que sus vecinas (inestable)'); }
+  if (sku.fragile && S.lines.some(l => l.picked < l.qty && l.sku.w > sku.w + 1.5)) { lvl = Math.max(lvl, 1); r.push('Faltan cajas más pesadas: el frágil va al final'); }
+  return { lvl, r };
+}
+
+// ---------- cajas físicas ----------
+function palletLocalToWorld(lx, ly, lz) {
+  const v = palletBody.quaternion.vmult(new CANNON.Vec3(lx, ly, lz));
+  return v.vadd(palletBody.position);
+}
+function worldToPalletLocal(p) {
+  const inv = palletBody.quaternion.inverse();
+  return inv.vmult(p.vsub(palletBody.position));
+}
+function spawnBox(sku, c) {
+  const p = colLocal(c), h = colHeight(c);
+  const wp = palletLocalToWorld(p.x, 0.075 + h + sku.h / 2 + 0.015, p.z);
+  const body = new CANNON.Body({ mass: sku.w, shape: new CANNON.Box(new CANNON.Vec3(BOX_W / 2, sku.h / 2, BOX_D / 2)), material: mBox, linearDamping: 0.05, angularDamping: 0.1 });
+  body.position.copy(wp); body.quaternion.copy(palletBody.quaternion);
+  body.velocity.copy(palletBody.velocity);
+  world.addBody(body);
+  const mesh = new THREE.Mesh(skuGeo[sku.id], skuMat[sku.id]); mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh);
+  const b = { sku, body, mesh, col: c, crushed: false, fallen: false, locked: null };
+  b.onPallet = () => { const l = worldToPalletLocal(b.body.position); return Math.abs(l.x) < 0.72 && Math.abs(l.z) < 0.62 && l.y > 0.02; };
+  S.boxes.push(b); S.columns[c].push(b);
+  // aplastamiento
+  const st = S.columns[c]; let above = 0;
+  for (let k = st.length - 1; k >= 0; k--) {
+    if (!st[k].crushed && above > st[k].sku.res) {
+      st[k].crushed = true; st[k].mesh.scale.set(1.03, 0.88, 1.03);
+      st[k].mesh.material = st[k].mesh.material.clone(); st[k].mesh.material.color.set(0xff9a9a);
+      incident('aplast', `${st[k].sku.short} aplastado: soporta ${st[k].sku.res} kg y tiene ${fmt(above)} kg encima`, -8);
+    }
+    above += st[k].sku.w;
+  }
+  return b;
+}
+function lockBox(b, temp) {
+  b.locked = { p: worldToPalletLocal(b.body.position), q: palletBody.quaternion.inverse().mult(b.body.quaternion) };
+  b.temp = !!temp; b.body.type = CANNON.Body.KINEMATIC; b.body.updateMassProperties();
+}
+function unlockBox(b) {
+  b.locked = null; b.temp = false; b.body.type = CANNON.Body.DYNAMIC; b.body.updateMassProperties();
+  b.body.velocity.copy(palletBody.velocity); b.body.angularVelocity.setZero(); b.body.wakeUp();
+}
+function removeBox(b) {
+  world.removeBody(b.body); scene.remove(b.mesh);
+  S.boxes.splice(S.boxes.indexOf(b), 1);
+  const col = S.columns[b.col]; const i = col.indexOf(b); if (i >= 0) col.splice(i, 1);
+}
+
+// ---------- acciones ----------
+function nearestPosition(p, maxD) {
+  let best = null, bd = maxD;
+  for (const pos of positions) { const d = distXZ(p, pos.front); if (d < bd) { bd = d; best = pos; } }
+  return best;
+}
+const palletAttached = () => palletCtl.mode === 'trailer';
+const inDock = p => p.x > DOCK.minx && p.x < DOCK.maxx && p.z > DOCK.minz && p.z < DOCK.maxz;
+function facePoint(x, z) { player.yaw = Math.atan2(x - player.pos.x, z - player.pos.z); }
+
+function currentAction() {
+  const p = player.pos;
+  if (S.mode !== 'walk') return null;
+  if (S.held) {
+    if (palletAttached() && distXZ(p, palletBody.position) < 2.9) return { label: '📦 Colocar en pallet', fn: startPlacing };
+    return { label: 'Volvé al pallet', disabled: true };
+  }
+  const fb = S.boxes.find(b => b.fallen && !b.locked && !b.onPallet() && distXZ(b.body.position, p) < 1.4);
+  if (fb) return { label: '↥ Levantar caja caída', fn: () => pickFallen(fb) };
+  if (distXZ(p, WRAP) < 3.3 && palletAttached() && !S.wrapped) {
+    return orderComplete() ? { label: '🌀 Enfilmar pallet', fn: startWrap } : { label: 'Pedido incompleto', disabled: true };
+  }
+  if (inDock(p) || inDock(palletBody.position)) {
+    if (S.wrapped && palletAttached()) return { label: '🚚 Despachar', fn: dispatch };
+    if (orderComplete()) return { label: 'Primero enfilmá', disabled: true };
+  }
+  const pos = nearestPosition(p, 1.3);
+  if (pos) {
+    if (!pos.sku) return { label: `${pos.code} · otro cliente`, disabled: true };
+    const line = S.lines.find(l => l.pos === pos && l.picked < l.qty);
+    if (!line) return { label: `${pos.code} · no está en el pedido`, disabled: true };
+    if (S.repo && S.repo.pos === pos) return { label: 'Reposición en curso…', disabled: true };
+    if (pos.stock > 0) return { label: `✋ Tomar ${pos.sku.short} (${line.picked + 1}/${line.qty})`, fn: () => doPick(pos, line) };
+    if (S.repo) return { label: 'Autoelevador ocupado', disabled: true };
+    return { label: '⚠ Pedir reposición', fn: () => askRepo(pos) };
+  }
+  return null;
+}
+function action() {
+  if (S.mode === 'placing') { confirmPlace(S.placeSel); return; }
+  const a = currentAction(); if (a && a.fn && !a.disabled) a.fn();
+}
+function makeHeld(sku) {
+  const m = new THREE.Mesh(skuGeo[sku.id], skuMat[sku.id]); m.castShadow = true; m.position.y = sku.h / 2 - 0.05;
+  worker.userData.hold.add(m); return { sku, mesh: m };
+}
+function doPick(pos, line) {
+  facePoint(pos.x, pos.z); player.vel.set(0, 0, 0);
+  S.fpLook = new THREE.Vector3(pos.x, 0.15 + Math.max(1, Math.ceil(pos.stock / 4)) * 0.37, pos.z + pos.f * 0.35);
+  pos.stock--; line.picked++; setPickLayers(pos); beep(true); S.dirty = true;
+  S.mode = 'anim';
+  S.anim = { t: 0, dur: 1.15, crouch: 1, onHalf: () => { S.held = makeHeld(pos.sku); }, onDone: () => { S.mode = 'walk'; } };
+  if (pos.stock === 0 && line.picked < line.qty) toast(`📟 ${pos.code} sin stock en picking: pedí reposición`, 'warn');
+}
+function pickFallen(b) {
+  const sku = b.sku; facePoint(b.body.position.x, b.body.position.z);
+  S.fpLook = new THREE.Vector3(b.body.position.x, 0.1, b.body.position.z);
+  removeBox(b); player.vel.set(0, 0, 0);
+  S.mode = 'anim';
+  S.anim = { t: 0, dur: 1.0, crouch: 1, onHalf: () => { S.held = makeHeld(sku); }, onDone: () => { S.mode = 'walk'; } };
+}
+
+// ---------- armado (colocación) ----------
+const ghostMats = { 0: 0x3ddc84, 1: 0xffcc33, 2: 0xff5555, 3: 0x555555 };
+function startPlacing() {
+  S.mode = 'placing'; player.vel.set(0, 0, 0);
+  facePoint(palletBody.position.x, palletBody.position.z);
+  S.ghosts = [];
+  let best = 0, bestLvl = 9;
+  for (let c = 0; c < 9; c++) {
+    const ev = evalPlacement(c, S.held.sku);
+    const mat = new THREE.MeshBasicMaterial({ color: S.help ? ghostMats[ev.lvl] : 0x7fe0ff, transparent: true, opacity: 0.35, depthWrite: false });
+    const g = new THREE.Mesh(skuGeo[S.held.sku.id], mat);
+    const p = colLocal(c); g.position.set(p.x, 0.075 + colHeight(c) + S.held.sku.h / 2 + 0.01, p.z);
+    g.userData = { c, ev }; palletGroup.add(g); S.ghosts.push(g);
+    if (ev.lvl < bestLvl || (ev.lvl === bestLvl && colHeight(c) < colHeight(best))) { bestLvl = ev.lvl; best = c; }
+  }
+  selectGhost(S.help ? best : 4);
+  $('placeHelp').classList.remove('hidden'); $('btnAlt').classList.remove('hidden');
+}
+function selectGhost(c) {
+  S.placeSel = c;
+  S.ghosts.forEach(g => g.material.opacity = g.userData.c === c ? 0.8 : 0.3);
+  const ev = S.ghosts[c].userData.ev;
+  $('btnAct').textContent = ev.lvl === 3 ? '✖ No entra' : `⬇ Apoyar en posición ${c + 1}`;
+  if (ev.r.length && S.help) $('placeHelp').innerHTML = (ev.lvl >= 2 ? '🔴 ' : '🟡 ') + ev.r.join(' · ');
+  else $('placeHelp').innerHTML = 'Tocá una posición · <b style="color:#3ddc84">verde</b> OK · <b style="color:#ffcc33">amarillo</b> advertencia · <b style="color:#ff5555">rojo</b> incumple';
+}
+function endPlacing() {
+  S.ghosts.forEach(g => { palletGroup.remove(g); g.material.dispose(); }); S.ghosts = [];
+  $('placeHelp').classList.add('hidden'); $('btnAlt').classList.add('hidden');
+}
+function confirmPlace(c) {
+  const ev = S.ghosts[c].userData.ev;
+  if (ev.lvl === 3) { beep(false); toast('📟 ' + ev.r[0], 'bad'); return; }
+  const sku = S.held.sku;
+  endPlacing();
+  if (ev.lvl === 2) {
+    for (const r of ev.r) {
+      if (r.startsWith('Químico')) incident('quim', 'Químico apoyado sobre alimentos (BPM / Código Alimentario)', -10);
+      else if (r.startsWith('Pesado')) incident('peso', r, -5);
+    }
+  }
+  S.mode = 'anim';
+  S.anim = { t: 0, dur: 0.6, crouch: 0.35, onHalf: () => { worker.userData.hold.remove(S.held.mesh); S.held = null; spawnBox(sku, c); S.dirty = true; }, onDone: () => { S.mode = 'walk'; } };
+}
+function cancel() {
+  if (S.mode === 'placing') { endPlacing(); S.mode = 'walk'; }
+}
+
+// ---------- reposición (FEFO) ----------
+function askRepo(pos) {
+  const opts = [1, 2].filter(l => pos.pulmon[l]).map(l => pos.pulmon[l]);
+  S.mode = 'modal';
+  showModal(`<h1>📟 Reposición ${pos.code}</h1>
+    <p>La posición de picking de <b>${pos.sku.name}</b> quedó vacía. Elegí qué pallet del <b>pulmón</b> baja el autoelevadorista.</p>
+    ${opts.map(o => `<button class="opt" data-l="${o.lvl}">Nivel ${o.lvl} · ${pos.code.slice(0, 4)}-${o.lvl} — Lote <b>${o.lote}</b> — Vence <b>${fmtDate(o.vence)}</b></button>`).join('')}
+    <p style="font-size:12px;color:var(--mut)">Tip: en alimentos y bebidas se trabaja <b>FEFO</b> (First Expired, First Out): sale primero lo que vence primero.</p>
+    <div class="row"><button id="mCancel">Cancelar</button></div>`);
+  $('modalCard').querySelectorAll('.opt').forEach(b => b.onclick = () => { hideModal(); S.mode = 'walk'; startRepo(pos, +b.dataset.l); });
+  $('mCancel').onclick = () => { hideModal(); S.mode = 'walk'; };
+}
+function startRepo(pos, lvl) {
+  const pal = pos.pulmon[lvl], other = pos.pulmon[3 - lvl];
+  if (other && other.vence < pal.vence) incident('fefo', `No respetaste FEFO: el lote ${other.lote} vence antes (${fmtDate(other.vence)})`, -10);
+  else { beep(true); toast(`📟 Reposición OK (FEFO). Lote ${pal.lote}. <b>Alejate del pasillo</b>: opera el autoelevador.`, 'warn', 4500); }
+  const f = pos.f, Y = LEVEL_Y[lvl];
+  const aisleZ = pos.z + f * 2.15, inZ = pos.z + f * 0.6, outZ = pos.z + f * 1.6, yawR = f > 0 ? Math.PI : 0;
+  const r = { pos, lvl, pal, carry: false, i: 0, grace: 3.0, safety: false, st: { x: 4.6, z: aisleZ, yaw: -Math.PI / 2, fork: 0.1 } };
+  const vY = 0.6 + Y / 0.55;
+  r.steps = [
+    { dur: (4.6 - pos.x) / 2.4, to: { x: pos.x }, onStart: () => { scene.remove(pos.pick); toast('Pallet vacío de picking retirado a zona de vacíos', 'ok', 2500); } },
+    { dur: 1.0, to: { yaw: yawR, z: outZ } },
+    { dur: vY, to: { fork: Y + 0.03 } },
+    { dur: 1.0, to: { z: inZ } },
+    { dur: 0.5, to: { fork: Y + 0.13 }, onStart: () => { r.carry = true; } },
+    { dur: 1.0, to: { z: outZ } },
+    { dur: vY, to: { fork: 0.1 } },
+    { dur: 1.0, to: { z: inZ } },
+    { dur: 0.4, to: { fork: 0.03 }, onEnd: () => { r.carry = false; pal.group.position.set(pos.x, 0, pos.z); } },
+    { dur: 1.0, to: { z: outZ } },
+    { dur: 1.0, to: { yaw: Math.PI / 2, z: aisleZ } },
+    { dur: (4.6 - pos.x) / 2.4, to: { x: 4.6 } },
+  ];
+  pos.pulmon[lvl] = null;
+  S.repo = r; forklift.g.visible = true; applyForklift(r);
+}
+function applyForklift(r) {
+  forklift.g.position.set(r.st.x, 0, r.st.z); forklift.g.rotation.y = r.st.yaw; forklift.setFork(r.st.fork);
+  if (r.carry) r.pal.group.position.set(r.st.x + Math.sin(r.st.yaw) * 0.6, r.st.fork - 0.03, r.st.z + Math.cos(r.st.yaw) * 0.6);
+}
+function updateRepo(dt, now) {
+  const r = S.repo; if (!r) return;
+  const st = r.steps[r.i];
+  if (!st.from) { st.from = { ...r.st }; st.t = 0; st.onStart && st.onStart(); }
+  st.t += dt;
+  const k = Math.min(1, st.t / st.dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+  for (const key in st.to) r.st[key] = key === 'yaw' ? st.from.yaw + wrapA(st.to.yaw - st.from.yaw) * e : lerp(st.from[key], st.to[key], e);
+  applyForklift(r);
+  forklift.light.visible = Math.floor(now / 300) % 2 === 0;
+  r.grace -= dt;
+  if (r.grace < 0 && !r.safety && distXZ(player.pos, forklift.g.position) < 2.2) {
+    r.safety = true; incident('seg', 'Seguridad: entraste en la zona de operación del autoelevador', -10);
+  }
+  if (k >= 1) {
+    st.onEnd && st.onEnd(); r.i++;
+    if (r.i >= r.steps.length) {
+      forklift.g.visible = false;
+      r.pos.pick = r.pal.group; r.pal.group.userData.film.visible = false;
+      r.pos.stock = 12; setPickLayers(r.pos);
+      S.repo = null; S.dirty = true; beep(true); toast(`📟 ${r.pos.code} repuesta (12 cajas). Podés seguir.`, 'ok');
+    }
+  }
+}
+
+// ---------- enfilmado ----------
+const NB = 18, BAND = 0.1;
+function startWrap() {
+  S.mode = 'wrapping'; player.vel.set(0, 0, 0);
+  player.pos.set(WRAP.x + 0.6, 0, WRAP.z + 2.1); facePoint(WRAP.x, WRAP.z);
+  palletCtl.mode = 'goto'; palletCtl.target = { x: WRAP.x, y: 0.075 + 0.095, z: WRAP.z };
+  S.wrap = { cov: new Array(NB).fill(0), ch: 0.1, angle: 0, prev: null, spinning: false, input: 0, totalRot: 0 };
+  zorra.visible = false; handle.visible = false;
+  for (const b of S.boxes) if (!b.locked && b.onPallet()) lockBox(b, true);
+  $('wrapUI').classList.remove('hidden'); $('btnAct').disabled = true; $('btnAct').textContent = 'Envolviendo…';
+  toast('Transpaleta afuera. Dejá el carro abajo hasta <b>3 vueltas en la base</b> (amarra carga y pallet), subí despacio hasta arriba y volvé a bajar: <b>2 vueltas en toda la altura</b>.', 'warn', 7000);
+  const bars = $('covBars'); bars.innerHTML = '';
+  for (let b = 0; b < NB; b++) { const d = document.createElement('div'); d.className = 'cb'; d.innerHTML = '<i></i>'; bars.appendChild(d); }
+}
+function rectPoint(a, off) {
+  const hx = 0.615 + off, hz = 0.515 + off, c = Math.cos(a), s = Math.sin(a);
+  const t = Math.min(hx / Math.max(1e-6, Math.abs(c)), hz / Math.max(1e-6, Math.abs(s)));
+  return [c * t, s * t];
+}
+function addFilmSeg(a0, h0, a1, h1, top) {
+  if (filmSegs >= FILM_MAX) return;
+  const lo0 = Math.max(0, h0 - 0.25), hi0 = Math.min(top + 0.03, h0 + 0.25), lo1 = Math.max(0, h1 - 0.25), hi1 = Math.min(top + 0.03, h1 + 0.25);
+  if (hi0 <= lo0 || hi1 <= lo1) return;
+  const off = 0.004 + (filmSegs % 7) * 0.0012;
+  const [x0, z0] = rectPoint(a0, off), [x1, z1] = rectPoint(a1, off);
+  const y = v => v - 0.075; // altura relativa al fondo del pallet -> local
+  const arr = filmGeo.attributes.position.array, i = filmSegs * 18;
+  const v = [x0, y(lo0), z0, x1, y(lo1), z1, x1, y(hi1), z1, x0, y(lo0), z0, x1, y(hi1), z1, x0, y(hi0), z0];
+  for (let k = 0; k < 18; k++) arr[i + k] = v[k];
+  filmSegs++; filmGeo.setDrawRange(0, filmSegs * 6); filmGeo.attributes.position.needsUpdate = true;
+}
+function wrapFixed(h) {
+  const W = S.wrap; if (!W) return;
+  const kin = (keys.has('ArrowUp') || keys.has('KeyW') ? 1 : 0) - (keys.has('ArrowDown') || keys.has('KeyS') ? 1 : 0);
+  W.ch = clamp(W.ch + (W.input || kin) * 0.15 * h, 0.1, 1.75);
+  if (!W.spinning) return;
+  const yaw = palletYaw();
+  const local = wrapA(yaw);                 // dirección del carro (+x mundo) en coordenadas del pallet
+  const top = loadTop();
+  const dTh = Math.abs(palletBody.angularVelocity.y) * h;
+  if (W.ch - 0.25 < top) {
+    for (let b = 0; b < NB; b++) { const yc = b * BAND + BAND / 2; if (yc <= top + 0.05 && Math.abs(yc - W.ch) <= 0.25) W.cov[b] += dTh / (2 * Math.PI); }
+    W.totalRot += dTh / (2 * Math.PI);
+  }
+  if (W.prev) {
+    if (Math.abs(wrapA(local - W.prev.a)) > 0.07 || Math.abs(W.ch - W.prev.h) > 0.05) { addFilmSeg(W.prev.a, W.prev.h, local, W.ch, top); W.prev = { a: local, h: W.ch }; }
+  } else W.prev = { a: local, h: W.ch };
+}
+function updateWrapUI() {
+  const W = S.wrap; if (!W) return;
+  const top = loadTop(), bars = $('covBars').children;
+  for (let b = 0; b < NB; b++) {
+    const yc = b * BAND + BAND / 2, req = yc <= 0.15 ? 3 : 2, rel = yc <= top + 0.05;
+    const el = bars[b], i = el.firstChild, v = W.cov[b];
+    i.style.width = Math.min(100, (v / 3) * 100) + '%';
+    i.style.background = !rel ? '#555' : v >= req * 0.9 ? 'var(--ok)' : v >= 1 ? 'var(--warn)' : 'var(--bad)';
+    el.style.opacity = rel ? 1 : 0.35;
+    el.classList.toggle('top', Math.abs(yc - (top - 0.05)) < 0.051);
+    el.classList.toggle('car', Math.abs(yc - W.ch) < 0.051);
+  }
+  wrapper.car.position.y = 0.095 + W.ch;
+}
+function finishWrap() {
+  const W = S.wrap; if (!W || !W.spinning) return;
+  const top = loadTop();
+  let total = 0, okN = 0, baseOk = true, need = 0;
+  for (let b = 0; b < NB; b++) {
+    const yc = b * BAND + BAND / 2; if (yc > top + 0.05) continue;
+    const req = yc <= 0.15 ? 3 : 2; total++; need += req;
+    if (W.cov[b] >= req * 0.9) okN++; else if (yc <= 0.15) baseOk = false;
+  }
+  const covPct = total ? okN / total : 0;
+  if (covPct < 1) incident('film', `Enfilmado incompleto: ${Math.round((1 - covPct) * 100)}% de la altura con menos vueltas de las necesarias`, -Math.max(3, Math.round((1 - covPct) * 20)));
+  if (!baseOk) incident('base', 'Sin amarre a la base: la carga puede deslizar sobre el pallet', -10);
+  if (W.totalRot > (need / 5) * 2.4 + 2) incident('waste', 'Desperdicio de film: demasiadas vueltas', -3);
+  if (covPct >= 1 && baseOk) { beep(true); toast('✅ Pallet bien enfilmado: la carga quedó unitizada', 'ok'); }
+  // bloqueo físico de las cajas cubiertas (unitización)
+  const baseMin = Math.min(W.cov[0], W.cov[1]);
+  for (const b of S.boxes) {
+    if (!b.onPallet()) continue;
+    const l = worldToPalletLocal(b.body.position), y0 = l.y + 0.075 - b.sku.h / 2, y1 = y0 + b.sku.h;
+    let m = Infinity; for (let k = 0; k < NB; k++) { const yc = k * BAND + BAND / 2; if (yc >= y0 && yc <= y1) m = Math.min(m, W.cov[k]); }
+    if (m >= 1.5 && baseMin >= 2 && b.locked) b.temp = false;   // queda unitizada por el film
+  
+  }
+  S.wrap = null; S.wrapped = true; S.dirty = true;
+  $('wrapUI').classList.add('hidden');
+  palletCtl.mode = 'stopping'; S.mode = 'busy';
+}
+function onWrapStopped() {
+  // el operario vuelve a enganchar la zorra del lado de la cabeza
+  const yaw = palletYaw();
+  player.pos.set(WRAP.x + Math.cos(yaw) * 1.55, 0, WRAP.z - Math.sin(yaw) * 1.55);
+  pushOut(player.pos, 0.3, [WRAP_RECT]);
+  player.vel.set(0, 0, 0);
+  for (const b of S.boxes) if (b.locked && b.temp) unlockBox(b);   // lo que no cubrió el film vuelve a ser suelto
+  palletCtl.mode = 'trailer'; palletCtl.soft = 1.5; zorra.visible = true; handle.visible = true;
+  S.mode = 'walk';
+  toast('Llevá el pallet al <b>Andén 1</b> con cuidado: frená y doblá suave.', 'ok', 4000);
+}
+
+// ---------- despacho / informe ----------
+function dispatch() {
+  S.mode = 'modal';
+  const lost = S.boxes.filter(b => !b.onPallet());
+  lost.forEach(b => S.incidents.push({ type: 'falt', text: `Faltante/rotura: ${b.sku.short} se cayó del pallet`, pts: -10 }));
+  const g = cog();
+  if (g > 0.12) S.incidents.push({ type: 'cog', text: `Centro de gravedad corrido ${Math.round(g * 100)} cm`, pts: -5 });
+  const score = Math.max(0, 100 + S.incidents.reduce((a, i) => a + i.pts, 0));
+  const secs = (performance.now() - S.t0) / 1000, n = S.boxes.length - lost.length;
+  const kg = S.boxes.reduce((a, b) => a + b.sku.w, 0) + 22;
+  const grade = score >= 90 ? ['Excelente: listo para el turno', 'var(--ok)'] : score >= 70 ? ['Aprobado con observaciones', 'var(--warn)'] : ['Necesita re-entrenamiento', 'var(--bad)'];
+  showModal(`<h1>🚚 Pedido ${S.orderNo} despachado</h1>
+    <p>${S.cliente}<br>Remito ${S.remito} · COT generado · Andén 1</p>
+    <div class="score" style="color:${grade[1]}">${score}<span style="font-size:16px"> / 100</span></div>
+    <p><b>${grade[0]}</b></p>
+    <p>⏱ ${Math.floor(secs / 60)}:${String(Math.floor(secs % 60)).padStart(2, '0')} · ${n} bultos · ${fmt(kg)} kg brutos (pallet ≈22 kg) · altura ${fmt(loadTop(), 2)} m · ${Math.round(n / (secs / 3600))} bultos/hora</p>
+    <h2>Observaciones</h2>
+    ${S.incidents.length ? S.incidents.map(i => `<div class="inc"><span>${i.text}</span><span>${i.pts}</span></div>`).join('') : '<p>Sin observaciones. Pallet estable, bien unitizado y FEFO respetado. 👏</p>'}
+    <div class="row"><button class="big" id="mNext">Siguiente pedido</button></div>`);
+  $('mNext').onclick = () => { hideModal(); resetRound(); };
+}
+function resetRound() {
+  [...S.boxes].forEach(removeBox);
+  filmSegs = 0; filmGeo.setDrawRange(0, 0);
+  resetPallet();
+  player.pos.set(START.x, 0, START.z); player.vel.set(0, 0, 0); player.yaw = -Math.PI / 2;
+  if (S.held) { worker.userData.hold.remove(S.held.mesh); S.held = null; }
+  newOrder(); S.mode = 'walk';
+  toast(`📟 Nuevo pedido ${S.orderNo}: ${S.cliente}`, 'ok', 4000);
+}
+
+// ---------- modal / manual ----------
+function showModal(html) { $('modalCard').innerHTML = html; $('modal').classList.remove('hidden'); }
+function hideModal() { $('modal').classList.add('hidden'); }
+const MANUAL = `
+<h2>Cómo trabaja un CD en Argentina (resumen)</h2>
+<ul>
+<li><b>Pallet ARLOG 1000×1200 mm</b>: el estándar argentino (Asociación Argentina de Logística Empresarial). Madera, ~22 kg, ~1.000 kg de carga dinámica. La altura del pallet armado la fija el cliente o el transporte; en el simulador, <b>1,60 m</b> con pallet.</li>
+<li><b>Ubicaciones</b>: Pasillo/Fila – Columna – Nivel (ej. <code>A-03-0</code>). El <b>nivel 0</b> es picking a mano; los niveles superiores son <b>pulmón</b> (reserva) y solo los opera el autoelevadorista.</li>
+<li><b>Picking por pedido</b> con terminal RF: escaneás la ubicación y el bulto (EAN-13 / DUN-14); la terminal valida producto y cantidad.</li>
+<li><b>Reposición</b>: cuando el picking llega al mínimo, se baja un pallet del pulmón. Alimentos/bebidas: <b>FEFO</b> (vence primero, sale primero). Otros: FIFO.</li>
+</ul>
+<h2>Reglas de armado</h2>
+<ul>
+<li>Lo <b>pesado y resistente abajo</b>, lo <b>liviano y frágil arriba</b> (vino, galletitas, papas).</li>
+<li>Respetá la <b>resistencia a la compresión</b> de cada caja ("apilar máx. X kg").</li>
+<li><b>Nunca</b> productos de limpieza o químicos <b>sobre</b> alimentos (derrames/contaminación; Código Alimentario Argentino y BPM). Si van en el mismo pallet: abajo o separados.</li>
+<li>Capas <b>parejas</b>, sin torres; nada sobresale del borde del pallet; centro de gravedad al medio.</li>
+</ul>
+<h2>Enfilmado (film stretch)</h2>
+<ul>
+<li>Film de ~50 cm de ancho. Arrancá <b>abajo</b>: <b>3 vueltas en la base</b> abrazando el pallet (si no, la carga desliza sobre la madera).</li>
+<li>Subí con ~50% de solapamiento: <b>2 vueltas en toda la altura</b> y reforzá arriba. Más vueltas no siempre es mejor: es costo y residuo.</li>
+</ul>
+<h2>Seguridad e higiene</h2>
+<ul>
+<li>Ley 19.587 y Dto. 351/79; ergonomía y levantamiento manual: Res. MTEySS 295/03 (Anexo I). Doblá las rodillas, carga pegada al cuerpo, sin girar el tronco.</li>
+<li>EPP: calzado de seguridad, chaleco reflectivo, guantes.</li>
+<li>Con el autoelevador operando, <b>no entres al pasillo</b> (zona roja). Peatón y autoelevador no comparten espacio.</li>
+<li>Con la zorra: arrancá, frená y doblá suave; mirá siempre hacia donde vas.</li>
+</ul>
+<h2>Despacho</h2>
+<ul><li>El pallet sale con <b>remito</b>; en provincia de Buenos Aires el traslado lleva <b>COT</b> (ARBA).</li></ul>
+<p style="font-size:12px;color:var(--mut)">Prototipo de entrenamiento: valores simplificados con fines didácticos. Verificá siempre con los procedimientos y la normativa de tu empresa.</p>`;
+const CONTROLS = `
+<h2>Controles</h2>
+<ul>
+<li><b>Celular</b>: joystick a la izquierda, botón naranja para la acción. Pellizcá para zoom. ⟲ rota la cámara. 👁 activa/desactiva la primera persona.</li>
+<li>Caminás en vista general; al <b>tomar, apoyar o enfilmar</b> la cámara pasa a <b>primera persona</b> (lo que ve el operario).</li>
+<li><b>PC</b>: <kbd>WASD</kbd>/flechas mover · <kbd>E</kbd>/<kbd>Espacio</kbd> acción · <kbd>Esc</kbd> cancelar · <kbd>R</kbd> rotar cámara · <kbd>V</kbd>/👁 primera persona en las acciones · rueda zoom · al armar: flechas eligen posición, <kbd>Enter</kbd> apoya · en la envolvedora: <kbd>W</kbd>/<kbd>S</kbd> suben/bajan el carro.</li>
+</ul>`;
+function showManual(first) {
+  const prev = S.mode; S.mode = 'modal';
+  showModal(`<h1>${first ? '🏭 Simulador CD — Operario de depósito' : '📘 Manual del operario'}</h1>
+    ${first ? `<p>Vas a preparar un pedido real de punta a punta: <b>picking</b> con terminal RF, <b>reposición</b> desde pulmón respetando FEFO, <b>armado</b> del pallet por peso y resistencia, <b>enfilmado</b> en la envolvedora y <b>despacho</b> por andén. Las cajas tienen física: si armás mal o manejás la zorra brusco, se caen.</p>` : ''}
+    ${CONTROLS}${MANUAL}
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="mHelp" ${S.help ? 'checked' : ''}> Modo entrenamiento (colores de ayuda al armar)</label>
+    <div class="row"><button class="big" id="mGo">${first ? 'Comenzar turno' : 'Volver'}</button></div>`);
+  $('mGo').onclick = () => {
+    S.help = $('mHelp').checked; hideModal(); beep(true);
+    if (first) { resetRound(); } else S.mode = prev === 'modal' ? 'walk' : prev;
+  };
+}
+
+// ---------- input ----------
+const keys = new Set();
+addEventListener('keydown', e => {
+  if (e.repeat) return;
+  keys.add(e.code);
+  if (S.mode === 'modal' || S.mode === 'start') return;
+  if (S.mode === 'placing') {
+    const c = S.placeSel, i = c % 3, j = Math.floor(c / 3);
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') selectGhost(j * 3 + Math.max(0, i - 1));
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') selectGhost(j * 3 + Math.min(2, i + 1));
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') selectGhost(Math.max(0, j - 1) * 3 + i);
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') selectGhost(Math.min(2, j + 1) * 3 + i);
+    if (/^Digit[1-9]$/.test(e.code)) selectGhost(+e.code.slice(5) - 1);
+  }
+  if (S.mode === 'wrapping' && e.code === 'Enter') finishWrap();
+  else if (['KeyE', 'Space', 'Enter'].includes(e.code)) action();
+  if (e.code === 'Escape') cancel();
+  if (e.code === 'KeyR') cam.yawT += Math.PI / 2;
+  if (e.code === 'KeyV') setFp(!S.fpOn);
+});
+addEventListener('keyup', e => keys.delete(e.code));
+const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
+$('joy').addEventListener('pointerdown', e => { joy.id = e.pointerId; joy.ox = e.clientX; joy.oy = e.clientY; $('joy').setPointerCapture(e.pointerId); const b = $('joyBase').getBoundingClientRect(); joy.ox = b.left + 60; joy.oy = b.top + 60; moveJoy(e); });
+$('joy').addEventListener('pointermove', e => { if (e.pointerId === joy.id) moveJoy(e); });
+const endJoy = e => { if (e.pointerId === joy.id) { joy.id = null; joy.x = joy.y = 0; $('joyKnob').style.transform = ''; } };
+$('joy').addEventListener('pointerup', endJoy); $('joy').addEventListener('pointercancel', endJoy);
+function moveJoy(e) {
+  let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy; const d = Math.hypot(dx, dy), m = 50;
+  if (d > m) { dx *= m / d; dy *= m / d; }
+  joy.x = dx / m; joy.y = -dy / m; $('joyKnob').style.transform = `translate(${dx}px,${dy}px)`;
+}
+$('btnAct').addEventListener('pointerdown', e => { e.preventDefault(); action(); });
+$('btnAlt').addEventListener('pointerdown', e => { e.preventDefault(); cancel(); });
+$('btnCam').onclick = () => { cam.yawT += Math.PI / 2; };
+const setFp = v => { S.fpOn = v; $('btnFp').style.opacity = v ? 1 : 0.45; toast(v ? '👁 Primera persona en las acciones: activada' : 'Vista en tercera persona', 'ok', 1800); };
+$('btnFp').onclick = () => setFp(!S.fpOn);
+$('btnManual').onclick = () => { if (S.mode === 'walk') showManual(false); };
+$('rfToggle').onclick = () => { const b = $('rfBody'); b.classList.toggle('hidden'); $('rfToggle').textContent = b.classList.contains('hidden') ? '+' : '–'; };
+$('btnWrapDone').onclick = finishWrap;
+for (const [id, v] of [['btnUp', 1], ['btnDown', -1]]) {
+  const el = $(id);
+  el.addEventListener('pointerdown', e => { e.preventDefault(); if (S.wrap) S.wrap.input = v; });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, () => { if (S.wrap) S.wrap.input = 0; });
+}
+// cámara: zoom con rueda / pellizco; tap para elegir posición al armar
+const cam = { yaw: 0.75, yawT: 0.75, pitch: 1.02, dist: isMobile ? 12 : 11, target: new THREE.Vector3(), fp: 0 };
+const thirdPos = new THREE.Vector3(), eyePos = new THREE.Vector3(), fpLookS = new THREE.Vector3(), lookS = new THREE.Vector3();
+const ptrs = new Map(); let pinch0 = 0;
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+renderer.domElement.addEventListener('wheel', e => { cam.dist = clamp(cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 5, 24); }, { passive: true });
+renderer.domElement.addEventListener('pointerdown', e => {
+  ptrs.set(e.pointerId, e);
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+  if (S.mode === 'placing' && ptrs.size === 1) {
+    ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hit = ray.intersectObjects(S.ghosts)[0];
+    if (hit) { const c = hit.object.userData.c; if (c === S.placeSel || !isMobile) { selectGhost(c); confirmPlace(c); } else selectGhost(c); }
+  }
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId, e);
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); if (pinch0) cam.dist = clamp(cam.dist * pinch0 / d, 5, 24); pinch0 = d; }
+});
+for (const ev of ['pointerup', 'pointercancel']) renderer.domElement.addEventListener(ev, e => { ptrs.delete(e.pointerId); pinch0 = 0; });
+
+// ---------- colisiones 2D ----------
+function pushOut(p, r, rects) {
+  for (const R of rects) {
+    const cx = clamp(p.x, R.minx, R.maxx), cz = clamp(p.z, R.minz, R.maxz);
+    const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz);
+    if (d < r) {
+      if (d > 1e-5) { p.x = cx + dx / d * r; p.z = cz + dz / d * r; }
+      else { // adentro: salir por el lado más cercano
+        const o = [[p.x - R.minx, -1, 0], [R.maxx - p.x, 1, 0], [p.z - R.minz, 0, -1], [R.maxz - p.z, 0, 1]].sort((a, b) => a[0] - b[0])[0];
+        p.x += o[1] * (o[0] + r); p.z += o[2] * (o[0] + r);
+      }
+    }
+  }
+  p.x = clamp(p.x, -9.8 + r, 13.3 - r); p.z = clamp(p.z, -11.2 + r, 6.3 - r);
+}
+
+// ---------- paso fijo de simulación ----------
+const H = 1 / 60;
+const tmpV = new CANNON.Vec3();
+function fixedUpdate() {
+  // operario
+  if (S.mode === 'walk') {
+    let ix = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0) + joy.x;
+    let iy = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) + joy.y;
+    if (S.autoIn) { ix += S.autoIn.x; iy += S.autoIn.y; }   // usado por pruebas automatizadas
+    const m = Math.min(1, Math.hypot(ix, iy)); if (m > 0) { const n = Math.hypot(ix, iy); ix /= n; iy /= n; }
+    const sy = Math.sin(cam.yaw), cy = Math.cos(cam.yaw);
+    const dx = (cy * ix - sy * iy) * m, dz = (-sy * ix - cy * iy) * m;
+    const vmax = S.held ? 1.9 : 2.4;
+    const a = 1 - Math.exp(-5 * H);
+    player.vel.x = lerp(player.vel.x, dx * vmax, a); player.vel.z = lerp(player.vel.z, dz * vmax, a);
+    if (m > 0.1) { const ty = Math.atan2(dx, dz); player.yaw += clamp(wrapA(ty - player.yaw), -9 * H, 9 * H); }
+  } else player.vel.multiplyScalar(0.8);
+  player.pos.addScaledVector(player.vel, H);
+  const rects = forklift.g.visible ? [...RACK_RECTS, WRAP_RECT, { minx: forklift.g.position.x - 0.6, maxx: forklift.g.position.x + 0.6, minz: forklift.g.position.z - 0.6, maxz: forklift.g.position.z + 0.6 }] : [...RACK_RECTS, WRAP_RECT];
+  pushOut(player.pos, 0.3, rects);
+  const sp = Math.hypot(player.vel.x, player.vel.z);
+  player.walk = lerp(player.walk, clamp(sp / 2, 0, 1), 0.2); player.phase += sp * H * 4.2;
+
+  // pallet cinemático
+  const pp = palletBody.position, yaw = palletYaw();
+  let tx = pp.x, ty = pp.y, tz = pp.z, tyaw = yaw, vmax = 4, wmax = 4;
+  if (palletCtl.mode === 'trailer') {
+    const hx = player.pos.x, hz = player.pos.z;
+    let dx = hx - pp.x, dz = hz - pp.z; const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
+    const tp = { x: hx - dx * 1.55, z: hz - dz * 1.55 };
+    pushOut(tp, 0.5, RACK_RECTS);
+    tx = tp.x; tz = tp.z; ty = 0.075; tyaw = Math.atan2(-dz, dx);
+  } else if (palletCtl.mode === 'goto') {
+    tx = palletCtl.target.x; ty = palletCtl.target.y; tz = palletCtl.target.z; vmax = 0.9; wmax = 0;
+    if (Math.hypot(tx - pp.x, tz - pp.z) < 0.015 && Math.abs(ty - pp.y) < 0.01) { palletCtl.mode = 'spin'; S.wrap.spinning = true; }
+  } else if (palletCtl.mode === 'spin' || palletCtl.mode === 'stopping') {
+    tx = WRAP.x; tz = WRAP.z; ty = 0.17;
+  }
+  if (palletCtl.soft > 0) { palletCtl.soft -= H; vmax = 1.2; wmax = 1.2; }
+  // control con aceleración limitada: la zorra tiene inercia (≈3 m/s²), no se teletransporta
+  const KP = 7, AMAX = palletCtl.mode === 'trailer' ? 3.2 : 1.5;
+  const v = new CANNON.Vec3((tx - pp.x) * KP, (ty - pp.y) * KP * 2, (tz - pp.z) * KP);
+  const vl = Math.hypot(v.x, v.z); if (vl > vmax) { v.x *= vmax / vl; v.z *= vmax / vl; }
+  const dvx = v.x - palletBody.velocity.x, dvz = v.z - palletBody.velocity.z, dv = Math.hypot(dvx, dvz), lim = AMAX * H;
+  const kk = dv > lim ? lim / dv : 1;
+  palletBody.velocity.set(palletBody.velocity.x + dvx * kk, v.y, palletBody.velocity.z + dvz * kk);
+  if (palletCtl.mode === 'spin') { palletCtl.spin = Math.min(2.0, palletCtl.spin + 1.0 * H); palletBody.angularVelocity.set(0, palletCtl.spin, 0); }
+  else if (palletCtl.mode === 'stopping') {
+    palletCtl.spin = Math.max(0, palletCtl.spin - 1.4 * H); palletBody.angularVelocity.set(0, palletCtl.spin, 0);
+    if (palletCtl.spin === 0) onWrapStopped();
+  }
+  else {
+    const wt = clamp(wrapA(tyaw - yaw) * KP, -wmax, wmax), w0 = palletBody.angularVelocity.y;
+    palletBody.angularVelocity.set(0, w0 + clamp(wt - w0, -4 * H, 4 * H), 0);
+  }
+
+  if (S.mode === 'wrapping') wrapFixed(H);
+
+  // cajas unitizadas (enfilmadas) siguen al pallet rígidamente
+  const pq = palletBody.quaternion, pv = palletBody.velocity, pw = palletBody.angularVelocity;
+  for (const b of S.boxes) {
+    if (!b.locked) continue;
+    const r = pq.vmult(b.locked.p);
+    b.body.position.set(pp.x + r.x, pp.y + r.y, pp.z + r.z);
+    pq.mult(b.locked.q, b.body.quaternion);
+    pw.cross(r, tmpV); b.body.velocity.set(pv.x + tmpV.x, pv.y + tmpV.y, pv.z + tmpV.z);
+    b.body.angularVelocity.copy(pw);
+  }
+  world.step(H);
+
+  // cajas caídas
+  for (const b of S.boxes) {
+    if (!b.fallen && !b.locked && !b.onPallet()) {
+      b.fallen = true; S.dirty = true;
+      incident('caida', `¡Se cayó ${b.sku.short} del pallet! Manejá la zorra más suave`, -5);
+      const col = S.columns[b.col]; const i = col.indexOf(b); if (i >= 0) col.splice(i, 1);
+    }
+  }
+}
+
+// ---------- HUD ----------
+let hudT = 0;
+function updateHUD(dt) {
+  hudT -= dt;
+  const a = currentAction();
+  if (S.mode !== 'placing' && S.mode !== 'wrapping') {
+    const btn = $('btnAct');
+    const label = a ? a.label : '—', dis = !a || !!a.disabled || !a.fn;
+    if (btn.textContent !== label) btn.textContent = label;
+    btn.disabled = dis;
+  }
+  if (S.wrap) updateWrapUI();
+  if (hudT > 0 && !S.dirty) return;
+  hudT = 0.25;
+  const secs = S.t0 ? (performance.now() - S.t0) / 1000 : 0;
+  const kg = S.boxes.filter(b => !b.fallen).reduce((s, b) => s + b.sku.w, 0) + (S.held ? S.held.sku.w : 0);
+  const g = cog(); const pen = S.incidents.reduce((s, i) => s + i.pts, 0);
+  $('stats').innerHTML = `<span>⏱ <b>${Math.floor(secs / 60)}:${String(Math.floor(secs % 60)).padStart(2, '0')}</b></span>
+    <span>📦 <b>${S.boxes.filter(b => !b.fallen).length}</b></span><span>⚖ <b>${fmt(kg)} kg</b></span>
+    <span>↕ <b>${fmt(loadTop(), 2)}/${fmt(MAX_H, 2)} m</b></span>
+    <span>⊕ CdG <b style="color:${g > 0.12 ? 'var(--warn)' : 'inherit'}">${Math.round(g * 100)} cm</b></span>
+    <span>⚠ <b style="color:${pen ? 'var(--bad)' : 'inherit'}">${pen}</b></span>`;
+  if (!S.dirty) return;
+  S.dirty = false;
+  $('orderInfo').innerHTML = `Pedido <b>${S.orderNo}</b> · ${S.cliente}`;
+  const nl = nextLine();
+  $('lines').innerHTML = S.lines.map(l => {
+    const done = l.picked >= l.qty, tags = (l.sku.fragile ? '<span class="tag t-fr">FRÁGIL</span>' : '') + (l.sku.cat === 'quimico' ? '<span class="tag t-q">QUÍM</span>' : '');
+    return `<div class="ln ${done ? 'done' : ''} ${l === nl ? 'next' : ''}"><span>${done ? '✓' : '▢'}</span><span>${l.pos.code}</span><span>${l.sku.short} ${fmt(l.sku.w)}kg${tags}</span><span>${l.picked}/${l.qty}${l.pos.stock === 0 && !done ? ' ⚠' : ''}</span></div>`;
+  }).join('');
+  let hint;
+  if (S.held) hint = `En mano: ${S.held.sku.name} (${fmt(S.held.sku.w)} kg, soporta ${S.held.sku.res} kg encima). Volvé al pallet.`;
+  else if (S.repo) hint = `🚜 Autoelevador reponiendo ${S.repo.pos.code}. No entres al pasillo.`;
+  else if (S.boxes.some(b => b.fallen && !b.onPallet() && !S.wrapped)) hint = 'Hay cajas en el piso: levantalas y volvé a apoyarlas.';
+  else if (!orderComplete()) hint = 'Planificá: tomá primero lo pesado (bebidas, lavandina), lo frágil al final.';
+  else if (!S.wrapped) hint = 'Pedido completo → llevá el pallet a la ENVOLVEDORA.';
+  else hint = 'Pallet enfilmado → ANDÉN 1 para despachar.';
+  $('hint').textContent = hint;
+}
+
+// ---------- baliza de objetivo ----------
+const beacon = new THREE.Group(); scene.add(beacon);
+{
+  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 2.6, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0x7fe0ff, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }));
+  cyl.position.y = 1.3; beacon.add(cyl);
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.35, 12), new THREE.MeshBasicMaterial({ color: 0x7fe0ff }));
+  cone.rotation.x = Math.PI; cone.position.y = 2.7; beacon.add(cone); beacon.userData.cone = cone;
+}
+function beaconTarget() {
+  if (S.mode === 'start' || S.mode === 'wrapping') return null;
+  if (S.held) return palletBody.position;
+  const fb = S.boxes.find(b => b.fallen && !b.onPallet() && !b.locked); if (fb && !S.wrapped) return fb.body.position;
+  const l = nextLine(); if (l) return l.pos.front;
+  if (!S.wrapped) return WRAP;
+  return DOCK;
+}
+
+// ---------- loop ----------
+let last = performance.now(), acc = 0;
+function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (S.mode !== 'start') { acc += dt; let n = 0; while (acc >= H && n < 6) { fixedUpdate(); acc -= H; n++; } if (n === 6) acc = 0; }
+  // animaciones del operario
+  if (S.anim) {
+    const A = S.anim; const h0 = A.t < A.dur / 2; A.t += dt;
+    const k = Math.min(1, A.t / A.dur);
+    player.crouch = Math.sin(Math.PI * k) * A.crouch;
+    if (h0 && A.t >= A.dur / 2) A.onHalf && A.onHalf();
+    if (k >= 1) { player.crouch = 0; const d = A.onDone; S.anim = null; d && d(); }
+  }
+  player.carry = lerp(player.carry, S.held ? 1 : 0, 0.2);
+  poseWorker();
+  updateRepo(S.repo ? dt : 0, now);
+  // sync de mallas con física
+  palletGroup.position.copy(palletBody.position); palletGroup.quaternion.copy(palletBody.quaternion);
+  for (const b of S.boxes) { b.mesh.position.copy(b.body.position); b.mesh.quaternion.copy(b.body.quaternion); }
+  if (palletCtl.mode === 'spin' || palletCtl.mode === 'stopping') wrapper.plate.rotation.y = palletYaw();
+  // manija de la zorra
+  if (handle.visible) {
+    const a = new THREE.Vector3(0.72, 0.18, 0).applyQuaternion(palletGroup.quaternion).add(palletGroup.position);
+    const b = new THREE.Vector3(player.pos.x, 0.85 - 0.4 * player.crouch, player.pos.z);
+    const d = b.clone().sub(a), len = d.length();
+    handle.position.copy(a).addScaledVector(d, 0.5); handle.scale.set(1, len, 1);
+    handle.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+  }
+  // baliza
+  const bt = beaconTarget();
+  beacon.visible = !!bt;
+  if (bt) { beacon.position.set(bt.x, 0, bt.z); beacon.userData.cone.position.y = 2.7 + Math.sin(now / 250) * 0.15; }
+  // cámara
+  cam.yaw = lerp(cam.yaw, cam.yawT, 0.12);
+  const focus = (S.mode === 'placing' || S.mode === 'wrapping') ? palletBody.position : player.pos;
+  cam.target.lerp(new THREE.Vector3(focus.x, 0.8, focus.z), 0.12);
+  const dist = (S.mode === 'placing' || S.mode === 'wrapping') ? Math.min(cam.dist, 7) : cam.dist;
+  thirdPos.set(cam.target.x + Math.sin(cam.yaw) * Math.cos(cam.pitch) * dist, cam.target.y + Math.sin(cam.pitch) * dist, cam.target.z + Math.cos(cam.yaw) * Math.cos(cam.pitch) * dist);
+  // primera persona durante las acciones: ojos del operario mirando lo que manipula
+  const acting = ['anim', 'placing', 'wrapping', 'busy'].includes(S.mode);
+  cam.fp = lerp(cam.fp, S.fpOn && acting ? 1 : 0, 1 - Math.exp(-7 * dt));
+  const e = cam.fp * cam.fp * (3 - 2 * cam.fp);
+  if (e > 0.001) {
+    worker.updateMatrixWorld(true);
+    const U = worker.userData; U.head.getWorldPosition(eyePos);
+    eyePos.x -= Math.sin(player.yaw) * 0.14; eyePos.z -= Math.cos(player.yaw) * 0.14; eyePos.y += 0.06;
+    if (S.mode === 'placing') S.fpLook = new THREE.Vector3(palletBody.position.x, Math.max(0.15, loadTop() - 0.25), palletBody.position.z);
+    else if (S.mode === 'wrapping' || S.mode === 'busy') S.fpLook = new THREE.Vector3(palletBody.position.x, 0.75, palletBody.position.z);
+    else if (!S.fpLook) S.fpLook = new THREE.Vector3(eyePos.x + Math.sin(player.yaw), 0.6, eyePos.z + Math.cos(player.yaw));
+    fpLookS.lerp(S.fpLook, fpLookS.lengthSq() ? 0.15 : 1);
+    camera.position.lerpVectors(thirdPos, eyePos, e);
+    lookS.lerpVectors(cam.target, fpLookS, e);
+    camera.lookAt(lookS);
+  } else { camera.position.copy(thirdPos); camera.lookAt(cam.target); fpLookS.set(0, 0, 0); if (!acting) S.fpLook = null; }
+  const fov = lerp(48, 80, e);
+  if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.near = e > 0.5 ? 0.04 : 0.1; camera.updateProjectionMatrix(); }
+  worker.userData.head.visible = worker.userData.hair.visible = e < 0.5;
+  sun.position.set(cam.target.x + 6, 18, cam.target.z + 8); sun.target.position.copy(cam.target);
+  if (S.mode !== 'start') updateHUD(dt);
+  renderer.render(scene, camera);
+}
+resetPallet();
+S.cliente = '—';
+requestAnimationFrame(frame);
+showManual(true);
+window.__sim = { S, player, palletBody, palletCtl, positions, action, startRepo, finishWrap, cam, spawnBox, SKUS, worldToPalletLocal };

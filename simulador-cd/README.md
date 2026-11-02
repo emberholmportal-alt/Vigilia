@@ -1,15 +1,26 @@
 # Simulador CD — Operario de depósito (prototipo three.js)
 
 Prototipo de entrenamiento para personal de **centros de distribución** en Argentina.
-Es independiente de Velgrim: un único `index.html` con **three.js 0.160** (render) y
-**cannon-es 0.20** (física), cargados por CDN. No necesita build.
+Es independiente de Velgrim: un único `index.html` **autocontenido** (incluye
+**three.js 0.160** y **cannon-es 0.20**, ambos MIT). No descarga nada: se abre con doble
+clic y funciona sin internet.
 
 ## Cómo correrlo
 
+Abrí `index.html` con doble clic. Para probarlo en el celular desde la PC:
+
 ```bash
-cd simulador-cd
-python3 -m http.server 8080      # o: npx serve .
-# abrir http://localhost:8080 (en el celu: http://<ip-de-la-pc>:8080)
+cd simulador-cd && python3 -m http.server 8080   # http://<ip-de-la-pc>:8080
+```
+
+## Código fuente y rebuild
+
+El código legible está en `src/main.js`. Para regenerar el bundle que va dentro de `index.html`:
+
+```bash
+npm i three@0.160.0 cannon-es@0.20.0 esbuild
+npx esbuild src/main.js --bundle --minify --format=iife --target=es2020 --outfile=out.js
+# reemplazar el contenido del <script> de index.html por out.js
 ```
 
 Mobile-first: joystick virtual + botón de acción. En PC: `WASD`/flechas, `E`/`Espacio`,
